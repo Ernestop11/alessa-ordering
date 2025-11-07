@@ -1,7 +1,7 @@
 import './globals.css'
 import type { Metadata, Viewport } from 'next'
 import type { CSSProperties } from 'react'
-import Cart from '../components/Cart'
+import CartLauncher from '../components/CartLauncher'
 import { Providers } from './providers'
 import { requireTenant } from '../lib/tenant'
 import {
@@ -60,6 +60,7 @@ export default async function RootLayout({
     addressLine2: tenant.addressLine2 || null,
     city: tenant.city || null,
     state: tenant.state || null,
+    country: tenant.country || 'US',
     postalCode: tenant.postalCode || null,
     deliveryRadiusMi: tenant.settings?.deliveryRadiusMi ?? null,
     minimumOrderValue: tenant.settings?.minimumOrderValue ?? null,
@@ -67,6 +68,7 @@ export default async function RootLayout({
     platformFlatFee: tenant.integrations?.platformFlatFee ?? 0.3,
     defaultTaxRate: tenant.integrations?.defaultTaxRate ?? 0.0825,
     deliveryBaseFee: tenant.integrations?.deliveryBaseFee ?? 4.99,
+    taxProvider: tenant.integrations?.taxProvider ?? 'builtin',
     socials: {
       instagram: tenant.settings?.socialInstagram || null,
       facebook: tenant.settings?.socialFacebook || null,
@@ -92,7 +94,7 @@ export default async function RootLayout({
         <Providers>
           <TenantThemeProvider tenant={tenantTheme}>
             {children}
-            <Cart />
+            <CartLauncher />
           </TenantThemeProvider>
         </Providers>
       </body>

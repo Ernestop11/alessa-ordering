@@ -20,6 +20,7 @@ export interface TenantTheme {
   addressLine2?: string | null;
   city?: string | null;
   state?: string | null;
+  country?: string | null;
   postalCode?: string | null;
   deliveryRadiusMi?: number | null;
   minimumOrderValue?: number | null;
@@ -27,6 +28,7 @@ export interface TenantTheme {
   platformFlatFee?: number | null;
   defaultTaxRate?: number | null;
   deliveryBaseFee?: number | null;
+  taxProvider?: string | null;
   socials?: {
     instagram?: string | null;
     facebook?: string | null;
@@ -96,6 +98,7 @@ const DEFAULT_THEME: TenantTheme = {
   addressLine2: null,
   city: null,
   state: null,
+  country: null,
   postalCode: null,
   deliveryRadiusMi: null,
   minimumOrderValue: null,
@@ -103,6 +106,7 @@ const DEFAULT_THEME: TenantTheme = {
   platformFlatFee: 0.3,
   defaultTaxRate: 0.0825,
   deliveryBaseFee: 4.99,
+  taxProvider: 'builtin',
   membershipProgram: null,
   upsellBundles: [],
   accessibilityDefaults: null,

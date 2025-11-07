@@ -62,6 +62,8 @@ export async function GET() {
           membershipProgram: tenant.settings.membershipProgram,
           upsellBundles: tenant.settings.upsellBundles,
           accessibilityDefaults: tenant.settings.accessibilityDefaults,
+          isOpen: tenant.settings.isOpen ?? true,
+          branding: tenant.settings.branding ?? null,
         }
       : null,
     integrations: tenant.integrations
@@ -71,6 +73,14 @@ export async function GET() {
           defaultTaxRate: tenant.integrations.defaultTaxRate,
           deliveryBaseFee: tenant.integrations.deliveryBaseFee,
           stripeAccountId: tenant.integrations.stripeAccountId,
+          autoPrintOrders: tenant.integrations.autoPrintOrders ?? false,
+          fulfillmentNotificationsEnabled: tenant.integrations.fulfillmentNotificationsEnabled ?? true,
+          cloverMerchantId: tenant.integrations.cloverMerchantId ?? null,
+          cloverApiKey: tenant.integrations.cloverApiKey ?? null,
+          printerType: tenant.integrations.printerType ?? 'bluetooth',
+          printerEndpoint: tenant.integrations.printerEndpoint ?? null,
+          taxProvider: tenant.integrations.taxProvider ?? 'builtin',
+          taxConfig: tenant.integrations.taxConfig ?? null,
         }
       : null,
   });
@@ -85,6 +95,10 @@ export async function PATCH(req: Request) {
 
   const tenant = await requireTenant();
   const body = await req.json();
+  const existingBranding =
+    tenant.settings?.branding && typeof tenant.settings.branding === 'object'
+      ? (tenant.settings.branding as Record<string, unknown>)
+      : {};
 
   const tenantData: Record<string, any> = {};
   if (body.restaurantName !== undefined) tenantData.name = String(body.restaurantName);
@@ -122,6 +136,10 @@ export async function PATCH(req: Request) {
     settingsData.minimumOrderValue = Number.isFinite(minOrder) ? minOrder : null;
   }
 
+  if (body.isOpen !== undefined) {
+    settingsData.isOpen = Boolean(body.isOpen);
+  }
+
   if (body.membershipProgram !== undefined) {
     settingsData.membershipProgram = body.membershipProgram || null;
   }
@@ -132,6 +150,21 @@ export async function PATCH(req: Request) {
 
   if (body.accessibilityDefaults !== undefined) {
     settingsData.accessibilityDefaults = body.accessibilityDefaults || null;
+  }
+
+  if (body.branding !== undefined) {
+    if (body.branding === null) {
+      settingsData.branding = null;
+    } else if (typeof body.branding === 'object') {
+      const brandingPayload = body.branding as Record<string, unknown>;
+      const nextBranding = { ...existingBranding };
+      if (brandingPayload.heroImages !== undefined) {
+        nextBranding.heroImages = Array.isArray(brandingPayload.heroImages)
+          ? brandingPayload.heroImages.filter((url) => typeof url === 'string' && url.length > 0)
+          : [];
+      }
+      settingsData.branding = nextBranding;
+    }
   }
 
   const integrationsData: Record<string, any> = {};
@@ -153,6 +186,40 @@ export async function PATCH(req: Request) {
   }
   if (body.stripeAccountId !== undefined) {
     integrationsData.stripeAccountId = body.stripeAccountId || null;
+  }
+  if (body.autoPrintOrders !== undefined) {
+    integrationsData.autoPrintOrders = Boolean(body.autoPrintOrders);
+  }
+  if (body.fulfillmentNotificationsEnabled !== undefined) {
+    integrationsData.fulfillmentNotificationsEnabled = Boolean(body.fulfillmentNotificationsEnabled);
+  }
+  if (body.cloverMerchantId !== undefined) {
+    integrationsData.cloverMerchantId = body.cloverMerchantId || null;
+  }
+  if (body.cloverApiKey !== undefined) {
+    integrationsData.cloverApiKey = body.cloverApiKey || null;
+  }
+  if (body.printerType !== undefined) {
+    integrationsData.printerType = body.printerType || 'bluetooth';
+  }
+  if (body.printerEndpoint !== undefined) {
+    integrationsData.printerEndpoint = body.printerEndpoint || null;
+  }
+  if (body.taxProvider !== undefined) {
+    integrationsData.taxProvider = body.taxProvider || 'builtin';
+  }
+  if (body.taxConfig !== undefined) {
+    if (!body.taxConfig) {
+      integrationsData.taxConfig = null;
+    } else if (typeof body.taxConfig === 'string') {
+      try {
+        integrationsData.taxConfig = JSON.parse(body.taxConfig);
+      } catch {
+        integrationsData.taxConfig = null;
+      }
+    } else if (typeof body.taxConfig === 'object') {
+      integrationsData.taxConfig = body.taxConfig;
+    }
   }
 
   await prisma.$transaction(async (tx) => {
@@ -224,6 +291,7 @@ export async function PATCH(req: Request) {
           membershipProgram: updatedTenant.settings.membershipProgram,
           upsellBundles: updatedTenant.settings.upsellBundles,
           accessibilityDefaults: updatedTenant.settings.accessibilityDefaults,
+          branding: updatedTenant.settings.branding ?? null,
         }
       : null,
     integrations: updatedTenant.integrations
@@ -233,6 +301,14 @@ export async function PATCH(req: Request) {
           defaultTaxRate: updatedTenant.integrations.defaultTaxRate,
           deliveryBaseFee: updatedTenant.integrations.deliveryBaseFee,
           stripeAccountId: updatedTenant.integrations.stripeAccountId,
+          autoPrintOrders: updatedTenant.integrations.autoPrintOrders ?? false,
+          fulfillmentNotificationsEnabled: updatedTenant.integrations.fulfillmentNotificationsEnabled ?? true,
+          cloverMerchantId: updatedTenant.integrations.cloverMerchantId ?? null,
+          cloverApiKey: updatedTenant.integrations.cloverApiKey ?? null,
+          printerType: updatedTenant.integrations.printerType ?? 'bluetooth',
+          printerEndpoint: updatedTenant.integrations.printerEndpoint ?? null,
+          taxProvider: updatedTenant.integrations.taxProvider ?? 'builtin',
+          taxConfig: updatedTenant.integrations.taxConfig ?? null,
         }
       : null,
   });

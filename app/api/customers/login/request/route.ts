@@ -1,6 +1,7 @@
 import { NextResponse } from 'next/server';
 import prisma from '@/lib/prisma';
 import { requireTenant } from '@/lib/tenant';
+import { maskEmail, maskPhone } from '@/lib/customer/login-masking';
 
 type LoginRequestBody =
   | { email: string; phone?: string }
@@ -46,19 +47,56 @@ export async function POST(req: Request) {
     },
   });
 
+  const deliveries: Array<{ channel: 'email' | 'sms'; destination: string }> = [];
+  const debugExpose =
+    process.env.CUSTOMER_LOGIN_DEBUG_TOKEN === 'true' || process.env.NODE_ENV !== 'production';
+
+  if (customer.email) {
+    deliveries.push({ channel: 'email', destination: customer.email });
+    if (debugExpose) {
+      console.info(`[customer-login] Sent login code to ${customer.email}: ${token}`);
+    }
+  }
+
+  if (customer.phone) {
+    deliveries.push({ channel: 'sms', destination: customer.phone });
+    if (debugExpose) {
+      console.info(`[customer-login] Sent login code via SMS to ${customer.phone}: ${token}`);
+    }
+  }
+
+  const maskedDeliveries = deliveries.map((delivery) => ({
+    channel: delivery.channel,
+    destination: delivery.channel === 'email' ? maskEmail(delivery.destination) : maskPhone(delivery.destination),
+  }));
+
   await prisma.integrationLog.create({
     data: {
       tenantId: tenant.id,
       source: 'customer-login',
-      message: 'One-time login requested.',
-      payload: { customerId: customer.id, email: customer.email, phone: customer.phone },
+      message: 'Customer login code generated and queued for delivery.',
+      payload: {
+        customerId: customer.id,
+        email: customer.email,
+        phone: customer.phone,
+        deliveries: maskedDeliveries,
+        tokenPreview: `${token.slice(0, 4)}…`,
+      },
     },
   });
 
-  // TODO: integrate email/SMS delivery. For now, return the token in the response for testing.
+  const message =
+    maskedDeliveries.length > 0
+      ? `Your login code was sent to ${maskedDeliveries
+          .map((delivery) => (delivery.channel === 'email' ? `email ${delivery.destination}` : `phone ${delivery.destination}`))
+          .join(' & ')}.`
+      : 'Your login code is ready.';
+
   return NextResponse.json({
     ok: true,
-    token,
     expiresAt,
+    message,
+    delivery: maskedDeliveries,
+    ...(debugExpose ? { debugToken: token } : {}),
   });
 }

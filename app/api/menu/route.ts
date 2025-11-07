@@ -22,6 +22,9 @@ export async function POST(req: Request) {
     // Expecting: { name, description, price, category, image?, available? }
     const price = parseFloat(String(body.price || 0))
     const tenant = await requireTenant()
+    const gallery = Array.isArray(body.gallery)
+      ? body.gallery.filter((url: unknown): url is string => typeof url === 'string' && url.trim().length > 0)
+      : []
 
     const data = {
       name: body.name,
@@ -29,6 +32,7 @@ export async function POST(req: Request) {
       price,
       category: body.category || 'uncategorized',
       image: body.image || null,
+      gallery,
       available: body.available === undefined ? true : Boolean(body.available),
       tags: Array.isArray(body.tags) ? body.tags : [],
       tenantId: tenant.id,

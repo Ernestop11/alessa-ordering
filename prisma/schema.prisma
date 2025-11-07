@@ -1,169 +1,199 @@
-// This is your Prisma schema file,
-// learn more about it in the docs: https://pris.ly/d/prisma-schema
+// Prisma schema converted for PostgreSQL
+// learn more at https://pris.ly/d/prisma-schema
 
 generator client {
   provider = "prisma-client-js"
 }
 
 datasource db {
-  provider = "mongodb"
+  provider = "postgresql"
   url      = env("DATABASE_URL")
 }
 
 model MenuItem {
-  id          String   @id @default(auto()) @map("_id") @db.ObjectId
-  tenant      Tenant   @relation(fields: [tenantId], references: [id])
-  tenantId    String   @db.ObjectId
-  section     MenuSection? @relation(fields: [menuSectionId], references: [id])
-  menuSectionId String? @db.ObjectId
-  name        String
-  description String
-  price       Float
-  category    String   @default("general")
-  image       String?
-  available   Boolean  @default(true)
-  tags        String[] @default([])
-  createdAt   DateTime @default(now())
-  updatedAt   DateTime @updatedAt
-  orders      OrderItem[]
+  id             String        @id @default(uuid())
+  tenantId       String
+  menuSectionId  String?
+  name           String
+  description    String
+  price          Float
+  category       String        @default("general")
+  image          String?
+  gallery        Json?
+  available      Boolean       @default(true)
+  tags           String[]      @default([])
+  createdAt      DateTime      @default(now())
+  updatedAt      DateTime      @updatedAt
+  tenant         Tenant        @relation(fields: [tenantId], references: [id], onDelete: Cascade)
+  section        MenuSection?  @relation(fields: [menuSectionId], references: [id], onDelete: SetNull)
+  orders         OrderItem[]
 }
 
 model Order {
-  id          String   @id @default(auto()) @map("_id") @db.ObjectId
-  tenant      Tenant   @relation(fields: [tenantId], references: [id])
-  tenantId    String   @db.ObjectId
-  customer    Customer? @relation(fields: [customerId], references: [id])
-  customerId  String?  @db.ObjectId
-  items       OrderItem[]
-  subtotalAmount Float?
-  taxAmount   Float?   @default(0)
-  deliveryFee Float?   @default(0)
-  tipAmount   Float?   @default(0)
-  platformFee Float?   @default(0)
-  totalAmount Float
-  status      String   @default("pending") // pending, confirmed, preparing, ready, completed, cancelled
-  fulfillmentMethod String   @default("pickup") // pickup, delivery
+  id               String        @id @default(uuid())
+  tenantId         String
+  customerId       String?
+  subtotalAmount   Float?
+  taxAmount        Float?        @default(0)
+  deliveryFee      Float?        @default(0)
+  tipAmount        Float?        @default(0)
+  platformFee      Float?        @default(0)
+  totalAmount      Float
+  paymentIntentId  String?       @unique
+  status           String        @default("pending")
+  fulfillmentMethod String       @default("pickup")
   deliveryPartner  String?
-  paymentMethod    String?   // apple_pay, card, cash, etc.
-  customerName String?
-  customerEmail String?
-  customerPhone String?
-  notes       String?
-  createdAt   DateTime @default(now())
-  updatedAt   DateTime @updatedAt
+  paymentMethod    String?
+  customerName     String?
+  customerEmail    String?
+  customerPhone    String?
+  notes            String?
+  createdAt        DateTime      @default(now())
+  updatedAt        DateTime      @updatedAt
+  tenant           Tenant        @relation(fields: [tenantId], references: [id], onDelete: Cascade)
+  customer         Customer?     @relation(fields: [customerId], references: [id], onDelete: SetNull)
+  items            OrderItem[]
+}
+
+model PaymentSession {
+  id              String   @id @default(uuid())
+  tenantId        String
+  paymentIntentId String   @unique
+  amount          Int
+  currency        String   @default("usd")
+  status          String   @default("pending")
+  orderId         String?
+  orderData       Json
+  tenant          Tenant   @relation(fields: [tenantId], references: [id], onDelete: Cascade)
+  createdAt       DateTime @default(now())
+  updatedAt       DateTime @updatedAt
+  
+  @@index([tenantId])
+  @@index([paymentIntentId])
+  @@index([status])
 }
 
 model OrderItem {
-  id          String   @id @default(auto()) @map("_id") @db.ObjectId
-  menuItem    MenuItem @relation(fields: [menuItemId], references: [id])
-  menuItemId  String   @db.ObjectId
-  tenant      Tenant   @relation(fields: [tenantId], references: [id])
-  tenantId    String   @db.ObjectId
-  order       Order    @relation(fields: [orderId], references: [id])
-  orderId     String   @db.ObjectId
-  quantity    Int
-  price       Float    // Price at time of order
-  notes       String?
+  id         String   @id @default(uuid())
+  menuItemId String
+  tenantId   String
+  orderId    String
+  quantity   Int
+  price      Float
+  notes      String?
+  menuItem   MenuItem @relation(fields: [menuItemId], references: [id], onDelete: Cascade)
+  tenant     Tenant   @relation(fields: [tenantId], references: [id], onDelete: Cascade)
+  order      Order    @relation(fields: [orderId], references: [id], onDelete: Cascade)
 }
 
 model Tenant {
-  id             String            @id @default(auto()) @map("_id") @db.ObjectId
-  name           String
-  slug           String            @unique
-  domain         String?
-  customDomain   String?
-  contactEmail   String?
-  contactPhone   String?
-  addressLine1   String?
-  addressLine2   String?
-  city           String?
-  state          String?
-  postalCode     String?
-  country        String?
-  logoUrl        String?
-  heroImageUrl   String?
-  heroTitle      String?
-  heroSubtitle   String?
-  primaryColor   String?           @default("#dc2626")
-  secondaryColor String?           @default("#f59e0b")
-  featureFlags   String[]          @default([])
-  createdAt      DateTime          @default(now())
-  updatedAt      DateTime          @updatedAt
-  settings       TenantSettings?
-  integrations   TenantIntegration?
-  customers      Customer[]
+  id               String             @id @default(uuid())
+  name             String
+  slug             String             @unique
+  domain           String?
+  customDomain     String?
+  contactEmail     String?
+  contactPhone     String?
+  addressLine1     String?
+  addressLine2     String?
+  city             String?
+  state            String?
+  postalCode       String?
+  country          String?
+  logoUrl          String?
+  heroImageUrl     String?
+  heroTitle        String?
+  heroSubtitle     String?
+  primaryColor     String?           @default("#dc2626")
+  secondaryColor   String?           @default("#f59e0b")
+  featureFlags     String[]          @default([])
+  createdAt        DateTime          @default(now())
+  updatedAt        DateTime          @updatedAt
+  settings         TenantSettings?
+  integrations     TenantIntegration?
+  customers        Customer[]
   customerSessions CustomerSession[]
-  menuSections   MenuSection[]
-  menuItems      MenuItem[]
-  orders         Order[]
-  orderItems     OrderItem[]
-  integrationLogs IntegrationLog[]
-}
+  menuSections     MenuSection[]
+  menuItems        MenuItem[]
+  orders           Order[]
+  orderItems       OrderItem[]
+  integrationLogs  IntegrationLog[]
+    paymentSessions  PaymentSession[]
+  }
 
 model TenantSettings {
-  id                String   @id @default(auto()) @map("_id") @db.ObjectId
-  tenant            Tenant   @relation(fields: [tenantId], references: [id])
-  tenantId          String   @unique @db.ObjectId
-  tagline           String?
-  about             String?
-  socialInstagram   String?
-  socialFacebook    String?
-  socialTikTok      String?
-  socialYouTube     String?
-  deliveryRadiusMi  Int?     @default(5)
-  minimumOrderValue Float?   @default(0)
-  currency          String?  @default("USD")
-  timeZone          String?  @default("America/Los_Angeles")
-  operatingHours    Json?
-  membershipProgram Json?
-  upsellBundles     Json?
-  accessibilityDefaults Json?
-  branding          Json?
-  createdAt         DateTime @default(now())
-  updatedAt         DateTime @updatedAt
+  id                     String   @id @default(uuid())
+  tenantId               String   @unique
+  tagline                String?
+  about                  String?
+  socialInstagram        String?
+  socialFacebook         String?
+  socialTikTok           String?
+  socialYouTube          String?
+  deliveryRadiusMi       Int?     @default(5)
+  minimumOrderValue      Float?   @default(0)
+  currency               String?  @default("USD")
+  timeZone               String?  @default("America/Los_Angeles")
+  operatingHours         Json?
+  membershipProgram      Json?
+  upsellBundles          Json?
+  accessibilityDefaults  Json?
+  branding               Json?
+  isOpen                 Boolean? @default(true)
+  createdAt              DateTime @default(now())
+  updatedAt              DateTime @updatedAt
+  tenant                 Tenant   @relation(fields: [tenantId], references: [id], onDelete: Cascade)
 }
 
 model TenantIntegration {
-  id                     String   @id @default(auto()) @map("_id") @db.ObjectId
-  tenant                 Tenant   @relation(fields: [tenantId], references: [id])
-  tenantId               String   @unique @db.ObjectId
-  doorDashStoreId        String?
-  doorDashOAuthToken     String?
-  cloverMerchantId       String?
-  stripeAccountId        String?
-  cloverAccessToken      String?
-  squareLocationId       String?
-  squareAccessToken      String?
-  taxProvider            String?  @default("builtin") // builtin, avalara, taxjar, square
-  taxConfig              Json?
-  paymentProcessor       String?  @default("stripe")
-  paymentConfig          Json?
-  printerType            String?  @default("bluetooth")
-  printerEndpoint        String?
-  applePayMerchantId     String?
+  id                               String   @id @default(uuid())
+  tenantId                         String   @unique
+  doorDashStoreId                  String?
+  doorDashOAuthToken               String?
+  cloverMerchantId                 String?
+  cloverApiKey                     String?
+  stripeAccountId                  String?
+  stripeOnboardingComplete         Boolean? @default(false)
+  stripeChargesEnabled             Boolean? @default(false)
+  stripePayoutsEnabled             Boolean? @default(false)
+  stripeDetailsSubmitted           Boolean? @default(false)
+  stripeOnboardedAt                DateTime?
+  cloverAccessToken                String?
+  squareLocationId                 String?
+  squareAccessToken                String?
+  taxProvider                      String?  @default("builtin")
+  taxConfig                        Json?
+  paymentProcessor                 String?  @default("stripe")
+  paymentConfig                    Json?
+  printerType                      String?  @default("bluetooth")
+  printerEndpoint                  String?
+  applePayMerchantId               String?
   applePayPaymentProcessingCertificate String?
-  autoAcceptOrders       Boolean? @default(false)
-  platformPercentFee     Float?   @default(0.029)
-  platformFlatFee        Float?   @default(0.3)
-  defaultTaxRate         Float?   @default(0.0825)
-  deliveryBaseFee        Float?   @default(4.99)
-  createdAt              DateTime @default(now())
-  updatedAt              DateTime @updatedAt
+  autoAcceptOrders                 Boolean? @default(false)
+  autoPrintOrders                  Boolean? @default(false)
+  fulfillmentNotificationsEnabled  Boolean? @default(true)
+  platformPercentFee               Float?   @default(0.029)
+  platformFlatFee                  Float?   @default(0.3)
+  defaultTaxRate                   Float?   @default(0.0825)
+  deliveryBaseFee                  Float?   @default(4.99)
+  createdAt                        DateTime @default(now())
+  updatedAt                        DateTime @updatedAt
+  tenant                           Tenant   @relation(fields: [tenantId], references: [id], onDelete: Cascade)
 }
 
 model MenuSection {
-  id            String         @id @default(auto()) @map("_id") @db.ObjectId
-  tenant        Tenant         @relation(fields: [tenantId], references: [id])
-  tenantId      String         @db.ObjectId
-  name          String
-  description   String?
-  type          MenuSectionType @default(RESTAURANT)
-  position      Int             @default(0)
-  hero          Boolean         @default(false)
-  imageUrl      String?
-  createdAt     DateTime        @default(now())
-  updatedAt     DateTime        @updatedAt
-  menuItems     MenuItem[]
+  id          String          @id @default(uuid())
+  tenantId    String
+  name        String
+  description String?
+  type        MenuSectionType @default(RESTAURANT)
+  position    Int             @default(0)
+  hero        Boolean         @default(false)
+  imageUrl    String?
+  createdAt   DateTime        @default(now())
+  updatedAt   DateTime        @updatedAt
+  tenant      Tenant          @relation(fields: [tenantId], references: [id], onDelete: Cascade)
+  menuItems   MenuItem[]
 }
 
 enum MenuSectionType {
@@ -176,43 +206,45 @@ enum MenuSectionType {
 }
 
 model Customer {
-  id          String   @id @default(auto()) @map("_id") @db.ObjectId
-  tenant      Tenant   @relation(fields: [tenantId], references: [id])
-  tenantId    String   @db.ObjectId
-  name        String?
-  email       String?
-  phone       String?
-  emailVerified DateTime?
-  loyaltyPoints Int    @default(0)
-  membershipTier String?
+  id                      String   @id @default(uuid())
+  tenantId                String
+  name                    String?
+  email                   String?
+  phone                   String?
+  emailVerified           DateTime?
+  loyaltyPoints           Int      @default(0)
+  membershipTier          String?
   accessibilityPreferences Json?
-  orders      Order[]
-  sessions    CustomerSession[]
-  createdAt   DateTime @default(now())
-  updatedAt   DateTime @updatedAt
+  createdAt               DateTime @default(now())
+  updatedAt               DateTime @updatedAt
+  tenant                  Tenant   @relation(fields: [tenantId], references: [id], onDelete: Cascade)
+  orders                  Order[]
+  sessions                CustomerSession[]
+
   @@index([tenantId, email])
   @@index([tenantId, phone])
 }
 
 model IntegrationLog {
-  id        String   @id @default(auto()) @map("_id") @db.ObjectId
-  tenant    Tenant   @relation(fields: [tenantId], references: [id])
-  tenantId  String   @db.ObjectId
+  id        String   @id @default(uuid())
+  tenantId  String
   source    String
   level     String   @default("info")
   message   String?
   payload   Json?
   createdAt DateTime @default(now())
+  tenant    Tenant   @relation(fields: [tenantId], references: [id], onDelete: Cascade)
 }
 
 model CustomerSession {
-  id          String   @id @default(auto()) @map("_id") @db.ObjectId
-  tenant      Tenant   @relation(fields: [tenantId], references: [id])
-  tenantId    String   @db.ObjectId
-  customer    Customer @relation(fields: [customerId], references: [id])
-  customerId  String   @db.ObjectId
-  token       String   @unique
-  expiresAt   DateTime
-  createdAt   DateTime @default(now())
+  id         String   @id @default(uuid())
+  tenantId   String
+  customerId String
+  token      String   @unique
+  expiresAt  DateTime
+  createdAt  DateTime @default(now())
+  tenant     Tenant   @relation(fields: [tenantId], references: [id], onDelete: Cascade)
+  customer   Customer @relation(fields: [customerId], references: [id], onDelete: Cascade)
+
   @@index([tenantId, token])
 }

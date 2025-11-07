@@ -27,6 +27,10 @@ async function getMenuSections(tenantId: string): Promise<OrderMenuSection[]> {
       category: item.category,
       available: item.available,
       image: item.image,
+      gallery: Array.isArray(item.gallery)
+        ? (item.gallery as unknown[])
+            .filter((url): url is string => typeof url === 'string' && url.length > 0)
+        : [],
       tags: item.tags || [],
     })),
   }));

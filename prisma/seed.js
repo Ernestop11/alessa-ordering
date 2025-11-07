@@ -3,39 +3,39 @@ const prisma = new PrismaClient()
 
 const STOCK = {
   hero: {
-    lapoblanita: '/tenant/lapoblanita/hero.jpg',
-    lasreinas: '/tenant/lasreinas/hero.jpg',
-    villacorona: '/tenant/villacorona/hero.jpg',
+    lapoblanita: 'https://images.unsplash.com/photo-1601050690597-4d7a18efae85?auto=format&fit=crop&w=1600&q=80',
+    lasreinas: 'https://images.unsplash.com/photo-1604908177073-b7d5be5dbcec?auto=format&fit=crop&w=1600&q=80',
+    villacorona: 'https://images.unsplash.com/photo-1511690743698-d9d85f2fbf38?auto=format&fit=crop&w=1600&q=80',
   },
   membership: {
-    lapoblanita: '/tenant/lapoblanita/membership.jpg',
-    lasreinas: '/tenant/lasreinas/membership.jpg',
-    villacorona: '/tenant/villacorona/membership.jpg',
+    lapoblanita: 'https://images.unsplash.com/photo-1608039755401-28912c8341d6?auto=format&fit=crop&w=1200&q=80',
+    lasreinas: 'https://images.unsplash.com/photo-1589308078055-124b5c095772?auto=format&fit=crop&w=1200&q=80',
+    villacorona: 'https://images.unsplash.com/photo-1525755662778-989d0524087e?auto=format&fit=crop&w=1200&q=80',
   },
   menu: {
-    carnitas: 'https://images.unsplash.com/photo-1612872087720-bb876e7b8b1d?auto=format&fit=crop&w=1400&q=80',
-    pastor: 'https://images.unsplash.com/photo-1553621042-f6e147245754?auto=format&fit=crop&w=1400&q=80',
-    conchas: 'https://images.unsplash.com/photo-1542691457-cbe4df041eb2?auto=format&fit=crop&w=1400&q=80',
-    churros: 'https://images.unsplash.com/photo-1604908177304-250c58c2e2fb?auto=format&fit=crop&w=1400&q=80',
-    carnitasPlate: 'https://images.unsplash.com/photo-1608032362190-1a9ceded7480?auto=format&fit=crop&w=1400&q=80',
-    birria: 'https://images.unsplash.com/photo-1546069901-ba9599a7e63c?auto=format&fit=crop&w=1400&q=80',
-    carneAsada: 'https://images.unsplash.com/photo-1525755662778-989d0524087e?auto=format&fit=crop&w=1400&q=80',
-    salsaRoja: 'https://images.unsplash.com/photo-1529059997568-3bb97f5a4c61?auto=format&fit=crop&w=1400&q=80',
-    chilaquiles: 'https://images.unsplash.com/photo-1511690743698-d9d85f2fbf38?auto=format&fit=crop&w=1400&q=80',
-    breakfastBurrito: 'https://images.unsplash.com/photo-1504674900247-0877df9cc836?auto=format&fit=crop&w=1400&q=80',
-    panDeElote: 'https://images.unsplash.com/photo-1483699606544-3ffcf99458d4?auto=format&fit=crop&w=1400&q=80',
-    empanadas: 'https://images.unsplash.com/photo-1473093226795-af9932fe5856?auto=format&fit=crop&w=1400&q=80',
-    tortillas: 'https://images.unsplash.com/photo-1524592094714-0f0654e20314?auto=format&fit=crop&w=1400&q=80',
-    aguaFresca: 'https://images.unsplash.com/photo-1592329427158-9f28df1b6d37?auto=format&fit=crop&w=1400&q=80',
+    carnitas: 'https://images.unsplash.com/photo-1626200419890-757cdf57c15c?auto=format&fit=crop&w=1400&q=80',
+    pastor: 'https://images.unsplash.com/photo-1612872865029-66cf0b88e6d7?auto=format&fit=crop&w=1400&q=80',
+    conchas: 'https://images.unsplash.com/photo-1598373182133-52452f7691ef?auto=format&fit=crop&w=1400&q=80',
+    churros: 'https://images.unsplash.com/photo-1589308078055-124b5c095772?auto=format&fit=crop&w=1400&q=80',
+    carnitasPlate: 'https://images.unsplash.com/photo-1525755662778-989d0524087e?auto=format&fit=crop&w=1400&q=80',
+    birria: 'https://images.unsplash.com/photo-1599974579688-8dbdd335c77b?auto=format&fit=crop&w=1400&q=80',
+    carneAsada: 'https://images.unsplash.com/photo-1612874742237-6526221588e2?auto=format&fit=crop&w=1400&q=80',
+    salsaRoja: 'https://images.unsplash.com/photo-1589308078055-124b5c095772?auto=format&fit=crop&w=1400&q=80',
+    chilaquiles: 'https://images.unsplash.com/photo-1617635277930-e5075e44cdb6?auto=format&fit=crop&w=1400&q=80',
+    breakfastBurrito: 'https://images.unsplash.com/photo-1599974579688-8dbdd335c77b?auto=format&fit=crop&w=1400&q=80',
+    panDeElote: 'https://images.unsplash.com/photo-1598373182133-52452f7691ef?auto=format&fit=crop&w=1400&q=80',
+    empanadas: 'https://images.unsplash.com/photo-1626178807964-9b8b87b67f52?auto=format&fit=crop&w=1400&q=80',
+    tortillas: 'https://images.unsplash.com/photo-1589301760014-d929f3979dbc?auto=format&fit=crop&w=1400&q=80',
+    aguaFresca: 'https://images.unsplash.com/photo-1563379926898-05f4575a45d8?auto=format&fit=crop&w=1400&q=80',
   },
   upsell: {
-    sweetFiesta: 'https://images.unsplash.com/photo-1604908177304-250c58c2e2fb?auto=format&fit=crop&w=1200&q=80',
-    aguaUpgrade: 'https://images.unsplash.com/photo-1592329427158-9f28df1b6d37?auto=format&fit=crop&w=1200&q=80',
-    guacDuo: 'https://images.unsplash.com/photo-1478145046317-39f10e56b5e9?auto=format&fit=crop&w=1200&q=80',
-    butcherCut: 'https://images.unsplash.com/photo-1558036117-15d82a90b9b1?auto=format&fit=crop&w=1200&q=80',
-    salsaFlight: 'https://images.unsplash.com/photo-1504753793650-d4a2b783c15e?auto=format&fit=crop&w=1200&q=80',
-    cafecito: 'https://images.unsplash.com/photo-1540189549336-e6e99c3679fe?auto=format&fit=crop&w=1200&q=80',
-    mercadoTopoff: 'https://images.unsplash.com/photo-1511689987572-1c1bfb9cfd63?auto=format&fit=crop&w=1200&q=80',
+    sweetFiesta: 'https://images.unsplash.com/photo-1608039755401-28912c8341d6?auto=format&fit=crop&w=1200&q=80',
+    aguaUpgrade: 'https://images.unsplash.com/photo-1563379926898-05f4575a45d8?auto=format&fit=crop&w=1200&q=80',
+    guacDuo: 'https://images.unsplash.com/photo-1608031330583-83d9c0c70a43?auto=format&fit=crop&w=1200&q=80',
+    butcherCut: 'https://images.unsplash.com/photo-1612874742237-6526221588e2?auto=format&fit=crop&w=1200&q=80',
+    salsaFlight: 'https://images.unsplash.com/photo-1612872865029-66cf0b88e6d7?auto=format&fit=crop&w=1200&q=80',
+    cafecito: 'https://images.unsplash.com/photo-1495474472287-4d71bcdd2085?auto=format&fit=crop&w=1200&q=80',
+    mercadoTopoff: 'https://images.unsplash.com/photo-1572566830567-29f8e4c1c8b9?auto=format&fit=crop&w=1200&q=80',
   },
 };
 
@@ -65,6 +65,7 @@ async function main() {
           deliveryRadiusMi: 6,
           minimumOrderValue: 20,
           operatingHours: 'Daily: 7:00 AM – 9:00 PM',
+          isOpen: true,
           branding: {
             heroImages: [
               STOCK.hero.lapoblanita,
@@ -149,12 +150,15 @@ async function main() {
         create: {
           doorDashStoreId: 'demo-lapoblanita',
           cloverMerchantId: 'demo-clover-lapoblanita',
+          cloverApiKey: null,
           squareLocationId: 'demo-square-lapoblanita',
           applePayMerchantId: 'merchant.com.lapoblanita',
           platformPercentFee: 0.029,
           platformFlatFee: 0.3,
           defaultTaxRate: 0.0825,
           deliveryBaseFee: 4.99,
+          autoPrintOrders: false,
+          fulfillmentNotificationsEnabled: true,
         },
       },
       sections: [
@@ -239,6 +243,7 @@ async function main() {
           socialInstagram: '@lasreinastaqueria',
           deliveryRadiusMi: 8,
           minimumOrderValue: 25,
+          isOpen: true,
           branding: {
             heroImages: [STOCK.hero.lasreinas, STOCK.membership.lasreinas],
             location: 'Las Reinas Taqueria y Carniceria\n1685 Gallatin Pike N\nMadison, TN 37115',
@@ -315,6 +320,9 @@ async function main() {
           platformFlatFee: 0.3,
           defaultTaxRate: 0.0825,
           deliveryBaseFee: 5.99,
+          autoPrintOrders: false,
+          fulfillmentNotificationsEnabled: true,
+          cloverApiKey: null,
         },
       },
       sections: [
@@ -392,6 +400,7 @@ async function main() {
           socialFacebook: 'facebook.com/villacorona',
           deliveryRadiusMi: 10,
           minimumOrderValue: 18,
+          isOpen: true,
           branding: {
             heroImages: [STOCK.hero.villacorona, STOCK.membership.villacorona],
             location: 'Villa Corona\n3955 Nolensville Pike\nNashville, TN 37211',
@@ -463,12 +472,15 @@ async function main() {
         create: {
           doorDashStoreId: 'demo-villacorona',
           cloverMerchantId: 'demo-clover-villacorona',
+          cloverApiKey: null,
           squareLocationId: 'demo-square-villacorona',
           applePayMerchantId: 'merchant.com.villacorona',
           platformPercentFee: 0.029,
           platformFlatFee: 0.3,
           defaultTaxRate: 0.08,
           deliveryBaseFee: 4.49,
+          autoPrintOrders: false,
+          fulfillmentNotificationsEnabled: true,
         },
       },
       sections: [
@@ -572,13 +584,19 @@ async function main() {
         console.log(`  Added section ${createdSection.name}`)
 
         for (const item of items) {
+          const gallery = Array.isArray(item.gallery)
+            ? item.gallery
+            : item.image
+              ? [item.image]
+              : [];
           await prisma.menuItem.create({
             data: {
               ...item,
+              gallery,
               tenantId: createdTenant.id,
-              menuSectionId: createdSection.id,
-            },
-          })
+                menuSectionId: createdSection.id,
+              },
+            })
           console.log(`    Added item ${item.name}`)
         }
       }

@@ -2,49 +2,25 @@
 
 ## Database Setup
 
-### Option 1: MongoDB Atlas (Recommended for starting)
-1. Go to [MongoDB Atlas](https://www.mongodb.com/cloud/atlas)
-2. Create a free account
-3. Create a new cluster (choose the region closest to your users)
-4. Set up database access:
-   - Create a database user
-   - Allow network access from your VPS IP
-5. Get your connection string
+### Primary: PostgreSQL (Production + Local)
 
-### Option 2: Self-hosted MongoDB
-1. SSH into your VPS
-2. Install MongoDB:
-```bash
-wget -qO - https://www.mongodb.org/static/pgp/server-7.0.asc | sudo apt-key add -
-echo "deb [ arch=amd64,arm64 ] https://repo.mongodb.org/apt/ubuntu focal/mongodb-org/7.0 multiverse" | sudo tee /etc/apt/sources.list.d/mongodb-org-7.0.list
-sudo apt-get update
-sudo apt-get install -y mongodb-org
-```
+1. Follow `docs/DATABASE_SETUP.md` (or `scripts/setup-postgres-isolated.sh`) to provision a dedicated Postgres role/database (e.g., `alessa_ordering_user` + `alessa_ordering`).
+2. Export the resulting `DATABASE_URL`, including `?schema=public`, into the environment (`.env`, Hostinger secrets, or `/etc/environment`).
+3. From the project root run:
+   ```bash
+   npm run db:generate
+   npm run db:push
+   npm run db:seed
+   ```
+4. Confirm Prisma can reach the database with `npx prisma studio` or `npm run dev`.
 
-3. Enable and start MongoDB:
-```bash
-sudo systemctl enable mongod
-sudo systemctl start mongod
-```
+### Optional: MongoDB (Legacy Support)
 
-4. Secure your MongoDB:
-```bash
-sudo nano /etc/mongod.conf
-# Add/modify these lines:
-security:
-  authorization: enabled
-```
+Older forks used MongoDB. If you still need it for transitional environments, keep the previous instructions handy:
 
-5. Create admin user:
-```bash
-mongosh
-use admin
-db.createUser({
-  user: "adminUser",
-  pwd: "your_secure_password",
-  roles: [ { role: "userAdminAnyDatabase", db: "admin" } ]
-})
-```
+1. Use MongoDB Atlas or self-hosted MongoDB 7.0.
+2. Mirror the user/network hardening steps listed in `docs/DATABASE_SETUP.md`.
+3. Update `DATABASE_URL` to the Mongo connection string and re-run Prisma migrations/seeds.
 
 ## Hostinger Deployment
 
@@ -55,7 +31,7 @@ db.createUser({
 
 2. Environment variables to set in Hostinger:
 ```
-DATABASE_URL=mongodb+srv://your_username:your_password@your_cluster.mongodb.net/alessa-ordering
+DATABASE_URL=postgresql://alessa_ordering_user:strongpass@localhost:5432/alessa_ordering?schema=public
 NEXTAUTH_URL=https://your-domain.com
 NEXTAUTH_SECRET=your-secret-key
 NODE_ENV=production
@@ -65,6 +41,30 @@ NODE_ENV=production
 ```bash
 npm run build && npm start
 ```
+
+## Printer & Receipt Automation
+
+- Enable auto-printing from the admin dashboard (`Settings → Payments`). Choose **Bluetooth bridge** to target generic receipt printers or **Clover** for POS-native tickets.
+- When using a Bluetooth bridge, provide either a direct HTTPS endpoint (`https://printer.local/print`) or a JSON payload with credentials:
+  ```json
+  {"endpoint":"https://printer.local/print","apiKey":"shared-secret","profile":"escpos-80mm"}
+  ```
+- Optional environment variables:
+  - `BLUETOOTH_PRINTER_ENDPOINT` – global fallback endpoint when tenant configuration is blank.
+  - `BLUETOOTH_PRINTER_API_KEY` / `PRINTER_SERVICE_API_KEY` – bearer tokens automatically attached to bridge requests.
+- Each print job is logged to the `IntegrationLog` table with source `printer`. Review these logs to diagnose connectivity failures.
+
+## Tax Automation
+
+- Set the **Tax provider** under `Settings → Taxes`. The built-in engine uses the tenant default tax rate; external services compute real-time rates per order.
+- For TaxJar:
+  1. Generate a live API token in the TaxJar dashboard.
+  2. Add it to the tenant configuration JSON (`{"apiKey":"taxjar_live_...","shippingTaxable":true}`) or set the global `TAXJAR_API_KEY` environment variable.
+  3. Optional keys:
+     - `nexusAddresses`: array of nexus locations (`[{ "country": "US", "state": "CA", "zip": "90001" }]`)
+     - `defaultProductTaxCode`: fallback product code.
+     - `shippingTaxable` / `surchargeTaxable`: booleans controlling whether delivery fees and platform surcharges are taxed.
+- Orders automatically recalculate tax server-side during Stripe webhook completion. The `/api/tax/quote` endpoint powers live quotes on the checkout page and falls back to the configured default rate on failure.
 
 ## Backup Strategy
 
@@ -144,7 +144,7 @@ jobs:
 - Run `npx prisma generate && npx prisma db push` to apply schema updates.
 - Seed launch tenants when needed: `npm run db:seed`.
 - Confirm admin tabs (Orders, Customers, Menu Sections, Menu, Settings) render correctly per tenant slug.
-- Review integration logs via MongoDB `IntegrationLog` collection when testing Apple Pay or delivery quotes.
+- Review integration logs via the Postgres `IntegrationLog` table when testing Apple Pay or delivery quotes.
 - Update environment variables for Apple Pay and DoorDash Drive credentials before going live.
 
 ### Quick Deploy

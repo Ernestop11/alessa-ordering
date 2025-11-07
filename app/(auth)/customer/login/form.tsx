@@ -33,8 +33,15 @@ export default function CustomerLoginForm({ returnTo, tenantSlug }: LoginFormPro
       });
       if (!res.ok) throw new Error(await res.text());
       const data = await res.json();
-      setStatus('Magic link sent (check logs in dev). Paste code below.');
-      setToken(data.token);
+      const debugToken: string | undefined = data.debugToken;
+      const message =
+        data.message ||
+        (data.delivery && Array.isArray(data.delivery) && data.delivery.length > 0
+          ? `Check your ${data.delivery.map((entry: any) => entry.channel).join(' & ')} for your login code.`
+          : 'Check your email or phone for your login code.');
+
+      setStatus(debugToken ? `${message} (development code prefilled below).` : message);
+      setToken(debugToken ?? '');
       setStage('verify');
     } catch (err) {
       console.error(err);

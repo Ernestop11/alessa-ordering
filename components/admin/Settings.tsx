@@ -2,6 +2,7 @@
 
 import { useEffect, useState } from 'react';
 import { useRouter } from 'next/navigation';
+import StripeConnectButton from './StripeConnectButton';
 
 interface SettingsForm {
   restaurantName: string;
@@ -32,6 +33,11 @@ interface SettingsForm {
   defaultTaxRate: string;
   deliveryBaseFee: string;
   stripeAccountId: string;
+  autoPrintOrders: boolean;
+  printerType: string;
+  printerEndpoint: string;
+  taxProvider: string;
+  taxConfig: string;
 }
 
 interface MembershipTierForm {
@@ -101,6 +107,11 @@ const defaultFormState: SettingsForm = {
   defaultTaxRate: '0.0825',
   deliveryBaseFee: '4.99',
   stripeAccountId: '',
+  autoPrintOrders: false,
+  printerType: 'bluetooth',
+  printerEndpoint: '',
+  taxProvider: 'builtin',
+  taxConfig: '',
 };
 
 const NUMERIC_FIELDS: Array<keyof SettingsForm> = [
@@ -177,6 +188,10 @@ export default function Settings() {
   const [isSaving, setIsSaving] = useState(false);
   const [message, setMessage] = useState<string | null>(null);
   const [error, setError] = useState<string | null>(null);
+  const [assetError, setAssetError] = useState<string | null>(null);
+  const [uploadingField, setUploadingField] = useState<string | null>(null);
+  const [heroGallery, setHeroGallery] = useState<string[]>([]);
+  const [heroGalleryInput, setHeroGalleryInput] = useState<string>('');
 
   const handleTierFieldChange = <K extends keyof MembershipTierForm>(tierId: string, field: K, value: MembershipTierForm[K]) => {
     setMembershipProgram((prev) => ({
@@ -247,6 +262,18 @@ export default function Settings() {
     setUpsellBundles((prev) => prev.filter((bundle) => bundle.id !== bundleId));
   };
 
+  const addHeroGalleryUrl = () => {
+    const value = heroGalleryInput.trim();
+    if (!value) return;
+    setHeroGallery((prev) => (prev.includes(value) ? prev : [...prev, value]));
+    setHeroGalleryInput('');
+    setMessage('Hero image added to gallery.');
+  };
+
+  const removeHeroGalleryUrl = (index: number) => {
+    setHeroGallery((prev) => prev.filter((_, i) => i !== index));
+  };
+
   useEffect(() => {
     let active = true;
 
@@ -263,6 +290,11 @@ export default function Settings() {
         const tenant = data.tenant ?? {};
         const settings = data.settings ?? {};
         const integrations = data.integrations ?? {};
+
+        const taxConfigString =
+          integrations.taxConfig && typeof integrations.taxConfig === 'object'
+            ? JSON.stringify(integrations.taxConfig, null, 2)
+            : '';
 
         setForm({
           restaurantName: tenant.name || '',
@@ -293,7 +325,18 @@ export default function Settings() {
           defaultTaxRate: integrations.defaultTaxRate?.toString() || '0.0825',
           deliveryBaseFee: integrations.deliveryBaseFee?.toString() || '4.99',
           stripeAccountId: integrations.stripeAccountId || '',
+          autoPrintOrders: Boolean(integrations.autoPrintOrders),
+          printerType: integrations.printerType || 'bluetooth',
+          printerEndpoint: integrations.printerEndpoint || '',
+          taxProvider: integrations.taxProvider || 'builtin',
+          taxConfig: taxConfigString,
         });
+
+        const brandingHeroImages = Array.isArray(settings.branding?.heroImages)
+          ? settings.branding.heroImages.filter((url: unknown): url is string => typeof url === 'string' && url.length > 0)
+          : [];
+        setHeroGallery(brandingHeroImages);
+        setHeroGalleryInput('');
 
         const programPayload = settings.membershipProgram;
         if (programPayload && typeof programPayload === 'object') {
@@ -370,20 +413,57 @@ export default function Settings() {
   }, []);
 
   useEffect(() => {
-    if (!message && !error) return;
+    if (!message && !error && !assetError) return;
     const timeout = setTimeout(() => {
       setMessage(null);
       setError(null);
+      setAssetError(null);
     }, 3000);
     return () => clearTimeout(timeout);
-  }, [message, error]);
+  }, [message, error, assetError]);
 
-  const handleChange = (e: React.ChangeEvent<HTMLInputElement | HTMLTextAreaElement>) => {
+  const handleChange = (e: React.ChangeEvent<HTMLInputElement | HTMLTextAreaElement | HTMLSelectElement>) => {
     const { name, value } = e.target;
     setForm((prev) => ({
       ...prev,
       [name]: value,
     }));
+  };
+
+  const handleAssetUpload = async (field: 'logoUrl' | 'heroImageUrl' | 'heroGallery', file?: File | null) => {
+    if (!file) return;
+    setAssetError(null);
+    setUploadingField(field);
+    try {
+      const payload = new FormData();
+      payload.append('file', file);
+
+      const res = await fetch('/api/admin/assets/upload', {
+        method: 'POST',
+        body: payload,
+      });
+
+      if (!res.ok) {
+        throw new Error(await res.text());
+      }
+
+      const data = await res.json();
+      if (field === 'heroGallery') {
+        setHeroGallery((prev) => (prev.includes(data.url) ? prev : [...prev, data.url]));
+        setMessage('Hero gallery updated.');
+      } else {
+        setForm((prev) => ({
+          ...prev,
+          [field]: data.url,
+        }));
+        setMessage(field === 'logoUrl' ? 'Logo updated.' : 'Hero image updated.');
+      }
+    } catch (err) {
+      console.error(err);
+      setAssetError('Failed to upload image. Please try again.');
+    } finally {
+      setUploadingField(null);
+    }
   };
 
   const handleSubmit = async (e: React.FormEvent) => {
@@ -400,6 +480,19 @@ export default function Settings() {
         payload[field] = value ? Number(value) : null;
       }
 
+      payload.autoPrintOrders = form.autoPrintOrders;
+      payload.printerType = form.printerType || 'bluetooth';
+      payload.printerEndpoint = form.printerEndpoint.trim() ? form.printerEndpoint.trim() : null;
+      payload.taxProvider = form.taxProvider || 'builtin';
+
+      try {
+        payload.taxConfig = form.taxConfig.trim() ? JSON.parse(form.taxConfig) : null;
+      } catch (err) {
+        setError('Tax configuration must be valid JSON.');
+        setIsSaving(false);
+        return;
+      }
+
       payload.membershipProgram = {
         enabled: membershipProgram.enabled,
         pointsPerDollar: Number(membershipProgram.pointsPerDollar ?? 0),
@@ -414,6 +507,13 @@ export default function Settings() {
           badgeColor: tier.badgeColor,
           sortOrder: index,
         })),
+      };
+
+      const cleanedHeroGallery = heroGallery
+        .map((url) => url.trim())
+        .filter((url) => url.length > 0);
+      payload.branding = {
+        heroImages: cleanedHeroGallery,
       };
 
       payload.upsellBundles = upsellBundles
@@ -473,6 +573,7 @@ export default function Settings() {
           </p>
         </div>
         {message && <p className="text-sm text-green-600">{message}</p>}
+        {assetError && <p className="text-sm text-red-600">{assetError}</p>}
         {error && <p className="text-sm text-red-600">{error}</p>}
       </div>
 
@@ -584,30 +685,166 @@ export default function Settings() {
 
             <div>
               <label htmlFor="logoUrl" className="block text-sm font-medium text-gray-700">
-                Logo URL
+                Logo
               </label>
               <input
-                type="url"
+                type="text"
                 name="logoUrl"
                 id="logoUrl"
                 value={form.logoUrl}
                 onChange={handleChange}
-                className="mt-1 block w-full border-gray-300 rounded-md shadow-sm focus:ring-blue-500 focus:border-blue-500 sm:text-sm"
+                placeholder="https://... or /uploads/filename.png"
+                className="mt-1 block w-full border border-gray-300 rounded-md shadow-sm focus:ring-blue-500 focus:border-blue-500 sm:text-sm"
               />
+              <div className="mt-2 flex items-center gap-3">
+                <input
+                  id="logoUploadInput"
+                  type="file"
+                  accept="image/*"
+                  className="hidden"
+                  onChange={(event) => {
+                    const file = event.target.files?.[0];
+                    void handleAssetUpload('logoUrl', file);
+                    event.target.value = '';
+                  }}
+                />
+                <label
+                  htmlFor="logoUploadInput"
+                  className={`inline-flex items-center rounded-md border border-gray-300 px-3 py-1.5 text-xs font-medium text-gray-700 transition ${
+                    uploadingField === 'logoUrl'
+                      ? 'cursor-not-allowed opacity-60'
+                      : 'cursor-pointer hover:border-gray-400 hover:text-gray-900'
+                  }`}
+                >
+                  {uploadingField === 'logoUrl' ? 'Uploading…' : 'Upload file'}
+                </label>
+                {form.logoUrl && (
+                  // eslint-disable-next-line @next/next/no-img-element
+                  <img
+                    src={form.logoUrl}
+                    alt="Logo preview"
+                    className="h-12 w-12 rounded border border-gray-200 object-contain"
+                  />
+                )}
+              </div>
             </div>
 
             <div>
               <label htmlFor="heroImageUrl" className="block text-sm font-medium text-gray-700">
-                Hero Background Image URL
+                Hero Background Image
               </label>
               <input
-                type="url"
+                type="text"
                 name="heroImageUrl"
                 id="heroImageUrl"
                 value={form.heroImageUrl}
                 onChange={handleChange}
-                className="mt-1 block w-full border-gray-300 rounded-md shadow-sm focus:ring-blue-500 focus:border-blue-500 sm:text-sm"
+                placeholder="https://... or /uploads/hero.jpg"
+                className="mt-1 block w-full border border-gray-300 rounded-md shadow-sm focus:ring-blue-500 focus:border-blue-500 sm:text-sm"
               />
+              <div className="mt-2 flex flex-col gap-3 sm:flex-row sm:items-center">
+                <div className="flex items-center gap-3">
+                  <input
+                    id="heroUploadInput"
+                    type="file"
+                    accept="image/*"
+                    className="hidden"
+                    onChange={(event) => {
+                      const file = event.target.files?.[0];
+                      void handleAssetUpload('heroImageUrl', file);
+                      event.target.value = '';
+                    }}
+                  />
+                <label
+                  htmlFor="heroUploadInput"
+                  className={`inline-flex items-center rounded-md border border-gray-300 px-3 py-1.5 text-xs font-medium text-gray-700 transition ${
+                    uploadingField === 'heroImageUrl'
+                      ? 'cursor-not-allowed opacity-60'
+                      : 'cursor-pointer hover:border-gray-400 hover:text-gray-900'
+                  }`}
+                >
+                  {uploadingField === 'heroImageUrl' ? 'Uploading…' : 'Upload file'}
+                </label>
+                </div>
+                {form.heroImageUrl && (
+                  // eslint-disable-next-line @next/next/no-img-element
+                  <img
+                    src={form.heroImageUrl}
+                    alt="Hero preview"
+                    className="h-16 w-full max-w-xs rounded border border-gray-200 object-cover"
+                  />
+                )}
+              </div>
+            </div>
+
+            <div className="sm:col-span-2 lg:col-span-3">
+              <label className="block text-sm font-medium text-gray-700">Hero Gallery</label>
+              <p className="mt-1 text-xs text-gray-500">
+                Add multiple images to rotate through the storefront hero background.
+              </p>
+              {heroGallery.length > 0 && (
+                <div className="mt-3 flex flex-wrap gap-3">
+                  {heroGallery.map((url, index) => (
+                    <div key={`${url}-${index}`} className="relative">
+                      {/* eslint-disable-next-line @next/next/no-img-element */}
+                      <img
+                        src={url}
+                        alt={`Hero ${index + 1}`}
+                        className="h-16 w-28 rounded-lg border border-gray-200 object-cover"
+                      />
+                      <button
+                        type="button"
+                        onClick={() => removeHeroGalleryUrl(index)}
+                        className="absolute -right-2 -top-2 inline-flex h-6 w-6 items-center justify-center rounded-full bg-white text-xs text-gray-600 shadow hover:bg-gray-100"
+                        aria-label="Remove hero image"
+                      >
+                        ×
+                      </button>
+                    </div>
+                  ))}
+                </div>
+              )}
+              <div className="mt-3 flex flex-col gap-2 sm:flex-row sm:items-center">
+                <div className="flex flex-1 items-center gap-2">
+                  <input
+                    type="text"
+                    value={heroGalleryInput}
+                    onChange={(event) => setHeroGalleryInput(event.target.value)}
+                    placeholder="https://... or /uploads/hero-2.jpg"
+                    className="flex-1 rounded-md border border-gray-300 px-3 py-2 text-sm shadow-sm focus:border-blue-500 focus:ring-blue-500"
+                  />
+                  <button
+                    type="button"
+                    onClick={addHeroGalleryUrl}
+                    className="rounded-md bg-blue-600 px-3 py-2 text-sm font-semibold text-white hover:bg-blue-700"
+                  >
+                    Add
+                  </button>
+                </div>
+                <div className="flex items-center gap-2">
+                  <input
+                    id="heroGalleryUploadInput"
+                    type="file"
+                    accept="image/*"
+                    className="hidden"
+                    onChange={(event) => {
+                      const file = event.target.files?.[0];
+                      void handleAssetUpload('heroGallery', file);
+                      event.target.value = '';
+                    }}
+                  />
+                  <label
+                    htmlFor="heroGalleryUploadInput"
+                    className={`inline-flex items-center rounded-md border border-gray-300 px-3 py-2 text-xs font-medium text-gray-700 transition ${
+                      uploadingField === 'heroGallery'
+                        ? 'cursor-not-allowed opacity-60'
+                        : 'cursor-pointer hover:border-gray-400 hover:text-gray-900'
+                    }`}
+                  >
+                    {uploadingField === 'heroGallery' ? 'Uploading…' : 'Upload'}
+                  </label>
+                </div>
+              </div>
             </div>
           </div>
         </section>
@@ -1169,45 +1406,111 @@ export default function Settings() {
 
         <section>
           <h3 className="text-base font-semibold text-gray-900 mb-4">Payments</h3>
-          <div className="grid grid-cols-1 gap-6 sm:grid-cols-2">
-            <div className="sm:col-span-2">
-              <label htmlFor="stripeAccountId" className="block text-sm font-medium text-gray-700">
-                Stripe Connected Account ID
-              </label>
-              <input
-                type="text"
-                name="stripeAccountId"
-                id="stripeAccountId"
-                value={form.stripeAccountId}
-                onChange={handleChange}
-                placeholder="acct_123..."
-                className="mt-1 block w-full border-gray-300 rounded-md shadow-sm focus:ring-blue-500 focus:border-blue-500 sm:text-sm"
-              />
-              <p className="mt-1 text-xs text-gray-500">Use Stripe Connect onboarding to generate this ID. Platform fees apply automatically.</p>
-              <button
-                type="button"
-                onClick={async () => {
-                  try {
-                    const res = await fetch('/api/admin/stripe/onboard', { method: 'POST' });
-                    if (!res.ok) throw new Error(await res.text());
-                    const data = await res.json();
-                    if (data.accountId) {
-                      setForm((prev) => ({ ...prev, stripeAccountId: data.accountId }));
-                    }
-                    if (data.url) {
-                      window.location.href = data.url;
-                    } else {
-                      alert('Onboarding link unavailable.');
-                    }
-                  } catch (err) {
-                    console.error(err);
-                    alert('Failed to start Stripe onboarding.');
+          <div className="grid grid-cols-1 gap-6">
+            <div>
+              <StripeConnectButton />
+            </div>
+            <div className="sm:col-span-2 space-y-4">
+              <label className="flex items-center justify-between rounded-lg border border-gray-200 bg-gray-50 px-4 py-3">
+                <div>
+                  <p className="text-sm font-medium text-gray-900">Auto-print new orders</p>
+                  <p className="text-xs text-gray-500">
+                    Send confirmed orders to your configured printer endpoint. Supports Bluetooth print bridges and Clover.
+                  </p>
+                </div>
+                <input
+                  type="checkbox"
+                  className="h-5 w-5 rounded border-gray-300 text-blue-600 focus:ring-blue-500"
+                  checked={form.autoPrintOrders}
+                  onChange={(event) =>
+                    setForm((prev) => ({
+                      ...prev,
+                      autoPrintOrders: event.target.checked,
+                    }))
                   }
-                }}
-                className="mt-3 inline-flex items-center justify-center rounded-md border border-blue-500 px-4 py-2 text-sm font-semibold text-blue-600 hover:bg-blue-50"
+                />
+              </label>
+              {form.autoPrintOrders && (
+                <div className="grid grid-cols-1 gap-4 sm:grid-cols-2">
+                  <div>
+                    <label htmlFor="printerType" className="block text-sm font-medium text-gray-700">
+                      Printer type
+                    </label>
+                    <select
+                      id="printerType"
+                      name="printerType"
+                      value={form.printerType}
+                      onChange={handleChange}
+                      className="mt-1 block w-full rounded-md border border-gray-300 bg-white py-2 px-3 text-sm shadow-sm focus:border-blue-500 focus:outline-none focus:ring-blue-500"
+                    >
+                      <option value="bluetooth">Bluetooth bridge</option>
+                      <option value="clover">Clover</option>
+                    </select>
+                    <p className="mt-1 text-xs text-gray-500">
+                      Choose <span className="font-medium">Bluetooth</span> for generic receipt printers via a bridge service.
+                    </p>
+                  </div>
+                  <div className="sm:col-span-2">
+                    <label htmlFor="printerEndpoint" className="block text-sm font-medium text-gray-700">
+                      Printer endpoint or config
+                    </label>
+                    <textarea
+                      id="printerEndpoint"
+                      name="printerEndpoint"
+                      value={form.printerEndpoint}
+                      onChange={handleChange}
+                      rows={3}
+                      placeholder='https://bridge.local/print or {"endpoint":"https://bridge.local/print","apiKey":"secret"}'
+                      className="mt-1 block w-full rounded-md border border-gray-300 shadow-sm focus:border-blue-500 focus:ring-blue-500 sm:text-sm"
+                    />
+                    <p className="mt-1 text-xs text-gray-500">
+                      Provide a URL for your print service. JSON is supported to include <code>apiKey</code> and <code>profile</code>.
+                    </p>
+                  </div>
+                </div>
+              )}
+            </div>
+          </div>
+        </section>
+
+        <section>
+          <h3 className="text-base font-semibold text-gray-900 mb-4">Taxes</h3>
+          <div className="grid grid-cols-1 gap-6 sm:grid-cols-2">
+            <div>
+              <label htmlFor="taxProvider" className="block text-sm font-medium text-gray-700">
+                Tax provider
+              </label>
+              <select
+                id="taxProvider"
+                name="taxProvider"
+                value={form.taxProvider}
+                onChange={handleChange}
+                className="mt-1 block w-full rounded-md border border-gray-300 bg-white py-2 px-3 text-sm shadow-sm focus:border-blue-500 focus:outline-none focus:ring-blue-500"
               >
-                {form.stripeAccountId ? 'Revisit Stripe Onboarding' : 'Start Stripe Onboarding'}
-              </button>
+                <option value="builtin">Built-in rate</option>
+                <option value="taxjar">TaxJar</option>
+              </select>
+              <p className="mt-1 text-xs text-gray-500">
+                Use the built-in rate for simple calculations or connect to an external provider for automatic rates.
+              </p>
+            </div>
+            <div className="sm:col-span-2">
+              <label htmlFor="taxConfig" className="block text-sm font-medium text-gray-700">
+                Tax configuration (JSON)
+              </label>
+              <textarea
+                id="taxConfig"
+                name="taxConfig"
+                value={form.taxConfig}
+                onChange={handleChange}
+                rows={5}
+                placeholder='{"apiKey":"taxjar_live_...","shippingTaxable":true}'
+                className="mt-1 block w-full rounded-md border border-gray-300 shadow-sm focus:border-blue-500 focus:ring-blue-500 sm:text-sm font-mono"
+              />
+              <p className="mt-1 text-xs text-gray-500">
+                Supported keys: <code>apiKey</code>, <code>nexusAddresses</code>, <code>defaultProductTaxCode</code>,{' '}
+                <code>shippingTaxable</code>, <code>surchargeTaxable</code>, <code>fallbackRate</code>.
+              </p>
             </div>
           </div>
         </section>

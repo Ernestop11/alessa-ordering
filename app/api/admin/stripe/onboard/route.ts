@@ -3,7 +3,7 @@ import { getServerSession } from 'next-auth';
 import { authOptions } from '@/lib/auth/options';
 import { requireTenant } from '@/lib/tenant';
 import prisma from '@/lib/prisma';
-import { stripe } from '@/lib/stripe';
+import { getStripeClient } from '@/lib/stripe';
 
 const RETURN_URL = process.env.STRIPE_ONBOARD_RETURN_URL || 'http://localhost:3000/admin?onboarding=success';
 const REFRESH_URL = process.env.STRIPE_ONBOARD_REFRESH_URL || 'http://localhost:3000/admin?onboarding=refresh';
@@ -24,6 +24,14 @@ export async function POST() {
     integration = await prisma.tenantIntegration.create({
       data: { tenantId: tenant.id },
     });
+  }
+
+  let stripe;
+  try {
+    stripe = getStripeClient();
+  } catch (err) {
+    console.error('[stripe] Client initialization failed', err);
+    return NextResponse.json({ error: 'Stripe is not configured for this environment.' }, { status: 500 });
   }
 
   let accountId = integration.stripeAccountId;

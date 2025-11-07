@@ -1,5 +1,6 @@
 "use client";
 
+import Link from 'next/link';
 import { useState } from 'react';
 import DashboardLayout from './DashboardLayout';
 import OrderList from './OrderList';
@@ -65,6 +66,12 @@ export default function AdminDashboardClient() {
                       {tab.label}
                     </button>
                   ))}
+                  <Link
+                    href="/admin/fulfillment"
+                    className="inline-flex items-center rounded-full border border-blue-100 bg-blue-50 px-3 py-1 text-sm font-semibold text-blue-700 transition hover:border-blue-400 hover:bg-blue-100"
+                  >
+                    Fulfillment Board
+                  </Link>
                 </div>
               </div>
               <div className="flex items-center">

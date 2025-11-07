@@ -1,11 +1,18 @@
 import Stripe from 'stripe';
 
-const stripeSecret = process.env.STRIPE_SECRET_KEY;
+let cachedStripe: Stripe | null = null;
 
-if (!stripeSecret) {
-  throw new Error('STRIPE_SECRET_KEY is not set.');
+export function getStripeClient() {
+  if (cachedStripe) return cachedStripe;
+
+  const stripeSecret = process.env.STRIPE_SECRET_KEY;
+  if (!stripeSecret) {
+    throw new Error('STRIPE_SECRET_KEY is not set.');
+  }
+
+  cachedStripe = new Stripe(stripeSecret, {
+    apiVersion: '2022-11-15',
+  });
+
+  return cachedStripe;
 }
-
-export const stripe = new Stripe(stripeSecret, {
-  apiVersion: '2022-11-15',
-});

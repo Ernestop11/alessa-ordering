@@ -16,8 +16,10 @@ interface OrderMenuItem {
   category: string;
   available: boolean;
   image?: string | null;
+  gallery?: string[];
   tags?: string[];
   displayImage?: string;
+  displayGallery?: string[];
   emoji?: string;
 }
 
@@ -609,9 +611,18 @@ export default function OrderPageClient({ sections, tenantSlug }: OrderPageClien
       ...section,
       icon: SECTION_ICONS[section.type] || '🍽️',
       items: section.items.map((item, itemIndex) => {
-        const image = item.image || getStockImageForCategory(item.category || section.type, itemIndex + sectionIndex);
+        const fallback = getStockImageForCategory(item.category || section.type, itemIndex + sectionIndex);
+        const baseGallery = Array.isArray(item.gallery) ? item.gallery.filter((url) => typeof url === 'string' && url.length > 0) : [];
+        const displayGallery = [...baseGallery];
+        if (item.image && !displayGallery.includes(item.image)) {
+          displayGallery.unshift(item.image);
+        }
+        if (displayGallery.length === 0) {
+          displayGallery.push(fallback);
+        }
+        const image = displayGallery[0] ?? fallback;
         const emoji = getEmojiForItem(item, section.type);
-        return { ...item, displayImage: image, emoji };
+        return { ...item, displayImage: image, displayGallery, emoji };
       }),
     }));
   }, [sections]);
@@ -648,6 +659,15 @@ export default function OrderPageClient({ sections, tenantSlug }: OrderPageClien
                       <span className="rounded-full bg-white/10 px-3 py-1 text-sm font-semibold text-white">${item.price.toFixed(2)}</span>
                     </div>
                     <p className="mt-2 text-sm text-white/70">{item.description}</p>
+                    {item.displayGallery && item.displayGallery.length > 1 && (
+                      <div className="mt-3 flex gap-2">
+                        {item.displayGallery.slice(1, 4).map((url, index) => (
+                          <div key={`${item.id}-thumb-${index}`} className="relative h-10 w-10 overflow-hidden rounded-lg border border-white/10">
+                            <Image src={url} alt={`${item.name} alt ${index + 1}`} fill className="object-cover" sizes="40px" />
+                          </div>
+                        ))}
+                      </div>
+                    )}
                     {item.tags && item.tags.length > 0 && (
                       <div className="mt-3 flex flex-wrap gap-2 text-xs uppercase tracking-wide text-white/60">
                         {item.tags.map((tag) => (
@@ -705,6 +725,15 @@ export default function OrderPageClient({ sections, tenantSlug }: OrderPageClien
                     <span className="rounded-full bg-white/10 px-4 py-1 text-lg font-bold text-white">${item.price.toFixed(2)}</span>
                   </div>
                   <p className="text-sm text-white/70">{item.description}</p>
+                  {item.displayGallery && item.displayGallery.length > 1 && (
+                    <div className="flex gap-2">
+                      {item.displayGallery.slice(1, 4).map((url, index) => (
+                        <div key={`${item.id}-card-thumb-${index}`} className="relative h-12 w-12 overflow-hidden rounded-xl border border-white/15">
+                          <Image src={url} alt={`${item.name} alternate ${index + 1}`} fill className="object-cover" sizes="48px" />
+                        </div>
+                      ))}
+                    </div>
+                  )}
                   <div className="flex items-center justify-between">
                     <div className="flex flex-wrap gap-2 text-xs text-white/60">
                       <span className="rounded-full bg-black/30 px-2 py-1">{section.icon} {section.type.toLowerCase()}</span>
@@ -790,6 +819,11 @@ export default function OrderPageClient({ sections, tenantSlug }: OrderPageClien
     [activeLayout, handleAddToCart, openCustomization],
   );
 
+  const activeSection = useMemo(
+    () => navSections.find((section) => section.id === activeSectionId),
+    [activeSectionId, navSections],
+  );
+
   return (
     <div className="min-h-screen bg-gradient-to-br from-[#050A1C] via-[#0A1C2F] to-[#041326] text-white">
       <header className="sticky top-0 z-40 border-b border-white/10 bg-black/60 backdrop-blur-xl">
@@ -813,21 +847,28 @@ export default function OrderPageClient({ sections, tenantSlug }: OrderPageClien
           </div>
           {navSections.length > 0 && (
             <nav className="flex max-w-full items-center gap-2 overflow-x-auto text-sm font-medium text-white/80 scrollbar-hide">
-              {navSections.map((section) => (
-                <button
-                  key={section.id}
-                  onClick={() => {
-                    setActiveSectionId(section.id);
-                    const element = document.getElementById(`section-${section.id}`);
-                    element?.scrollIntoView({ behavior: 'smooth', block: 'start' });
-                  }}
-                  className={`flex-shrink-0 rounded-full border px-4 py-2 transition ${
-                    activeSectionId === section.id ? 'border-white/70 bg-white/10 text-white' : 'border-white/20 hover:border-white/40 hover:text-white'
-                  }`}
-                >
-                  {SECTION_ICONS[section.type] || '🍽️'} {section.name}
-                </button>
-              ))}
+              {navSections.map((section) => {
+                const isActive = activeSectionId === section.id;
+                const isBakery = section.type === 'BAKERY' || section.name.toLowerCase().includes('panad');
+                const baseClass = isBakery
+                  ? 'border-transparent bg-gradient-to-r from-rose-500 via-amber-400 to-yellow-300 text-black shadow-lg shadow-rose-500/40'
+                  : 'border-white/70 bg-white/10 text-white';
+                return (
+                  <button
+                    key={section.id}
+                    onClick={() => {
+                      setActiveSectionId(section.id);
+                      const element = document.getElementById(`section-${section.id}`);
+                      element?.scrollIntoView({ behavior: 'smooth', block: 'start' });
+                    }}
+                    className={`flex-shrink-0 rounded-full border px-4 py-2 transition ${
+                      isActive ? baseClass : 'border-white/20 hover:border-white/40 hover:text-white'
+                    }`}
+                  >
+                    {SECTION_ICONS[section.type] || '🍽️'} {section.name}
+                  </button>
+                );
+              })}
             </nav>
           )}
         </div>
@@ -841,7 +882,13 @@ export default function OrderPageClient({ sections, tenantSlug }: OrderPageClien
           backgroundPosition: 'center',
         }}
       >
-        <div className="absolute inset-0 bg-gradient-to-br from-black/70 via-black/30 to-transparent" />
+        <div
+          className={`absolute inset-0 bg-gradient-to-br ${
+            activeSection?.type === 'BAKERY'
+              ? 'from-rose-500/60 via-amber-400/30 to-transparent'
+              : 'from-black/70 via-black/30 to-transparent'
+          }`}
+        />
         <div className="relative mx-auto mt-10 max-w-3xl px-6 text-center">
           <h2 className="text-5xl font-black tracking-tight md:text-6xl">{personality.heroTitle}</h2>
           <p className="mt-4 text-lg text-white/80 md:text-xl">{tenant.heroSubtitle || tenant.tagline || 'Experience flavors that tell a story.'}</p>
@@ -1328,6 +1375,15 @@ export default function OrderPageClient({ sections, tenantSlug }: OrderPageClien
               </div>
               <button onClick={closeCustomization} className="rounded-full border border-white/20 px-2 py-1 text-xs text-white/60 hover:border-white hover:text-white">Close</button>
             </div>
+            {customModal.item.displayGallery && customModal.item.displayGallery.length > 0 && (
+              <div className="mt-4 flex gap-2 overflow-x-auto pb-2">
+                {customModal.item.displayGallery.map((url, index) => (
+                  <div key={`${customModal.item.id}-modal-${index}`} className="relative h-20 w-32 flex-shrink-0 overflow-hidden rounded-xl border border-white/15">
+                    <Image src={url} alt={`${customModal.item.name} preview ${index + 1}`} fill className="object-cover" sizes="128px" />
+                  </div>
+                ))}
+              </div>
+            )}
 
             {customModal.config.removals.length > 0 && (
               <div className="mt-6">

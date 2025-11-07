@@ -28,13 +28,28 @@ export async function POST(req: Request) {
     return NextResponse.json({ error: 'Invalid or expired token' }, { status: 400 });
   }
 
-  await prisma.customerSession.delete({
+  const persistentToken = crypto.randomUUID();
+  const persistentExpiresAt = new Date(Date.now() + 30 * 24 * 60 * 60 * 1000);
+
+  await prisma.customerSession.update({
     where: { id: session.id },
+    data: {
+      token: persistentToken,
+      expiresAt: persistentExpiresAt,
+    },
+  });
+
+  await prisma.customerSession.deleteMany({
+    where: {
+      tenantId: tenant.id,
+      customerId: session.customerId,
+      id: { not: session.id },
+    },
   });
 
   cookies().set({
     name: 'customer_session',
-    value: session.token,
+    value: persistentToken,
     httpOnly: true,
     secure: process.env.NODE_ENV === 'production',
     maxAge: 60 * 60 * 24 * 30, // 30 days

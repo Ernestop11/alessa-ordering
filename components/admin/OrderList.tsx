@@ -9,6 +9,7 @@ interface OrderItem {
   menuItemId: string;
   quantity: number;
   price: number;
+  notes?: string | null;
   menuItem?: {
     id: string;
     name: string;
@@ -24,6 +25,8 @@ interface Order {
     email?: string | null;
     phone?: string | null;
   } | null;
+  customerEmail?: string | null;
+  customerPhone?: string | null;
   items: OrderItem[];
   subtotalAmount?: number | null;
   taxAmount?: number | null;
@@ -38,6 +41,17 @@ interface Order {
   createdAt: string;
   tenantId?: string;
 }
+
+const STATUS_BADGE_CLASSES: Record<OrderStatus, string> = {
+  pending: 'bg-yellow-100 text-yellow-800',
+  confirmed: 'bg-blue-100 text-blue-700',
+  preparing: 'bg-orange-100 text-orange-700',
+  ready: 'bg-emerald-100 text-emerald-700',
+  completed: 'bg-gray-100 text-gray-700',
+  cancelled: 'bg-rose-100 text-rose-700',
+};
+
+const formatStatus = (status: OrderStatus) => status.charAt(0).toUpperCase() + status.slice(1);
 
 export default function OrderList() {
   const [orders, setOrders] = useState<Order[]>([]);
@@ -235,66 +249,78 @@ export default function OrderList() {
           </div>
         ) : (
           <ul role="list" className="divide-y divide-gray-200">
-            {filteredOrders.map((order) => (
-              <li key={order.id} className="px-4 py-4 sm:px-6">
-                <div className="flex items-center justify-between">
-                  <div className="flex-1 min-w-0">
-                    <div className="flex flex-wrap items-center gap-2">
-                      <p className="text-sm font-medium text-gray-900 truncate">
-                        Order #{order.id} — {order.customerName || 'Guest'}
-                      </p>
-                      {order.fulfillmentMethod && (
-                        <span className="rounded-full bg-gray-100 px-2 py-0.5 text-xs font-medium text-gray-700">
-                          {order.fulfillmentMethod === 'delivery' ? 'Delivery' : 'Pickup'}
-                        </span>
-                      )}
-                      {order.paymentMethod && (
-                        <span className="rounded-full bg-blue-100 px-2 py-0.5 text-xs font-medium text-blue-700">
-                          {order.paymentMethod === 'apple_pay' ? ' Pay' : 'Card'}
-                        </span>
-                      )}
-                    </div>
-                    <div className="mt-2 flex flex-col space-y-1">
-                      {order.items.map((item) => (
-                        <p key={item.id} className="text-sm text-gray-500">
-                          {item.quantity}x {item.menuItem?.name || 'Item'} (${item.price.toFixed(2)} each)
+            {filteredOrders.map((order) => {
+              const displayName = order.customerName || order.customer?.name || 'Guest';
+              const displayEmail = order.customer?.email ?? order.customerEmail ?? null;
+              const displayPhone = order.customer?.phone ?? order.customerPhone ?? null;
+              const statusClass = STATUS_BADGE_CLASSES[order.status] ?? 'bg-gray-100 text-gray-700';
+
+              return (
+                <li key={order.id} className="px-4 py-4 sm:px-6">
+                  <div className="flex items-center justify-between">
+                    <div className="flex-1 min-w-0">
+                      <div className="flex flex-wrap items-center gap-2">
+                        <p className="text-sm font-medium text-gray-900 truncate">
+                          Order #{order.id} — {displayName}
                         </p>
-                      ))}
+                        <span className={`rounded-full px-2 py-0.5 text-xs font-medium ${statusClass}`}>
+                          {formatStatus(order.status)}
+                        </span>
+                        {order.fulfillmentMethod && (
+                          <span className="rounded-full bg-gray-100 px-2 py-0.5 text-xs font-medium text-gray-700">
+                            {order.fulfillmentMethod === 'delivery' ? 'Delivery' : 'Pickup'}
+                          </span>
+                        )}
+                        {order.paymentMethod && (
+                          <span className="rounded-full bg-blue-100 px-2 py-0.5 text-xs font-medium text-blue-700">
+                            {order.paymentMethod === 'apple_pay' ? ' Pay' : 'Card'}
+                          </span>
+                        )}
+                      </div>
+                      <div className="mt-2 flex flex-col space-y-1">
+                        {order.items.map((item) => (
+                          <p key={item.id} className="text-sm text-gray-500">
+                            {item.quantity}×{' '}
+                            {item.menuItem?.name || item.menuItem?.id || 'Item'} (${Number(item.price ?? 0).toFixed(2)} each)
+                            {item.notes ? ` • ${item.notes}` : ''}
+                          </p>
+                        ))}
+                      </div>
+                      <div className="mt-2 flex flex-col text-xs text-gray-500">
+                        {displayEmail && <span>Email: {displayEmail}</span>}
+                        {displayPhone && <span>Phone: {displayPhone}</span>}
+                        {order.subtotalAmount !== undefined && (
+                          <span>Subtotal: ${Number(order.subtotalAmount ?? 0).toFixed(2)}</span>
+                        )}
+                        {order.deliveryFee ? <span>Delivery: ${Number(order.deliveryFee).toFixed(2)}</span> : null}
+                        {order.platformFee ? <span>Platform fee: ${Number(order.platformFee).toFixed(2)}</span> : null}
+                        {order.taxAmount ? <span>Tax: ${Number(order.taxAmount).toFixed(2)}</span> : null}
+                        {order.tipAmount ? <span>Tip: ${Number(order.tipAmount).toFixed(2)}</span> : null}
+                      </div>
+                      <p className="mt-2 text-sm font-semibold text-gray-900">
+                        Total charged: ${Number(order.totalAmount ?? 0).toFixed(2)}
+                      </p>
                     </div>
-                    <div className="mt-2 flex flex-col text-xs text-gray-500">
-                      {order.customer?.email && <span>Email: {order.customer.email}</span>}
-                      {order.customer?.phone && <span>Phone: {order.customer.phone}</span>}
-                      {order.subtotalAmount !== undefined && (
-                        <span>Subtotal: ${Number(order.subtotalAmount || 0).toFixed(2)}</span>
-                      )}
-                      {order.deliveryFee ? <span>Delivery: ${order.deliveryFee.toFixed(2)}</span> : null}
-                      {order.platformFee ? <span>Platform fee: ${order.platformFee.toFixed(2)}</span> : null}
-                      {order.taxAmount ? <span>Tax: ${order.taxAmount.toFixed(2)}</span> : null}
-                      {order.tipAmount ? <span>Tip: ${order.tipAmount.toFixed(2)}</span> : null}
+                    <div className="ml-6 flex-shrink-0">
+                      <select
+                        value={order.status}
+                        onChange={(e) =>
+                          updateOrderStatus(order.id, e.target.value as OrderStatus)
+                        }
+                        className="mt-1 block w-full pl-3 pr-10 py-2 text-base border-gray-300 focus:outline-none focus:ring-blue-500 focus:border-blue-500 sm:text-sm rounded-md"
+                      >
+                        <option value="pending">Pending</option>
+                        <option value="confirmed">Confirmed</option>
+                        <option value="preparing">Preparing</option>
+                        <option value="ready">Ready</option>
+                        <option value="completed">Completed</option>
+                        <option value="cancelled">Cancelled</option>
+                      </select>
                     </div>
-                    <p className="mt-2 text-sm font-semibold text-gray-900">
-                      Total charged: ${order.totalAmount.toFixed(2)}
-                    </p>
                   </div>
-                  <div className="ml-6 flex-shrink-0">
-                    <select
-                      value={order.status}
-                      onChange={(e) =>
-                        updateOrderStatus(order.id, e.target.value as OrderStatus)
-                      }
-                      className="mt-1 block w-full pl-3 pr-10 py-2 text-base border-gray-300 focus:outline-none focus:ring-blue-500 focus:border-blue-500 sm:text-sm rounded-md"
-                    >
-                      <option value="pending">Pending</option>
-                      <option value="confirmed">Confirmed</option>
-                      <option value="preparing">Preparing</option>
-                      <option value="ready">Ready</option>
-                      <option value="completed">Completed</option>
-                      <option value="cancelled">Cancelled</option>
-                    </select>
-                  </div>
-                </div>
-              </li>
-            ))}
+                </li>
+              );
+            })}
           </ul>
         )}
       </div>

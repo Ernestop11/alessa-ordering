@@ -1,0 +1,117 @@
+"use client";
+
+import React, { useMemo } from "react";
+import Image from "next/image";
+import { useCart } from "@/lib/cart-context";
+import { useTenantTheme } from "@/lib/tenant-context";
+
+const DEFAULT_PLATFORM_PERCENT_FEE = 0.03;
+const DEFAULT_PLATFORM_FLAT_FEE = 0.3;
+const DEFAULT_TAX_RATE = 0.085;
+const DEFAULT_DELIVERY_BASE_FEE = 4.99;
+
+export default function Cart({
+  tipSelection,
+  customTip,
+  fulfillmentMethod,
+  deliveryQuote,
+}: {
+  tipSelection?: string;
+  customTip?: string;
+  fulfillmentMethod?: "pickup" | "delivery";
+  deliveryQuote?: number;
+}) {
+  const tenant = useTenantTheme();
+  const membershipProgram: any = tenant.membershipProgram;
+  const { items, addToCart, removeFromCart, updateQuantity, clearCart } = useCart();
+
+  const subtotal = useMemo(
+    () => items.reduce((sum, item) => sum + item.price * item.quantity, 0),
+    [items]
+  );
+
+  const platformPercentFee = tenant.platformPercentFee ?? DEFAULT_PLATFORM_PERCENT_FEE;
+  const platformFlatFee = tenant.platformFlatFee ?? DEFAULT_PLATFORM_FLAT_FEE;
+  const defaultTaxRate = tenant.defaultTaxRate ?? DEFAULT_TAX_RATE;
+  const deliveryBaseFee = tenant.deliveryBaseFee ?? DEFAULT_DELIVERY_BASE_FEE;
+
+  // ✅ Compute tip with 15% default
+  const tipAmount = useMemo(() => {
+    if (tipSelection === "custom") {
+      const parsed = parseFloat(customTip || "0");
+      return Number.isFinite(parsed) ? Math.max(parsed, 0) : 0;
+    }
+    // Default 15% if nothing selected or invalid
+    const percent =
+      tipSelection && tipSelection !== "none"
+        ? parseInt(tipSelection, 10)
+        : 15;
+    return subtotal * (percent / 100);
+  }, [tipSelection, customTip, subtotal]);
+
+  const computedDeliveryFee =
+    fulfillmentMethod === "delivery"
+      ? deliveryQuote ?? deliveryBaseFee
+      : 0;
+
+  const platformFee =
+    subtotal > 0 ? subtotal * platformPercentFee + platformFlatFee : 0;
+  const taxBase = subtotal + computedDeliveryFee + platformFee;
+  const taxAmount = taxBase * defaultTaxRate;
+  const totalAmount =
+    subtotal + computedDeliveryFee + platformFee + taxAmount + tipAmount;
+
+  return (
+    <div className="p-4 space-y-4 bg-white rounded-lg shadow-sm">
+      <h2 className="text-xl font-semibold">Your Cart</h2>
+
+      {items.length === 0 ? (
+        <p className="text-gray-500">Your cart is empty.</p>
+      ) : (
+        <ul className="divide-y divide-gray-200">
+          {items.map((item) => (
+            <li key={item.id} className="flex justify-between py-2">
+              <div>
+                <p className="font-medium">{item.name}</p>
+                <p className="text-sm text-gray-500">
+                  {item.quantity} × ${item.price.toFixed(2)}
+                </p>
+              </div>
+              <p className="font-semibold">
+                ${(item.quantity * item.price).toFixed(2)}
+              </p>
+            </li>
+          ))}
+        </ul>
+      )}
+
+      <div className="pt-4 border-t text-sm space-y-1">
+        <div className="flex justify-between">
+          <span>Subtotal:</span>
+          <span>${subtotal.toFixed(2)}</span>
+        </div>
+        <div className="flex justify-between">
+          <span>Platform Fee:</span>
+          <span>${platformFee.toFixed(2)}</span>
+        </div>
+        <div className="flex justify-between">
+          <span>Delivery:</span>
+          <span>${computedDeliveryFee.toFixed(2)}</span>
+        </div>
+        <div className="flex justify-between">
+          <span>Tax:</span>
+          <span>${taxAmount.toFixed(2)}</span>
+        </div>
+        <div className="flex justify-between">
+          <span>Tip (default 15%):</span>
+          <span>${tipAmount.toFixed(2)}</span>
+        </div>
+      </div>
+
+      <div className="pt-4 border-t font-semibold text-lg flex justify-between">
+        <span>Total:</span>
+        <span>${totalAmount.toFixed(2)}</span>
+      </div>
+    </div>
+  );
+}
