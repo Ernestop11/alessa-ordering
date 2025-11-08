@@ -8,7 +8,7 @@ import { useCart } from '../../lib/store/cart';
 import { getTenantAssets } from '../../lib/tenant-assets';
 import { useTenantTheme } from '../TenantThemeProvider';
 
-interface OrderMenuItem {
+export interface OrderMenuItem {
   id: string;
   name: string;
   description: string;
@@ -33,6 +33,7 @@ export interface OrderMenuSection {
 
 interface OrderPageClientProps {
   sections: OrderMenuSection[];
+  featuredItems?: OrderMenuItem[];
   tenantSlug: string;
 }
 
@@ -146,7 +147,7 @@ function getEmojiForItem(item: OrderMenuItem, sectionType: string) {
   return SECTION_ICONS[sectionType] || '🍽️';
 }
 
-export default function OrderPageClient({ sections, tenantSlug }: OrderPageClientProps) {
+export default function OrderPageClient({ sections, featuredItems = [], tenantSlug }: OrderPageClientProps) {
   const tenant = useTenantTheme();
   const assets = getTenantAssets(tenantSlug || tenant.slug);
   const { addToCart } = useCart();
@@ -532,6 +533,22 @@ export default function OrderPageClient({ sections, tenantSlug }: OrderPageClien
 
   const brandingHighlights = useMemo(() => tenant.branding?.highlights ?? [], [tenant.branding?.highlights]);
   const recommendedItems = useMemo(() => {
+    // Use featured items from database if available, otherwise fall back to branding config
+    if (featuredItems.length > 0) {
+      return featuredItems.map((item) => {
+        // Find the section for this item
+        const matchingSection = sections.find(section =>
+          section.items.some(sectionItem => sectionItem.id === item.id)
+        );
+        return {
+          name: item.name,
+          section: matchingSection,
+          item,
+        };
+      });
+    }
+
+    // Fallback to branding config
     const names = tenant.branding?.recommendedItems ?? [];
     if (names.length === 0) return [] as Array<{ name: string; section?: (typeof sections)[number]; item?: (typeof flattenedMenuItems[number]['item']) }>;
     const lookup = new Map<string, { section: (typeof sections)[number]; item: (typeof flattenedMenuItems[number]['item']) }>();
@@ -543,7 +560,7 @@ export default function OrderPageClient({ sections, tenantSlug }: OrderPageClien
       section: lookup.get(name.toLowerCase())?.section,
       item: lookup.get(name.toLowerCase())?.item,
     }));
-  }, [flattenedMenuItems, tenant.branding?.recommendedItems]);
+  }, [featuredItems, sections, flattenedMenuItems, tenant.branding?.recommendedItems]);
 
   const locationSummary = tenant.branding?.location || addressParts || null;
   const hoursSummary = tenant.branding?.hours || null;

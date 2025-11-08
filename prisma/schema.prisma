@@ -21,6 +21,7 @@ model MenuItem {
   image          String?
   gallery        Json?
   available      Boolean       @default(true)
+  isFeatured     Boolean       @default(false)
   tags           String[]      @default([])
   createdAt      DateTime      @default(now())
   updatedAt      DateTime      @updatedAt

@@ -34,6 +34,7 @@ export async function POST(req: Request) {
       image: body.image || null,
       gallery,
       available: body.available === undefined ? true : Boolean(body.available),
+      isFeatured: body.isFeatured === undefined ? false : Boolean(body.isFeatured),
       tags: Array.isArray(body.tags) ? body.tags : [],
       tenantId: tenant.id,
       menuSectionId: body.menuSectionId || null,

@@ -49,6 +49,7 @@ export async function PATCH(req: Request, { params }: { params: { id: string } }
       image: body.image !== undefined ? body.image : existing.image,
       gallery: nextGallery,
       available: body.available !== undefined ? Boolean(body.available) : existing.available,
+      isFeatured: body.isFeatured !== undefined ? Boolean(body.isFeatured) : existing.isFeatured,
       tags: Array.isArray(body.tags) ? body.tags : existing.tags,
       menuSectionId: body.menuSectionId !== undefined ? body.menuSectionId : existing.menuSectionId,
     }

@@ -9,6 +9,7 @@ interface MenuItem {
   price: number;
   category: string;
   available: boolean;
+  isFeatured?: boolean;
   image?: string | null;
   menuSectionId?: string | null;
   section?: {
@@ -78,6 +79,7 @@ export default function MenuEditor() {
       price: 0,
       category: '',
       available: true,
+      isFeatured: false,
       menuSectionId: null,
       section: null,
       image: '',
@@ -126,6 +128,7 @@ export default function MenuEditor() {
         price: editingItem.price,
         category: editingItem.category,
         available: editingItem.available,
+        isFeatured: editingItem.isFeatured || false,
         tags: editingItem.tags || [],
         menuSectionId: editingItem.menuSectionId || null,
         image: editingItem.image || null,
@@ -486,6 +489,9 @@ export default function MenuEditor() {
               </div>
               <div className="flex items-center">
                 <label className="flex items-center text-sm font-medium text-gray-700"><input type="checkbox" checked={editingItem.available} onChange={e => setEditingItem({ ...editingItem, available: e.target.checked })} className="mr-2 h-4 w-4 text-blue-600 focus:ring-blue-500 border-gray-300 rounded" />Available</label>
+              </div>
+              <div className="flex items-center">
+                <label className="flex items-center text-sm font-medium text-gray-700"><input type="checkbox" checked={editingItem.isFeatured || false} onChange={e => setEditingItem({ ...editingItem, isFeatured: e.target.checked })} className="mr-2 h-4 w-4 text-blue-600 focus:ring-blue-500 border-gray-300 rounded" />Featured (appears in &quot;Chef Recommends&quot;)</label>
               </div>
               <div className="flex justify-end space-x-3">
                 <button
