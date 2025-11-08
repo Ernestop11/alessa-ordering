@@ -24,20 +24,30 @@ async function getMenuSections(tenantId: string): Promise<OrderMenuSection[]> {
     name: section.name,
     description: section.description,
     type: section.type,
-    items: section.menuItems.map((item) => ({
-      id: item.id,
-      name: item.name,
-      description: item.description,
-      price: item.price,
-      category: item.category,
-      available: item.available,
-      image: item.image,
-      gallery: Array.isArray(item.gallery)
-        ? (item.gallery as unknown[])
-            .filter((url): url is string => typeof url === 'string' && url.length > 0)
-        : [],
-      tags: item.tags || [],
-    })),
+    items: section.menuItems.map((item) => {
+      // Add cache-busting timestamp to image URLs
+      const timestamp = new Date(item.updatedAt).getTime();
+      const addCacheBuster = (url: string | null) => {
+        if (!url) return null;
+        return url.includes('?') ? `${url}&t=${timestamp}` : `${url}?t=${timestamp}`;
+      };
+
+      return {
+        id: item.id,
+        name: item.name,
+        description: item.description,
+        price: item.price,
+        category: item.category,
+        available: item.available,
+        image: addCacheBuster(item.image),
+        gallery: Array.isArray(item.gallery)
+          ? (item.gallery as unknown[])
+              .filter((url): url is string => typeof url === 'string' && url.length > 0)
+              .map((url) => addCacheBuster(url) as string)
+          : [],
+        tags: item.tags || [],
+      };
+    }),
   }));
 }
 
@@ -52,20 +62,30 @@ async function getFeaturedItems(tenantId: string): Promise<OrderMenuItem[]> {
     take: 10, // Limit to 10 featured items
   });
 
-  return featuredItems.map((item) => ({
-    id: item.id,
-    name: item.name,
-    description: item.description,
-    price: item.price,
-    category: item.category,
-    available: item.available,
-    image: item.image,
-    gallery: Array.isArray(item.gallery)
-      ? (item.gallery as unknown[])
-          .filter((url): url is string => typeof url === 'string' && url.length > 0)
-      : [],
-    tags: item.tags || [],
-  }));
+  return featuredItems.map((item) => {
+    // Add cache-busting timestamp to image URLs
+    const timestamp = new Date(item.updatedAt).getTime();
+    const addCacheBuster = (url: string | null) => {
+      if (!url) return null;
+      return url.includes('?') ? `${url}&t=${timestamp}` : `${url}?t=${timestamp}`;
+    };
+
+    return {
+      id: item.id,
+      name: item.name,
+      description: item.description,
+      price: item.price,
+      category: item.category,
+      available: item.available,
+      image: addCacheBuster(item.image),
+      gallery: Array.isArray(item.gallery)
+        ? (item.gallery as unknown[])
+            .filter((url): url is string => typeof url === 'string' && url.length > 0)
+            .map((url) => addCacheBuster(url) as string)
+        : [],
+      tags: item.tags || [],
+    };
+  });
 }
 
 export default async function OrderPage() {
