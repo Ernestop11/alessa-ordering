@@ -13,7 +13,7 @@ export async function GET(req: Request) {
   if (!session?.user?.email) return unauthorized();
 
   try {
-    const user = await prisma.customer.findUnique({
+    const user = await prisma.customer.findFirst({
       where: { email: session.user.email },
       select: { tenantId: true },
     });
@@ -70,7 +70,7 @@ export async function POST(req: Request) {
       );
     }
 
-    const user = await prisma.customer.findUnique({
+    const user = await prisma.customer.findFirst({
       where: { email: session.user.email },
       select: { tenantId: true },
     });
@@ -135,7 +135,7 @@ export async function DELETE(req: Request) {
   if (!session?.user?.email) return unauthorized();
 
   try {
-    const user = await prisma.customer.findUnique({
+    const user = await prisma.customer.findFirst({
       where: { email: session.user.email },
       select: { tenantId: true },
     });

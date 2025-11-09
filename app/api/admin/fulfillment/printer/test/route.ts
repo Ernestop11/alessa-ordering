@@ -23,7 +23,7 @@ export async function POST(req: Request) {
       );
     }
 
-    const user = await prisma.customer.findUnique({
+    const user = await prisma.customer.findFirst({
       where: { email: session.user.email },
       select: { tenantId: true },
     });
