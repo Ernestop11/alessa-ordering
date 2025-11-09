@@ -4,8 +4,10 @@ import { ShoppingCart } from "lucide-react";
 import Cart from "./Cart";
 import { useCart } from "../lib/store/cart";
 import StripeCheckout, { StripeCheckoutWrapper } from "./StripeCheckout";
+import EnhancedCheckout, { CheckoutFormData } from "./EnhancedCheckout";
 
 type CreateIntentResponse = { clientSecret?: string; error?: string };
+type CheckoutStep = 'cart' | 'customer-info' | 'payment';
 
 export default function CartDrawer() {
   const [open, setOpen] = useState(false);
@@ -13,6 +15,8 @@ export default function CartDrawer() {
   const [clientSecret, setClientSecret] = useState<string | null>(null);
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState<string | null>(null);
+  const [checkoutStep, setCheckoutStep] = useState<CheckoutStep>('cart');
+  const [customerData, setCustomerData] = useState<CheckoutFormData | null>(null);
 
   return (
     <>
@@ -36,7 +40,11 @@ export default function CartDrawer() {
             onClick={(e) => e.stopPropagation()}
           >
             <div className="flex justify-between items-center mb-4">
-              <h2 className="text-xl font-semibold">Your Cart</h2>
+              <h2 className="text-xl font-semibold">
+                {checkoutStep === 'cart' && 'Your Cart'}
+                {checkoutStep === 'customer-info' && 'Checkout'}
+                {checkoutStep === 'payment' && 'Payment'}
+              </h2>
               <button
                 onClick={() => setOpen(false)}
                 className="text-gray-500 hover:text-gray-700"
@@ -44,65 +52,104 @@ export default function CartDrawer() {
                 ✕
               </button>
             </div>
-            <Cart />
 
-            {/* Checkout area */}
-            <div className="mt-4">
-              {!clientSecret ? (
-                <>
+            {/* Step 1: Cart Review */}
+            {checkoutStep === 'cart' && (
+              <>
+                <Cart />
+                <div className="mt-4">
                   {items.length === 0 ? (
                     <p className="text-sm text-gray-500">Add items to checkout.</p>
                   ) : (
-                    <div className="space-y-2">
-                      <button
-                        onClick={async () => {
-                          setLoading(true);
-                          setError(null);
-                          try {
-                            // Build a minimal order payload
-                            const order = {
-                              items: items.map((i: any) => ({
-                                menuItemId: i.id,
-                                quantity: i.quantity,
-                                price: i.price,
-                              })),
-                              totalAmount: items.reduce((s: number, it: any) => s + it.price * it.quantity, 0),
-                            };
-
-                            const res = await fetch("/api/payments/intent", {
-                              method: "POST",
-                              headers: { "Content-Type": "application/json" },
-                              body: JSON.stringify({ order }),
-                            });
-
-                            const data: CreateIntentResponse = await res.json();
-                            if (data.clientSecret) {
-                              setClientSecret(data.clientSecret);
-                            } else {
-                              setError(data.error || "Failed to create payment intent");
-                            }
-                          } catch (err: any) {
-                            setError(err?.message || "Failed to create payment intent");
-                          } finally {
-                            setLoading(false);
-                          }
-                        }}
-                        disabled={loading}
-                        className="w-full bg-amber-500 text-white py-2 rounded-md font-medium hover:bg-amber-600"
-                      >
-                        {loading ? "Preparing…" : "Proceed to Checkout"}
-                      </button>
-                      {error && <p className="text-red-500 text-sm">{error}</p>}
-                    </div>
+                    <button
+                      onClick={() => setCheckoutStep('customer-info')}
+                      className="w-full bg-amber-500 text-white py-3 rounded-lg font-medium hover:bg-amber-600 transition"
+                    >
+                      Proceed to Checkout
+                    </button>
                   )}
-                </>
-              ) : (
-                <div className="mt-4">
-                  <h3 className="text-lg font-medium mb-2">Payment</h3>
-                  <StripeCheckoutWrapper clientSecret={clientSecret} />
                 </div>
-              )}
-            </div>
+              </>
+            )}
+
+            {/* Step 2: Customer Information & Options */}
+            {checkoutStep === 'customer-info' && (
+              <>
+                <EnhancedCheckout
+                  totalAmount={items.reduce((s: number, it: any) => s + it.price * it.quantity, 0)}
+                  onSubmit={async (data: CheckoutFormData) => {
+                    setCustomerData(data);
+                    setLoading(true);
+                    setError(null);
+                    try {
+                      // Build order payload with customer data and gift info
+                      const order = {
+                        items: items.map((i: any) => ({
+                          menuItemId: i.id,
+                          quantity: i.quantity,
+                          price: i.price,
+                        })),
+                        subtotalAmount: items.reduce((s: number, it: any) => s + it.price * it.quantity, 0),
+                        tipAmount: data.tipAmount,
+                        totalAmount: items.reduce((s: number, it: any) => s + it.price * it.quantity, 0) + data.tipAmount,
+                        customerName: data.customerName,
+                        customerEmail: data.customerEmail,
+                        customerPhone: data.customerPhone,
+                        fulfillmentMethod: data.fulfillmentMethod,
+                        deliveryAddress: data.deliveryAddress,
+                        notes: data.deliveryInstructions,
+                        // Gift order metadata
+                        metadata: {
+                          becomeMember: data.becomeMember,
+                          isGift: data.isGift,
+                          giftRecipientName: data.giftRecipientName,
+                          giftRecipientEmail: data.giftRecipientEmail,
+                          giftRecipientPhone: data.giftRecipientPhone,
+                          giftMessage: data.giftMessage,
+                        },
+                      };
+
+                      const res = await fetch("/api/payments/intent", {
+                        method: "POST",
+                        headers: { "Content-Type": "application/json" },
+                        body: JSON.stringify({ order }),
+                      });
+
+                      const responseData: CreateIntentResponse = await res.json();
+                      if (responseData.clientSecret) {
+                        setClientSecret(responseData.clientSecret);
+                        setCheckoutStep('payment');
+                      } else {
+                        setError(responseData.error || "Failed to create payment intent");
+                      }
+                    } catch (err: any) {
+                      setError(err?.message || "Failed to create payment intent");
+                    } finally {
+                      setLoading(false);
+                    }
+                  }}
+                  onBack={() => setCheckoutStep('cart')}
+                  loading={loading}
+                />
+                {error && <p className="text-red-500 text-sm mt-2">{error}</p>}
+              </>
+            )}
+
+            {/* Step 3: Payment */}
+            {checkoutStep === 'payment' && clientSecret && (
+              <div className="space-y-4">
+                <button
+                  onClick={() => {
+                    setCheckoutStep('customer-info');
+                    setClientSecret(null);
+                  }}
+                  className="text-sm text-blue-600 hover:underline"
+                >
+                  ← Edit Information
+                </button>
+                <StripeCheckoutWrapper clientSecret={clientSecret} />
+              </div>
+            )}
           </div>
         </div>
       )}
