@@ -1,0 +1,186 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Landing Page Responsive Tester</title>
+  <style>
+    * {
+      margin: 0;
+      padding: 0;
+      box-sizing: border-box;
+    }
+    body {
+      font-family: system-ui, -apple-system, sans-serif;
+      background: #f3f4f6;
+      padding: 20px;
+    }
+    .container {
+      max-width: 1400px;
+      margin: 0 auto;
+    }
+    h1 {
+      margin-bottom: 20px;
+      color: #1f2937;
+    }
+    .device-grid {
+      display: grid;
+      grid-template-columns: repeat(auto-fit, minmax(400px, 1fr));
+      gap: 20px;
+      margin-bottom: 20px;
+    }
+    .device {
+      background: white;
+      border-radius: 12px;
+      padding: 16px;
+      box-shadow: 0 1px 3px rgba(0,0,0,0.1);
+    }
+    .device-header {
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+      margin-bottom: 12px;
+      padding-bottom: 12px;
+      border-bottom: 2px solid #e5e7eb;
+    }
+    .device-name {
+      font-weight: 600;
+      color: #1f2937;
+    }
+    .device-size {
+      font-size: 14px;
+      color: #6b7280;
+    }
+    .device-frame {
+      border: 2px solid #d1d5db;
+      border-radius: 8px;
+      overflow: hidden;
+      background: white;
+    }
+    iframe {
+      width: 100%;
+      border: none;
+      display: block;
+    }
+    .controls {
+      background: white;
+      padding: 20px;
+      border-radius: 12px;
+      margin-bottom: 20px;
+      box-shadow: 0 1px 3px rgba(0,0,0,0.1);
+    }
+    .url-input {
+      width: 100%;
+      padding: 12px;
+      border: 2px solid #d1d5db;
+      border-radius: 8px;
+      font-size: 16px;
+      margin-bottom: 12px;
+    }
+    .button {
+      background: #3b82f6;
+      color: white;
+      border: none;
+      padding: 12px 24px;
+      border-radius: 8px;
+      cursor: pointer;
+      font-size: 16px;
+      font-weight: 500;
+    }
+    .button:hover {
+      background: #2563eb;
+    }
+    .status {
+      margin-top: 12px;
+      padding: 12px;
+      background: #dbeafe;
+      border-radius: 8px;
+      color: #1e40af;
+    }
+  </style>
+</head>
+<body>
+  <div class="container">
+    <h1>📱 Landing Page Responsive Tester</h1>
+
+    <div class="controls">
+      <input
+        type="text"
+        id="urlInput"
+        class="url-input"
+        value="http://localhost:3000"
+        placeholder="Enter URL to test"
+      >
+      <button class="button" onclick="loadPages()">Load Pages</button>
+      <div class="status" id="status">
+        Enter your URL above and click "Load Pages" to test responsiveness
+      </div>
+    </div>
+
+    <div class="device-grid">
+      <!-- iPhone SE -->
+      <div class="device">
+        <div class="device-header">
+          <span class="device-name">📱 iPhone SE</span>
+          <span class="device-size">375 × 667px</span>
+        </div>
+        <div class="device-frame">
+          <iframe id="iphone-se" height="667"></iframe>
+        </div>
+      </div>
+
+      <!-- iPhone 14 -->
+      <div class="device">
+        <div class="device-header">
+          <span class="device-name">📱 iPhone 14</span>
+          <span class="device-size">390 × 844px</span>
+        </div>
+        <div class="device-frame">
+          <iframe id="iphone-14" height="844"></iframe>
+        </div>
+      </div>
+
+      <!-- iPad Mini -->
+      <div class="device">
+        <div class="device-header">
+          <span class="device-name">📱 iPad Mini</span>
+          <span class="device-size">768 × 1024px</span>
+        </div>
+        <div class="device-frame">
+          <iframe id="ipad-mini" height="600"></iframe>
+        </div>
+      </div>
+
+      <!-- Desktop -->
+      <div class="device">
+        <div class="device-header">
+          <span class="device-name">🖥️ Desktop</span>
+          <span class="device-size">1920 × 1080px</span>
+        </div>
+        <div class="device-frame">
+          <iframe id="desktop" height="600"></iframe>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <script>
+    function loadPages() {
+      const url = document.getElementById('urlInput').value;
+      const devices = ['iphone-se', 'iphone-14', 'ipad-mini', 'desktop'];
+
+      devices.forEach(device => {
+        const iframe = document.getElementById(device);
+        iframe.src = url;
+      });
+
+      document.getElementById('status').innerHTML = `✅ Loading <strong>${url}</strong> in all devices...`;
+    }
+
+    // Auto-load on page load
+    window.addEventListener('load', () => {
+      loadPages();
+    });
+  </script>
+</body>
+</html>

@@ -7,3 +7,10 @@ node_modules/
 dist/
 build/
 .smoke-tests/
+
+# Sensitive credentials and deployment files
+LOGIN_CREDENTIALS.md
+DEPLOYMENT_PROMPTS.md
+DEPLOYMENT_SUMMARY.md
+VPS_STATUS.md
+deployment.log
