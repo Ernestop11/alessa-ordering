@@ -2,7 +2,7 @@ import type { OrderItemPayload, OrderPayload } from '../order-service';
 
 export function normalizeOrderPayload(value: unknown): OrderPayload | null {
   if (!value || typeof value !== 'object') return null;
-  const draft = value as Partial<OrderPayload> & { items?: unknown; destination?: unknown };
+  const draft = value as Partial<OrderPayload> & { items?: unknown; destination?: unknown; deliveryAddress?: unknown };
   if (!Array.isArray(draft.items) || draft.items.length === 0) return null;
 
   const normalizedItems: OrderItemPayload[] = [];
@@ -65,6 +65,31 @@ export function normalizeOrderPayload(value: unknown): OrderPayload | null {
     };
   }
 
+  let deliveryAddress: OrderPayload['deliveryAddress'] | undefined;
+  if (draft.deliveryAddress) {
+    if (typeof draft.deliveryAddress === 'object') {
+      const raw = draft.deliveryAddress as Record<string, unknown>;
+      deliveryAddress = {
+        line1: typeof raw.line1 === 'string' ? raw.line1 : undefined,
+        line2: typeof raw.line2 === 'string' ? raw.line2 : undefined,
+        city: typeof raw.city === 'string' ? raw.city : undefined,
+        state: typeof raw.state === 'string' ? raw.state : undefined,
+        postalCode: typeof raw.postalCode === 'string' ? raw.postalCode : undefined,
+        instructions: typeof raw.instructions === 'string' ? raw.instructions : undefined,
+      };
+    } else if (typeof draft.deliveryAddress === 'string') {
+      // Handle flat string format - parse as line1
+      deliveryAddress = {
+        line1: draft.deliveryAddress,
+        line2: undefined,
+        city: undefined,
+        state: undefined,
+        postalCode: undefined,
+        instructions: undefined,
+      };
+    }
+  }
+
   const toCurrency = (amount: number) => Number(amount.toFixed(2));
 
   return {
@@ -86,5 +111,6 @@ export function normalizeOrderPayload(value: unknown): OrderPayload | null {
     customerPhone: typeof draft.customerPhone === 'string' ? draft.customerPhone : undefined,
     notes: typeof draft.notes === 'string' ? draft.notes : undefined,
     destination,
+    deliveryAddress,
   };
 }
