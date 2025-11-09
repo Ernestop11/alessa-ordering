@@ -70,7 +70,7 @@ export default function PrinterSetup({ currentConfig, onSave, onTest }: Props) {
 
     try {
       // Request device with filters for known printer services
-      const device = await navigator.bluetooth.requestDevice({
+      const device = await ((navigator as any).bluetooth).requestDevice({
         // Accept all devices to allow manual selection
         acceptAllDevices: true,
         optionalServices: [
