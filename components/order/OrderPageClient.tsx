@@ -1579,30 +1579,200 @@ export default function OrderPageClient({ sections, featuredItems = [], tenantSl
               </div>
             </div>
 
-            {/* Menu Highlights */}
+            {/* Menu Highlights - Clickable Catering Options */}
             <div className="mb-8 space-y-4 rounded-2xl border-2 border-amber-500/20 bg-gradient-to-br from-amber-500/10 to-orange-500/10 p-6">
               <h4 className="text-xl font-bold text-amber-100">Popular Catering Options</h4>
               <div className="grid gap-3 sm:grid-cols-2">
-                <div className="rounded-xl border border-amber-400/30 bg-black/30 p-4">
+                <button
+                  onClick={() => {
+                    handleAddHighlight({
+                      id: 'catering-taco-bar',
+                      title: 'Taco Bar Catering',
+                      description: 'Choice of 3 proteins, fresh toppings, salsas, tortillas. Perfect for events and parties.',
+                      price: 12,
+                      image: cycleFallbackImage(40),
+                      badge: 'Per Person',
+                      category: 'catering',
+                    });
+                    setShowCateringPanel(false);
+                  }}
+                  className="rounded-xl border border-amber-400/30 bg-black/30 p-4 text-left transition hover:border-amber-400 hover:bg-black/40"
+                >
                   <h5 className="font-bold text-amber-200">Taco Bar</h5>
                   <p className="mt-1 text-sm text-white/70">Choice of 3 proteins, fresh toppings, salsas</p>
-                  <p className="mt-2 text-xs text-amber-300">From $12/person</p>
-                </div>
-                <div className="rounded-xl border border-amber-400/30 bg-black/30 p-4">
+                  <p className="mt-2 text-xs text-amber-300">From $12/person · Click to customize</p>
+                </button>
+                <button
+                  onClick={() => {
+                    handleAddHighlight({
+                      id: 'catering-family-platters',
+                      title: 'Family Platters Catering',
+                      description: 'Enchiladas, rice, beans, salad. Serves 10-15 people.',
+                      price: 120,
+                      image: cycleFallbackImage(41),
+                      badge: 'Serves 10-15',
+                      category: 'catering',
+                    });
+                    setShowCateringPanel(false);
+                  }}
+                  className="rounded-xl border border-amber-400/30 bg-black/30 p-4 text-left transition hover:border-amber-400 hover:bg-black/40"
+                >
                   <h5 className="font-bold text-amber-200">Family Platters</h5>
                   <p className="mt-1 text-sm text-white/70">Enchiladas, rice, beans, salad</p>
-                  <p className="mt-2 text-xs text-amber-300">Serves 10-15</p>
-                </div>
-                <div className="rounded-xl border border-amber-400/30 bg-black/30 p-4">
+                  <p className="mt-2 text-xs text-amber-300">Serves 10-15 · Click to customize</p>
+                </button>
+                <button
+                  onClick={() => {
+                    handleAddHighlight({
+                      id: 'catering-breakfast',
+                      title: 'Breakfast Catering',
+                      description: 'Breakfast burritos, chilaquiles, pan dulce. Start your event right!',
+                      price: 10,
+                      image: cycleFallbackImage(42),
+                      badge: 'Per Person',
+                      category: 'catering',
+                    });
+                    setShowCateringPanel(false);
+                  }}
+                  className="rounded-xl border border-amber-400/30 bg-black/30 p-4 text-left transition hover:border-amber-400 hover:bg-black/40"
+                >
                   <h5 className="font-bold text-amber-200">Breakfast Catering</h5>
                   <p className="mt-1 text-sm text-white/70">Breakfast burritos, chilaquiles, pan dulce</p>
-                  <p className="mt-2 text-xs text-amber-300">From $10/person</p>
-                </div>
-                <div className="rounded-xl border border-amber-400/30 bg-black/30 p-4">
+                  <p className="mt-2 text-xs text-amber-300">From $10/person · Click to customize</p>
+                </button>
+                <button
+                  onClick={() => {
+                    handleAddHighlight({
+                      id: 'catering-dessert',
+                      title: 'Dessert Packages',
+                      description: 'Tres leches, churros, conchas. Sweet endings for your celebration.',
+                      price: 4,
+                      image: cycleFallbackImage(43),
+                      badge: 'Per Person',
+                      category: 'catering',
+                    });
+                    setShowCateringPanel(false);
+                  }}
+                  className="rounded-xl border border-amber-400/30 bg-black/30 p-4 text-left transition hover:border-amber-400 hover:bg-black/40"
+                >
                   <h5 className="font-bold text-amber-200">Dessert Packages</h5>
                   <p className="mt-1 text-sm text-white/70">Tres leches, churros, conchas</p>
-                  <p className="mt-2 text-xs text-amber-300">From $4/person</p>
-                </div>
+                  <p className="mt-2 text-xs text-amber-300">From $4/person · Click to customize</p>
+                </button>
+              </div>
+            </div>
+
+            {/* Upsell Bundles - Holiday & Event Packages */}
+            <div className="mb-8 space-y-4 rounded-2xl border-2 border-rose-500/20 bg-gradient-to-br from-rose-500/10 to-orange-500/10 p-6">
+              <h4 className="text-xl font-bold text-rose-100">🎉 Holiday & Event Bundles</h4>
+              <p className="text-sm text-white/70">Pre-packaged bundles perfect for celebrations</p>
+              <div className="grid gap-4 sm:grid-cols-2">
+                <button
+                  onClick={() => {
+                    handleAddHighlight({
+                      id: 'bundle-thanksgiving',
+                      title: 'Thanksgiving Dinner Bundle',
+                      description: 'Complete feast: Roasted turkey, mole, rice, beans, tortillas, salsa verde, dessert tray. Serves 8-10.',
+                      price: 280,
+                      image: cycleFallbackImage(50),
+                      badge: 'Serves 8-10',
+                      category: 'catering',
+                    });
+                    setShowCateringPanel(false);
+                  }}
+                  className="group relative overflow-hidden rounded-xl border border-rose-400/30 bg-black/40 p-5 text-left transition hover:border-rose-400 hover:bg-black/50"
+                >
+                  <div className="absolute right-3 top-3 rounded-full bg-rose-500/80 px-3 py-1 text-xs font-bold text-white">
+                    Popular
+                  </div>
+                  <h5 className="text-lg font-bold text-rose-200">Thanksgiving Dinner Bundle</h5>
+                  <p className="mt-2 text-sm text-white/70">Complete feast for 8-10 people</p>
+                  <p className="mt-1 text-xs text-white/50">Turkey, mole, sides, desserts</p>
+                  <div className="mt-4 flex items-center justify-between">
+                    <span className="text-2xl font-black text-rose-300">$280</span>
+                    <span className="rounded-full bg-rose-500 px-4 py-2 text-xs font-semibold text-white transition group-hover:scale-105">
+                      Add Bundle →
+                    </span>
+                  </div>
+                </button>
+
+                <button
+                  onClick={() => {
+                    handleAddHighlight({
+                      id: 'bundle-christmas',
+                      title: 'Christmas Fiesta Bundle',
+                      description: 'Tamales (12), pozole (1 gallon), pan dulce assortment, champurrado. Serves 6-8.',
+                      price: 180,
+                      image: cycleFallbackImage(51),
+                      badge: 'Serves 6-8',
+                      category: 'catering',
+                    });
+                    setShowCateringPanel(false);
+                  }}
+                  className="group overflow-hidden rounded-xl border border-rose-400/30 bg-black/40 p-5 text-left transition hover:border-rose-400 hover:bg-black/50"
+                >
+                  <h5 className="text-lg font-bold text-rose-200">Christmas Fiesta Bundle</h5>
+                  <p className="mt-2 text-sm text-white/70">Traditional holiday celebration</p>
+                  <p className="mt-1 text-xs text-white/50">Tamales, pozole, pan dulce</p>
+                  <div className="mt-4 flex items-center justify-between">
+                    <span className="text-2xl font-black text-rose-300">$180</span>
+                    <span className="rounded-full bg-rose-500 px-4 py-2 text-xs font-semibold text-white transition group-hover:scale-105">
+                      Add Bundle →
+                    </span>
+                  </div>
+                </button>
+
+                <button
+                  onClick={() => {
+                    handleAddHighlight({
+                      id: 'bundle-birthday',
+                      title: 'Birthday Party Bundle',
+                      description: 'Taco bar for 15, chips & salsa, tres leches cake, aguas frescas (2 gallons). Party ready!',
+                      price: 220,
+                      image: cycleFallbackImage(52),
+                      badge: 'Serves 15',
+                      category: 'catering',
+                    });
+                    setShowCateringPanel(false);
+                  }}
+                  className="group overflow-hidden rounded-xl border border-rose-400/30 bg-black/40 p-5 text-left transition hover:border-rose-400 hover:bg-black/50"
+                >
+                  <h5 className="text-lg font-bold text-rose-200">Birthday Party Bundle</h5>
+                  <p className="mt-2 text-sm text-white/70">Perfect for celebrations</p>
+                  <p className="mt-1 text-xs text-white/50">Taco bar, cake, drinks for 15</p>
+                  <div className="mt-4 flex items-center justify-between">
+                    <span className="text-2xl font-black text-rose-300">$220</span>
+                    <span className="rounded-full bg-rose-500 px-4 py-2 text-xs font-semibold text-white transition group-hover:scale-105">
+                      Add Bundle →
+                    </span>
+                  </div>
+                </button>
+
+                <button
+                  onClick={() => {
+                    handleAddHighlight({
+                      id: 'bundle-office',
+                      title: 'Office Lunch Bundle',
+                      description: 'Burrito bar for 20, chips, guac, salsa, cookies. Individual packaging available.',
+                      price: 240,
+                      image: cycleFallbackImage(53),
+                      badge: 'Serves 20',
+                      category: 'catering',
+                    });
+                    setShowCateringPanel(false);
+                  }}
+                  className="group overflow-hidden rounded-xl border border-rose-400/30 bg-black/40 p-5 text-left transition hover:border-rose-400 hover:bg-black/50"
+                >
+                  <h5 className="text-lg font-bold text-rose-200">Office Lunch Bundle</h5>
+                  <p className="mt-2 text-sm text-white/70">Team meals made easy</p>
+                  <p className="mt-1 text-xs text-white/50">Burrito bar, sides for 20</p>
+                  <div className="mt-4 flex items-center justify-between">
+                    <span className="text-2xl font-black text-rose-300">$240</span>
+                    <span className="rounded-full bg-rose-500 px-4 py-2 text-xs font-semibold text-white transition group-hover:scale-105">
+                      Add Bundle →
+                    </span>
+                  </div>
+                </button>
               </div>
             </div>
 
