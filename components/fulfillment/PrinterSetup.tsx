@@ -294,10 +294,10 @@ export default function PrinterSetup({ currentConfig, onSave, onTest }: Props) {
             </div>
 
             <div className="text-xs text-gray-500 bg-blue-50 p-3 rounded">
-              <p className="font-medium mb-1">How to find your printer's IP:</p>
+              <p className="font-medium mb-1">How to find your printer&apos;s IP:</p>
               <ol className="list-decimal list-inside space-y-1">
                 <li>Print a configuration page from your printer</li>
-                <li>Check your router's DHCP client list</li>
+                <li>Check your router&apos;s DHCP client list</li>
                 <li>Use network scanning tools (e.g., Angry IP Scanner)</li>
               </ol>
             </div>
