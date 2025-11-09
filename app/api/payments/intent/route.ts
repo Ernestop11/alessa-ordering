@@ -38,10 +38,11 @@ export async function POST(req: Request) {
     }
 
     const accountId = tenant.integrations?.stripeAccountId;
-    const isDevelopmentMode = !accountId && process.env.NODE_ENV !== "production";
+    // Allow direct integration if no Stripe Connect account configured
+    const useDirectIntegration = !accountId;
 
-    if (!accountId && !isDevelopmentMode) {
-      return NextResponse.json({ error: "Stripe account not configured for this tenant." }, { status: 400 });
+    if (!accountId) {
+      console.log("[stripe] Using direct Stripe integration (test mode)");
     }
 
     const platformPercentFee = tenant.integrations?.platformPercentFee ?? 0;
