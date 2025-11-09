@@ -147,7 +147,7 @@ export async function DELETE(req: Request) {
     await prisma.tenantIntegration.update({
       where: { tenantId: user.tenantId },
       data: {
-        printerConfig: null,
+        printerConfig: JSON.parse('null'),
       },
     });
 
