@@ -43,6 +43,14 @@ export interface SerializedOrder {
   customerPhone?: string | null;
   notes?: string | null;
   acknowledgedAt?: string | null;
+  deliveryAddress?: {
+    line1?: string | null;
+    line2?: string | null;
+    city?: string | null;
+    state?: string | null;
+    postalCode?: string | null;
+    instructions?: string | null;
+  } | null;
   createdAt: string;
   updatedAt: string;
   items: SerializedOrderItem[];
@@ -62,7 +70,17 @@ type OrderWithRelations = Omit<Order, 'acknowledgedAt'> & {
   tenant?: Pick<Tenant, 'id' | 'name' | 'slug' | 'primaryColor' | 'secondaryColor'> | null;
 };
 
-export function serializeOrder(order: OrderWithRelations): SerializedOrder {
+export function serializeOrder(
+  order: OrderWithRelations,
+  deliveryAddress?: {
+    line1?: string | null;
+    line2?: string | null;
+    city?: string | null;
+    state?: string | null;
+    postalCode?: string | null;
+    instructions?: string | null;
+  } | null
+): SerializedOrder {
   return {
     id: order.id,
     tenantId: order.tenantId,
@@ -90,6 +108,7 @@ export function serializeOrder(order: OrderWithRelations): SerializedOrder {
     customerPhone: order.customerPhone,
     notes: order.notes,
     acknowledgedAt: order.acknowledgedAt?.toISOString() ?? null,
+    deliveryAddress: deliveryAddress ?? null,
     createdAt: order.createdAt.toISOString(),
     updatedAt: order.updatedAt.toISOString(),
     items: order.items.map((item) => ({

@@ -43,6 +43,14 @@ export interface FulfillmentOrder {
   customerPhone?: string | null;
   notes?: string | null;
   acknowledgedAt?: string | null;
+  deliveryAddress?: {
+    line1?: string | null;
+    line2?: string | null;
+    city?: string | null;
+    state?: string | null;
+    postalCode?: string | null;
+    instructions?: string | null;
+  } | null;
   createdAt: string;
   updatedAt: string;
   items: FulfillmentOrderItem[];

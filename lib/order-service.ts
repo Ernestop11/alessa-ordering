@@ -35,6 +35,14 @@ export interface OrderPayload {
     line1?: string | null;
     line2?: string | null;
   } | null;
+  deliveryAddress?: {
+    line1?: string | null;
+    line2?: string | null;
+    city?: string | null;
+    state?: string | null;
+    postalCode?: string | null;
+    instructions?: string | null;
+  } | null;
 }
 
 interface TenantWithRelations {
@@ -265,7 +273,17 @@ export async function createOrderFromPayload({
     throw new Error('Failed to load created order');
   }
 
-  const serialized = serializeOrder(created);
+  // Map deliveryAddress from payload (either from deliveryAddress or destination field)
+  const deliveryAddress = payload.deliveryAddress ?? (payload.destination ? {
+    line1: payload.destination.line1 ?? null,
+    line2: payload.destination.line2 ?? null,
+    city: payload.destination.city ?? null,
+    state: payload.destination.state ?? null,
+    postalCode: payload.destination.postalCode ?? null,
+    instructions: null,
+  } : null);
+
+  const serialized = serializeOrder(created, deliveryAddress);
   void autoPrintOrder(serialized, { reason: 'order.created' }).catch((error) => {
     console.error('[printer] Auto-print dispatch failed', error);
   });
