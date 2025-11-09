@@ -683,6 +683,8 @@ export default function OrderPageClient({ sections, featuredItems = [], tenantSl
     }));
   }, [sections]);
 
+  const [isHeroTransitioning, setIsHeroTransitioning] = useState(false);
+
   useEffect(() => {
     setHeroBackgroundIndex(0);
   }, [heroGallery]);
@@ -690,12 +692,17 @@ export default function OrderPageClient({ sections, featuredItems = [], tenantSl
   useEffect(() => {
     if (heroGallery.length <= 1 || motionReduced) return;
     const interval = window.setInterval(() => {
-      setHeroBackgroundIndex((prev) => (prev + 1) % heroGallery.length);
-    }, 7000);
+      setIsHeroTransitioning(true);
+      setTimeout(() => {
+        setHeroBackgroundIndex((prev) => (prev + 1) % heroGallery.length);
+        setTimeout(() => setIsHeroTransitioning(false), 300);
+      }, 300);
+    }, 8000); // Increased to 8 seconds for better viewing
     return () => window.clearInterval(interval);
   }, [heroGallery, motionReduced]);
 
   const currentHeroBackground = heroGallery[heroBackgroundIndex] || heroImage;
+  const nextHeroBackground = heroGallery[(heroBackgroundIndex + 1) % heroGallery.length] || heroImage;
 
   const renderSectionItems = useCallback(
     (section: (typeof enrichedSections)[number]) => {
@@ -930,22 +937,35 @@ export default function OrderPageClient({ sections, featuredItems = [], tenantSl
         </div>
       </header>
 
-      <section
-        className="relative flex min-h-[420px] items-center justify-center overflow-hidden text-white transition-all duration-700"
-        style={{
-          backgroundImage: `linear-gradient(135deg, rgba(0,0,0,0.65), rgba(0,0,0,0.2)), url(${currentHeroBackground})`,
-          backgroundSize: 'cover',
-          backgroundPosition: 'center',
-        }}
-      >
-        <div
-          className={`absolute inset-0 bg-gradient-to-br ${
-            activeSection?.type === 'BAKERY'
-              ? 'from-rose-500/60 via-amber-400/30 to-transparent'
-              : 'from-black/70 via-black/30 to-transparent'
-          }`}
-        />
-        <div className="relative mx-auto mt-10 max-w-3xl px-6 text-center">
+      <section className="relative flex min-h-[500px] items-center justify-center overflow-hidden text-white md:min-h-[600px]">
+        {/* Background Images with Smooth Transitions */}
+        <div className="absolute inset-0">
+          {heroGallery.map((image, index) => (
+            <div
+              key={`hero-bg-${index}`}
+              className={`absolute inset-0 transition-opacity duration-1000 ease-in-out ${
+                index === heroBackgroundIndex ? 'opacity-100 z-10' : 'opacity-0 z-0'
+              }`}
+              style={{
+                backgroundImage: `url(${image})`,
+                backgroundSize: 'cover',
+                backgroundPosition: 'center',
+                backgroundRepeat: 'no-repeat',
+              }}
+            />
+          ))}
+          {/* Gradient Overlay */}
+          <div
+            className={`absolute inset-0 z-20 bg-gradient-to-br transition-opacity duration-700 ${
+              activeSection?.type === 'BAKERY'
+                ? 'from-rose-500/70 via-amber-400/40 to-black/30'
+                : 'from-black/75 via-black/40 to-black/20'
+            }`}
+          />
+          {/* Animated Gradient Overlay for Depth */}
+          <div className="absolute inset-0 z-30 bg-gradient-to-t from-black/60 via-transparent to-transparent" />
+        </div>
+        <div className="relative z-40 mx-auto mt-10 max-w-3xl px-6 text-center">
           <h2 className="text-5xl font-black tracking-tight md:text-6xl">{personality.heroTitle}</h2>
           <p className="mt-4 text-lg text-white/80 md:text-xl">{tenant.heroSubtitle || tenant.tagline || 'Experience flavors that tell a story.'}</p>
           <div className="mt-8 flex flex-wrap items-center justify-center gap-4">

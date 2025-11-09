@@ -524,77 +524,123 @@ export default function SuperAdminDashboard({ initialTenants, initialMetrics, ro
   );
 
   return (
-    <div className="mx-auto max-w-7xl space-y-10 py-10">
-      <header className="flex flex-col gap-3 sm:flex-row sm:items-center sm:justify-between">
-        <div className="space-y-2">
-          <h1 className="text-3xl font-bold text-gray-900">Super Admin Dashboard</h1>
-          <p className="text-sm text-gray-600">
-            Monitor tenant performance, manage integrations, and onboard new restaurants.
-          </p>
-        </div>
-        <Link
-          href="/super-admin/fulfillment"
-          className="inline-flex items-center rounded-full border border-indigo-200 bg-indigo-50 px-4 py-2 text-sm font-semibold text-indigo-700 transition hover:border-indigo-400 hover:bg-indigo-100"
-        >
-          Fulfillment Board
-        </Link>
-      </header>
+    <div className="min-h-screen bg-gradient-to-br from-gray-50 via-white to-blue-50">
+      <div className="mx-auto max-w-7xl space-y-8 px-4 py-8 sm:px-6 lg:px-8">
+        <header className="flex flex-col gap-4 sm:flex-row sm:items-center sm:justify-between">
+          <div className="space-y-2">
+            <h1 className="text-4xl font-black tracking-tight text-gray-900 sm:text-5xl">
+              <span className="bg-gradient-to-r from-blue-600 via-purple-600 to-indigo-600 bg-clip-text text-transparent">
+                Super Admin
+              </span>
+              <br />
+              <span className="text-gray-900">Dashboard</span>
+            </h1>
+            <p className="text-base text-gray-600 sm:text-lg">
+              Monitor tenant performance, manage integrations, and onboard new restaurants.
+            </p>
+          </div>
+          <Link
+            href="/super-admin/fulfillment"
+            className="inline-flex items-center gap-2 rounded-full bg-gradient-to-r from-indigo-600 to-purple-600 px-6 py-3 text-sm font-semibold text-white shadow-lg shadow-indigo-500/30 transition hover:scale-105 hover:shadow-indigo-500/50"
+          >
+            <span>🚀</span>
+            Fulfillment Board
+          </Link>
+        </header>
 
-      <section className="grid gap-4 rounded-2xl border border-gray-200 bg-white p-6 shadow-sm md:grid-cols-4">
-        <div>
-          <p className="text-xs uppercase tracking-wide text-gray-500">Total Tenants</p>
-          <p className="mt-2 text-2xl font-bold text-gray-900">{metrics.totalTenants}</p>
-        </div>
-        <div>
-          <p className="text-xs uppercase tracking-wide text-gray-500">Total Orders</p>
-          <p className="mt-2 text-2xl font-bold text-gray-900">{metrics.totalOrders}</p>
-        </div>
-        <div>
-          <p className="text-xs uppercase tracking-wide text-gray-500">7-day Volume</p>
-          <p className="mt-2 text-2xl font-bold text-gray-900">
-            {formatCurrency(metrics.sevenDayVolume.reduce((sum, row) => sum + row.gross, 0))}
-          </p>
-        </div>
-        <div>
-          <p className="text-xs uppercase tracking-wide text-gray-500">Est. Stripe Payouts (all time)</p>
-          <p className="mt-2 text-2xl font-bold text-gray-900">{formatCurrency(metrics.estimatedStripeVolume)}</p>
-        </div>
-      </section>
+        {/* Metrics Cards */}
+        <section className="grid gap-6 sm:grid-cols-2 lg:grid-cols-4">
+          <div className="group relative overflow-hidden rounded-2xl border border-gray-200 bg-gradient-to-br from-white to-blue-50 p-6 shadow-lg shadow-blue-500/10 transition hover:scale-105 hover:shadow-xl hover:shadow-blue-500/20">
+            <div className="absolute right-4 top-4 text-4xl opacity-20">👥</div>
+            <p className="text-xs font-semibold uppercase tracking-wider text-gray-500">Total Tenants</p>
+            <p className="mt-3 text-4xl font-black text-gray-900">{metrics.totalTenants}</p>
+            <p className="mt-2 text-sm text-gray-600">Active restaurants</p>
+          </div>
+          <div className="group relative overflow-hidden rounded-2xl border border-gray-200 bg-gradient-to-br from-white to-purple-50 p-6 shadow-lg shadow-purple-500/10 transition hover:scale-105 hover:shadow-xl hover:shadow-purple-500/20">
+            <div className="absolute right-4 top-4 text-4xl opacity-20">📦</div>
+            <p className="text-xs font-semibold uppercase tracking-wider text-gray-500">Total Orders</p>
+            <p className="mt-3 text-4xl font-black text-gray-900">{metrics.totalOrders.toLocaleString()}</p>
+            <p className="mt-2 text-sm text-gray-600">All-time orders</p>
+          </div>
+          <div className="group relative overflow-hidden rounded-2xl border border-gray-200 bg-gradient-to-br from-white to-green-50 p-6 shadow-lg shadow-green-500/10 transition hover:scale-105 hover:shadow-xl hover:shadow-green-500/20">
+            <div className="absolute right-4 top-4 text-4xl opacity-20">💰</div>
+            <p className="text-xs font-semibold uppercase tracking-wider text-gray-500">7-day Volume</p>
+            <p className="mt-3 text-3xl font-black text-gray-900">
+              {formatCurrency(metrics.sevenDayVolume.reduce((sum, row) => sum + row.gross, 0))}
+            </p>
+            <p className="mt-2 text-sm text-gray-600">This week</p>
+          </div>
+          <div className="group relative overflow-hidden rounded-2xl border border-gray-200 bg-gradient-to-br from-white to-amber-50 p-6 shadow-lg shadow-amber-500/10 transition hover:scale-105 hover:shadow-xl hover:shadow-amber-500/20">
+            <div className="absolute right-4 top-4 text-4xl opacity-20">💳</div>
+            <p className="text-xs font-semibold uppercase tracking-wider text-gray-500">Est. Stripe Volume</p>
+            <p className="mt-3 text-3xl font-black text-gray-900">{formatCurrency(metrics.estimatedStripeVolume)}</p>
+            <p className="mt-2 text-sm text-gray-600">All-time payouts</p>
+          </div>
+        </section>
 
-      <section className="rounded-2xl border border-gray-200 bg-white p-6 shadow-sm">
+        <section className="rounded-3xl border border-gray-200 bg-white p-8 shadow-xl shadow-gray-500/10">
         <div className="flex items-center justify-between">
-          <h2 className="text-xl font-semibold text-gray-900">Performance Highlights</h2>
+          <div>
+            <h2 className="text-2xl font-bold text-gray-900">Performance Highlights</h2>
+            <p className="mt-1 text-sm text-gray-600">Top performers and recent activity</p>
+          </div>
           <button
             type="button"
             onClick={refreshMetrics}
-            className="inline-flex items-center rounded-md border border-gray-200 px-3 py-1.5 text-sm font-medium text-gray-600 hover:border-gray-300 hover:text-gray-900"
+            className="rounded-full border border-gray-200 bg-white px-4 py-2 text-sm font-semibold text-gray-700 shadow-sm transition hover:border-gray-300 hover:bg-gray-50 hover:shadow-md"
           >
-            Refresh metrics
+            🔄 Refresh
           </button>
         </div>
-        <div className="mt-4 grid gap-4 md:grid-cols-2">
-          <div className="rounded-xl border border-gray-100 bg-gray-50 p-4">
-            <h3 className="text-sm font-semibold text-gray-700">Top volume last 7 days</h3>
-            <ul className="mt-3 space-y-2 text-sm text-gray-600">
+        <div className="mt-6 grid gap-6 md:grid-cols-2">
+          <div className="rounded-2xl border border-gray-200 bg-gradient-to-br from-white to-blue-50 p-6 shadow-lg">
+            <div className="flex items-center gap-3">
+              <div className="rounded-full bg-blue-100 p-2">
+                <span className="text-2xl">🏆</span>
+              </div>
+              <h3 className="text-lg font-bold text-gray-900">Top Volume (7 Days)</h3>
+            </div>
+            <ul className="mt-4 space-y-3">
               {topPerformers.length === 0 ? (
-                <li>No recent orders</li>
+                <li className="text-sm text-gray-500">No recent orders</li>
               ) : (
-                topPerformers.map((tenant) => (
-                  <li key={tenant.id} className="flex items-center justify-between">
-                    <span>{tenant.name}</span>
-                    <span>{formatCurrency(tenant.grossLastSevenDays)}</span>
+                topPerformers.map((tenant, index) => (
+                  <li
+                    key={tenant.id}
+                    className="flex items-center justify-between rounded-xl border border-gray-100 bg-white p-3 shadow-sm transition hover:shadow-md"
+                  >
+                    <div className="flex items-center gap-3">
+                      <span className="flex h-8 w-8 items-center justify-center rounded-full bg-gradient-to-br from-blue-500 to-purple-500 text-xs font-bold text-white">
+                        {index + 1}
+                      </span>
+                      <span className="font-semibold text-gray-900">{tenant.name}</span>
+                    </div>
+                    <span className="font-bold text-blue-600">{formatCurrency(tenant.grossLastSevenDays)}</span>
                   </li>
                 ))
               )}
             </ul>
           </div>
-          <div className="rounded-xl border border-gray-100 bg-gray-50 p-4">
-            <h3 className="text-sm font-semibold text-gray-700">Latest activity</h3>
-            <ul className="mt-3 space-y-2 text-sm text-gray-600">
+          <div className="rounded-2xl border border-gray-200 bg-gradient-to-br from-white to-purple-50 p-6 shadow-lg">
+            <div className="flex items-center gap-3">
+              <div className="rounded-full bg-purple-100 p-2">
+                <span className="text-2xl">⚡</span>
+              </div>
+              <h3 className="text-lg font-bold text-gray-900">Latest Activity</h3>
+            </div>
+            <ul className="mt-4 space-y-3">
               {metrics.tenantActivity.slice(0, 5).map((activity) => (
-                <li key={activity.tenantId} className="flex items-center justify-between">
-                  <span>{activity.tenantName}</span>
-                  <span>{formatDateTime(activity.lastOrderAt)}</span>
+                <li
+                  key={activity.tenantId}
+                  className="flex items-center justify-between rounded-xl border border-gray-100 bg-white p-3 shadow-sm transition hover:shadow-md"
+                >
+                  <div>
+                    <span className="font-semibold text-gray-900">{activity.tenantName}</span>
+                    <p className="text-xs text-gray-500">{formatDateTime(activity.lastOrderAt)}</p>
+                  </div>
+                  {activity.lastOrderAmount && (
+                    <span className="font-bold text-purple-600">{formatCurrency(activity.lastOrderAmount)}</span>
+                  )}
                 </li>
               ))}
             </ul>
@@ -1076,7 +1122,8 @@ export default function SuperAdminDashboard({ initialTenants, initialMetrics, ro
             </button>
           </div>
         </form>
-      </section>
+        </section>
+      </div>
     </div>
   );
 }
