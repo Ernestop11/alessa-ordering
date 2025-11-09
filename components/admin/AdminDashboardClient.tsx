@@ -9,9 +9,10 @@ import Settings from './Settings';
 import MenuSectionsManager from './MenuSectionsManager';
 import CustomerList from './CustomerList';
 import IntegrationLogs from './IntegrationLogs';
+import CustomizeTab from './CustomizeTab';
 import { signOut } from 'next-auth/react';
 
-type Tab = 'orders' | 'customers' | 'logs' | 'sections' | 'menu' | 'settings';
+type Tab = 'orders' | 'customers' | 'logs' | 'sections' | 'menu' | 'customize' | 'settings';
 
 export default function AdminDashboardClient() {
   const [activeTab, setActiveTab] = useState<Tab>('orders');
@@ -28,6 +29,8 @@ export default function AdminDashboardClient() {
         return <MenuSectionsManager />;
       case 'menu':
         return <MenuEditor />;
+      case 'customize':
+        return <CustomizeTab />;
       case 'settings':
         return <Settings />;
       default:
@@ -52,6 +55,7 @@ export default function AdminDashboardClient() {
                     { key: 'logs', label: 'Integration Logs' },
                     { key: 'sections', label: 'Menu Sections' },
                     { key: 'menu', label: 'Menu' },
+                    { key: 'customize', label: 'Customize' },
                     { key: 'settings', label: 'Settings' },
                   ].map((tab) => (
                     <button

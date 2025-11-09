@@ -685,6 +685,14 @@ export default function OrderPageClient({ sections, featuredItems = [], tenantSl
 
   const [isHeroTransitioning, setIsHeroTransitioning] = useState(false);
   const [showMembershipPanel, setShowMembershipPanel] = useState(false);
+  const [showCateringPanel, setShowCateringPanel] = useState(false);
+  const [cateringName, setCateringName] = useState('');
+  const [cateringEmail, setCateringEmail] = useState('');
+  const [cateringPhone, setCateringPhone] = useState('');
+  const [cateringEventDate, setCateringEventDate] = useState('');
+  const [cateringGuestCount, setCateringGuestCount] = useState('');
+  const [cateringMessage, setCateringMessage] = useState('');
+  const [cateringGalleryIndex, setCateringGalleryIndex] = useState(0);
 
   // Sample Puebla Mexico themed media - can be replaced with actual tenant media
   const heroMedia = useMemo(() => {
@@ -717,6 +725,39 @@ export default function OrderPageClient({ sections, featuredItems = [], tenantSl
 
   const currentHeroBackground = heroMedia[heroBackgroundIndex] || heroImage;
   const nextHeroBackground = heroMedia[(heroBackgroundIndex + 1) % heroMedia.length] || heroImage;
+
+  // Catering gallery - Puebla/Atlixco themed imagery
+  const cateringGallery = useMemo(() => [
+    'https://images.unsplash.com/photo-1555939594-58d7cb561ad1?w=1920&q=80', // Food buffet spread
+    'https://images.unsplash.com/photo-1530554764233-e79e16c91d08?w=1920&q=80', // Mexican party spread
+    'https://images.unsplash.com/photo-1544148103-0773bf10d330?w=1920&q=80', // Catering table
+    'https://images.unsplash.com/photo-1565299624946-b28f40a0ae38?w=1920&q=80', // Tacos platter
+    'https://images.unsplash.com/photo-1414235077428-338989a2e8c0?w=1920&q=80', // Restaurant table setting
+  ], []);
+
+  const cateringEnabled = tenant.featureFlags?.includes('catering') ?? false;
+
+  const handleCateringSubmit = useCallback((e: React.FormEvent) => {
+    e.preventDefault();
+    // In production, this would send to an API endpoint
+    console.log('Catering inquiry submitted:', {
+      name: cateringName,
+      email: cateringEmail,
+      phone: cateringPhone,
+      eventDate: cateringEventDate,
+      guestCount: cateringGuestCount,
+      message: cateringMessage,
+    });
+    showNotification('Catering inquiry submitted! We\'ll contact you soon.');
+    setShowCateringPanel(false);
+    // Reset form
+    setCateringName('');
+    setCateringEmail('');
+    setCateringPhone('');
+    setCateringEventDate('');
+    setCateringGuestCount('');
+    setCateringMessage('');
+  }, [cateringName, cateringEmail, cateringPhone, cateringEventDate, cateringGuestCount, cateringMessage, showNotification]);
 
   const renderSectionItems = useCallback(
     (section: (typeof enrichedSections)[number]) => {
@@ -1176,7 +1217,7 @@ export default function OrderPageClient({ sections, featuredItems = [], tenantSl
             </button>
           </div>
         )}
-        
+
         {/* Mobile Membership Button - Stacked above cart on mobile */}
         {membershipEnabled && (
           <div className="fixed bottom-20 right-5 z-50 block sm:hidden">
@@ -1186,6 +1227,33 @@ export default function OrderPageClient({ sections, featuredItems = [], tenantSl
             >
               <span className="text-xl">⭐</span>
               <span>Rewards</span>
+            </button>
+          </div>
+        )}
+
+        {/* Catering Button - Desktop (Bottom left, above membership if both enabled) */}
+        {cateringEnabled && (
+          <div className={`fixed left-5 z-50 hidden sm:block ${membershipEnabled ? 'bottom-24' : 'bottom-5'}`}>
+            <button
+              onClick={() => setShowCateringPanel(true)}
+              className="group flex items-center gap-2 rounded-full bg-gradient-to-r from-rose-500 via-orange-500 to-amber-600 px-4 py-3 text-sm font-bold text-white shadow-2xl shadow-rose-500/40 transition-all hover:scale-110 hover:shadow-rose-500/60 sm:gap-3 sm:px-6 sm:py-4 sm:text-base"
+            >
+              <span className="text-xl sm:text-2xl">🎉</span>
+              <span className="hidden sm:inline">Catering</span>
+              <span className="sm:hidden">Catering</span>
+            </button>
+          </div>
+        )}
+
+        {/* Mobile Catering Button - Stacked above other buttons */}
+        {cateringEnabled && (
+          <div className={`fixed right-5 z-50 block sm:hidden ${membershipEnabled ? 'bottom-36' : 'bottom-20'}`}>
+            <button
+              onClick={() => setShowCateringPanel(true)}
+              className="flex items-center gap-2 rounded-full bg-gradient-to-r from-rose-500 via-orange-500 to-amber-600 px-4 py-3 text-sm font-bold text-white shadow-2xl shadow-rose-500/40 transition-all hover:scale-110 hover:shadow-rose-500/60"
+            >
+              <span className="text-xl">🎉</span>
+              <span>Catering</span>
             </button>
           </div>
         )}
@@ -1444,6 +1512,181 @@ export default function OrderPageClient({ sections, featuredItems = [], tenantSl
           );
         })}
       </main>
+
+      {/* Catering Slide-In Panel */}
+      {showCateringPanel && (
+        <>
+          {/* Backdrop */}
+          <div
+            className="fixed inset-0 z-50 bg-black/60 backdrop-blur-sm transition-opacity"
+            onClick={() => setShowCateringPanel(false)}
+          />
+          {/* Side Panel */}
+          <div className="fixed right-0 top-0 z-50 h-full w-full max-w-2xl overflow-y-auto bg-gradient-to-br from-[#2D1810] via-[#1A0F08] to-black p-8 shadow-2xl transition-transform">
+            <div className="mb-6 flex items-center justify-between">
+              <h2 className="text-3xl font-black text-amber-100">🎉 Catering Services</h2>
+              <button
+                onClick={() => setShowCateringPanel(false)}
+                className="rounded-full border-2 border-white/30 bg-white/10 p-2 text-white transition hover:border-white hover:bg-white/20"
+              >
+                ✕
+              </button>
+            </div>
+
+            {/* Gallery Carousel */}
+            <div className="relative mb-8 overflow-hidden rounded-3xl border-2 border-amber-500/30">
+              <div className="relative h-64 w-full sm:h-80">
+                <Image
+                  src={cateringGallery[cateringGalleryIndex]}
+                  alt="Catering spread"
+                  fill
+                  className="object-cover"
+                  sizes="(max-width: 768px) 100vw, 672px"
+                />
+                <div className="absolute inset-0 bg-gradient-to-t from-black/80 via-black/20 to-transparent" />
+                <div className="absolute bottom-4 left-4 right-4">
+                  <p className="text-sm font-semibold uppercase tracking-wide text-amber-300">Authentic Puebla Cuisine</p>
+                  <h3 className="text-2xl font-black text-white">Catering for Every Occasion</h3>
+                </div>
+              </div>
+              {/* Gallery navigation */}
+              <div className="absolute bottom-4 right-4 flex gap-2">
+                <button
+                  onClick={() => setCateringGalleryIndex((prev) => (prev - 1 + cateringGallery.length) % cateringGallery.length)}
+                  className="rounded-full bg-black/60 p-2 text-white backdrop-blur-sm transition hover:bg-black/80"
+                >
+                  ←
+                </button>
+                <button
+                  onClick={() => setCateringGalleryIndex((prev) => (prev + 1) % cateringGallery.length)}
+                  className="rounded-full bg-black/60 p-2 text-white backdrop-blur-sm transition hover:bg-black/80"
+                >
+                  →
+                </button>
+              </div>
+              {/* Gallery indicators */}
+              <div className="absolute bottom-4 left-1/2 flex -translate-x-1/2 gap-2">
+                {cateringGallery.map((_, index) => (
+                  <button
+                    key={index}
+                    onClick={() => setCateringGalleryIndex(index)}
+                    className={`h-2 rounded-full transition-all ${
+                      index === cateringGalleryIndex ? 'w-8 bg-amber-400' : 'w-2 bg-white/40'
+                    }`}
+                    aria-label={`Go to image ${index + 1}`}
+                  />
+                ))}
+              </div>
+            </div>
+
+            {/* Menu Highlights */}
+            <div className="mb-8 space-y-4 rounded-2xl border-2 border-amber-500/20 bg-gradient-to-br from-amber-500/10 to-orange-500/10 p-6">
+              <h4 className="text-xl font-bold text-amber-100">Popular Catering Options</h4>
+              <div className="grid gap-3 sm:grid-cols-2">
+                <div className="rounded-xl border border-amber-400/30 bg-black/30 p-4">
+                  <h5 className="font-bold text-amber-200">Taco Bar</h5>
+                  <p className="mt-1 text-sm text-white/70">Choice of 3 proteins, fresh toppings, salsas</p>
+                  <p className="mt-2 text-xs text-amber-300">From $12/person</p>
+                </div>
+                <div className="rounded-xl border border-amber-400/30 bg-black/30 p-4">
+                  <h5 className="font-bold text-amber-200">Family Platters</h5>
+                  <p className="mt-1 text-sm text-white/70">Enchiladas, rice, beans, salad</p>
+                  <p className="mt-2 text-xs text-amber-300">Serves 10-15</p>
+                </div>
+                <div className="rounded-xl border border-amber-400/30 bg-black/30 p-4">
+                  <h5 className="font-bold text-amber-200">Breakfast Catering</h5>
+                  <p className="mt-1 text-sm text-white/70">Breakfast burritos, chilaquiles, pan dulce</p>
+                  <p className="mt-2 text-xs text-amber-300">From $10/person</p>
+                </div>
+                <div className="rounded-xl border border-amber-400/30 bg-black/30 p-4">
+                  <h5 className="font-bold text-amber-200">Dessert Packages</h5>
+                  <p className="mt-1 text-sm text-white/70">Tres leches, churros, conchas</p>
+                  <p className="mt-2 text-xs text-amber-300">From $4/person</p>
+                </div>
+              </div>
+            </div>
+
+            {/* Quick Inquiry Form */}
+            <form onSubmit={handleCateringSubmit} className="space-y-4 rounded-2xl border-2 border-white/20 bg-white/5 p-6">
+              <h4 className="text-xl font-bold text-white">Request a Quote</h4>
+              <div className="grid gap-4 sm:grid-cols-2">
+                <div>
+                  <label className="mb-2 block text-sm font-semibold text-white/80">Name *</label>
+                  <input
+                    type="text"
+                    required
+                    value={cateringName}
+                    onChange={(e) => setCateringName(e.target.value)}
+                    className="w-full rounded-xl border border-white/20 bg-black/30 p-3 text-white placeholder:text-white/30 focus:border-amber-400 focus:outline-none"
+                    placeholder="Your name"
+                  />
+                </div>
+                <div>
+                  <label className="mb-2 block text-sm font-semibold text-white/80">Email *</label>
+                  <input
+                    type="email"
+                    required
+                    value={cateringEmail}
+                    onChange={(e) => setCateringEmail(e.target.value)}
+                    className="w-full rounded-xl border border-white/20 bg-black/30 p-3 text-white placeholder:text-white/30 focus:border-amber-400 focus:outline-none"
+                    placeholder="your@email.com"
+                  />
+                </div>
+                <div>
+                  <label className="mb-2 block text-sm font-semibold text-white/80">Phone *</label>
+                  <input
+                    type="tel"
+                    required
+                    value={cateringPhone}
+                    onChange={(e) => setCateringPhone(e.target.value)}
+                    className="w-full rounded-xl border border-white/20 bg-black/30 p-3 text-white placeholder:text-white/30 focus:border-amber-400 focus:outline-none"
+                    placeholder="(555) 123-4567"
+                  />
+                </div>
+                <div>
+                  <label className="mb-2 block text-sm font-semibold text-white/80">Event Date</label>
+                  <input
+                    type="date"
+                    value={cateringEventDate}
+                    onChange={(e) => setCateringEventDate(e.target.value)}
+                    className="w-full rounded-xl border border-white/20 bg-black/30 p-3 text-white placeholder:text-white/30 focus:border-amber-400 focus:outline-none"
+                  />
+                </div>
+                <div className="sm:col-span-2">
+                  <label className="mb-2 block text-sm font-semibold text-white/80">Guest Count</label>
+                  <input
+                    type="number"
+                    min="1"
+                    value={cateringGuestCount}
+                    onChange={(e) => setCateringGuestCount(e.target.value)}
+                    className="w-full rounded-xl border border-white/20 bg-black/30 p-3 text-white placeholder:text-white/30 focus:border-amber-400 focus:outline-none"
+                    placeholder="Expected number of guests"
+                  />
+                </div>
+                <div className="sm:col-span-2">
+                  <label className="mb-2 block text-sm font-semibold text-white/80">Additional Details</label>
+                  <textarea
+                    value={cateringMessage}
+                    onChange={(e) => setCateringMessage(e.target.value)}
+                    rows={4}
+                    className="w-full rounded-xl border border-white/20 bg-black/30 p-3 text-white placeholder:text-white/30 focus:border-amber-400 focus:outline-none"
+                    placeholder="Tell us about your event, dietary restrictions, preferences, etc."
+                  />
+                </div>
+              </div>
+              <button
+                type="submit"
+                className="w-full rounded-2xl bg-gradient-to-r from-rose-500 via-orange-500 to-amber-600 px-6 py-4 text-lg font-black text-white shadow-2xl shadow-rose-500/40 transition-all hover:scale-105 hover:shadow-rose-500/60"
+              >
+                Submit Inquiry
+              </button>
+              <p className="text-center text-xs text-white/60">
+                We&apos;ll respond within 24 hours with a custom quote
+              </p>
+            </form>
+          </div>
+        </>
+      )}
 
       {/* Membership Slide-In Panel (Costco Style) */}
       {showMembershipPanel && (
