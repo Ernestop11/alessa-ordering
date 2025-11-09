@@ -1585,16 +1585,28 @@ export default function OrderPageClient({ sections, featuredItems = [], tenantSl
               <div className="grid gap-3 sm:grid-cols-2">
                 <button
                   onClick={() => {
-                    handleAddHighlight({
-                      id: 'catering-taco-bar',
-                      title: 'Taco Bar Catering',
-                      description: 'Choice of 3 proteins, fresh toppings, salsas, tortillas. Perfect for events and parties.',
-                      price: 12,
-                      image: cycleFallbackImage(40),
-                      badge: 'Per Person',
-                      category: 'catering',
-                    });
                     setShowCateringPanel(false);
+                    setCustomModal({
+                      item: {
+                        id: 'catering-taco-bar',
+                        name: 'Taco Bar Catering',
+                        description: 'Choice of 3 proteins, fresh toppings, salsas, tortillas. Perfect for events and parties.',
+                        price: 12,
+                        category: 'catering',
+                        available: true,
+                        displayImage: cycleFallbackImage(40),
+                        sectionType: 'CATERING',
+                        displayGallery: [cycleFallbackImage(40), cycleFallbackImage(41)],
+                      },
+                      config: {
+                        removals: ['Onions', 'Cilantro', 'Spicy Salsa'],
+                        addons: [
+                          { id: 'guac', label: 'Add Guacamole', price: 2 },
+                          { id: 'queso', label: 'Add Queso', price: 1.5 },
+                          { id: 'churros', label: 'Add Churros Dessert', price: 3 },
+                        ],
+                      },
+                    });
                   }}
                   className="rounded-xl border border-amber-400/30 bg-black/30 p-4 text-left transition hover:border-amber-400 hover:bg-black/40"
                 >
@@ -1604,16 +1616,28 @@ export default function OrderPageClient({ sections, featuredItems = [], tenantSl
                 </button>
                 <button
                   onClick={() => {
-                    handleAddHighlight({
-                      id: 'catering-family-platters',
-                      title: 'Family Platters Catering',
-                      description: 'Enchiladas, rice, beans, salad. Serves 10-15 people.',
-                      price: 120,
-                      image: cycleFallbackImage(41),
-                      badge: 'Serves 10-15',
-                      category: 'catering',
-                    });
                     setShowCateringPanel(false);
+                    setCustomModal({
+                      item: {
+                        id: 'catering-family-platters',
+                        name: 'Family Platters Catering',
+                        description: 'Enchiladas, rice, beans, salad. Serves 10-15 people.',
+                        price: 120,
+                        category: 'catering',
+                        available: true,
+                        displayImage: cycleFallbackImage(41),
+                        sectionType: 'CATERING',
+                        displayGallery: [cycleFallbackImage(41), cycleFallbackImage(42)],
+                      },
+                      config: {
+                        removals: ['Lettuce', 'Tomatoes', 'Sour Cream'],
+                        addons: [
+                          { id: 'extra-rice', label: 'Extra Rice & Beans', price: 15 },
+                          { id: 'flan', label: 'Add Flan Dessert', price: 20 },
+                          { id: 'drinks', label: 'Aguas Frescas (2 gal)', price: 25 },
+                        ],
+                      },
+                    });
                   }}
                   className="rounded-xl border border-amber-400/30 bg-black/30 p-4 text-left transition hover:border-amber-400 hover:bg-black/40"
                 >
@@ -1623,16 +1647,28 @@ export default function OrderPageClient({ sections, featuredItems = [], tenantSl
                 </button>
                 <button
                   onClick={() => {
-                    handleAddHighlight({
-                      id: 'catering-breakfast',
-                      title: 'Breakfast Catering',
-                      description: 'Breakfast burritos, chilaquiles, pan dulce. Start your event right!',
-                      price: 10,
-                      image: cycleFallbackImage(42),
-                      badge: 'Per Person',
-                      category: 'catering',
-                    });
                     setShowCateringPanel(false);
+                    setCustomModal({
+                      item: {
+                        id: 'catering-breakfast',
+                        name: 'Breakfast Catering',
+                        description: 'Breakfast burritos, chilaquiles, pan dulce. Start your event right!',
+                        price: 10,
+                        category: 'catering',
+                        available: true,
+                        displayImage: cycleFallbackImage(42),
+                        sectionType: 'CATERING',
+                        displayGallery: [cycleFallbackImage(42), cycleFallbackImage(43)],
+                      },
+                      config: {
+                        removals: ['Eggs', 'Cheese', 'Beans'],
+                        addons: [
+                          { id: 'coffee', label: 'Add Coffee Service', price: 2.5 },
+                          { id: 'juice', label: 'Add Orange Juice', price: 1.5 },
+                          { id: 'fruit', label: 'Fruit Platter', price: 3 },
+                        ],
+                      },
+                    });
                   }}
                   className="rounded-xl border border-amber-400/30 bg-black/30 p-4 text-left transition hover:border-amber-400 hover:bg-black/40"
                 >
@@ -1642,16 +1678,28 @@ export default function OrderPageClient({ sections, featuredItems = [], tenantSl
                 </button>
                 <button
                   onClick={() => {
-                    handleAddHighlight({
-                      id: 'catering-dessert',
-                      title: 'Dessert Packages',
-                      description: 'Tres leches, churros, conchas. Sweet endings for your celebration.',
-                      price: 4,
-                      image: cycleFallbackImage(43),
-                      badge: 'Per Person',
-                      category: 'catering',
-                    });
                     setShowCateringPanel(false);
+                    setCustomModal({
+                      item: {
+                        id: 'catering-dessert',
+                        name: 'Dessert Packages',
+                        description: 'Tres leches, churros, conchas. Sweet endings for your celebration.',
+                        price: 4,
+                        category: 'catering',
+                        available: true,
+                        displayImage: cycleFallbackImage(43),
+                        sectionType: 'CATERING',
+                        displayGallery: [cycleFallbackImage(43), cycleFallbackImage(44)],
+                      },
+                      config: {
+                        removals: ['Whipped Cream', 'Chocolate Drizzle'],
+                        addons: [
+                          { id: 'ice-cream', label: 'Add Ice Cream', price: 1.5 },
+                          { id: 'coffee-service', label: 'Coffee & Tea Service', price: 2 },
+                          { id: 'champurrado', label: 'Hot Champurrado', price: 1 },
+                        ],
+                      },
+                    });
                   }}
                   className="rounded-xl border border-amber-400/30 bg-black/30 p-4 text-left transition hover:border-amber-400 hover:bg-black/40"
                 >
@@ -1669,16 +1717,29 @@ export default function OrderPageClient({ sections, featuredItems = [], tenantSl
               <div className="grid gap-4 sm:grid-cols-2">
                 <button
                   onClick={() => {
-                    handleAddHighlight({
-                      id: 'bundle-thanksgiving',
-                      title: 'Thanksgiving Dinner Bundle',
-                      description: 'Complete feast: Roasted turkey, mole, rice, beans, tortillas, salsa verde, dessert tray. Serves 8-10.',
-                      price: 280,
-                      image: cycleFallbackImage(50),
-                      badge: 'Serves 8-10',
-                      category: 'catering',
-                    });
                     setShowCateringPanel(false);
+                    setCustomModal({
+                      item: {
+                        id: 'bundle-thanksgiving',
+                        name: 'Thanksgiving Dinner Bundle',
+                        description: 'Complete feast: Roasted turkey, mole, rice, beans, tortillas, salsa verde, dessert tray. Serves 8-10.',
+                        price: 280,
+                        category: 'catering',
+                        available: true,
+                        displayImage: cycleFallbackImage(50),
+                        sectionType: 'CATERING',
+                        displayGallery: [cycleFallbackImage(50), cycleFallbackImage(51)],
+                      },
+                      config: {
+                        removals: ['Mole Sauce', 'Cilantro', 'Turkey Gravy'],
+                        addons: [
+                          { id: 'extra-turkey', label: 'Extra Turkey (5 lbs)', price: 40 },
+                          { id: 'cranberry', label: 'Cranberry Sauce', price: 10 },
+                          { id: 'pumpkin-pie', label: 'Pumpkin Pie', price: 25 },
+                          { id: 'wine', label: 'Wine Pairing (2 bottles)', price: 50 },
+                        ],
+                      },
+                    });
                   }}
                   className="group relative overflow-hidden rounded-xl border border-rose-400/30 bg-black/40 p-5 text-left transition hover:border-rose-400 hover:bg-black/50"
                 >
@@ -1691,23 +1752,35 @@ export default function OrderPageClient({ sections, featuredItems = [], tenantSl
                   <div className="mt-4 flex items-center justify-between">
                     <span className="text-2xl font-black text-rose-300">$280</span>
                     <span className="rounded-full bg-rose-500 px-4 py-2 text-xs font-semibold text-white transition group-hover:scale-105">
-                      Add Bundle →
+                      Customize →
                     </span>
                   </div>
                 </button>
 
                 <button
                   onClick={() => {
-                    handleAddHighlight({
-                      id: 'bundle-christmas',
-                      title: 'Christmas Fiesta Bundle',
-                      description: 'Tamales (12), pozole (1 gallon), pan dulce assortment, champurrado. Serves 6-8.',
-                      price: 180,
-                      image: cycleFallbackImage(51),
-                      badge: 'Serves 6-8',
-                      category: 'catering',
-                    });
                     setShowCateringPanel(false);
+                    setCustomModal({
+                      item: {
+                        id: 'bundle-christmas',
+                        name: 'Christmas Fiesta Bundle',
+                        description: 'Tamales (12), pozole (1 gallon), pan dulce assortment, champurrado. Serves 6-8.',
+                        price: 180,
+                        category: 'catering',
+                        available: true,
+                        displayImage: cycleFallbackImage(51),
+                        sectionType: 'CATERING',
+                        displayGallery: [cycleFallbackImage(51), cycleFallbackImage(52)],
+                      },
+                      config: {
+                        removals: ['Pork Tamales', 'Spicy Pozole'],
+                        addons: [
+                          { id: 'extra-tamales', label: 'Extra Tamales (6)', price: 25 },
+                          { id: 'buñuelos', label: 'Add Buñuelos', price: 15 },
+                          { id: 'ponche', label: 'Ponche Navideño (1 gal)', price: 20 },
+                        ],
+                      },
+                    });
                   }}
                   className="group overflow-hidden rounded-xl border border-rose-400/30 bg-black/40 p-5 text-left transition hover:border-rose-400 hover:bg-black/50"
                 >
@@ -1717,23 +1790,36 @@ export default function OrderPageClient({ sections, featuredItems = [], tenantSl
                   <div className="mt-4 flex items-center justify-between">
                     <span className="text-2xl font-black text-rose-300">$180</span>
                     <span className="rounded-full bg-rose-500 px-4 py-2 text-xs font-semibold text-white transition group-hover:scale-105">
-                      Add Bundle →
+                      Customize →
                     </span>
                   </div>
                 </button>
 
                 <button
                   onClick={() => {
-                    handleAddHighlight({
-                      id: 'bundle-birthday',
-                      title: 'Birthday Party Bundle',
-                      description: 'Taco bar for 15, chips & salsa, tres leches cake, aguas frescas (2 gallons). Party ready!',
-                      price: 220,
-                      image: cycleFallbackImage(52),
-                      badge: 'Serves 15',
-                      category: 'catering',
-                    });
                     setShowCateringPanel(false);
+                    setCustomModal({
+                      item: {
+                        id: 'bundle-birthday',
+                        name: 'Birthday Party Bundle',
+                        description: 'Taco bar for 15, chips & salsa, tres leches cake, aguas frescas (2 gallons). Party ready!',
+                        price: 220,
+                        category: 'catering',
+                        available: true,
+                        displayImage: cycleFallbackImage(52),
+                        sectionType: 'CATERING',
+                        displayGallery: [cycleFallbackImage(52), cycleFallbackImage(53)],
+                      },
+                      config: {
+                        removals: ['Spicy Options', 'Dairy', 'Nuts'],
+                        addons: [
+                          { id: 'decorations', label: 'Party Decorations', price: 30 },
+                          { id: 'extra-cake', label: 'Extra Cake (serves 10)', price: 35 },
+                          { id: 'balloons', label: 'Balloon Bouquet', price: 20 },
+                          { id: 'piñata', label: 'Add Piñata', price: 25 },
+                        ],
+                      },
+                    });
                   }}
                   className="group overflow-hidden rounded-xl border border-rose-400/30 bg-black/40 p-5 text-left transition hover:border-rose-400 hover:bg-black/50"
                 >
@@ -1743,23 +1829,36 @@ export default function OrderPageClient({ sections, featuredItems = [], tenantSl
                   <div className="mt-4 flex items-center justify-between">
                     <span className="text-2xl font-black text-rose-300">$220</span>
                     <span className="rounded-full bg-rose-500 px-4 py-2 text-xs font-semibold text-white transition group-hover:scale-105">
-                      Add Bundle →
+                      Customize →
                     </span>
                   </div>
                 </button>
 
                 <button
                   onClick={() => {
-                    handleAddHighlight({
-                      id: 'bundle-office',
-                      title: 'Office Lunch Bundle',
-                      description: 'Burrito bar for 20, chips, guac, salsa, cookies. Individual packaging available.',
-                      price: 240,
-                      image: cycleFallbackImage(53),
-                      badge: 'Serves 20',
-                      category: 'catering',
-                    });
                     setShowCateringPanel(false);
+                    setCustomModal({
+                      item: {
+                        id: 'bundle-office',
+                        name: 'Office Lunch Bundle',
+                        description: 'Burrito bar for 20, chips, guac, salsa, cookies. Individual packaging available.',
+                        price: 240,
+                        category: 'catering',
+                        available: true,
+                        displayImage: cycleFallbackImage(53),
+                        sectionType: 'CATERING',
+                        displayGallery: [cycleFallbackImage(53), cycleFallbackImage(54)],
+                      },
+                      config: {
+                        removals: ['Gluten', 'Dairy', 'Meat'],
+                        addons: [
+                          { id: 'utensils', label: 'Disposable Utensils & Plates', price: 15 },
+                          { id: 'individual-pack', label: 'Individual Packaging', price: 25 },
+                          { id: 'beverages', label: 'Soda & Water (20 ct)', price: 30 },
+                          { id: 'dessert-box', label: 'Dessert Box (20 cookies)', price: 35 },
+                        ],
+                      },
+                    });
                   }}
                   className="group overflow-hidden rounded-xl border border-rose-400/30 bg-black/40 p-5 text-left transition hover:border-rose-400 hover:bg-black/50"
                 >
@@ -1769,7 +1868,7 @@ export default function OrderPageClient({ sections, featuredItems = [], tenantSl
                   <div className="mt-4 flex items-center justify-between">
                     <span className="text-2xl font-black text-rose-300">$240</span>
                     <span className="rounded-full bg-rose-500 px-4 py-2 text-xs font-semibold text-white transition group-hover:scale-105">
-                      Add Bundle →
+                      Customize →
                     </span>
                   </div>
                 </button>
