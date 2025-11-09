@@ -151,8 +151,8 @@ export default function NewOrderAlerts({
       // Play built-in sound
       if (!audioContextRef.current) return;
 
-      const pattern = SOUND_PATTERNS[settings.soundType];
-      if (pattern) {
+      if (settings.soundType !== 'custom') {
+        const pattern = SOUND_PATTERNS[settings.soundType];
         pattern(audioContextRef.current, settings.volume);
       }
 
