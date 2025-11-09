@@ -168,7 +168,7 @@ async function sendOrderWithESCPOS(order: SerializedOrder, printerConfig: any): 
     const orderForPrint = {
       id: order.id,
       customerName: order.customerName || order.customer?.name || 'Guest',
-      customerPhone: order.customerPhone || order.customer?.phone,
+      customerPhone: order.customerPhone || order.customer?.phone || undefined,
       fulfillmentMethod: (order.fulfillmentMethod || 'pickup') as 'delivery' | 'pickup',
       status: order.status || 'pending',
       items: order.items.map((item: any) => ({
@@ -183,11 +183,11 @@ async function sendOrderWithESCPOS(order: SerializedOrder, printerConfig: any): 
       deliveryFee: Number(order.deliveryFee || 0),
       tipAmount: Number(order.tipAmount || 0),
       totalAmount: Number(order.totalAmount || 0),
-      notes: order.notes,
+      notes: order.notes || undefined,
       createdAt: new Date(order.createdAt),
       deliveryAddress: order.deliveryAddress ? {
         street: order.deliveryAddress.line1 || '',
-        apartment: order.deliveryAddress.line2,
+        apartment: order.deliveryAddress.line2 || undefined,
         city: order.deliveryAddress.city || '',
         state: order.deliveryAddress.state || '',
         zip: order.deliveryAddress.postalCode || '',
@@ -336,7 +336,7 @@ export async function autoPrintOrder(order: SerializedOrder, options: AutoPrintO
       cloverMerchantId: true,
       cloverApiKey: true,
     },
-  });
+  }) as any;
 
   if (!tenantIntegration?.autoPrintOrders) {
     return false;
