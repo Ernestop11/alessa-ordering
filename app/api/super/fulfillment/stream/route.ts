@@ -52,7 +52,7 @@ export async function GET(request: NextRequest) {
           take: 200,
         });
 
-        send({ type: 'init', orders: orders.map(serializeOrder) });
+        send({ type: 'init', orders: orders.map((order) => serializeOrder(order, null)) });
       };
 
       void setup();

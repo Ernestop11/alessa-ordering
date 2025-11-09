@@ -45,7 +45,7 @@ export default async function AdminFulfillmentPage() {
   return (
     <div className="px-4 py-6 sm:px-6 lg:px-8">
       <FulfillmentDashboard
-        initialOrders={orders.map(serializeOrder)}
+        initialOrders={orders.map((order) => serializeOrder(order, null))}
         feedUrl={`/api/admin/fulfillment/stream?tenant=${tenant.slug}`}
         scope="tenant"
       />

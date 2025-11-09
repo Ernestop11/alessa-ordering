@@ -39,5 +39,5 @@ export async function GET() {
     take: 200,
   });
 
-  return NextResponse.json(orders.map(serializeOrder));
+  return NextResponse.json(orders.map((order) => serializeOrder(order, null)));
 }
