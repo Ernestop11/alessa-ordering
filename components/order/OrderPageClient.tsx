@@ -699,10 +699,10 @@ export default function OrderPageClient({ sections, featuredItems = [], tenantSl
     const images = heroGallery;
     // Add sample Puebla Mexico themed images/videos
     const pueblaMedia = [
-      'https://images.unsplash.com/photo-1565299624946-b28f40a0ae38?w=1920&q=80', // Mexican food
-      'https://images.unsplash.com/photo-1555396273-367ea4eb4db5?w=1920&q=80', // Tacos
-      'https://images.unsplash.com/photo-1517248135467-4c7edcad34c4?w=1920&q=80', // Restaurant
-      'https://images.unsplash.com/photo-1559339352-11d035aa65de?w=1920&q=80', // Food prep
+      'https://images.unsplash.com/photo-1613514785940-daed07799d9b?w=1920&q=80', // Mexican food spread
+      'https://images.unsplash.com/photo-1599974177422-591977d8d1f4?w=1920&q=80', // Tacos platter
+      'https://images.unsplash.com/photo-1552566626-52f8b828add9?w=1920&q=80', // Restaurant interior
+      'https://images.unsplash.com/photo-1625937286074-9ca519d5d9df?w=1920&q=80', // Mexican cuisine prep
     ];
     return [...images, ...pueblaMedia].slice(0, 6); // Limit to 6 items
   }, [heroGallery]);
@@ -728,11 +728,11 @@ export default function OrderPageClient({ sections, featuredItems = [], tenantSl
 
   // Catering gallery - Puebla/Atlixco themed imagery
   const cateringGallery = useMemo(() => [
-    'https://images.unsplash.com/photo-1555939594-58d7cb561ad1?w=1920&q=80', // Food buffet spread
-    'https://images.unsplash.com/photo-1530554764233-e79e16c91d08?w=1920&q=80', // Mexican party spread
-    'https://images.unsplash.com/photo-1544148103-0773bf10d330?w=1920&q=80', // Catering table
-    'https://images.unsplash.com/photo-1565299624946-b28f40a0ae38?w=1920&q=80', // Tacos platter
-    'https://images.unsplash.com/photo-1414235077428-338989a2e8c0?w=1920&q=80', // Restaurant table setting
+    'https://images.unsplash.com/photo-1504674900247-0877df9cc836?w=1920&q=80', // Food buffet spread
+    'https://images.unsplash.com/photo-1567620905732-2d1ec7ab7445?w=1920&q=80', // Mexican party spread
+    'https://images.unsplash.com/photo-1563379926898-05f4575a45d8?w=1920&q=80', // Catering table
+    'https://images.unsplash.com/photo-1613514785940-daed07799d9b?w=1920&q=80', // Tacos platter
+    'https://images.unsplash.com/photo-1512621776951-a57141f2eefd?w=1920&q=80', // Restaurant table setting
   ], []);
 
   const cateringEnabled = tenant.featureFlags?.includes('catering') ?? false;
