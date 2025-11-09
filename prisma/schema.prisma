@@ -49,6 +49,7 @@ model Order {
   customerEmail    String?
   customerPhone    String?
   notes            String?
+  acknowledgedAt   DateTime?
   createdAt        DateTime      @default(now())
   updatedAt        DateTime      @updatedAt
   tenant           Tenant        @relation(fields: [tenantId], references: [id], onDelete: Cascade)
@@ -168,6 +169,7 @@ model TenantIntegration {
   paymentConfig                    Json?
   printerType                      String?  @default("bluetooth")
   printerEndpoint                  String?
+  printerConfig                    Json?
   applePayMerchantId               String?
   applePayPaymentProcessingCertificate String?
   autoAcceptOrders                 Boolean? @default(false)

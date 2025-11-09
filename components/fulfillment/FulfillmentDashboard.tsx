@@ -2,6 +2,7 @@
 
 import { useEffect, useMemo, useRef, useState } from 'react';
 import FulfillmentBoard from './FulfillmentBoard';
+import NewOrderAlerts, { type AlertSettings } from './NewOrderAlerts';
 import { useOrderFeed } from './useOrderFeed';
 import type { FulfillmentOrder } from './types';
 
@@ -91,6 +92,12 @@ export default function FulfillmentDashboard({ initialOrders, feedUrl, scope }: 
   const [notificationError, setNotificationError] = useState<string | null>(null);
   const [notificationsSupported, setNotificationsSupported] = useState(false);
   const [notificationPermission, setNotificationPermission] = useState<NotificationPermission>('default');
+  const [alertSettings, setAlertSettings] = useState<AlertSettings>({
+    enabled: true,
+    volume: 0.7,
+    soundType: 'chime',
+    flashingEnabled: true,
+  });
   const playNotification = useAudioNotification();
   const { orders, connected, newOrderCount, ackNewOrders, lastCreatedOrder } = useOrderFeed({
     feedUrl,
@@ -172,6 +179,11 @@ export default function FulfillmentDashboard({ initialOrders, feedUrl, scope }: 
     [orders],
   );
 
+  const unacknowledgedOrders = useMemo(
+    () => orders.filter((order) => !order.acknowledgedAt && ['pending', 'confirmed'].includes(order.status.toLowerCase())),
+    [orders],
+  );
+
   const notificationsEnabled = notificationsSupported && notificationPermission === 'granted';
 
   const handleAction = async (order: FulfillmentOrder, status: string) => {
@@ -247,8 +259,33 @@ export default function FulfillmentDashboard({ initialOrders, feedUrl, scope }: 
     }
   };
 
+  const handleAcknowledge = async (orderId: string) => {
+    try {
+      const response = await fetch(`/api/admin/fulfillment/orders/${orderId}/acknowledge`, {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+      });
+
+      if (!response.ok) {
+        throw new Error('Failed to acknowledge order');
+      }
+
+      // The order will be updated via the WebSocket feed
+    } catch (err) {
+      console.error('Failed to acknowledge order:', err);
+      setError('Failed to acknowledge order. Please try again.');
+    }
+  };
+
   return (
     <div className="space-y-6">
+      <NewOrderAlerts
+        unacknowledgedOrders={unacknowledgedOrders}
+        onAcknowledge={handleAcknowledge}
+        settings={alertSettings}
+        onSettingsChange={setAlertSettings}
+      />
+
       <header className="flex flex-wrap items-center justify-between gap-4 rounded-2xl border border-gray-200 bg-white px-6 py-4 shadow-sm">
         <div>
           <h1 className="text-xl font-semibold text-gray-900">Fulfillment Dashboard</h1>

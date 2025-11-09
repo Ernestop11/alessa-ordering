@@ -1,5 +1,6 @@
 import prisma from './prisma';
 import { sendOrderToClover } from './cloverPrinter';
+import { formatReceiptForPrinter, stringToBytes } from './printer-service';
 import type { SerializedOrder } from './order-serializer';
 
 type PrintReason = 'order.created' | 'order.confirmed' | 'manual';
@@ -139,6 +140,120 @@ function parsePrinterEndpoint(rawEndpoint?: string | null): BluetoothConfig {
   }
 }
 
+async function sendOrderWithESCPOS(order: SerializedOrder, printerConfig: any): Promise<PrintResult> {
+  try {
+    // Get tenant info for receipt header
+    const tenant = await prisma.tenant.findUnique({
+      where: { id: order.tenantId },
+      select: {
+        name: true,
+        addressLine1: true,
+        addressLine2: true,
+        city: true,
+        state: true,
+        postalCode: true,
+        contactPhone: true,
+      },
+    });
+
+    if (!tenant) {
+      return {
+        ok: false,
+        provider: printerConfig.type,
+        message: 'Tenant not found',
+      };
+    }
+
+    // Transform serialized order to format expected by printer service
+    const orderForPrint = {
+      id: order.id,
+      customerName: order.customerName || order.customer?.name || 'Guest',
+      customerPhone: order.customerPhone || order.customer?.phone,
+      fulfillmentMethod: (order.fulfillmentMethod || 'pickup') as 'delivery' | 'pickup',
+      status: order.status || 'pending',
+      items: order.items.map((item: any) => ({
+        name: item.menuItemName || 'Unknown Item',
+        quantity: item.quantity || 1,
+        unitPrice: Number(item.price || 0),
+        totalPrice: Number(item.price || 0) * (item.quantity || 1),
+        notes: item.notes,
+      })),
+      subtotal: Number(order.subtotalAmount || 0),
+      taxAmount: Number(order.taxAmount || 0),
+      deliveryFee: Number(order.deliveryFee || 0),
+      tipAmount: Number(order.tipAmount || 0),
+      totalAmount: Number(order.totalAmount || 0),
+      notes: order.notes,
+      createdAt: new Date(order.createdAt),
+      deliveryAddress: order.deliveryAddress ? {
+        street: order.deliveryAddress.line1 || '',
+        apartment: order.deliveryAddress.line2,
+        city: order.deliveryAddress.city || '',
+        state: order.deliveryAddress.state || '',
+        zip: order.deliveryAddress.postalCode || '',
+      } : undefined,
+    };
+
+    // Format receipt with ESC/POS commands
+    const receiptData = formatReceiptForPrinter(
+      orderForPrint,
+      tenant,
+      printerConfig.model || 'ESC/POS'
+    );
+
+    // Send to printer based on type
+    if (printerConfig.type === 'network') {
+      // For network printers, send via server-side endpoint
+      const response = await fetch('/api/admin/fulfillment/printer/send', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({
+          ipAddress: printerConfig.ipAddress,
+          port: printerConfig.port || 9100,
+          data: receiptData,
+          orderId: order.id,
+        }),
+      });
+
+      if (!response.ok) {
+        const error = await response.text();
+        return {
+          ok: false,
+          status: response.status,
+          provider: 'network',
+          message: error || 'Network printer failed',
+        };
+      }
+
+      return {
+        ok: true,
+        status: 200,
+        provider: 'network',
+      };
+    } else if (printerConfig.type === 'bluetooth') {
+      // For Bluetooth, this would need to run client-side
+      // For now, log that it needs client-side handling
+      return {
+        ok: false,
+        provider: 'bluetooth',
+        message: 'Bluetooth printing requires client-side Web Bluetooth API',
+      };
+    }
+
+    return {
+      ok: false,
+      provider: printerConfig.type,
+      message: 'Unsupported printer type',
+    };
+  } catch (error) {
+    return {
+      ok: false,
+      provider: printerConfig.type,
+      message: error instanceof Error ? error.message : 'Print failed',
+    };
+  }
+}
+
 async function sendOrderToBluetooth(order: SerializedOrder, config: BluetoothConfig): Promise<PrintResult> {
   const resolved = parsePrinterEndpoint(config.endpoint);
   const endpoint =
@@ -217,6 +332,7 @@ export async function autoPrintOrder(order: SerializedOrder, options: AutoPrintO
       autoPrintOrders: true,
       printerType: true,
       printerEndpoint: true,
+      printerConfig: true,
       cloverMerchantId: true,
       cloverApiKey: true,
     },
@@ -226,7 +342,9 @@ export async function autoPrintOrder(order: SerializedOrder, options: AutoPrintO
     return false;
   }
 
-  const printerType = (tenantIntegration.printerType ?? 'bluetooth').toLowerCase();
+  // Check for new printer config format
+  const printerConfig = tenantIntegration.printerConfig as any;
+  const printerType = printerConfig?.type || (tenantIntegration.printerType ?? 'bluetooth').toLowerCase();
 
   const shouldPrintNow =
     printerType === 'clover'
@@ -245,7 +363,11 @@ export async function autoPrintOrder(order: SerializedOrder, options: AutoPrintO
       apiKey: tenantIntegration.cloverApiKey,
     });
     result.provider = 'clover';
+  } else if (printerConfig && (printerType === 'bluetooth' || printerType === 'network')) {
+    // Use new ESC/POS formatting
+    result = await sendOrderWithESCPOS(order, printerConfig);
   } else {
+    // Fallback to old bluetooth method
     result = await sendOrderToBluetooth(order, {
       endpoint: tenantIntegration.printerEndpoint,
     });

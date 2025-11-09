@@ -42,6 +42,7 @@ export interface FulfillmentOrder {
   customerEmail?: string | null;
   customerPhone?: string | null;
   notes?: string | null;
+  acknowledgedAt?: string | null;
   createdAt: string;
   updatedAt: string;
   items: FulfillmentOrderItem[];

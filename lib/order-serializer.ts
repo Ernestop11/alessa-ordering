@@ -42,13 +42,15 @@ export interface SerializedOrder {
   customerEmail?: string | null;
   customerPhone?: string | null;
   notes?: string | null;
+  acknowledgedAt?: string | null;
   createdAt: string;
   updatedAt: string;
   items: SerializedOrderItem[];
   customer?: SerializedCustomer | null;
 }
 
-type OrderWithRelations = Order & {
+type OrderWithRelations = Omit<Order, 'acknowledgedAt'> & {
+  acknowledgedAt?: Date | null;
   items: Array<
     OrderItem & {
       menuItem?: {
@@ -87,6 +89,7 @@ export function serializeOrder(order: OrderWithRelations): SerializedOrder {
     customerEmail: order.customerEmail,
     customerPhone: order.customerPhone,
     notes: order.notes,
+    acknowledgedAt: order.acknowledgedAt?.toISOString() ?? null,
     createdAt: order.createdAt.toISOString(),
     updatedAt: order.updatedAt.toISOString(),
     items: order.items.map((item) => ({
