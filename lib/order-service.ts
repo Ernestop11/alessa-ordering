@@ -21,6 +21,7 @@ export interface OrderPayload {
   platformFee?: number;
   fulfillmentMethod: string;
   deliveryPartner?: string | null;
+  deliveryQuoteId?: string | null;
   paymentMethod?: string | null;
   customerName?: string | null;
   customerEmail?: string | null;

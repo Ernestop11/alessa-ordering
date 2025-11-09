@@ -17,11 +17,11 @@ export default function CartLauncher() {
       <button
         type="button"
         onClick={() => setOpen(true)}
-        className="fixed bottom-5 right-5 z-40 flex items-center gap-2 rounded-full bg-gradient-to-r from-rose-500 via-amber-500 to-yellow-400 px-4 py-3 text-sm font-semibold text-black shadow-lg shadow-amber-500/30 transition hover:shadow-amber-400/50"
+        className="fixed bottom-5 right-5 z-40 flex items-center gap-2 rounded-full bg-gradient-to-r from-rose-500 via-amber-500 to-yellow-400 px-3 py-2.5 text-sm font-bold text-black shadow-2xl shadow-rose-500/40 transition-all hover:scale-110 hover:shadow-rose-500/60 sm:px-4 sm:py-3"
       >
         <ShoppingCart className="h-5 w-5" />
-        <span>Cart</span>
-        <span className="rounded-full bg-black/70 px-2 py-0.5 text-xs font-bold text-white">
+        <span className="hidden sm:inline">Cart</span>
+        <span className="rounded-full bg-black/80 px-2 py-0.5 text-xs font-black text-white shadow-lg">
           {itemCount > 0 ? badge : "0"}
         </span>
       </button>

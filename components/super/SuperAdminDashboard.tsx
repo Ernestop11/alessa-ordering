@@ -2,6 +2,7 @@
 
 import Link from 'next/link';
 import { useCallback, useEffect, useMemo, useState } from 'react';
+import OnboardingWizard from './OnboardingWizard';
 
 interface TenantSummary {
   id: string;
@@ -176,6 +177,60 @@ const defaultCreateForm = {
 
 type CreateFormState = typeof defaultCreateForm;
 
+type SuperAdminTab = 'dashboard' | 'tenants' | 'onboarding' | 'templates';
+
+interface BusinessTemplate {
+  id: string;
+  name: string;
+  icon: string;
+  description: string;
+  colors: { primary: string; secondary: string };
+  features: string[];
+}
+
+const BUSINESS_TEMPLATES: BusinessTemplate[] = [
+  {
+    id: 'taqueria',
+    name: 'Taqueria',
+    icon: '🌮',
+    description: 'Mexican restaurant with tacos, burritos, and traditional dishes',
+    colors: { primary: '#dc2626', secondary: '#f59e0b' },
+    features: ['Tacos', 'Burritos', 'Quesadillas', 'Beverages'],
+  },
+  {
+    id: 'panaderia',
+    name: 'Panadería',
+    icon: '🥖',
+    description: 'Bakery with fresh bread, pastries, and sweet treats',
+    colors: { primary: '#f59e0b', secondary: '#fbbf24' },
+    features: ['Bread', 'Pastries', 'Desserts', 'Coffee'],
+  },
+  {
+    id: 'coffee',
+    name: 'Coffee Shop',
+    icon: '☕',
+    description: 'Coffee shop with beverages, pastries, and light meals',
+    colors: { primary: '#92400e', secondary: '#d97706' },
+    features: ['Coffee', 'Tea', 'Pastries', 'Sandwiches'],
+  },
+  {
+    id: 'pizza',
+    name: 'Pizza Place',
+    icon: '🍕',
+    description: 'Pizza restaurant with customizable pies and sides',
+    colors: { primary: '#dc2626', secondary: '#ef4444' },
+    features: ['Pizza', 'Wings', 'Salads', 'Beverages'],
+  },
+  {
+    id: 'grocery',
+    name: 'Grocery Store',
+    icon: '🛒',
+    description: 'Grocery store with produce, packaged goods, and essentials',
+    colors: { primary: '#059669', secondary: '#10b981' },
+    features: ['Produce', 'Packaged Goods', 'Dairy', 'Meat'],
+  },
+];
+
 function formatCurrency(value: number | null | undefined) {
   if (!value || Number.isNaN(value)) return '$0.00';
   return new Intl.NumberFormat(undefined, { style: 'currency', currency: 'USD' }).format(value);
@@ -270,12 +325,15 @@ function toTenantForm(summary: TenantSummary): TenantForm {
 }
 
 export default function SuperAdminDashboard({ initialTenants, initialMetrics, rootDomain }: Props) {
+  const [activeTab, setActiveTab] = useState<SuperAdminTab>('dashboard');
   const [tenants, setTenants] = useState(initialTenants);
   const [metrics, setMetrics] = useState(initialMetrics);
   const [createForm, setCreateForm] = useState<CreateFormState>(defaultCreateForm);
   const [createMessage, setCreateMessage] = useState<string | null>(null);
   const [createError, setCreateError] = useState<string | null>(null);
   const [createLoading, setCreateLoading] = useState(false);
+  const [selectedTemplate, setSelectedTemplate] = useState<BusinessTemplate | null>(null);
+  const [onboardingStep, setOnboardingStep] = useState(1);
 
   const [selectedTenantId, setSelectedTenantId] = useState<string | null>(initialTenants[0]?.id ?? null);
   const selectedTenant = useMemo(
@@ -413,16 +471,35 @@ export default function SuperAdminDashboard({ initialTenants, initialMetrics, ro
     }));
   };
 
-  const handleCreateTenant = async (event: React.FormEvent) => {
-    event.preventDefault();
+  const handleCreateTenant = async (form: any) => {
     setCreateLoading(true);
     setCreateError(null);
     setCreateMessage(null);
     try {
       const payload = {
-        ...createForm,
-        deliveryRadiusMi: createForm.seedDemo ? 5 : undefined,
-        minimumOrderValue: createForm.seedDemo ? 0 : undefined,
+        name: form.name,
+        slug: form.slug,
+        contactEmail: form.contactEmail,
+        contactPhone: form.contactPhone,
+        addressLine1: form.addressLine1,
+        addressLine2: form.addressLine2,
+        city: form.city,
+        state: form.state,
+        postalCode: form.postalCode,
+        heroTitle: form.heroTitle,
+        heroSubtitle: form.heroSubtitle,
+        tagline: form.tagline,
+        primaryColor: form.primaryColor,
+        secondaryColor: form.secondaryColor,
+        logoUrl: form.logoUrl,
+        heroImageUrl: form.heroImageUrl,
+        stripeAccountId: form.stripeAccountId,
+        seedDemo: form.seedDemo,
+        templateId: form.template?.id || 'taqueria',
+        deliveryRadiusMi: form.seedDemo ? Number(form.deliveryRadiusMi) || 5 : undefined,
+        minimumOrderValue: form.seedDemo ? Number(form.minimumOrderValue) || 0 : undefined,
+        currency: form.currency,
+        timeZone: form.timeZone,
       };
       const res = await fetch('/api/super/tenants', {
         method: 'POST',
@@ -434,7 +511,8 @@ export default function SuperAdminDashboard({ initialTenants, initialMetrics, ro
       }
       await refreshTenants();
       setCreateMessage('Tenant created successfully.');
-      setCreateForm(defaultCreateForm);
+      setOnboardingStep(1);
+      setSelectedTemplate(null);
     } catch (err) {
       console.error(err);
       setCreateError('Failed to create tenant.');
@@ -518,6 +596,31 @@ export default function SuperAdminDashboard({ initialTenants, initialMetrics, ro
     }
   };
 
+  const handleDeleteTenant = async (tenantId: string) => {
+    if (!confirm('Are you sure you want to delete this tenant? This action cannot be undone.')) {
+      return;
+    }
+
+    try {
+      const res = await fetch(`/api/super/tenants?id=${tenantId}`, {
+        method: 'DELETE',
+      });
+
+      if (!res.ok) {
+        throw new Error(await res.text());
+      }
+
+      await refreshTenants();
+      if (selectedTenantId === tenantId) {
+        setSelectedTenantId(null);
+        setEditForm(null);
+      }
+    } catch (err) {
+      console.error(err);
+      alert('Failed to delete tenant.');
+    }
+  };
+
   const topPerformers = useMemo(
     () => [...tenants].sort((a, b) => b.grossLastSevenDays - a.grossLastSevenDays).slice(0, 5),
     [tenants],
@@ -539,17 +642,36 @@ export default function SuperAdminDashboard({ initialTenants, initialMetrics, ro
               Monitor tenant performance, manage integrations, and onboard new restaurants.
             </p>
           </div>
-          <Link
-            href="/super-admin/fulfillment"
-            className="inline-flex items-center gap-2 rounded-full bg-gradient-to-r from-indigo-600 to-purple-600 px-6 py-3 text-sm font-semibold text-white shadow-lg shadow-indigo-500/30 transition hover:scale-105 hover:shadow-indigo-500/50"
-          >
-            <span>🚀</span>
-            Fulfillment Board
-          </Link>
         </header>
 
-        {/* Metrics Cards */}
-        <section className="grid gap-6 sm:grid-cols-2 lg:grid-cols-4">
+        {/* Tab Navigation */}
+        <nav className="flex gap-2 border-b border-gray-200">
+          {[
+            { id: 'dashboard' as SuperAdminTab, label: 'Dashboard', icon: '📊' },
+            { id: 'tenants' as SuperAdminTab, label: 'Tenants', icon: '👥' },
+            { id: 'onboarding' as SuperAdminTab, label: 'Onboarding', icon: '✨' },
+            { id: 'templates' as SuperAdminTab, label: 'Templates', icon: '🎨' },
+          ].map((tab) => (
+            <button
+              key={tab.id}
+              onClick={() => setActiveTab(tab.id)}
+              className={`flex items-center gap-2 rounded-t-lg border-b-2 px-6 py-3 text-sm font-semibold transition ${
+                activeTab === tab.id
+                  ? 'border-blue-600 bg-blue-50 text-blue-700'
+                  : 'border-transparent text-gray-600 hover:border-gray-300 hover:text-gray-900'
+              }`}
+            >
+              <span>{tab.icon}</span>
+              {tab.label}
+            </button>
+          ))}
+        </nav>
+
+        {/* Tab Content */}
+        {activeTab === 'dashboard' && (
+          <>
+            {/* Metrics Cards */}
+            <section className="grid gap-6 sm:grid-cols-2 lg:grid-cols-4">
           <div className="group relative overflow-hidden rounded-2xl border border-gray-200 bg-gradient-to-br from-white to-blue-50 p-6 shadow-lg shadow-blue-500/10 transition hover:scale-105 hover:shadow-xl hover:shadow-blue-500/20">
             <div className="absolute right-4 top-4 text-4xl opacity-20">👥</div>
             <p className="text-xs font-semibold uppercase tracking-wider text-gray-500">Total Tenants</p>
@@ -578,7 +700,7 @@ export default function SuperAdminDashboard({ initialTenants, initialMetrics, ro
           </div>
         </section>
 
-        <section className="rounded-3xl border border-gray-200 bg-white p-8 shadow-xl shadow-gray-500/10">
+            <section className="rounded-3xl border border-gray-200 bg-white p-8 shadow-xl shadow-gray-500/10">
         <div className="flex items-center justify-between">
           <div>
             <h2 className="text-2xl font-bold text-gray-900">Performance Highlights</h2>
@@ -646,11 +768,14 @@ export default function SuperAdminDashboard({ initialTenants, initialMetrics, ro
             </ul>
           </div>
         </div>
-      </section>
+        </section>
+          </>
+        )}
 
-      <section className="rounded-2xl border border-gray-200 bg-white p-6 shadow-sm">
-        <div className="flex flex-col gap-3 md:flex-row md:items-center md:justify-between">
-          <h2 className="text-xl font-semibold text-gray-900">Tenant Management</h2>
+        {activeTab === 'tenants' && (
+          <section className="rounded-2xl border border-gray-200 bg-white p-6 shadow-sm">
+            <div className="flex flex-col gap-3 md:flex-row md:items-center md:justify-between">
+              <h2 className="text-xl font-semibold text-gray-900">Tenant Management</h2>
           <div className="flex items-center gap-2 text-sm text-gray-600">
             <span>Tenants</span>
             <span className="rounded-full bg-blue-50 px-2 py-0.5 text-xs font-semibold text-blue-700">{tenants.length}</span>
@@ -661,32 +786,47 @@ export default function SuperAdminDashboard({ initialTenants, initialMetrics, ro
             {tenants.map((tenant) => {
               const badges = getTenantBadges(tenant);
               return (
-                <button
+                <div
                   key={tenant.id}
-                  type="button"
-                  onClick={() => setSelectedTenantId(tenant.id)}
-                  className={`w-full rounded-xl border px-4 py-3 text-left text-sm transition ${
+                  className={`group relative rounded-xl border transition ${
                     tenant.id === selectedTenantId
-                      ? 'border-blue-500 bg-blue-50 text-blue-700'
-                      : 'border-gray-200 bg-white text-gray-700 hover:border-gray-300'
+                      ? 'border-blue-500 bg-blue-50'
+                      : 'border-gray-200 bg-white hover:border-gray-300 hover:bg-gray-50'
                   }`}
                 >
-                  <div className="flex items-center justify-between">
-                    <span className="font-semibold">{tenant.name}</span>
-                    <span className="text-xs uppercase text-gray-500">{tenant.slug}</span>
-                  </div>
-                  <div className="mt-1 flex flex-wrap items-center gap-2 text-xs text-gray-500">
-                    <span>{tenant.ordersLastSevenDays} orders · {formatCurrency(tenant.grossLastSevenDays)}</span>
-                    {badges.map((badge) => (
-                      <span
-                        key={badge.key}
-                        className={`rounded-full px-2 py-0.5 font-medium ${badge.className}`}
-                      >
-                        {badge.label}
-                      </span>
-                    ))}
-                  </div>
-                </button>
+                  <button
+                    type="button"
+                    onClick={() => setSelectedTenantId(tenant.id)}
+                    className="w-full px-4 py-3 text-left text-sm"
+                  >
+                    <div className="flex items-center justify-between">
+                      <span className="font-semibold text-gray-900">{tenant.name}</span>
+                      <span className="text-xs uppercase text-gray-500">{tenant.slug}</span>
+                    </div>
+                    <div className="mt-1 flex flex-wrap items-center gap-2 text-xs text-gray-500">
+                      <span>{tenant.ordersLastSevenDays} orders · {formatCurrency(tenant.grossLastSevenDays)}</span>
+                      {badges.map((badge) => (
+                        <span
+                          key={badge.key}
+                          className={`rounded-full px-2 py-0.5 font-medium ${badge.className}`}
+                        >
+                          {badge.label}
+                        </span>
+                      ))}
+                    </div>
+                  </button>
+                  <button
+                    type="button"
+                    onClick={(e) => {
+                      e.stopPropagation();
+                      handleDeleteTenant(tenant.id);
+                    }}
+                    className="absolute right-2 top-2 rounded-lg bg-rose-50 px-2 py-1 text-xs font-semibold text-rose-600 opacity-0 transition hover:bg-rose-100 group-hover:opacity-100"
+                    title="Delete tenant"
+                  >
+                    ✕
+                  </button>
+                </div>
               );
             })}
             {tenants.length === 0 && <p className="rounded-xl border border-dashed border-gray-200 p-4 text-sm text-gray-500">No tenants yet.</p>}
@@ -988,15 +1128,82 @@ export default function SuperAdminDashboard({ initialTenants, initialMetrics, ro
             </div>
           )}
         </div>
-      </section>
+          </section>
+        )}
 
-      <section className="rounded-2xl border border-gray-200 bg-white p-6 shadow-sm">
-        <h2 className="text-xl font-semibold text-gray-900">Create Tenant</h2>
-        <p className="mt-1 text-sm text-gray-500">Fill out the basics and optionally seed the demo experience.</p>
-        {createMessage && <p className="mt-3 rounded bg-green-50 p-3 text-sm text-green-700">{createMessage}</p>}
-        {createError && <p className="mt-3 rounded bg-red-50 p-3 text-sm text-red-700">{createError}</p>}
+        {activeTab === 'onboarding' && (
+          <section className="rounded-2xl border border-gray-200 bg-white p-8 shadow-sm">
+            <OnboardingWizard
+              templates={BUSINESS_TEMPLATES}
+              rootDomain={rootDomain}
+              onCreateTenant={handleCreateTenant}
+              loading={createLoading}
+              message={createMessage}
+              error={createError}
+              initialTemplate={selectedTemplate}
+            />
+          </section>
+        )}
 
-        <form onSubmit={handleCreateTenant} className="mt-6 grid grid-cols-1 gap-6 md:grid-cols-2">
+        {activeTab === 'templates' && (
+          <section className="space-y-6">
+            <div>
+              <h2 className="text-2xl font-bold text-gray-900">Business Templates</h2>
+              <p className="mt-2 text-gray-600">Choose from pre-configured templates for different business types</p>
+            </div>
+            <div className="grid gap-6 md:grid-cols-2 lg:grid-cols-3">
+              {BUSINESS_TEMPLATES.map((template) => (
+                <div
+                  key={template.id}
+                  className="rounded-2xl border-2 border-gray-200 bg-white p-6 shadow-lg transition hover:scale-105 hover:shadow-xl"
+                >
+                  <div className="text-5xl mb-4">{template.icon}</div>
+                  <h3 className="text-xl font-bold text-gray-900">{template.name}</h3>
+                  <p className="mt-2 text-sm text-gray-600">{template.description}</p>
+                  <div className="mt-4 flex gap-2">
+                    <div
+                      className="h-8 w-8 rounded-full border-2 border-gray-300"
+                      style={{ backgroundColor: template.colors.primary }}
+                    />
+                    <div
+                      className="h-8 w-8 rounded-full border-2 border-gray-300"
+                      style={{ backgroundColor: template.colors.secondary }}
+                    />
+                  </div>
+                  <div className="mt-4 flex flex-wrap gap-2">
+                    {template.features.map((feature) => (
+                      <span
+                        key={feature}
+                        className="rounded-full bg-gray-100 px-3 py-1 text-xs font-medium text-gray-700"
+                      >
+                        {feature}
+                      </span>
+                    ))}
+                  </div>
+                  <button
+                    onClick={() => {
+                      setActiveTab('onboarding');
+                      setSelectedTemplate(template);
+                    }}
+                    className="mt-6 w-full rounded-lg bg-blue-600 px-4 py-2 text-sm font-semibold text-white transition hover:bg-blue-700"
+                  >
+                    Use This Template
+                  </button>
+                </div>
+              ))}
+            </div>
+          </section>
+        )}
+
+        {/* Legacy Create Tenant Form - Hidden but kept for reference */}
+        {false && (
+          <section className="rounded-2xl border border-gray-200 bg-white p-6 shadow-sm">
+            <h2 className="text-xl font-semibold text-gray-900">Create Tenant</h2>
+            <p className="mt-1 text-sm text-gray-500">Fill out the basics and optionally seed the demo experience.</p>
+            {createMessage && <p className="mt-3 rounded bg-green-50 p-3 text-sm text-green-700">{createMessage}</p>}
+            {createError && <p className="mt-3 rounded bg-red-50 p-3 text-sm text-red-700">{createError}</p>}
+
+            <form onSubmit={(e) => { e.preventDefault(); }} className="mt-6 grid grid-cols-1 gap-6 md:grid-cols-2">
           <div>
             <label className="block text-sm font-medium text-gray-700">Name</label>
             <input
@@ -1123,6 +1330,7 @@ export default function SuperAdminDashboard({ initialTenants, initialMetrics, ro
           </div>
         </form>
         </section>
+        )}
       </div>
     </div>
   );

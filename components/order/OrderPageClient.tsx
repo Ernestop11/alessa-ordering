@@ -684,25 +684,39 @@ export default function OrderPageClient({ sections, featuredItems = [], tenantSl
   }, [sections]);
 
   const [isHeroTransitioning, setIsHeroTransitioning] = useState(false);
+  const [showMembershipPanel, setShowMembershipPanel] = useState(false);
 
-  useEffect(() => {
-    setHeroBackgroundIndex(0);
+  // Sample Puebla Mexico themed media - can be replaced with actual tenant media
+  const heroMedia = useMemo(() => {
+    const images = heroGallery;
+    // Add sample Puebla Mexico themed images/videos
+    const pueblaMedia = [
+      'https://images.unsplash.com/photo-1565299624946-b28f40a0ae38?w=1920&q=80', // Mexican food
+      'https://images.unsplash.com/photo-1555396273-367ea4eb4db5?w=1920&q=80', // Tacos
+      'https://images.unsplash.com/photo-1517248135467-4c7edcad34c4?w=1920&q=80', // Restaurant
+      'https://images.unsplash.com/photo-1559339352-11d035aa65de?w=1920&q=80', // Food prep
+    ];
+    return [...images, ...pueblaMedia].slice(0, 6); // Limit to 6 items
   }, [heroGallery]);
 
   useEffect(() => {
-    if (heroGallery.length <= 1 || motionReduced) return;
+    setHeroBackgroundIndex(0);
+  }, [heroMedia]);
+
+  useEffect(() => {
+    if (heroMedia.length <= 1 || motionReduced) return;
     const interval = window.setInterval(() => {
       setIsHeroTransitioning(true);
       setTimeout(() => {
-        setHeroBackgroundIndex((prev) => (prev + 1) % heroGallery.length);
+        setHeroBackgroundIndex((prev) => (prev + 1) % heroMedia.length);
         setTimeout(() => setIsHeroTransitioning(false), 300);
       }, 300);
-    }, 8000); // Increased to 8 seconds for better viewing
+    }, 6000); // 6 seconds for faster rotation
     return () => window.clearInterval(interval);
-  }, [heroGallery, motionReduced]);
+  }, [heroMedia, motionReduced]);
 
-  const currentHeroBackground = heroGallery[heroBackgroundIndex] || heroImage;
-  const nextHeroBackground = heroGallery[(heroBackgroundIndex + 1) % heroGallery.length] || heroImage;
+  const currentHeroBackground = heroMedia[heroBackgroundIndex] || heroImage;
+  const nextHeroBackground = heroMedia[(heroBackgroundIndex + 1) % heroMedia.length] || heroImage;
 
   const renderSectionItems = useCallback(
     (section: (typeof enrichedSections)[number]) => {
@@ -830,46 +844,95 @@ export default function OrderPageClient({ sections, featuredItems = [], tenantSl
         );
       }
 
+      const isBakery = section.type === 'BAKERY' || section.name.toLowerCase().includes('panad') || section.name.toLowerCase().includes('bakery');
+      
       return (
-        <div className="grid gap-6 sm:grid-cols-2 xl:grid-cols-3">
+        <div className="grid gap-6 sm:gap-8 sm:grid-cols-2 xl:grid-cols-3">
           {section.items.map((item) => (
-            <article key={item.id} className="overflow-hidden rounded-3xl border border-white/10 bg-white/8 backdrop-blur-md transition hover:border-white/25 hover:shadow-2xl hover:shadow-rose-500/20">
-              <div className="relative h-44 w-full">
-                <Image src={item.displayImage} alt={item.name} fill className="object-cover" sizes="(min-width: 1280px) 360px, (min-width: 768px) 280px, 100vw" />
-                <div className="absolute inset-0 bg-gradient-to-t from-black/80 via-black/20 to-transparent" />
-                <div className="absolute bottom-3 left-3 flex items-center gap-2 text-sm text-white/80">
-                  <span className="text-xl">{item.emoji}</span>
-                  <span className="rounded-full bg-black/40 px-2 py-1">{section.name}</span>
+            <article key={item.id} className={`group relative overflow-hidden rounded-3xl border-2 backdrop-blur-xl transition-all hover:scale-105 hover:shadow-2xl ${
+              isBakery
+                ? 'border-amber-400/30 bg-gradient-to-br from-amber-500/20 via-rose-500/15 to-yellow-400/20 hover:border-amber-400/50 hover:shadow-amber-500/40'
+                : 'border-white/10 bg-white/10 hover:border-white/30 hover:shadow-rose-500/30'
+            }`}>
+              <div className="relative h-56 w-full overflow-hidden sm:h-64">
+                <Image src={item.displayImage} alt={item.name} fill className="object-cover transition-transform duration-500 group-hover:scale-110" sizes="(min-width: 1280px) 360px, (min-width: 768px) 280px, 100vw" />
+                <div className={`absolute inset-0 bg-gradient-to-t ${
+                  isBakery ? 'from-amber-900/90 via-rose-900/30 to-transparent' : 'from-black/90 via-black/30 to-transparent'
+                }`} />
+                <div className="absolute bottom-4 left-4 flex items-center gap-3">
+                  <span className="text-3xl drop-shadow-lg">{item.emoji}</span>
+                  <span className={`rounded-full border px-3 py-1.5 text-xs font-bold backdrop-blur-sm ${
+                    isBakery
+                      ? 'border-amber-300/50 bg-amber-500/40 text-amber-100'
+                      : 'border-white/30 bg-black/60 text-white'
+                  }`}>
+                    {section.name}
+                  </span>
                 </div>
+                {item.tags && item.tags.length > 0 && (
+                  <div className="absolute top-4 right-4">
+                    <span className={`rounded-full px-3 py-1 text-xs font-bold text-white shadow-lg ${
+                      isBakery
+                        ? 'bg-gradient-to-r from-amber-500 to-rose-500'
+                        : 'bg-gradient-to-r from-rose-500 to-amber-500'
+                    }`}>
+                      {item.tags[0]}
+                    </span>
+                  </div>
+                )}
               </div>
-              <div className="space-y-4 p-5">
+              <div className="space-y-5 p-6">
                 <div className="flex items-start justify-between gap-3">
-                  <h3 className="text-lg font-semibold text-white">{item.name}</h3>
-                  <span className="text-lg font-bold text-rose-200">${item.price.toFixed(2)}</span>
+                  <h3 className={`text-xl font-bold ${
+                    isBakery ? 'text-amber-100' : 'text-white'
+                  }`}>
+                    {item.name}
+                  </h3>
+                  <span className={`text-2xl font-black ${
+                    isBakery ? 'text-amber-200' : 'text-rose-200'
+                  }`}>
+                    ${item.price.toFixed(2)}
+                  </span>
                 </div>
-                <p className="text-sm text-white/70 line-clamp-3">{item.description}</p>
-                <div className="flex items-center justify-between">
-                  <div className="flex flex-wrap gap-1 text-xs uppercase tracking-wide text-white/50">
-                    {item.tags?.slice(0, 3).map((tag) => (
-                      <span key={tag} className="rounded-full border border-white/10 px-2 py-1">
+                <p className={`text-sm leading-relaxed line-clamp-3 ${
+                  isBakery ? 'text-amber-100/80' : 'text-white/80'
+                }`}>
+                  {item.description}
+                </p>
+                <div className="flex flex-col gap-3 pt-2 sm:flex-row sm:items-center sm:justify-between">
+                  <div className="flex flex-wrap gap-2 text-xs font-semibold uppercase tracking-wide">
+                    {item.tags?.slice(0, 2).map((tag) => (
+                      <span key={tag} className={`rounded-full border px-3 py-1 backdrop-blur-sm ${
+                        isBakery
+                          ? 'border-amber-300/30 bg-amber-500/20 text-amber-200'
+                          : 'border-white/20 bg-white/10 text-white/60'
+                      }`}>
                         {tag}
                       </span>
                     ))}
                   </div>
-                  <div className="flex items-center gap-2">
+                  <div className="flex items-center gap-2 sm:gap-3">
                     <button
-                      className="rounded-full border border-white/30 px-4 py-2 text-sm font-semibold text-white/80 transition hover:border-white hover:text-white disabled:cursor-not-allowed disabled:border-white/10 disabled:text-white/30"
+                      className={`rounded-xl border-2 px-3 py-2 text-xs font-bold backdrop-blur-sm transition hover:scale-105 disabled:cursor-not-allowed disabled:opacity-50 sm:px-4 sm:py-2.5 sm:text-sm ${
+                        isBakery
+                          ? 'border-amber-300/40 bg-amber-500/20 text-amber-100 hover:border-amber-300 hover:bg-amber-500/30'
+                          : 'border-white/30 bg-white/10 text-white hover:border-white hover:bg-white/20'
+                      }`}
                       onClick={() => openCustomization(item, section.type)}
                       disabled={!item.available}
                     >
                       Customize
                     </button>
                     <button
-                      className="rounded-full bg-gradient-to-r from-rose-500 to-amber-500 px-4 py-2 text-sm font-semibold text-white shadow-lg shadow-black/20 transition hover:scale-105"
+                      className={`rounded-xl px-4 py-2.5 text-xs font-bold shadow-xl transition-all hover:scale-110 disabled:cursor-not-allowed disabled:opacity-50 sm:px-6 sm:text-sm ${
+                        isBakery
+                          ? 'bg-gradient-to-r from-amber-400 via-yellow-400 to-amber-400 text-black shadow-amber-500/40 hover:shadow-amber-500/60'
+                          : 'bg-gradient-to-r from-rose-500 via-amber-500 to-yellow-400 text-black shadow-rose-500/30 hover:shadow-rose-500/50'
+                      }`}
                       onClick={() => handleAddToCart(item, item.displayImage)}
                       disabled={!item.available}
                     >
-                      {item.available ? 'Add' : 'Sold Out'}
+                      {item.available ? 'Add to Cart' : 'Sold Out'}
                     </button>
                   </div>
                 </div>
@@ -909,13 +972,13 @@ export default function OrderPageClient({ sections, featuredItems = [], tenantSl
           </div>
           </div>
           {navSections.length > 0 && (
-            <nav className="flex max-w-full items-center gap-2 overflow-x-auto text-sm font-medium text-white/80 scrollbar-hide">
+            <nav className="flex max-w-full items-center gap-2 overflow-x-auto text-sm font-medium text-white/80 scrollbar-hide pb-2">
               {navSections.map((section) => {
                 const isActive = activeSectionId === section.id;
-                const isBakery = section.type === 'BAKERY' || section.name.toLowerCase().includes('panad');
+                const isBakery = section.type === 'BAKERY' || section.name.toLowerCase().includes('panad') || section.name.toLowerCase().includes('bakery');
                 const baseClass = isBakery
-                  ? 'border-transparent bg-gradient-to-r from-rose-500 via-amber-400 to-yellow-300 text-black shadow-lg shadow-rose-500/40'
-                  : 'border-white/70 bg-white/10 text-white';
+                  ? 'border-transparent bg-gradient-to-r from-rose-500 via-amber-400 to-yellow-300 text-black shadow-lg shadow-rose-500/40 font-bold'
+                  : 'border-white/70 bg-white/10 text-white font-semibold';
                 return (
                   <button
                     key={section.id}
@@ -924,11 +987,12 @@ export default function OrderPageClient({ sections, featuredItems = [], tenantSl
                       const element = document.getElementById(`section-${section.id}`);
                       element?.scrollIntoView({ behavior: 'smooth', block: 'start' });
                     }}
-                    className={`flex-shrink-0 rounded-full border px-4 py-2 transition ${
-                      isActive ? baseClass : 'border-white/20 hover:border-white/40 hover:text-white'
+                    className={`flex-shrink-0 rounded-full border px-4 py-2.5 text-sm transition-all hover:scale-105 ${
+                      isActive ? baseClass : 'border-white/20 hover:border-white/40 hover:text-white hover:bg-white/5'
                     }`}
                   >
-                    {SECTION_ICONS[section.type] || '🍽️'} {section.name}
+                    <span className="text-base">{SECTION_ICONS[section.type] || '🍽️'}</span>
+                    <span className="ml-1.5">{section.name}</span>
                   </button>
                 );
               })}
@@ -937,67 +1001,122 @@ export default function OrderPageClient({ sections, featuredItems = [], tenantSl
         </div>
       </header>
 
-      <section className="relative flex min-h-[500px] items-center justify-center overflow-hidden text-white md:min-h-[600px]">
-        {/* Background Images with Smooth Transitions */}
+      <section className="relative flex min-h-[85vh] items-center justify-center overflow-hidden text-white">
+        {/* Background Images/Videos with Smooth Transitions */}
         <div className="absolute inset-0">
-          {heroGallery.map((image, index) => (
-            <div
-              key={`hero-bg-${index}`}
-              className={`absolute inset-0 transition-opacity duration-1000 ease-in-out ${
-                index === heroBackgroundIndex ? 'opacity-100 z-10' : 'opacity-0 z-0'
-              }`}
-              style={{
-                backgroundImage: `url(${image})`,
-                backgroundSize: 'cover',
-                backgroundPosition: 'center',
-                backgroundRepeat: 'no-repeat',
-              }}
-            />
-          ))}
+          {heroMedia.map((media, index) => {
+            const isVideo = media.endsWith('.mp4') || media.endsWith('.webm') || media.endsWith('.mov') || media.includes('video');
+            const isGif = media.endsWith('.gif') || media.includes('gif');
+            const isActive = index === heroBackgroundIndex;
+            
+            if (isVideo) {
+              return (
+                <video
+                  key={`hero-media-${index}`}
+                  className={`absolute inset-0 h-full w-full object-cover transition-opacity duration-1000 ease-in-out ${
+                    isActive ? 'opacity-100 z-10' : 'opacity-0 z-0'
+                  }`}
+                  autoPlay
+                  loop
+                  muted
+                  playsInline
+                  src={media}
+                />
+              );
+            }
+            
+            return (
+              <div
+                key={`hero-media-${index}`}
+                className={`absolute inset-0 transition-opacity duration-1000 ease-in-out ${
+                  isActive ? 'opacity-100 z-10' : 'opacity-0 z-0'
+                }`}
+                style={{
+                  backgroundImage: isGif ? `url(${media})` : `url(${media})`,
+                  backgroundSize: 'cover',
+                  backgroundPosition: 'center',
+                  backgroundRepeat: 'no-repeat',
+                }}
+              >
+                {isGif && (
+                  <img
+                    src={media}
+                    alt="Hero background"
+                    className="h-full w-full object-cover"
+                  />
+                )}
+              </div>
+            );
+          })}
           {/* Gradient Overlay */}
           <div
             className={`absolute inset-0 z-20 bg-gradient-to-br transition-opacity duration-700 ${
               activeSection?.type === 'BAKERY'
-                ? 'from-rose-500/70 via-amber-400/40 to-black/30'
-                : 'from-black/75 via-black/40 to-black/20'
+                ? 'from-rose-500/80 via-amber-400/50 to-black/40'
+                : 'from-black/75 via-black/50 to-black/30'
             }`}
           />
           {/* Animated Gradient Overlay for Depth */}
-          <div className="absolute inset-0 z-30 bg-gradient-to-t from-black/60 via-transparent to-transparent" />
+          <div className="absolute inset-0 z-30 bg-gradient-to-t from-black/70 via-transparent to-transparent" />
+          {/* Image Indicators */}
+          {!motionReduced && heroMedia.length > 1 && (
+            <div className="absolute bottom-8 left-1/2 z-40 flex -translate-x-1/2 gap-2">
+              {heroMedia.map((_, index) => (
+                <button
+                  key={index}
+                  onClick={() => setHeroBackgroundIndex(index)}
+                  className={`h-2 rounded-full transition-all ${
+                    index === heroBackgroundIndex ? 'w-8 bg-white' : 'w-2 bg-white/40'
+                  }`}
+                  aria-label={`Go to image ${index + 1}`}
+                />
+              ))}
+            </div>
+          )}
         </div>
-        <div className="relative z-40 mx-auto mt-10 max-w-3xl px-6 text-center">
-          <h2 className="text-5xl font-black tracking-tight md:text-6xl">{personality.heroTitle}</h2>
-          <p className="mt-4 text-lg text-white/80 md:text-xl">{tenant.heroSubtitle || tenant.tagline || 'Experience flavors that tell a story.'}</p>
-          <div className="mt-8 flex flex-wrap items-center justify-center gap-4">
+        <div className="relative z-40 mx-auto max-w-5xl px-6 text-center">
+          <div className="mb-8 inline-flex items-center gap-2 rounded-full border border-white/20 bg-white/10 px-4 py-2 text-sm font-semibold text-white backdrop-blur-sm">
+            <span className="h-2 w-2 animate-pulse rounded-full bg-green-400"></span>
+            Order Now - Fast Delivery Available
+          </div>
+          <h2 className="text-6xl font-black tracking-tight text-white sm:text-7xl md:text-8xl lg:text-9xl">
+            {personality.heroTitle}
+          </h2>
+          <p className="mx-auto mt-8 max-w-2xl text-2xl leading-relaxed text-white/90 md:text-3xl">
+            {tenant.heroSubtitle || tenant.tagline || 'Experience flavors that tell a story.'}
+          </p>
+          <div className="mt-12 flex flex-wrap items-center justify-center gap-4">
             <a
               href="#menu"
-              className="rounded-full bg-gradient-to-r from-rose-500 via-amber-500 to-yellow-400 px-8 py-3 text-lg font-semibold text-black shadow-xl shadow-amber-400/30 transition hover:-translate-y-1 hover:shadow-amber-400/50"
+              className="group relative overflow-hidden rounded-full bg-gradient-to-r from-rose-500 via-amber-500 to-yellow-400 px-10 py-5 text-lg font-bold text-black shadow-2xl shadow-amber-400/40 transition-all hover:scale-105 hover:shadow-amber-400/60"
             >
-              Explore Menu ✨
+              <span className="relative z-10">Explore Menu ✨</span>
+              <span className="absolute inset-0 bg-gradient-to-r from-yellow-400 via-amber-500 to-rose-500 opacity-0 transition-opacity group-hover:opacity-100"></span>
             </a>
             <Link
               href={`/customer/login?tenant=${tenant.slug}`}
-              className="rounded-full border border-white/40 px-6 py-3 text-sm font-semibold text-white/80 transition hover:border-white hover:text-white"
+              className="rounded-full border-2 border-white/50 bg-white/10 px-8 py-5 text-base font-bold text-white backdrop-blur-md transition-all hover:border-white hover:bg-white/20 hover:scale-105"
             >
-              View Order History
+              View Order History →
             </Link>
           </div>
-          <div className="mt-10 grid gap-4 rounded-3xl border border-white/10 bg-black/40 p-6 shadow-lg shadow-black/40 sm:grid-cols-2 md:grid-cols-4">
-            <div className="text-sm text-white/70">
-              <p className="text-2xl font-semibold text-white">{personality.totalItems}</p>
-              <p>Items crafted with love</p>
+          {/* Stats moved to bottom of hero - less prominent */}
+          <div className="mt-12 grid gap-3 rounded-2xl border border-white/10 bg-black/30 p-4 backdrop-blur-sm sm:grid-cols-2 md:grid-cols-4">
+            <div className="text-center text-sm text-white/70">
+              <p className="text-xl font-bold text-white">{personality.totalItems}</p>
+              <p className="text-xs">Menu Items</p>
             </div>
-            <div className="text-sm text-white/70">
-              <p className="text-2xl font-semibold text-white">{personality.bestSeller}</p>
-              <p>Today&apos;s standout dish</p>
+            <div className="text-center text-sm text-white/70">
+              <p className="text-xl font-bold text-white">{personality.bestSeller}</p>
+              <p className="text-xs">Popular Today</p>
             </div>
-            <div className="text-sm text-white/70">
-              <p className="text-2xl font-semibold text-white">{hoursDisplay || hoursSummary || 'Open daily'}</p>
-              <p>Hours</p>
+            <div className="text-center text-sm text-white/70">
+              <p className="text-xl font-bold text-white">{hoursDisplay || hoursSummary || 'Open'}</p>
+              <p className="text-xs">Hours</p>
             </div>
-            <div className="text-sm text-white/70">
-              <p className="text-2xl font-semibold text-white">{locationDisplay || locationSummary || addressParts || 'Visit us soon'}</p>
-              <p>Location</p>
+            <div className="text-center text-sm text-white/70">
+              <p className="text-xl font-bold text-white">{locationDisplay || locationSummary || 'Here'}</p>
+              <p className="text-xs">Location</p>
             </div>
           </div>
           {brandingHighlights.length > 0 && (
@@ -1012,7 +1131,7 @@ export default function OrderPageClient({ sections, featuredItems = [], tenantSl
         </div>
       </section>
 
-      <main id="menu" className="mx-auto max-w-6xl space-y-16 px-6 py-12">
+      <main id="menu" className="mx-auto max-w-6xl space-y-12 px-6 py-12">
         {notification && (
           <div className="fixed right-6 top-20 z-50 rounded-2xl bg-green-500/95 px-6 py-3 text-sm font-semibold text-white shadow-lg shadow-green-500/40">
             {notification}
@@ -1044,78 +1163,32 @@ export default function OrderPageClient({ sections, featuredItems = [], tenantSl
           </div>
         </section>
 
-        <section className="rounded-3xl border border-white/10 bg-white/5 p-6 shadow-lg shadow-black/20">
-          <div className="flex flex-col gap-6 md:flex-row md:items-center md:justify-between">
-            <div>
-              <h3 className="text-xl font-semibold text-white">Rewards & Membership</h3>
-              <p className="text-sm text-white/60">Join the familia, earn perks, and unlock chef exclusives.</p>
-            </div>
-            <div className="relative w-full overflow-hidden rounded-3xl border border-white/10 bg-black/40 p-6 md:max-w-xl">
-              <Image src={membershipImage} alt="Membership" fill className="object-cover opacity-30" sizes="(min-width: 768px) 400px, 100vw" />
-              <div className="relative space-y-4">
-                {membershipEnabled ? (
-                  <>
-                    <div className="flex items-center justify-between">
-                      <div>
-                        <p className="text-sm uppercase tracking-[0.4em] text-white/60">{featuredTier?.name || 'Rewards'}</p>
-                        <h4 className="text-2xl font-semibold text-white">{membershipProgram?.featuredMemberName || 'Rewards Member'}</h4>
-                      </div>
-                      <div className="text-right text-white/80">
-                        {pointsPerDollar > 0 && (
-                          <div className="text-sm font-semibold text-white">{pointsPerDollar} pts / $1</div>
-                        )}
-                        <div className="text-xs">Auto-earned</div>
-                      </div>
-                    </div>
-                    <div className="space-y-2 text-xs text-white/70">
-                      <p>{membershipProgram?.heroCopy || 'Earn puntos with every order and unlock chef-curated rewards.'}</p>
-                      {upcomingTier && (
-                        <div className="flex items-center justify-between">
-                          <span>Next tier</span>
-                          <span className="font-semibold text-white">
-                            {upcomingTier.name} · {upcomingTier.threshold?.toLocaleString() ?? 0} pts
-                          </span>
-                        </div>
-                      )}
-                    </div>
-                    {membershipTiers.length > 0 && (
-                      <div className="rounded-2xl border border-white/10 bg-black/30 p-3 text-xs text-white/70">
-                        <div className="grid gap-2">
-                          {membershipTiers.map((tier) => (
-                            <div key={tier.id} className="flex items-center justify-between gap-3">
-                              <span className="font-semibold text-white">{tier.name}</span>
-                              <span className="text-white/60">{tier.threshold?.toLocaleString() ?? 0} pts · {tier.rewardDescription || 'Rewards unlock'}</span>
-                            </div>
-                          ))}
-                        </div>
-                      </div>
-                    )}
-                    <ul className="grid gap-2 text-xs text-white/70 md:grid-cols-2">
-                      {membershipPerks.map((perk) => (
-                        <li key={perk} className="flex items-center gap-2">
-                          <span className="text-amber-400">✓</span> {perk}
-                        </li>
-                      ))}
-                    </ul>
-                    <button className="w-full rounded-full bg-gradient-to-r from-rose-500 via-amber-500 to-yellow-400 px-4 py-2 text-sm font-semibold text-black shadow-lg shadow-amber-500/30 transition hover:-translate-y-0.5 hover:shadow-amber-500/40">
-                      Join Rewards Program
-                    </button>
-                  </>
-                ) : (
-                  <div className="space-y-4 text-white/80">
-                    <h4 className="text-xl font-semibold text-white">Membership coming soon</h4>
-                    <p className="text-sm">
-                      Configure loyalty tiers and perks in the dashboard to unlock this section for guests.
-                    </p>
-                    <button className="w-full rounded-full border border-white/30 px-4 py-2 text-sm font-semibold text-white/70 transition hover:border-white hover:text-white">
-                      Manage program in admin
-                    </button>
-                  </div>
-                )}
-              </div>
-            </div>
+        {/* Membership Button - Triggers Side Panel (Left side to avoid cart overlap) */}
+        {membershipEnabled && (
+          <div className="fixed bottom-5 left-5 z-50 hidden sm:block">
+            <button
+              onClick={() => setShowMembershipPanel(true)}
+              className="group flex items-center gap-2 rounded-full bg-gradient-to-r from-amber-500 via-yellow-400 to-amber-500 px-4 py-3 text-sm font-bold text-black shadow-2xl shadow-amber-500/40 transition-all hover:scale-110 hover:shadow-amber-500/60 sm:gap-3 sm:px-6 sm:py-4 sm:text-base"
+            >
+              <span className="text-xl sm:text-2xl">⭐</span>
+              <span className="hidden sm:inline">Join Rewards</span>
+              <span className="sm:hidden">Rewards</span>
+            </button>
           </div>
-        </section>
+        )}
+        
+        {/* Mobile Membership Button - Stacked above cart on mobile */}
+        {membershipEnabled && (
+          <div className="fixed bottom-20 right-5 z-50 block sm:hidden">
+            <button
+              onClick={() => setShowMembershipPanel(true)}
+              className="flex items-center gap-2 rounded-full bg-gradient-to-r from-amber-500 via-yellow-400 to-amber-500 px-4 py-3 text-sm font-bold text-black shadow-2xl shadow-amber-500/40 transition-all hover:scale-110 hover:shadow-amber-500/60"
+            >
+              <span className="text-xl">⭐</span>
+              <span>Rewards</span>
+            </button>
+          </div>
+        )}
 
         {carouselItems.length > 0 && (
           <FeaturedCarousel
@@ -1321,31 +1394,159 @@ export default function OrderPageClient({ sections, featuredItems = [], tenantSl
           </div>
         </section>
 
-        {enrichedSections.map((section) => (
-          <section
-            key={section.id}
-            id={`section-${section.id}`}
-            ref={(el) => {
-              sectionRefs.current[section.id] = el;
-            }}
-            className="scroll-mt-32 space-y-8"
-          >
-            <header className="flex flex-col gap-4 md:flex-row md:items-center md:justify-between">
-              <div>
-                <p className="text-xs uppercase tracking-[0.4em] text-white/50">
-                  {section.icon} {section.type}
-                </p>
-                <h2 className="text-3xl font-semibold text-white">{section.name}</h2>
-                {section.description && <p className="mt-2 max-w-2xl text-sm text-white/60">{section.description}</p>}
-              </div>
-              <span className="rounded-full border border-white/10 px-4 py-2 text-sm font-semibold text-white/70">
-                {section.items.length} item{section.items.length === 1 ? '' : 's'}
-              </span>
-            </header>
-            {renderSectionItems(section)}
-          </section>
-        ))}
+        {enrichedSections.map((section) => {
+          const isBakery = section.type === 'BAKERY' || section.name.toLowerCase().includes('panad') || section.name.toLowerCase().includes('bakery');
+          return (
+            <section
+              key={section.id}
+              id={`section-${section.id}`}
+              ref={(el) => {
+                sectionRefs.current[section.id] = el;
+              }}
+              className={`scroll-mt-32 space-y-8 rounded-3xl p-8 transition-all mb-8 ${
+                isBakery
+                  ? 'bg-gradient-to-br from-amber-500/15 via-rose-500/12 to-yellow-400/15 border-2 border-amber-400/30 shadow-2xl shadow-amber-500/20'
+                  : 'bg-white/5 border border-white/10'
+              }`}
+            >
+              <header className="flex flex-col gap-4 md:flex-row md:items-center md:justify-between">
+                <div>
+                  <p className={`text-xs uppercase tracking-[0.4em] mb-2 ${
+                    isBakery ? 'text-amber-300 font-bold' : 'text-white/50'
+                  }`}>
+                    {section.icon} {section.type}
+                  </p>
+                  <h2 className={`text-4xl font-black mb-2 ${
+                    isBakery 
+                      ? 'bg-gradient-to-r from-amber-300 via-rose-300 to-yellow-300 bg-clip-text text-transparent drop-shadow-lg' 
+                      : 'text-white'
+                  }`}>
+                    {section.name}
+                  </h2>
+                  {section.description && (
+                    <p className={`mt-2 max-w-2xl text-base leading-relaxed ${
+                      isBakery ? 'text-amber-100 font-medium' : 'text-white/60'
+                    }`}>
+                      {section.description}
+                    </p>
+                  )}
+                </div>
+                <span className={`rounded-full border-2 px-5 py-2.5 text-sm font-black shadow-lg ${
+                  isBakery
+                    ? 'border-amber-400/60 bg-gradient-to-r from-amber-500/30 to-yellow-400/30 text-amber-100 shadow-amber-500/30'
+                    : 'border-white/10 bg-white/5 text-white/70'
+                }`}>
+                  {section.items.length} item{section.items.length === 1 ? '' : 's'}
+                </span>
+              </header>
+              {renderSectionItems(section)}
+            </section>
+          );
+        })}
       </main>
+
+      {/* Membership Slide-In Panel (Costco Style) */}
+      {showMembershipPanel && (
+        <>
+          {/* Backdrop */}
+          <div
+            className="fixed inset-0 z-50 bg-black/60 backdrop-blur-sm transition-opacity"
+            onClick={() => setShowMembershipPanel(false)}
+          />
+          {/* Side Panel */}
+          <div className="fixed right-0 top-0 z-50 h-full w-full max-w-md overflow-y-auto bg-gradient-to-br from-black via-gray-900 to-black p-8 shadow-2xl transition-transform sm:w-96">
+            <div className="mb-6 flex items-center justify-between">
+              <h2 className="text-3xl font-black text-white">⭐ Rewards Program</h2>
+              <button
+                onClick={() => setShowMembershipPanel(false)}
+                className="rounded-full border-2 border-white/30 bg-white/10 p-2 text-white transition hover:border-white hover:bg-white/20"
+              >
+                ✕
+              </button>
+            </div>
+            
+            {membershipEnabled ? (
+              <div className="space-y-6">
+                <div className="relative overflow-hidden rounded-3xl border-2 border-amber-500/30 bg-gradient-to-br from-amber-500/20 to-yellow-400/20 p-6">
+                  <Image src={membershipImage} alt="Membership" fill className="object-cover opacity-20" sizes="400px" />
+                  <div className="relative space-y-4">
+                    <div className="flex items-center justify-between">
+                      <div>
+                        <p className="text-xs uppercase tracking-[0.4em] text-amber-300">{featuredTier?.name || 'Rewards'}</p>
+                        <h3 className="text-2xl font-black text-white">{membershipProgram?.featuredMemberName || 'Rewards Member'}</h3>
+                      </div>
+                      <div className="text-right">
+                        {pointsPerDollar > 0 && (
+                          <div className="text-2xl font-black text-amber-300">{pointsPerDollar} pts</div>
+                        )}
+                        <div className="text-xs text-white/70">per $1 spent</div>
+                      </div>
+                    </div>
+                    <p className="text-sm leading-relaxed text-white/90">
+                      {membershipProgram?.heroCopy || 'Earn puntos with every order and unlock chef-curated rewards.'}
+                    </p>
+                  </div>
+                </div>
+
+                {upcomingTier && (
+                  <div className="rounded-2xl border-2 border-white/20 bg-white/5 p-4">
+                    <p className="text-xs font-semibold uppercase tracking-wide text-white/60">Next Tier</p>
+                    <p className="mt-2 text-xl font-bold text-white">
+                      {upcomingTier.name} · {upcomingTier.threshold?.toLocaleString() ?? 0} pts
+                    </p>
+                    {upcomingTier.rewardDescription && (
+                      <p className="mt-2 text-sm text-white/70">{upcomingTier.rewardDescription}</p>
+                    )}
+                  </div>
+                )}
+
+                {membershipTiers.length > 0 && (
+                  <div className="rounded-2xl border-2 border-white/20 bg-white/5 p-4">
+                    <h4 className="mb-4 text-lg font-bold text-white">Tiers & Rewards</h4>
+                    <div className="space-y-3">
+                      {membershipTiers.map((tier) => (
+                        <div key={tier.id} className="rounded-xl border border-white/10 bg-white/5 p-3">
+                          <div className="flex items-center justify-between">
+                            <span className="font-bold text-white">{tier.name}</span>
+                            <span className="text-sm text-white/70">{tier.threshold?.toLocaleString() ?? 0} pts</span>
+                          </div>
+                          {tier.rewardDescription && (
+                            <p className="mt-1 text-xs text-white/60">{tier.rewardDescription}</p>
+                          )}
+                        </div>
+                      ))}
+                    </div>
+                  </div>
+                )}
+
+                <div className="rounded-2xl border-2 border-white/20 bg-white/5 p-4">
+                  <h4 className="mb-4 text-lg font-bold text-white">Member Perks</h4>
+                  <ul className="space-y-2 text-sm text-white/80">
+                    {membershipPerks.map((perk) => (
+                      <li key={perk} className="flex items-center gap-2">
+                        <span className="text-amber-400 text-lg">✓</span>
+                        <span>{perk}</span>
+                      </li>
+                    ))}
+                  </ul>
+                </div>
+
+                <button className="w-full rounded-2xl bg-gradient-to-r from-amber-500 via-yellow-400 to-amber-500 px-6 py-4 text-lg font-black text-black shadow-2xl shadow-amber-500/40 transition-all hover:scale-105 hover:shadow-amber-500/60">
+                  Join Rewards Program
+                </button>
+              </div>
+            ) : (
+              <div className="space-y-4 text-center text-white/80">
+                <div className="text-6xl mb-4">⭐</div>
+                <h3 className="text-2xl font-bold text-white">Membership Coming Soon</h3>
+                <p className="text-sm">
+                  Configure loyalty tiers and perks in the dashboard to unlock this section for guests.
+                </p>
+              </div>
+            )}
+          </div>
+        </>
+      )}
 
       <footer className="border-t border-white/10 bg-black/50 py-12">
         <div className="mx-auto flex max-w-6xl flex-col gap-10 px-6 md:flex-row md:justify-between">
@@ -1545,7 +1746,8 @@ export default function OrderPageClient({ sections, featuredItems = [], tenantSl
         </div>
       )}
 
-      <div className="fixed bottom-8 left-8 z-50">
+      {/* Accessibility Button - Hidden on mobile to avoid overlap */}
+      <div className="fixed bottom-5 left-5 z-50 hidden sm:block">
         <button
           onClick={() => setAccessibilityOpen((prev) => !prev)}
           className="rounded-full bg-gradient-to-r from-blue-500 via-purple-500 to-rose-500 px-3 py-2 text-xs font-semibold text-white shadow-xl shadow-blue-500/30 transition hover:scale-105"

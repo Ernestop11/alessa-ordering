@@ -42,6 +42,7 @@ export default function Cart() {
   const [fulfillmentMethod, setFulfillmentMethod] = useState<"pickup" | "delivery">("pickup");
   const [deliveryAddress, setDeliveryAddress] = useState("");
   const [deliveryQuote, setDeliveryQuote] = useState<number | null>(null);
+  const [deliveryQuoteId, setDeliveryQuoteId] = useState<string | null>(null);
   const [deliveryLoading, setDeliveryLoading] = useState(false);
   const [deliveryError, setDeliveryError] = useState<string | null>(null);
   const [tipSelection, setTipSelection] = useState<TipOption>("15");
@@ -289,6 +290,7 @@ export default function Cart() {
       platformFee,
       fulfillmentMethod,
       deliveryPartner: fulfillmentMethod === "delivery" ? "doordash" : undefined,
+      deliveryQuoteId: fulfillmentMethod === "delivery" && deliveryQuoteId ? deliveryQuoteId : undefined,
       customerName: customerName.trim() || undefined,
       customerEmail: customerEmail.trim() || undefined,
       customerPhone: customerPhone.trim() || undefined,
@@ -298,6 +300,7 @@ export default function Cart() {
     };
   }, [
     deliveryAddress,
+    deliveryQuoteId,
     customerEmail,
     customerName,
     customerPhone,
@@ -323,24 +326,48 @@ export default function Cart() {
       return;
     }
 
+    if (!deliveryAddress.trim()) {
+      setDeliveryError("Please enter a delivery address.");
+      return;
+    }
+
     setDeliveryLoading(true);
     setDeliveryError(null);
     try {
-      const response = await fetch("/api/delivery", {
+      // Extract address components from delivery address
+      const postalCode = extractPostalCode(deliveryAddress);
+      const addressParts = deliveryAddress.split(',').map(s => s.trim());
+      
+      // Use DoorDash API for delivery quotes
+      const response = await fetch("/api/delivery/doordash/quote", {
         method: "POST",
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify({
-          subtotalAmount: subtotal,
-          address: deliveryAddress.trim() || undefined,
+          pickupAddress: {
+            street: tenant.addressLine1 || "",
+            city: tenant.city || "",
+            state: tenant.state || "",
+            zipCode: tenant.postalCode || "",
+          },
+          dropoffAddress: {
+            street: addressParts[0] || deliveryAddress,
+            city: addressParts[1] || tenant.city || "",
+            state: addressParts[2]?.split(' ')[0] || tenant.state || "",
+            zipCode: postalCode || tenant.postalCode || "",
+          },
+          orderValue: subtotal,
         }),
       });
       const data = await response.json();
       if (!response.ok) {
         throw new Error(data.error || "Unable to fetch delivery quote.");
       }
-      setDeliveryQuote(Number(data.deliveryFee ?? data.amount ?? defaultDeliveryFee));
+      setDeliveryQuote(Number(data.deliveryFee ?? defaultDeliveryFee));
+      setDeliveryQuoteId(data.quoteId || null);
     } catch (err) {
       setDeliveryError(err instanceof Error ? err.message : "Failed to fetch delivery quote.");
+      // Fallback to default fee
+      setDeliveryQuote(defaultDeliveryFee);
     } finally {
       setDeliveryLoading(false);
     }
@@ -398,94 +425,119 @@ export default function Cart() {
   }, [items.length]);
 
   return (
-    <div className="flex w-full max-w-lg flex-col gap-6 rounded-2xl bg-white p-4 shadow-lg ring-1 ring-black/5 md:p-6">
+    <div className="flex w-full max-w-lg flex-col gap-6 rounded-3xl border border-gray-100 bg-white p-6 shadow-xl md:p-8">
       <header className="flex items-center justify-between">
         <div>
-          <h2 className="text-xl font-semibold text-gray-900">Checkout</h2>
-          <p className="text-sm text-gray-500">You have {items.length} item{items.length === 1 ? "" : "s"} in your cart.</p>
+          <h2 className="text-2xl font-bold text-gray-900">Checkout</h2>
+          <p className="mt-1 text-sm text-gray-600">You have {items.length} item{items.length === 1 ? "" : "s"} in your cart.</p>
         </div>
         <button
           onClick={() => {
             clearCart();
             resetPaymentState();
           }}
-          className="text-sm font-semibold text-rose-600 transition hover:text-rose-500"
+          className="rounded-lg border border-gray-200 px-3 py-1.5 text-sm font-semibold text-rose-600 transition hover:border-rose-300 hover:bg-rose-50"
         >
-          Clear cart
+          Clear
         </button>
       </header>
 
+      {/* Progress Indicator */}
+      {items.length > 0 && (
+        <div className="flex items-center gap-2">
+          <div className={`flex h-10 w-10 items-center justify-center rounded-full border-2 font-semibold transition ${
+            checkoutStep === "details"
+              ? "border-blue-600 bg-blue-600 text-white"
+              : "border-green-500 bg-green-500 text-white"
+          }`}>
+            {checkoutStep === "payment" ? "✓" : "1"}
+          </div>
+          <div className={`h-1 flex-1 transition ${
+            checkoutStep === "payment" ? "bg-green-500" : "bg-gray-200"
+          }`}></div>
+          <div className={`flex h-10 w-10 items-center justify-center rounded-full border-2 font-semibold transition ${
+            checkoutStep === "payment"
+              ? "border-blue-600 bg-blue-600 text-white"
+              : "border-gray-300 bg-white text-gray-400"
+          }`}>
+            2
+          </div>
+        </div>
+      )}
+
       {items.length === 0 ? (
-        <p className="rounded-xl border border-dashed border-gray-300 bg-gray-50 p-6 text-center text-sm text-gray-500">
-          Your cart is empty. Browse the menu to add something delicious!
-        </p>
+        <div className="rounded-2xl border-2 border-dashed border-gray-200 bg-gray-50 p-12 text-center">
+          <div className="text-5xl mb-4">🛒</div>
+          <p className="text-base font-semibold text-gray-700">Your cart is empty</p>
+          <p className="mt-2 text-sm text-gray-500">Browse the menu to add something delicious!</p>
+        </div>
       ) : (
         <>
-          <section className="space-y-4">
+          <section className="space-y-3">
             {items.map((item) => (
               <article
                 key={item.id}
-                className="flex gap-4 rounded-xl border border-gray-200 p-4 shadow-sm transition hover:border-gray-300"
+                className="group flex gap-4 rounded-2xl border border-gray-200 bg-white p-4 shadow-sm transition-all hover:border-gray-300 hover:shadow-md"
               >
-                <div className="relative h-16 w-16 flex-shrink-0 overflow-hidden rounded-lg bg-gray-100">
+                <div className="relative h-20 w-20 flex-shrink-0 overflow-hidden rounded-xl bg-gray-100 shadow-sm">
                   {item.image ? (
                     <Image
                       src={item.image}
                       alt={item.name}
                       fill
-                      sizes="64px"
-                      className="object-cover"
+                      sizes="80px"
+                      className="object-cover transition-transform group-hover:scale-110"
                     />
                   ) : (
-                    <div className="flex h-full w-full items-center justify-center text-sm text-gray-400">
+                    <div className="flex h-full w-full items-center justify-center text-lg font-bold text-gray-400">
                       {item.name.charAt(0)}
                     </div>
                   )}
                 </div>
                 <div className="flex flex-1 flex-col gap-2">
                   <div className="flex items-start justify-between gap-2">
-                    <div>
-                      <p className="text-sm font-semibold text-gray-900">{item.name}</p>
+                    <div className="flex-1">
+                      <p className="text-base font-bold text-gray-900">{item.name}</p>
                       {item.description && (
-                        <p className="text-xs text-gray-500">{item.description}</p>
+                        <p className="mt-1 text-xs text-gray-600 line-clamp-2">{item.description}</p>
                       )}
                       {item.addons?.length ? (
-                        <p className="text-xs text-gray-500">
-                          Add-ons: {item.addons.map((addon) => addon.name).join(", ")}
+                        <p className="mt-1 text-xs font-medium text-gray-700">
+                          + {item.addons.map((addon) => addon.name).join(", ")}
                         </p>
                       ) : null}
                       {item.note && (
-                        <p className="text-xs italic text-gray-500">Note: {item.note}</p>
+                        <p className="mt-1 text-xs italic text-gray-600">Note: {item.note}</p>
                       )}
                     </div>
                     <button
                       onClick={() => removeFromCart(item.id)}
-                      className="text-xs font-medium text-rose-500 transition hover:text-rose-400"
+                      className="rounded-lg border border-gray-200 px-2 py-1 text-xs font-medium text-rose-600 transition hover:border-rose-300 hover:bg-rose-50"
                     >
-                      Remove
+                      ✕
                     </button>
                   </div>
-                  <div className="flex items-center justify-between">
-                    <div className="flex items-center gap-2">
+                  <div className="mt-3 flex items-center justify-between">
+                    <div className="flex items-center gap-3">
                       <button
                         onClick={() => updateQuantity(item.id, Math.max(1, item.quantity - 1))}
-                        className="flex h-8 w-8 items-center justify-center rounded-full border border-gray-200 text-gray-600 hover:border-gray-300 hover:bg-gray-50"
+                        className="flex h-9 w-9 items-center justify-center rounded-lg border-2 border-gray-200 bg-white text-base font-bold text-gray-700 transition hover:border-gray-300 hover:bg-gray-50 hover:scale-110"
                         aria-label={`Decrease quantity of ${item.name}`}
                       >
                         −
                       </button>
-                      <span className="w-8 text-center text-sm font-semibold text-gray-900">
+                      <span className="w-10 text-center text-base font-bold text-gray-900">
                         {item.quantity}
                       </span>
                       <button
                         onClick={() => updateQuantity(item.id, item.quantity + 1)}
-                        className="flex h-8 w-8 items-center justify-center rounded-full border border-gray-200 text-gray-600 hover:border-gray-300 hover:bg-gray-50"
+                        className="flex h-9 w-9 items-center justify-center rounded-lg border-2 border-gray-200 bg-white text-base font-bold text-gray-700 transition hover:border-gray-300 hover:bg-gray-50 hover:scale-110"
                         aria-label={`Increase quantity of ${item.name}`}
                       >
                         +
                       </button>
                     </div>
-                    <span className="text-sm font-semibold text-gray-900">
+                    <span className="text-lg font-bold text-gray-900">
                       {formatCurrency(item.price * item.quantity)}
                     </span>
                   </div>
@@ -494,169 +546,193 @@ export default function Cart() {
             ))}
           </section>
 
-          <section className="space-y-4">
-            <div className="grid gap-3 sm:grid-cols-2">
-              <label className="text-sm font-medium text-gray-700">
-                Name
-                <input
-                  value={customerName}
-                  onChange={(event) => setCustomerName(event.target.value)}
-                  className="mt-1 w-full rounded-lg border border-gray-300 px-3 py-2 text-sm focus:border-amber-500 focus:outline-none focus:ring-2 focus:ring-amber-200"
-                  placeholder="Maria Perez"
-                />
-              </label>
-              <label className="text-sm font-medium text-gray-700">
-                Email<span className="text-rose-500">*</span>
-                <input
-                  value={customerEmail}
-                  onChange={(event) => setCustomerEmail(event.target.value)}
-                  type="email"
-                  className="mt-1 w-full rounded-lg border border-gray-300 px-3 py-2 text-sm focus:border-amber-500 focus:outline-none focus:ring-2 focus:ring-amber-200"
-                  placeholder="maria@example.com"
-                />
-              </label>
-              <label className="text-sm font-medium text-gray-700">
-                Phone
-                <input
-                  value={customerPhone}
-                  onChange={(event) => setCustomerPhone(event.target.value)}
-                  type="tel"
-                  className="mt-1 w-full rounded-lg border border-gray-300 px-3 py-2 text-sm focus:border-amber-500 focus:outline-none focus:ring-2 focus:ring-amber-200"
-                  placeholder="(123) 456-7890"
-                />
-              </label>
-              <label className="text-sm font-medium text-gray-700">
-                Order notes
-                <input
-                  value={orderNotes}
-                  onChange={(event) => setOrderNotes(event.target.value)}
-                  className="mt-1 w-full rounded-lg border border-gray-300 px-3 py-2 text-sm focus:border-amber-500 focus:outline-none focus:ring-2 focus:ring-amber-200"
-                  placeholder="Add utensils, etc."
-                />
-              </label>
-            </div>
-
-            <div>
-              <p className="text-sm font-semibold text-gray-800">Fulfillment</p>
-              <div className="mt-2 flex gap-2">
-                <button
-                  onClick={() => setFulfillmentMethod("pickup")}
-                  className={`flex-1 rounded-lg border px-3 py-2 text-sm font-medium transition ${
-                    fulfillmentMethod === "pickup"
-                      ? "border-amber-500 bg-amber-50 text-amber-600"
-                      : "border-gray-300 text-gray-600 hover:border-gray-400"
-                  }`}
-                  type="button"
-                >
-                  Pickup
-                </button>
-                <button
-                  onClick={() => setFulfillmentMethod("delivery")}
-                  className={`flex-1 rounded-lg border px-3 py-2 text-sm font-medium transition ${
-                    fulfillmentMethod === "delivery"
-                      ? "border-amber-500 bg-amber-50 text-amber-600"
-                      : "border-gray-300 text-gray-600 hover:border-gray-400"
-                  }`}
-                  type="button"
-                >
-                  Delivery
-                </button>
+          {checkoutStep === "details" && (
+            <section className="space-y-6 rounded-2xl border border-gray-100 bg-gray-50 p-6">
+              <h3 className="text-lg font-bold text-gray-900">Order Details</h3>
+              <div className="grid gap-4 sm:grid-cols-2">
+                <label className="text-sm font-semibold text-gray-700">
+                  Name
+                  <input
+                    value={customerName}
+                    onChange={(event) => setCustomerName(event.target.value)}
+                    className="mt-2 w-full rounded-xl border-2 border-gray-200 bg-white px-4 py-3 text-sm font-medium transition focus:border-blue-500 focus:outline-none focus:ring-2 focus:ring-blue-200"
+                    placeholder="Maria Perez"
+                  />
+                </label>
+                <label className="text-sm font-semibold text-gray-700">
+                  Email<span className="ml-1 text-rose-500">*</span>
+                  <input
+                    value={customerEmail}
+                    onChange={(event) => setCustomerEmail(event.target.value)}
+                    type="email"
+                    className="mt-2 w-full rounded-xl border-2 border-gray-200 bg-white px-4 py-3 text-sm font-medium transition focus:border-blue-500 focus:outline-none focus:ring-2 focus:ring-blue-200"
+                    placeholder="maria@example.com"
+                  />
+                </label>
+                <label className="text-sm font-semibold text-gray-700">
+                  Phone
+                  <input
+                    value={customerPhone}
+                    onChange={(event) => setCustomerPhone(event.target.value)}
+                    type="tel"
+                    className="mt-2 w-full rounded-xl border-2 border-gray-200 bg-white px-4 py-3 text-sm font-medium transition focus:border-blue-500 focus:outline-none focus:ring-2 focus:ring-blue-200"
+                    placeholder="(123) 456-7890"
+                  />
+                </label>
+                <label className="text-sm font-semibold text-gray-700">
+                  Order notes
+                  <input
+                    value={orderNotes}
+                    onChange={(event) => setOrderNotes(event.target.value)}
+                    className="mt-2 w-full rounded-xl border-2 border-gray-200 bg-white px-4 py-3 text-sm font-medium transition focus:border-blue-500 focus:outline-none focus:ring-2 focus:ring-blue-200"
+                    placeholder="Add utensils, etc."
+                  />
+                </label>
               </div>
+
+              <div>
+                <p className="text-sm font-semibold text-gray-800">Fulfillment Method</p>
+                <div className="mt-3 flex gap-3">
+                  <button
+                    onClick={() => setFulfillmentMethod("pickup")}
+                    className={`flex-1 rounded-xl border-2 px-4 py-3 text-sm font-bold transition ${
+                      fulfillmentMethod === "pickup"
+                        ? "border-blue-500 bg-blue-50 text-blue-700 shadow-md"
+                        : "border-gray-200 bg-white text-gray-700 hover:border-gray-300"
+                    }`}
+                    type="button"
+                  >
+                    🏃 Pickup
+                  </button>
+                  <button
+                    onClick={() => setFulfillmentMethod("delivery")}
+                    className={`flex-1 rounded-xl border-2 px-4 py-3 text-sm font-bold transition ${
+                      fulfillmentMethod === "delivery"
+                        ? "border-blue-500 bg-blue-50 text-blue-700 shadow-md"
+                        : "border-gray-200 bg-white text-gray-700 hover:border-gray-300"
+                    }`}
+                    type="button"
+                  >
+                    🚗 Delivery
+                  </button>
+                </div>
               {fulfillmentMethod === "delivery" && (
-                <div className="mt-3 space-y-2 rounded-xl border border-gray-200 bg-gray-50 p-3">
+                <div className="mt-3 space-y-3 rounded-xl border-2 border-amber-200 bg-gradient-to-br from-amber-50 to-yellow-50 p-4">
+                  <div className="flex items-center gap-2">
+                    <span className="text-lg">🚗</span>
+                    <span className="text-sm font-bold text-gray-800">DoorDash Delivery</span>
+                  </div>
                   <label className="text-sm font-medium text-gray-700">
                     Delivery address
                     <textarea
                       value={deliveryAddress}
                       onChange={(event) => setDeliveryAddress(event.target.value)}
                       rows={2}
-                      className="mt-1 w-full rounded-lg border border-gray-300 px-3 py-2 text-sm focus:border-amber-500 focus:outline-none focus:ring-2 focus:ring-amber-200"
-                      placeholder="Street, city, instructions"
+                      className="mt-1 w-full rounded-lg border-2 border-gray-300 px-3 py-2 text-sm focus:border-amber-500 focus:outline-none focus:ring-2 focus:ring-amber-200"
+                      placeholder="Street address, city, state, zip code"
                     />
                   </label>
-                  <div className="flex items-center justify-between">
+                  <div className="flex items-center gap-2">
                     <button
                       onClick={fetchDeliveryQuote}
                       type="button"
-                      className="rounded-lg bg-amber-500 px-3 py-2 text-sm font-semibold text-white shadow-sm transition hover:bg-amber-600 disabled:cursor-not-allowed disabled:bg-amber-300"
-                      disabled={deliveryLoading}
+                      className="rounded-lg bg-gradient-to-r from-amber-500 to-yellow-500 px-4 py-2 text-sm font-bold text-white shadow-md transition hover:from-amber-600 hover:to-yellow-600 disabled:cursor-not-allowed disabled:opacity-50"
+                      disabled={deliveryLoading || !deliveryAddress.trim()}
                     >
-                      {deliveryLoading ? "Fetching quote..." : "Update delivery quote"}
+                      {deliveryLoading ? "Getting quote..." : "Get DoorDash Quote"}
                     </button>
                     {deliveryQuote !== null && (
-                      <span className="text-sm font-semibold text-gray-900">
-                        {formatCurrency(deliveryQuote)}
-                      </span>
+                      <div className="flex items-center gap-2">
+                        <span className="text-sm font-semibold text-gray-700">Delivery Fee:</span>
+                        <span className="text-lg font-bold text-amber-700">
+                          {formatCurrency(deliveryQuote)}
+                        </span>
+                      </div>
                     )}
                   </div>
-                  {deliveryError && <p className="text-sm text-rose-500">{deliveryError}</p>}
+                  {deliveryError && (
+                    <div className="rounded-lg bg-rose-50 border border-rose-200 p-2">
+                      <p className="text-sm text-rose-600">{deliveryError}</p>
+                    </div>
+                  )}
+                  {deliveryQuote !== null && !deliveryError && (
+                    <div className="rounded-lg bg-green-50 border border-green-200 p-2">
+                      <p className="text-xs text-green-700">
+                        ✓ DoorDash delivery quote ready. Estimated 35-45 minutes.
+                      </p>
+                    </div>
+                  )}
                 </div>
               )}
             </div>
 
-            <div>
-              <p className="text-sm font-semibold text-gray-800">Tip the team</p>
-              <div className="mt-2 grid grid-cols-4 gap-2">
-                {TIP_OPTIONS.map((option) => (
-                  <button
-                    key={option}
-                    onClick={() => setTipSelection(option)}
-                    type="button"
-                    className={`rounded-lg border px-3 py-2 text-sm font-medium transition ${
-                      tipSelection === option
-                        ? "border-amber-500 bg-amber-50 text-amber-600"
-                        : "border-gray-300 text-gray-600 hover:border-gray-400"
-                    }`}
-                  >
-                    {option === "custom" ? "Custom" : `${option}%`}
-                  </button>
-                ))}
+              <div>
+                <p className="text-sm font-semibold text-gray-800">Tip the team</p>
+                <div className="mt-3 grid grid-cols-4 gap-3">
+                  {TIP_OPTIONS.map((option) => (
+                    <button
+                      key={option}
+                      onClick={() => setTipSelection(option)}
+                      type="button"
+                      className={`rounded-xl border-2 px-3 py-2.5 text-sm font-bold transition ${
+                        tipSelection === option
+                          ? "border-blue-500 bg-blue-50 text-blue-700 shadow-md"
+                          : "border-gray-200 bg-white text-gray-700 hover:border-gray-300"
+                      }`}
+                    >
+                      {option === "custom" ? "Custom" : `${option}%`}
+                    </button>
+                  ))}
+                </div>
+                {tipSelection === "custom" && (
+                  <div className="mt-3">
+                    <input
+                      value={customTip}
+                      onChange={(event) => setCustomTip(event.target.value)}
+                      type="number"
+                      min="0"
+                      step="0.25"
+                      className="w-full rounded-xl border-2 border-gray-200 bg-white px-4 py-3 text-sm font-medium transition focus:border-blue-500 focus:outline-none focus:ring-2 focus:ring-blue-200"
+                      placeholder="Enter custom tip amount"
+                    />
+                  </div>
+                )}
               </div>
-              {tipSelection === "custom" && (
-                <div className="mt-2">
-                  <input
-                    value={customTip}
-                    onChange={(event) => setCustomTip(event.target.value)}
-                    type="number"
-                    min="0"
-                    step="0.25"
-                    className="w-full rounded-lg border border-gray-300 px-3 py-2 text-sm focus:border-amber-500 focus:outline-none focus:ring-2 focus:ring-amber-200"
-                    placeholder="Enter custom tip amount"
-                  />
-                </div>
-              )}
-            </div>
-          </section>
+            </section>
+          )}
 
-          <section className="space-y-2 rounded-xl border border-gray-200 bg-gray-50 p-4 text-sm text-gray-700">
-            <div className="flex justify-between">
-              <span>Subtotal</span>
-              <span>{formatCurrency(subtotal)}</span>
+          <section className="space-y-3 rounded-2xl border-2 border-gray-200 bg-gradient-to-br from-gray-50 to-white p-6">
+            <h3 className="text-lg font-bold text-gray-900 mb-4">Order Summary</h3>
+            <div className="space-y-2 text-sm">
+              <div className="flex justify-between text-gray-700">
+                <span>Subtotal</span>
+                <span className="font-semibold">{formatCurrency(subtotal)}</span>
+              </div>
+              <div className="flex justify-between text-gray-700">
+                <span>Platform fee</span>
+                <span className="font-semibold">{formatCurrency(platformFee)}</span>
+              </div>
+              <div className="flex justify-between text-gray-700">
+                <span>Delivery</span>
+                <span className="font-semibold">{formatCurrency(resolvedDeliveryFee)}</span>
+              </div>
+              <div className="flex justify-between text-gray-700">
+                <span>Tax{taxLabel ? ` (${taxLabel})` : ""}</span>
+                <span className="font-semibold">{formatCurrency(taxAmount)}</span>
+              </div>
+              {taxQuoteError && (
+                <p className="text-xs text-amber-600">
+                  {taxQuoteError}
+                </p>
+              )}
+              <div className="flex justify-between text-gray-700">
+                <span>Tip</span>
+                <span className="font-semibold">{formatCurrency(tipAmount)}</span>
+              </div>
             </div>
-            <div className="flex justify-between">
-              <span>Platform fee</span>
-              <span>{formatCurrency(platformFee)}</span>
-            </div>
-            <div className="flex justify-between">
-              <span>Delivery</span>
-              <span>{formatCurrency(resolvedDeliveryFee)}</span>
-            </div>
-            <div className="flex justify-between">
-              <span>Tax{taxLabel ? ` (${taxLabel})` : ""}</span>
-              <span>{formatCurrency(taxAmount)}</span>
-            </div>
-            {taxQuoteError && (
-              <p className="text-xs text-amber-600">
-                {taxQuoteError}
-              </p>
-            )}
-            <div className="flex justify-between">
-              <span>Tip</span>
-              <span>{formatCurrency(tipAmount)}</span>
-            </div>
-            <div className="flex items-center justify-between border-t border-dashed border-gray-300 pt-3 text-base font-semibold text-gray-900">
+            <div className="flex items-center justify-between border-t-2 border-gray-300 pt-4 text-xl font-black text-gray-900">
               <span>Total due</span>
-              <span>{formatCurrency(totalAmount)}</span>
+              <span className="text-2xl">{formatCurrency(totalAmount)}</span>
             </div>
             {estimatedPoints !== null && estimatedPoints > 0 && (
               <div className="rounded-lg bg-amber-100/70 px-3 py-2 text-xs font-medium text-amber-700">
@@ -677,26 +753,41 @@ export default function Cart() {
           )}
 
           {checkoutStep === "payment" && clientSecret ? (
-            <div className="space-y-3 rounded-2xl border border-gray-200 bg-white p-4 shadow-inner">
-              <p className="text-sm font-medium text-gray-700">
-                Securely enter your payment details below. You will be redirected to a confirmation page once the payment succeeds.
+            <div className="space-y-4 rounded-2xl border-2 border-blue-200 bg-blue-50 p-6 shadow-lg">
+              <div className="flex items-center gap-2">
+                <div className="flex h-8 w-8 items-center justify-center rounded-full bg-blue-600 text-white">
+                  🔒
+                </div>
+                <p className="text-sm font-bold text-gray-900">
+                  Secure Payment
+                </p>
+              </div>
+              <p className="text-sm text-gray-700">
+                Enter your payment details below. You will be redirected to a confirmation page once the payment succeeds.
               </p>
               <StripeCheckoutWrapper clientSecret={clientSecret} successPath="/order/success" />
               <button
                 onClick={resetPaymentState}
                 type="button"
-                className="w-full rounded-lg border border-gray-300 px-4 py-2 text-sm font-medium text-gray-700 transition hover:border-gray-400 hover:bg-gray-50"
+                className="w-full rounded-xl border-2 border-gray-300 bg-white px-4 py-2 text-sm font-semibold text-gray-700 transition hover:border-gray-400 hover:bg-gray-50"
               >
-                ← Adjust order details
+                ← Back to order details
               </button>
             </div>
           ) : (
             <button
               onClick={handleCheckout}
-              disabled={loading || items.length === 0}
-              className="w-full rounded-full bg-gradient-to-r from-rose-500 via-amber-500 to-yellow-400 px-5 py-3 text-sm font-semibold text-black shadow-lg shadow-amber-500/30 transition hover:shadow-amber-400/50 disabled:cursor-not-allowed disabled:opacity-60"
+              disabled={loading || items.length === 0 || !isContactValid}
+              className="w-full rounded-2xl bg-gradient-to-r from-blue-600 via-indigo-600 to-purple-600 px-6 py-4 text-base font-bold text-white shadow-2xl shadow-blue-500/40 transition-all hover:scale-105 hover:shadow-blue-500/60 disabled:cursor-not-allowed disabled:opacity-50 disabled:hover:scale-100"
             >
-              {loading ? "Preparing secure payment…" : `Proceed to payment · ${formatCurrency(totalAmount)}`}
+              {loading ? (
+                <span className="flex items-center justify-center gap-2">
+                  <span className="h-4 w-4 animate-spin rounded-full border-2 border-white border-t-transparent"></span>
+                  Preparing secure payment…
+                </span>
+              ) : (
+                `Proceed to Payment · ${formatCurrency(totalAmount)}`
+              )}
             </button>
           )}
         </>
@@ -704,3 +795,4 @@ export default function Cart() {
     </div>
   );
 }
+

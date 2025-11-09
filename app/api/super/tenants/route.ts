@@ -16,51 +16,124 @@ function slugify(input: string) {
     .replace(/^-+|-+$/g, '');
 }
 
-const DEMO_SECTIONS: Array<{
+const TEMPLATE_SECTIONS: Record<string, Array<{
   name: string;
   type: MenuSectionType;
   description: string;
   items: Array<{ name: string; description: string; price: number; category: string }>;
-}> = [
-  {
-    name: 'Taquería Favorites',
-    type: 'RESTAURANT' as MenuSectionType,
-    description: 'Classic tacos and plates inspired by our flagship stores.',
-    items: [
-      {
-        name: 'Carnitas Plate',
-        description: 'Slow braised pork, beans, rice, handmade tortillas.',
-        price: 15.99,
-        category: 'plates',
-      },
-      {
-        name: 'Birria Tacos',
-        description: 'Crispy tacos with consommé dip.',
-        price: 16.49,
-        category: 'tacos',
-      },
-    ],
-  },
-  {
-    name: 'Panadería',
-    type: 'BAKERY' as MenuSectionType,
-    description: 'Fresh pastries baked each morning.',
-    items: [
-      {
-        name: 'Conchas',
-        description: 'Vanilla or chocolate shell sweet bread.',
-        price: 2.99,
-        category: 'bakery',
-      },
-      {
-        name: 'Churros con Cajeta',
-        description: 'Cinnamon sugar with warm caramel sauce.',
-        price: 7.99,
-        category: 'dessert',
-      },
-    ],
-  },
-];
+}>> = {
+  taqueria: [
+    {
+      name: 'Tacos',
+      type: 'FOOD' as MenuSectionType,
+      description: 'Authentic Mexican tacos',
+      items: [
+        { name: 'Carne Asada Taco', description: 'Grilled beef with onions and cilantro', price: 3.99, category: 'tacos' },
+        { name: 'Al Pastor Taco', description: 'Marinated pork with pineapple', price: 3.99, category: 'tacos' },
+        { name: 'Carnitas Taco', description: 'Slow-cooked pork', price: 3.99, category: 'tacos' },
+        { name: 'Birria Tacos', description: 'Crispy tacos with consommé dip', price: 16.49, category: 'tacos' },
+      ],
+    },
+    {
+      name: 'Burritos',
+      type: 'FOOD' as MenuSectionType,
+      description: 'Large burritos with your choice of filling',
+      items: [
+        { name: 'Beef Burrito', description: 'Large burrito with beef, rice, beans, and cheese', price: 8.99, category: 'burritos' },
+        { name: 'Chicken Burrito', description: 'Large burrito with chicken, rice, beans, and cheese', price: 8.99, category: 'burritos' },
+      ],
+    },
+    {
+      name: 'Beverages',
+      type: 'BEVERAGE' as MenuSectionType,
+      description: 'Refreshing drinks',
+      items: [
+        { name: 'Horchata', description: 'Traditional rice drink with cinnamon', price: 2.99, category: 'beverages' },
+        { name: 'Jamaica', description: 'Hibiscus tea', price: 2.99, category: 'beverages' },
+      ],
+    },
+  ],
+  panaderia: [
+    {
+      name: 'Panadería',
+      type: 'BAKERY' as MenuSectionType,
+      description: 'Fresh baked goods daily',
+      items: [
+        { name: 'Conchas', description: 'Traditional Mexican sweet bread', price: 2.50, category: 'bakery' },
+        { name: 'Pan Dulce', description: 'Assorted sweet breads', price: 3.00, category: 'bakery' },
+        { name: 'Churros', description: 'Crispy fried dough with cinnamon sugar', price: 4.50, category: 'bakery' },
+        { name: 'Tres Leches Cake', description: 'Traditional three milk cake', price: 5.99, category: 'bakery' },
+      ],
+    },
+  ],
+  coffee: [
+    {
+      name: 'Coffee',
+      type: 'BEVERAGE' as MenuSectionType,
+      description: 'Fresh brewed coffee and espresso',
+      items: [
+        { name: 'Espresso', description: 'Single shot of espresso', price: 2.50, category: 'coffee' },
+        { name: 'Americano', description: 'Espresso with hot water', price: 3.00, category: 'coffee' },
+        { name: 'Cappuccino', description: 'Espresso with steamed milk and foam', price: 4.50, category: 'coffee' },
+        { name: 'Latte', description: 'Espresso with steamed milk', price: 4.75, category: 'coffee' },
+      ],
+    },
+    {
+      name: 'Pastries',
+      type: 'BAKERY' as MenuSectionType,
+      description: 'Fresh pastries and baked goods',
+      items: [
+        { name: 'Croissant', description: 'Buttery flaky pastry', price: 3.50, category: 'pastries' },
+        { name: 'Muffin', description: 'Fresh baked muffin', price: 3.00, category: 'pastries' },
+        { name: 'Scone', description: 'Traditional scone', price: 3.25, category: 'pastries' },
+      ],
+    },
+  ],
+  pizza: [
+    {
+      name: 'Pizza',
+      type: 'FOOD' as MenuSectionType,
+      description: 'Handmade pizzas with fresh ingredients',
+      items: [
+        { name: 'Margherita Pizza', description: 'Tomato, mozzarella, basil', price: 12.99, category: 'pizza' },
+        { name: 'Pepperoni Pizza', description: 'Pepperoni and mozzarella', price: 14.99, category: 'pizza' },
+        { name: 'Supreme Pizza', description: 'Pepperoni, sausage, peppers, onions', price: 16.99, category: 'pizza' },
+      ],
+    },
+    {
+      name: 'Sides',
+      type: 'FOOD' as MenuSectionType,
+      description: 'Delicious sides and appetizers',
+      items: [
+        { name: 'Garlic Bread', description: 'Fresh baked with garlic butter', price: 4.99, category: 'sides' },
+        { name: 'Wings', description: 'Buffalo wings with your choice of sauce', price: 9.99, category: 'sides' },
+        { name: 'Caesar Salad', description: 'Fresh romaine with caesar dressing', price: 7.99, category: 'sides' },
+      ],
+    },
+  ],
+  grocery: [
+    {
+      name: 'Produce',
+      type: 'GROCERY' as MenuSectionType,
+      description: 'Fresh fruits and vegetables',
+      items: [
+        { name: 'Fresh Bananas', description: 'Organic bananas per lb', price: 1.99, category: 'produce' },
+        { name: 'Organic Tomatoes', description: 'Fresh organic tomatoes per lb', price: 3.99, category: 'produce' },
+        { name: 'Mixed Greens', description: 'Fresh salad mix', price: 4.99, category: 'produce' },
+      ],
+    },
+    {
+      name: 'Packaged Goods',
+      type: 'GROCERY' as MenuSectionType,
+      description: 'Pantry essentials and packaged items',
+      items: [
+        { name: 'Organic Pasta', description: '1 lb package', price: 3.99, category: 'packaged' },
+        { name: 'Olive Oil', description: 'Extra virgin olive oil 500ml', price: 8.99, category: 'packaged' },
+        { name: 'Canned Beans', description: 'Organic black beans', price: 2.99, category: 'packaged' },
+      ],
+    },
+  ],
+};
 
 export async function GET() {
   const session = await getServerSession(authOptions);
@@ -201,8 +274,12 @@ export async function POST(req: Request) {
   });
 
   if (body.seedDemo) {
-    for (let i = 0; i < DEMO_SECTIONS.length; i += 1) {
-      const section = DEMO_SECTIONS[i];
+    // Determine template based on template ID or default to taqueria
+    const templateId = body.templateId || 'taqueria';
+    const sections = TEMPLATE_SECTIONS[templateId] || TEMPLATE_SECTIONS.taqueria;
+    
+    for (let i = 0; i < sections.length; i += 1) {
+      const section = sections[i];
       const createdSection = await prisma.menuSection.create({
         data: {
           tenantId: tenant.id,
@@ -357,4 +434,29 @@ export async function PATCH(req: Request) {
     createdAt: updated.createdAt.toISOString(),
     updatedAt: updated.updatedAt.toISOString(),
   });
+}
+
+export async function DELETE(req: Request) {
+  const session = await getServerSession(authOptions);
+  const role = (session?.user as { role?: string } | undefined)?.role;
+  if (!session || role !== 'super_admin') return unauthorized();
+
+  const searchParams = new URL(req.url).searchParams;
+  const tenantId = searchParams.get('id');
+
+  if (!tenantId) {
+    return NextResponse.json({ error: 'id is required' }, { status: 400 });
+  }
+
+  const tenant = await prisma.tenant.findUnique({ where: { id: tenantId } });
+  if (!tenant) {
+    return NextResponse.json({ error: 'Tenant not found' }, { status: 404 });
+  }
+
+  // Delete tenant and all related data (cascade delete)
+  await prisma.tenant.delete({
+    where: { id: tenantId },
+  });
+
+  return NextResponse.json({ success: true, message: 'Tenant deleted successfully' });
 }
