@@ -13,7 +13,7 @@ export async function POST(
 ) {
   const session = await getServerSession(authOptions);
   const role = (session?.user as { role?: string } | undefined)?.role;
-  if (!session || role !== 'admin') return unauthorized();
+  if (!session || !session.user?.email || role !== 'admin') return unauthorized();
 
   try {
     const orderId = params.id;
