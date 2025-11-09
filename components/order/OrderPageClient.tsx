@@ -1204,9 +1204,9 @@ export default function OrderPageClient({ sections, featuredItems = [], tenantSl
           </div>
         </section>
 
-        {/* Membership Button - Triggers Side Panel (Left side to avoid cart overlap) */}
+        {/* Membership Button - Desktop (stacked above accessibility) */}
         {membershipEnabled && (
-          <div className="fixed bottom-5 left-5 z-50 hidden sm:block">
+          <div className="fixed bottom-20 left-5 z-50 hidden sm:block">
             <button
               onClick={() => setShowMembershipPanel(true)}
               className="group flex items-center gap-2 rounded-full bg-gradient-to-r from-amber-500 via-yellow-400 to-amber-500 px-4 py-3 text-sm font-bold text-black shadow-2xl shadow-amber-500/40 transition-all hover:scale-110 hover:shadow-amber-500/60 sm:gap-3 sm:px-6 sm:py-4 sm:text-base"
@@ -1231,9 +1231,9 @@ export default function OrderPageClient({ sections, featuredItems = [], tenantSl
           </div>
         )}
 
-        {/* Catering Button - Desktop (Bottom left, above membership if both enabled) */}
+        {/* Catering Button - Desktop (stacked above membership/accessibility) */}
         {cateringEnabled && (
-          <div className={`fixed left-5 z-50 hidden sm:block ${membershipEnabled ? 'bottom-24' : 'bottom-5'}`}>
+          <div className={`fixed left-5 z-50 hidden sm:block ${membershipEnabled ? 'bottom-36' : 'bottom-20'}`}>
             <button
               onClick={() => setShowCateringPanel(true)}
               className="group flex items-center gap-2 rounded-full bg-gradient-to-r from-rose-500 via-orange-500 to-amber-600 px-4 py-3 text-sm font-bold text-white shadow-2xl shadow-rose-500/40 transition-all hover:scale-110 hover:shadow-rose-500/60 sm:gap-3 sm:px-6 sm:py-4 sm:text-base"
