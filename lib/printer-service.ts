@@ -321,7 +321,7 @@ export async function sendToBluetoothPrinter(
 
   try {
     // Get the previously paired device
-    const device = await navigator.bluetooth.requestDevice({
+    const device = await (navigator as any).bluetooth.requestDevice({
       filters: [{ services: ['00001101-0000-1000-8000-00805f9b34fb'] }],
     });
 
