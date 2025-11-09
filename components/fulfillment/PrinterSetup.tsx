@@ -49,7 +49,7 @@ export default function PrinterSetup({ currentConfig, onSave, onTest }: Props) {
   const [model, setModel] = useState(currentConfig?.model || 'ESC/POS');
 
   const [scanning, setScanning] = useState(false);
-  const [availableDevices, setAvailableDevices] = useState<BluetoothDevice[]>([]);
+  const [availableDevices, setAvailableDevices] = useState<any[]>([]);
   const [saving, setSaving] = useState(false);
   const [testing, setTesting] = useState(false);
   const [error, setError] = useState<string | null>(null);
