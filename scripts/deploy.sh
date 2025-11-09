@@ -19,5 +19,6 @@ cd "$TARGET_DIR"
 npm ci
 npm run build
 
-pm2 reload ecosystem.config.js || pm2 start ecosystem.config.js
-pm2 save
+# Reload only this specific app by name to avoid affecting other PM2 processes
+pm2 reload alessa-ordering || pm2 start ecosystem.config.js
+pm2 save --force

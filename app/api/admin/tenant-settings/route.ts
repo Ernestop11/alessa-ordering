@@ -253,8 +253,13 @@ export async function PATCH(req: Request) {
     }
   });
 
+  // Revalidate all paths that use tenant data
+  // The root layout is shared across all pages and contains tenant data
+  // Revalidating the root will invalidate all pages that use the layout
   revalidatePath('/');
   revalidatePath('/order');
+  // Also revalidate any other routes that might display tenant data
+  revalidatePath('/order/success');
 
   const updatedTenant = await requireTenant();
 

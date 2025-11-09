@@ -4,6 +4,7 @@ import path from 'path';
 import { promises as fs } from 'fs';
 import { randomUUID } from 'crypto';
 import { authOptions } from '@/lib/auth/options';
+import { revalidatePath } from 'next/cache';
 
 export const runtime = 'nodejs';
 
@@ -37,5 +38,12 @@ export async function POST(req: NextRequest) {
   await fs.writeFile(path.join(uploadsDir, filename), buffer);
 
   const url = `/uploads/${filename}`;
+  
+  // Revalidate paths that might display uploaded images
+  // Note: The actual tenant update happens when settings are saved,
+  // but we revalidate here to ensure fresh data is available
+  revalidatePath('/');
+  revalidatePath('/order');
+  
   return NextResponse.json({ url });
 }

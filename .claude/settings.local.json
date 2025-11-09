@@ -1,0 +1,10 @@
+{
+  "permissions": {
+    "allow": [
+      "Bash(ssh root@77.243.85.8 \"sudo -u postgres psql -c \"\"CREATE DATABASE alessa_ordering OWNER alessa_ordering_user;\"\"\")",
+      "Bash(ssh root@77.243.85.8 \"sudo -u postgres psql -c \"\"GRANT ALL PRIVILEGES ON DATABASE alessa_ordering TO alessa_ordering_user;\"\"\")"
+    ],
+    "deny": [],
+    "ask": []
+  }
+}

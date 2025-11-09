@@ -14,7 +14,13 @@ function extractTenantSlug(request: NextRequest) {
 
   if (!hostname) return DEFAULT_TENANT_SLUG;
 
-  if (hostname.endsWith(ROOT_DOMAIN)) {
+  // Check if it's exactly the root domain (or www.root domain)
+  if (hostname === ROOT_DOMAIN || hostname === `www.${ROOT_DOMAIN}`) {
+    return DEFAULT_TENANT_SLUG;
+  }
+
+  // Check for subdomains of root domain
+  if (hostname.endsWith(`.${ROOT_DOMAIN}`)) {
     const subdomain = hostname.replace(`.${ROOT_DOMAIN}`, '');
     if (subdomain && subdomain !== 'www') {
       return subdomain.toLowerCase();
@@ -36,6 +42,12 @@ function extractTenantSlug(request: NextRequest) {
 }
 
 export function middleware(request: NextRequest) {
+  // Skip tenant resolution for super-admin routes
+  if (request.nextUrl.pathname.startsWith('/super-admin') ||
+      request.nextUrl.pathname.startsWith('/api/super')) {
+    return NextResponse.next();
+  }
+
   const tenantSlug = extractTenantSlug(request);
 
   const requestHeaders = new Headers(request.headers);

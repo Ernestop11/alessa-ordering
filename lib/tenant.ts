@@ -15,7 +15,8 @@ export function getTenantSlugFromHeaders(): string {
 }
 
 export async function getTenantBySlug(slug: string) {
-  return prisma.tenant.findUnique({
+  // First try to find by slug
+  let tenant = await prisma.tenant.findUnique({
     where: {
       slug,
     },
@@ -24,6 +25,24 @@ export async function getTenantBySlug(slug: string) {
       integrations: true,
     },
   });
+
+  // If not found by slug, try to find by custom domain or domain
+  if (!tenant) {
+    tenant = await prisma.tenant.findFirst({
+      where: {
+        OR: [
+          { domain: slug },
+          { customDomain: slug },
+        ],
+      },
+      include: {
+        settings: true,
+        integrations: true,
+      },
+    });
+  }
+
+  return tenant;
 }
 
 export async function requireTenant(slug?: string) {

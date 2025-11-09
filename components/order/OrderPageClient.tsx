@@ -7,6 +7,7 @@ import { getStockImageForCategory, cycleFallbackImage } from '../../lib/menu-ima
 import { useCart } from '../../lib/store/cart';
 import { getTenantAssets } from '../../lib/tenant-assets';
 import { useTenantTheme } from '../TenantThemeProvider';
+import FeaturedCarousel from './FeaturedCarousel';
 
 export interface OrderMenuItem {
   id: string;
@@ -562,6 +563,29 @@ export default function OrderPageClient({ sections, featuredItems = [], tenantSl
     }));
   }, [featuredItems, sections, flattenedMenuItems, tenant.branding?.recommendedItems]);
 
+  // Prepare featured items for carousel
+  const carouselItems = useMemo(() => {
+    return recommendedItems
+      .filter((entry) => entry.item)
+      .map((entry) => {
+        const item = entry.item!;
+        const section = entry.section;
+        const fallback = getStockImageForCategory(item.category || section?.type || 'general', 0);
+        const displayImage = item.image || fallback;
+
+        return {
+          id: item.id,
+          name: item.name,
+          description: item.description,
+          price: item.price,
+          category: item.category,
+          image: item.image,
+          displayImage,
+          sectionName: section?.name,
+        };
+      });
+  }, [recommendedItems]);
+
   const locationSummary = tenant.branding?.location || addressParts || null;
   const hoursSummary = tenant.branding?.hours || null;
   const locationDisplay = useMemo(() => (locationSummary ? locationSummary.split('\n')[0] : null), [locationSummary]);
@@ -619,6 +643,21 @@ export default function OrderPageClient({ sections, featuredItems = [], tenantSl
         isUpsell: true,
       });
       showNotification(`Bundle added: ${card.title}`);
+    },
+    [addToCart, showNotification],
+  );
+
+  const handleCarouselAddToCart = useCallback(
+    (item: { id: string; name: string; description: string; price: number; image?: string | null; displayImage?: string }) => {
+      addToCart({
+        id: item.id,
+        name: item.name,
+        description: item.description,
+        price: item.price,
+        quantity: 1,
+        image: item.displayImage || item.image || '',
+      });
+      showNotification(`Added ${item.name} to cart`);
     },
     [addToCart, showNotification],
   );
@@ -1058,42 +1097,11 @@ export default function OrderPageClient({ sections, featuredItems = [], tenantSl
           </div>
         </section>
 
-        {recommendedItems.some((entry) => entry.item) && (
-          <section className="rounded-3xl border border-white/10 bg-white/5 p-6 shadow-lg shadow-black/20">
-            <header className="flex flex-col gap-3 md:flex-row md:items-center md:justify-between">
-              <div>
-                <h3 className="text-2xl font-semibold text-white">Chef Recommends</h3>
-                <p className="text-sm text-white/60">Local favorites and must-try bites from La Poblanita.</p>
-              </div>
-            </header>
-            <div className="mt-4 grid gap-4 sm:grid-cols-2 lg:grid-cols-3">
-              {recommendedItems.filter((entry) => entry.item).map((entry, index) => (
-                <article key={`${entry.name}-${index}`} className="rounded-3xl border border-white/10 bg-white/8 p-4 shadow-lg shadow-black/20 transition hover:-translate-y-1 hover:border-white/20">
-                  <div className="flex items-start gap-3">
-                    <div className="relative h-16 w-16 overflow-hidden rounded-2xl bg-white/10">
-                      <Image
-                        src={entry.item?.displayImage || cycleFallbackImage(index + 30)}
-                        alt={entry.name}
-                        fill
-                        className="object-cover"
-                        sizes="96px"
-                      />
-                    </div>
-                    <div className="space-y-1">
-                      <h4 className="text-lg font-semibold text-white">{entry.name}</h4>
-                      {entry.item?.description && (
-                        <p className="text-xs text-white/70">{entry.item.description}</p>
-                      )}
-                      <div className="flex items-center gap-2 text-xs text-white/60">
-                        {entry.section && <span className="rounded-full border border-white/20 px-2 py-0.5">{entry.section.name}</span>}
-                        {entry.item && <span>{`$${entry.item.price.toFixed(2)}`}</span>}
-                      </div>
-                    </div>
-                  </div>
-                </article>
-              ))}
-            </div>
-          </section>
+        {carouselItems.length > 0 && (
+          <FeaturedCarousel
+            items={carouselItems}
+            onAddToCart={handleCarouselAddToCart}
+          />
         )}
 
         {menuUpsells.length > 0 && (

@@ -545,7 +545,8 @@ export default function Settings() {
         throw new Error(await res.text());
       }
 
-      setMessage('Settings saved successfully.');
+      setMessage('Settings saved successfully. Frontend will reflect changes on next page load.');
+      // Refresh the admin dashboard to show updated data
       router.refresh();
     } catch (err) {
       console.error('Failed to save settings', err);

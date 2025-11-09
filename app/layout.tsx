@@ -35,6 +35,9 @@ export const viewport: Viewport = {
   themeColor: '#38c4ff',
 }
 
+// Force dynamic rendering to ensure tenant data is always fresh
+export const dynamic = 'force-dynamic'
+
 export default async function RootLayout({
   children,
 }: {
@@ -42,12 +45,19 @@ export default async function RootLayout({
 }) {
   const tenant = await requireTenant()
 
+  // Add cache-busting to tenant images using updatedAt timestamp
+  const tenantTimestamp = new Date(tenant.updatedAt).getTime();
+  const addCacheBuster = (url: string | null) => {
+    if (!url) return null;
+    return url.includes('?') ? `${url}&t=${tenantTimestamp}` : `${url}?t=${tenantTimestamp}`;
+  };
+
   const tenantTheme: TenantTheme = {
     id: tenant.id,
     name: tenant.name,
     slug: tenant.slug,
-    logoUrl: tenant.logoUrl,
-    heroImageUrl: tenant.heroImageUrl,
+    logoUrl: addCacheBuster(tenant.logoUrl),
+    heroImageUrl: addCacheBuster(tenant.heroImageUrl),
     heroTitle: tenant.heroTitle || tenant.name,
     heroSubtitle: tenant.heroSubtitle || tenant.settings?.tagline || '',
     tagline: tenant.settings?.tagline || '',
