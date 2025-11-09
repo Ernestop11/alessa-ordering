@@ -2,6 +2,9 @@ import { NextRequest, NextResponse } from 'next/server';
 import { requireTenant } from '@/lib/tenant';
 import prisma from '@/lib/prisma';
 
+// Force dynamic rendering - this route uses searchParams
+export const dynamic = 'force-dynamic';
+
 /**
  * DoorDash Drive API - Track Delivery
  *
