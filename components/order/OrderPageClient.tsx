@@ -1206,59 +1206,64 @@ export default function OrderPageClient({ sections, featuredItems = [], tenantSl
           </div>
         </section>
 
-        {/* Membership Button - Desktop (stacked above accessibility) */}
-        {membershipEnabled && (
-          <div className="fixed bottom-20 left-5 z-50 hidden sm:block">
-            <button
-              onClick={() => setShowMembershipPanel(true)}
-              className="group flex items-center gap-2 rounded-full bg-gradient-to-r from-amber-500 via-yellow-400 to-amber-500 px-4 py-3 text-sm font-bold text-black shadow-2xl shadow-amber-500/40 transition-all hover:scale-110 hover:shadow-amber-500/60 sm:gap-3 sm:px-6 sm:py-4 sm:text-base"
-            >
-              <span className="text-xl sm:text-2xl">⭐</span>
-              <span className="hidden sm:inline">Join Rewards</span>
-              <span className="sm:hidden">Rewards</span>
-            </button>
-          </div>
-        )}
-
-        {/* Mobile Membership Button - Stacked above cart on mobile */}
-        {membershipEnabled && (
-          <div className="fixed bottom-20 right-5 z-50 block sm:hidden">
-            <button
-              onClick={() => setShowMembershipPanel(true)}
-              className="flex items-center gap-2 rounded-full bg-gradient-to-r from-amber-500 via-yellow-400 to-amber-500 px-4 py-3 text-sm font-bold text-black shadow-2xl shadow-amber-500/40 transition-all hover:scale-110 hover:shadow-amber-500/60"
-            >
-              <span className="text-xl">⭐</span>
-              <span>Rewards</span>
-            </button>
-          </div>
-        )}
-
-        {/* Catering Button - Desktop (stacked above membership/accessibility) */}
-        {cateringEnabled && (
-          <div className={`fixed left-5 z-50 hidden sm:block ${membershipEnabled ? 'bottom-36' : 'bottom-20'}`}>
+        {/* Floating Action Buttons - Desktop (Left Side, Vertical Stack) */}
+        <div className="fixed bottom-6 left-6 z-50 hidden sm:flex sm:flex-col sm:gap-3">
+          {/* Catering Button */}
+          {cateringEnabled && (
             <button
               onClick={() => setShowCateringPanel(true)}
-              className="group flex items-center gap-2 rounded-full bg-gradient-to-r from-rose-500 via-orange-500 to-amber-600 px-4 py-3 text-sm font-bold text-white shadow-2xl shadow-rose-500/40 transition-all hover:scale-110 hover:shadow-rose-500/60 sm:gap-3 sm:px-6 sm:py-4 sm:text-base"
-            >
-              <span className="text-xl sm:text-2xl">🎉</span>
-              <span className="hidden sm:inline">Catering</span>
-              <span className="sm:hidden">Catering</span>
-            </button>
-          </div>
-        )}
-
-        {/* Mobile Catering Button - Stacked above other buttons */}
-        {cateringEnabled && (
-          <div className={`fixed right-5 z-50 block sm:hidden ${membershipEnabled ? 'bottom-36' : 'bottom-20'}`}>
-            <button
-              onClick={() => setShowCateringPanel(true)}
-              className="flex items-center gap-2 rounded-full bg-gradient-to-r from-rose-500 via-orange-500 to-amber-600 px-4 py-3 text-sm font-bold text-white shadow-2xl shadow-rose-500/40 transition-all hover:scale-110 hover:shadow-rose-500/60"
+              className="group flex min-w-[140px] items-center gap-3 rounded-2xl bg-gradient-to-r from-rose-500 via-orange-500 to-amber-600 px-5 py-3.5 text-sm font-bold text-white shadow-2xl shadow-rose-500/30 transition-all hover:scale-105 hover:shadow-rose-500/50"
             >
               <span className="text-xl">🎉</span>
               <span>Catering</span>
             </button>
-          </div>
-        )}
+          )}
+
+          {/* Rewards Button */}
+          {membershipEnabled && (
+            <button
+              onClick={() => setShowMembershipPanel(true)}
+              className="group flex min-w-[140px] items-center gap-3 rounded-2xl bg-gradient-to-r from-amber-500 via-yellow-400 to-amber-500 px-5 py-3.5 text-sm font-bold text-black shadow-2xl shadow-amber-500/30 transition-all hover:scale-105 hover:shadow-amber-500/50"
+            >
+              <span className="text-xl">⭐</span>
+              <span>Rewards</span>
+            </button>
+          )}
+
+          {/* Accessibility Button */}
+          <button
+            onClick={() => setAccessibilityOpen((prev) => !prev)}
+            className="group flex min-w-[140px] items-center gap-3 rounded-2xl bg-gradient-to-r from-blue-500 via-purple-500 to-rose-500 px-5 py-3.5 text-sm font-bold text-white shadow-2xl shadow-blue-500/30 transition-all hover:scale-105 hover:shadow-blue-500/50"
+          >
+            <span className="text-xl">♿</span>
+            <span className="text-xs">Accessibility</span>
+          </button>
+        </div>
+
+        {/* Floating Action Buttons - Mobile (Right Side, Vertical Stack above Cart) */}
+        <div className="fixed bottom-20 right-5 z-50 flex flex-col gap-3 sm:hidden">
+          {/* Catering Button - Mobile */}
+          {cateringEnabled && (
+            <button
+              onClick={() => setShowCateringPanel(true)}
+              className="flex items-center justify-center gap-2 rounded-full bg-gradient-to-r from-rose-500 via-orange-500 to-amber-600 px-5 py-3 text-sm font-bold text-white shadow-2xl shadow-rose-500/30"
+            >
+              <span className="text-lg">🎉</span>
+              <span>Catering</span>
+            </button>
+          )}
+
+          {/* Rewards Button - Mobile */}
+          {membershipEnabled && (
+            <button
+              onClick={() => setShowMembershipPanel(true)}
+              className="flex items-center justify-center gap-2 rounded-full bg-gradient-to-r from-amber-500 via-yellow-400 to-amber-500 px-5 py-3 text-sm font-bold text-black shadow-2xl shadow-amber-500/30"
+            >
+              <span className="text-lg">⭐</span>
+              <span>Rewards</span>
+            </button>
+          )}
+        </div>
 
         {carouselItems.length > 0 && (
           <FeaturedCarousel
@@ -2260,16 +2265,9 @@ export default function OrderPageClient({ sections, featuredItems = [], tenantSl
         </div>
       )}
 
-      {/* Accessibility Button - Hidden on mobile to avoid overlap */}
-      <div className="fixed bottom-5 left-5 z-50 hidden sm:block">
-        <button
-          onClick={() => setAccessibilityOpen((prev) => !prev)}
-          className="rounded-full bg-gradient-to-r from-blue-500 via-purple-500 to-rose-500 px-3 py-2 text-xs font-semibold text-white shadow-xl shadow-blue-500/30 transition hover:scale-105"
-        >
-          ♿ Accessibility
-        </button>
-        {isAccessibilityOpen && (
-          <div className="mt-3 w-64 rounded-2xl border border-white/20 bg-black/80 p-4 text-sm text-white/80 shadow-xl backdrop-blur">
+      {/* Accessibility Panel - Positioned above button stack on desktop */}
+      {isAccessibilityOpen && (
+        <div className="fixed bottom-[180px] left-6 z-50 hidden w-64 rounded-2xl border border-white/20 bg-black/90 p-5 text-sm text-white/80 shadow-2xl backdrop-blur-xl sm:block">
             <p className="text-xs uppercase tracking-[0.4em] text-white/50">Accessibility Controls</p>
             <div className="mt-4 space-y-3">
               <label className="flex items-center justify-between">
@@ -2309,9 +2307,8 @@ export default function OrderPageClient({ sections, featuredItems = [], tenantSl
             >
               Reset preferences
             </button>
-          </div>
-        )}
-      </div>
+        </div>
+      )}
     </div>
   );
 }
