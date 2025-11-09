@@ -796,20 +796,22 @@ export default function OrderPageClient({ sections, featuredItems = [], tenantSl
                       </div>
                     )}
                   </div>
-                  <div className="mt-4 flex flex-wrap items-center gap-2">
+                  <div className="mt-4 flex flex-col gap-2 sm:flex-row">
                     <button
-                      className="rounded-full bg-gradient-to-r from-rose-500 to-amber-500 px-4 py-2 text-sm font-semibold text-white shadow-lg shadow-rose-500/30 transition hover:scale-105"
-                      onClick={() => handleAddToCart(item, item.displayImage)}
-                      disabled={!item.available}
-                    >
-                      {item.available ? 'Add to Cart' : 'Sold Out'}
-                    </button>
-                    <button
-                      className="rounded-full border border-white/30 px-4 py-2 text-sm font-semibold text-white/80 transition hover:border-white hover:text-white disabled:cursor-not-allowed disabled:border-white/10 disabled:text-white/30"
+                      className="flex-1 rounded-xl bg-gradient-to-r from-rose-500 via-amber-500 to-yellow-400 px-5 py-3 text-sm font-bold text-white shadow-xl shadow-rose-500/30 transition-all hover:scale-105 hover:shadow-rose-500/50 disabled:cursor-not-allowed disabled:opacity-50"
                       onClick={() => openCustomization(item, section.type)}
                       disabled={!item.available}
                     >
-                      Customize
+                      <span className="flex items-center justify-center gap-2">
+                        ✨ {item.available ? 'Customize & Add' : 'Sold Out'}
+                      </span>
+                    </button>
+                    <button
+                      className="rounded-xl border-2 border-white/30 bg-white/10 px-4 py-3 text-sm font-semibold text-white transition-all hover:border-white hover:bg-white/20 disabled:cursor-not-allowed disabled:opacity-50"
+                      onClick={() => handleAddToCart(item, item.displayImage)}
+                      disabled={!item.available}
+                    >
+                      Quick Add
                     </button>
                   </div>
                 </div>
@@ -952,28 +954,28 @@ export default function OrderPageClient({ sections, featuredItems = [], tenantSl
                       </span>
                     ))}
                   </div>
-                  <div className="flex items-center gap-2 sm:gap-3">
+                  <div className="flex flex-col gap-2 sm:flex-row">
                     <button
-                      className={`rounded-xl border-2 px-3 py-2 text-xs font-bold backdrop-blur-sm transition hover:scale-105 disabled:cursor-not-allowed disabled:opacity-50 sm:px-4 sm:py-2.5 sm:text-sm ${
+                      className={`flex-1 rounded-xl px-5 py-3 text-sm font-bold shadow-2xl transition-all hover:scale-105 disabled:cursor-not-allowed disabled:opacity-50 ${
                         isBakery
-                          ? 'border-amber-300/40 bg-amber-500/20 text-amber-100 hover:border-amber-300 hover:bg-amber-500/30'
-                          : 'border-white/30 bg-white/10 text-white hover:border-white hover:bg-white/20'
+                          ? 'bg-gradient-to-r from-amber-400 via-yellow-400 to-amber-400 text-black shadow-amber-500/50 hover:shadow-amber-500/70'
+                          : 'bg-gradient-to-r from-rose-500 via-amber-500 to-yellow-400 text-white shadow-rose-500/40 hover:shadow-rose-500/60'
                       }`}
                       onClick={() => openCustomization(item, section.type)}
                       disabled={!item.available}
                     >
-                      Customize
+                      ✨ {item.available ? 'Customize & Add' : 'Sold Out'}
                     </button>
                     <button
-                      className={`rounded-xl px-4 py-2.5 text-xs font-bold shadow-xl transition-all hover:scale-110 disabled:cursor-not-allowed disabled:opacity-50 sm:px-6 sm:text-sm ${
+                      className={`rounded-xl border-2 px-4 py-3 text-sm font-semibold backdrop-blur-sm transition-all hover:scale-105 disabled:cursor-not-allowed disabled:opacity-50 ${
                         isBakery
-                          ? 'bg-gradient-to-r from-amber-400 via-yellow-400 to-amber-400 text-black shadow-amber-500/40 hover:shadow-amber-500/60'
-                          : 'bg-gradient-to-r from-rose-500 via-amber-500 to-yellow-400 text-black shadow-rose-500/30 hover:shadow-rose-500/50'
+                          ? 'border-amber-300/40 bg-amber-500/10 text-amber-100 hover:border-amber-300 hover:bg-amber-500/20'
+                          : 'border-white/30 bg-white/5 text-white hover:border-white hover:bg-white/15'
                       }`}
                       onClick={() => handleAddToCart(item, item.displayImage)}
                       disabled={!item.available}
                     >
-                      {item.available ? 'Add to Cart' : 'Sold Out'}
+                      Quick Add
                     </button>
                   </div>
                 </div>
