@@ -5,6 +5,7 @@ import { useState } from 'react';
 import DashboardLayout from './DashboardLayout';
 import OrderList from './OrderList';
 import MenuEditor from './MenuEditor';
+import MenuManager from './MenuManager';
 import Settings from './Settings';
 import MenuSectionsManager from './MenuSectionsManager';
 import CustomerList from './CustomerList';
@@ -13,7 +14,7 @@ import CustomizeTab from './CustomizeTab';
 import CateringManager from './CateringManager';
 import { signOut } from 'next-auth/react';
 
-type Tab = 'orders' | 'customers' | 'logs' | 'sections' | 'menu' | 'customize' | 'catering' | 'settings';
+type Tab = 'orders' | 'customers' | 'logs' | 'sections' | 'menu' | 'menu-manager' | 'customize' | 'catering' | 'settings';
 
 export default function AdminDashboardClient() {
   const [activeTab, setActiveTab] = useState<Tab>('orders');
@@ -30,6 +31,8 @@ export default function AdminDashboardClient() {
         return <MenuSectionsManager />;
       case 'menu':
         return <MenuEditor />;
+      case 'menu-manager':
+        return <MenuManager />;
       case 'customize':
         return <CustomizeTab />;
       case 'catering':
@@ -54,10 +57,10 @@ export default function AdminDashboardClient() {
                 <div className="hidden sm:ml-6 sm:flex sm:space-x-8">
                   {[
                     { key: 'orders', label: 'Orders' },
+                    { key: 'menu-manager', label: 'Menu Manager' },
                     { key: 'customers', label: 'Customers' },
-                    { key: 'logs', label: 'Integration Logs' },
-                    { key: 'sections', label: 'Menu Sections' },
-                    { key: 'menu', label: 'Menu' },
+                    { key: 'sections', label: 'Sections' },
+                    { key: 'menu', label: 'Menu Items' },
                     { key: 'catering', label: 'Catering' },
                     { key: 'customize', label: 'Customize' },
                     { key: 'settings', label: 'Settings' },
