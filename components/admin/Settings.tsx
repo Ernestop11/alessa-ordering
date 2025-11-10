@@ -1530,70 +1530,108 @@ export default function Settings() {
           </div>
         </section>
 
+        {/* Integrations Section */}
         <section>
-          <h3 className="text-base font-semibold text-gray-900 mb-4">Fees & Taxes</h3>
+          <h3 className="text-base font-semibold text-gray-900 mb-4">Integrations</h3>
           <p className="text-sm text-gray-500 mb-4">
-            Configure platform fees you pass on to customers and default tax or delivery rates used for estimates.
+            Connect your payment processor, delivery service, and printer to enable order fulfillment.
           </p>
-          <div className="grid grid-cols-1 gap-6 sm:grid-cols-2">
-            <div>
-              <label htmlFor="platformPercentFee" className="block text-sm font-medium text-gray-700">
-                Platform Fee (% of subtotal)
-              </label>
-              <input
-                type="number"
-                step="0.0001"
-                min="0"
-                name="platformPercentFee"
-                id="platformPercentFee"
-                value={form.platformPercentFee}
-                onChange={handleChange}
-                className="mt-1 block w-full border-gray-300 rounded-md shadow-sm focus:ring-blue-500 focus:border-blue-500 sm:text-sm"
-              />
+
+          {/* Stripe Connect */}
+          <div className="mb-6 rounded-lg border-2 border-gray-200 bg-white p-6">
+            <div className="flex items-start justify-between">
+              <div className="flex items-center gap-4">
+                <div className="flex h-12 w-12 items-center justify-center rounded-lg bg-indigo-100">
+                  <span className="text-2xl">💳</span>
+                </div>
+                <div>
+                  <h4 className="text-sm font-semibold text-gray-900">Stripe Payment Processing</h4>
+                  <p className="text-xs text-gray-500 mt-1">
+                    Accept payments and process refunds through Stripe Connect
+                  </p>
+                  {form.stripeAccountId && (
+                    <p className="text-xs text-green-600 mt-1 font-medium">✓ Connected</p>
+                  )}
+                </div>
+              </div>
+              {!form.stripeAccountId ? (
+                <a
+                  href="/admin/stripe-connect/complete"
+                  className="inline-flex items-center rounded-md border border-transparent bg-indigo-600 px-4 py-2 text-sm font-medium text-white shadow-sm hover:bg-indigo-700 focus:outline-none focus:ring-2 focus:ring-indigo-500 focus:ring-offset-2"
+                >
+                  Connect Stripe
+                </a>
+              ) : (
+                <button
+                  type="button"
+                  className="inline-flex items-center rounded-md border border-gray-300 bg-white px-4 py-2 text-sm font-medium text-gray-700 shadow-sm hover:bg-gray-50"
+                >
+                  Manage Account
+                </button>
+              )}
             </div>
-            <div>
-              <label htmlFor="platformFlatFee" className="block text-sm font-medium text-gray-700">
-                Platform Fee (flat $)
-              </label>
-              <input
-                type="number"
-                step="0.01"
-                min="0"
-                name="platformFlatFee"
-                id="platformFlatFee"
-                value={form.platformFlatFee}
-                onChange={handleChange}
-                className="mt-1 block w-full border-gray-300 rounded-md shadow-sm focus:ring-blue-500 focus:border-blue-500 sm:text-sm"
-              />
+          </div>
+
+          {/* DoorDash Integration */}
+          <div className="mb-6 rounded-lg border-2 border-gray-200 bg-white p-6">
+            <div className="flex items-start justify-between">
+              <div className="flex items-center gap-4">
+                <div className="flex h-12 w-12 items-center justify-center rounded-lg bg-red-100">
+                  <span className="text-2xl">🚗</span>
+                </div>
+                <div>
+                  <h4 className="text-sm font-semibold text-gray-900">DoorDash Delivery</h4>
+                  <p className="text-xs text-gray-500 mt-1">
+                    Integrate DoorDash for delivery fulfillment
+                  </p>
+                  <p className="text-xs text-amber-600 mt-1 font-medium">⚠ Not Connected</p>
+                </div>
+              </div>
+              <button
+                type="button"
+                className="inline-flex items-center rounded-md border border-transparent bg-red-600 px-4 py-2 text-sm font-medium text-white shadow-sm hover:bg-red-700 focus:outline-none focus:ring-2 focus:ring-red-500 focus:ring-offset-2"
+              >
+                Connect DoorDash
+              </button>
             </div>
-            <div>
-              <label htmlFor="defaultTaxRate" className="block text-sm font-medium text-gray-700">
-                Default Tax Rate (decimal)
-              </label>
-              <input
-                type="number"
-                step="0.0001"
-                min="0"
-                name="defaultTaxRate"
-                id="defaultTaxRate"
-                value={form.defaultTaxRate}
-                onChange={handleChange}
-                className="mt-1 block w-full border-gray-300 rounded-md shadow-sm focus:ring-blue-500 focus:border-blue-500 sm:text-sm"
-              />
+          </div>
+
+          {/* Printer Integration */}
+          <div className="mb-6 rounded-lg border-2 border-gray-200 bg-white p-6">
+            <div className="flex items-start justify-between">
+              <div className="flex items-center gap-4">
+                <div className="flex h-12 w-12 items-center justify-center rounded-lg bg-gray-100">
+                  <span className="text-2xl">🖨️</span>
+                </div>
+                <div>
+                  <h4 className="text-sm font-semibold text-gray-900">Receipt Printer</h4>
+                  <p className="text-xs text-gray-500 mt-1">
+                    Connect Bluetooth printer for automatic order printing
+                  </p>
+                  <p className="text-xs text-amber-600 mt-1 font-medium">⚠ Not Connected</p>
+                </div>
+              </div>
+              <button
+                type="button"
+                className="inline-flex items-center rounded-md border border-gray-300 bg-white px-4 py-2 text-sm font-medium text-gray-700 shadow-sm hover:bg-gray-50"
+              >
+                Discover Printers
+              </button>
             </div>
-            <div>
-              <label htmlFor="deliveryBaseFee" className="block text-sm font-medium text-gray-700">
-                Base Delivery Fee ($)
-              </label>
+
+            {/* Auto-print Toggle */}
+            <div className="mt-4 flex items-center justify-between rounded-md border border-gray-200 bg-gray-50 px-4 py-3">
+              <div>
+                <p className="text-sm font-medium text-gray-900">Auto-Print Orders</p>
+                <p className="text-xs text-gray-500 mt-1">
+                  Automatically print new orders when they arrive
+                </p>
+              </div>
               <input
-                type="number"
-                step="0.01"
-                min="0"
-                name="deliveryBaseFee"
-                id="deliveryBaseFee"
-                value={form.deliveryBaseFee}
-                onChange={handleChange}
-                className="mt-1 block w-full border-gray-300 rounded-md shadow-sm focus:ring-blue-500 focus:border-blue-500 sm:text-sm"
+                type="checkbox"
+                checked={form.autoPrintOrders}
+                onChange={(e) => setForm((prev) => ({ ...prev, autoPrintOrders: e.target.checked }))}
+                className="h-5 w-5 rounded border-gray-300 text-blue-600 focus:ring-blue-500"
               />
             </div>
           </div>
