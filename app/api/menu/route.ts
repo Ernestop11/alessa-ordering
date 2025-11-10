@@ -1,4 +1,7 @@
 import { NextResponse } from 'next/server'
+import { revalidatePath } from 'next/cache'
+import { getServerSession } from 'next-auth'
+import { authOptions } from '@/lib/auth/options'
 import prisma from '@/lib/prisma'
 import { requireTenant } from '@/lib/tenant'
 
@@ -18,6 +21,13 @@ export async function GET() {
 
 export async function POST(req: Request) {
   try {
+    // Check authentication and role
+    const session = await getServerSession(authOptions)
+    const role = (session?.user as { role?: string } | undefined)?.role
+    if (!session || role !== 'admin') {
+      return NextResponse.json({ error: 'Unauthorized' }, { status: 401 })
+    }
+
     const body = await req.json()
     // Expecting: { name, description, price, category, image?, available? }
     const price = parseFloat(String(body.price || 0))
@@ -43,6 +53,13 @@ export async function POST(req: Request) {
     const created = await prisma.menuItem.create({
       data,
     })
+
+    // Revalidate customer-facing pages so menu changes reflect immediately
+    revalidatePath('/')
+    revalidatePath('/order')
+    revalidatePath(`/${tenant.slug}`)
+    revalidatePath(`/${tenant.slug}/order`)
+
     return NextResponse.json(created, { status: 201 })
   } catch (err) {
     return NextResponse.json({ error: 'Failed to create menu item' }, { status: 500 })

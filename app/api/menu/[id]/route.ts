@@ -1,4 +1,7 @@
 import { NextResponse } from 'next/server'
+import { revalidatePath } from 'next/cache'
+import { getServerSession } from 'next-auth'
+import { authOptions } from '@/lib/auth/options'
 import prisma from '@/lib/prisma'
 import { requireTenant } from '@/lib/tenant'
 
@@ -22,6 +25,13 @@ export async function GET(req: Request, { params }: { params: { id: string } }) 
 
 export async function PATCH(req: Request, { params }: { params: { id: string } }) {
   try {
+    // Check authentication and role
+    const session = await getServerSession(authOptions)
+    const role = (session?.user as { role?: string } | undefined)?.role
+    if (!session || role !== 'admin') {
+      return NextResponse.json({ error: 'Unauthorized' }, { status: 401 })
+    }
+
     const id = params.id
     const body = await req.json()
     const tenant = await requireTenant()
@@ -58,6 +68,13 @@ export async function PATCH(req: Request, { params }: { params: { id: string } }
       where: { id },
       data: updatableFields,
     })
+
+    // Revalidate customer-facing pages so menu changes reflect immediately
+    revalidatePath('/')
+    revalidatePath('/order')
+    revalidatePath(`/${tenant.slug}`)
+    revalidatePath(`/${tenant.slug}/order`)
+
     return NextResponse.json(updated)
   } catch (err) {
     return NextResponse.json({ error: 'Failed to update menu item', details: String(err) }, { status: 500 })
@@ -66,6 +83,13 @@ export async function PATCH(req: Request, { params }: { params: { id: string } }
 
 export async function DELETE(req: Request, { params }: { params: { id: string } }) {
   try {
+    // Check authentication and role
+    const session = await getServerSession(authOptions)
+    const role = (session?.user as { role?: string } | undefined)?.role
+    if (!session || role !== 'admin') {
+      return NextResponse.json({ error: 'Unauthorized' }, { status: 401 })
+    }
+
     const id = params.id
     const tenant = await requireTenant()
 
@@ -75,6 +99,13 @@ export async function DELETE(req: Request, { params }: { params: { id: string } 
     }
 
     await prisma.menuItem.delete({ where: { id } })
+
+    // Revalidate customer-facing pages so menu changes reflect immediately
+    revalidatePath('/')
+    revalidatePath('/order')
+    revalidatePath(`/${tenant.slug}`)
+    revalidatePath(`/${tenant.slug}/order`)
+
     return NextResponse.json({ ok: true })
   } catch (err) {
     return NextResponse.json({ error: 'Failed to delete menu item' }, { status: 500 })
