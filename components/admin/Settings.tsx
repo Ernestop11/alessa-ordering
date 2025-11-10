@@ -78,6 +78,35 @@ interface AccessibilityDefaultsForm {
   reducedMotion: boolean;
 }
 
+interface DayHours {
+  open: string;
+  close: string;
+  closed: boolean;
+}
+
+interface OperatingHoursForm {
+  timezone: string;
+  storeHours: Record<string, DayHours>;
+  kitchenHours: Record<string, DayHours>;
+  useKitchenHours: boolean;
+  winterMode: boolean;
+  winterStartDate: string;
+  winterEndDate: string;
+  winterHours: Record<string, DayHours>;
+  temporarilyClosed: boolean;
+  closedMessage: string;
+  serviceMode: {
+    pickup: boolean;
+    delivery: boolean;
+    dineIn: boolean;
+  };
+  holidays: Array<{
+    id: string;
+    date: string;
+    name: string;
+  }>;
+}
+
 const defaultFormState: SettingsForm = {
   restaurantName: '',
   tagline: '',
@@ -161,6 +190,57 @@ const defaultAccessibilityDefaults: AccessibilityDefaultsForm = {
   reducedMotion: false,
 };
 
+const DAYS_OF_WEEK = ['monday', 'tuesday', 'wednesday', 'thursday', 'friday', 'saturday', 'sunday'];
+
+const createDefaultDayHours = (): DayHours => ({
+  open: '09:00',
+  close: '21:00',
+  closed: false,
+});
+
+const defaultOperatingHours: OperatingHoursForm = {
+  timezone: 'America/Los_Angeles',
+  storeHours: {
+    monday: createDefaultDayHours(),
+    tuesday: createDefaultDayHours(),
+    wednesday: createDefaultDayHours(),
+    thursday: createDefaultDayHours(),
+    friday: createDefaultDayHours(),
+    saturday: createDefaultDayHours(),
+    sunday: createDefaultDayHours(),
+  },
+  kitchenHours: {
+    monday: { ...createDefaultDayHours(), close: '20:30' },
+    tuesday: { ...createDefaultDayHours(), close: '20:30' },
+    wednesday: { ...createDefaultDayHours(), close: '20:30' },
+    thursday: { ...createDefaultDayHours(), close: '20:30' },
+    friday: { ...createDefaultDayHours(), close: '20:30' },
+    saturday: { ...createDefaultDayHours(), close: '20:30' },
+    sunday: { ...createDefaultDayHours(), close: '20:30' },
+  },
+  useKitchenHours: false,
+  winterMode: false,
+  winterStartDate: '',
+  winterEndDate: '',
+  winterHours: {
+    monday: createDefaultDayHours(),
+    tuesday: createDefaultDayHours(),
+    wednesday: createDefaultDayHours(),
+    thursday: createDefaultDayHours(),
+    friday: createDefaultDayHours(),
+    saturday: createDefaultDayHours(),
+    sunday: createDefaultDayHours(),
+  },
+  temporarilyClosed: false,
+  closedMessage: 'We are temporarily closed. Check back soon!',
+  serviceMode: {
+    pickup: true,
+    delivery: true,
+    dineIn: false,
+  },
+  holidays: [],
+};
+
 function createEmptyUpsellBundle(): UpsellBundleForm {
   return {
     id: generateId('upsell'),
@@ -192,6 +272,48 @@ export default function Settings() {
   const [uploadingField, setUploadingField] = useState<string | null>(null);
   const [heroGallery, setHeroGallery] = useState<string[]>([]);
   const [heroGalleryInput, setHeroGalleryInput] = useState<string>('');
+  const [operatingHours, setOperatingHours] = useState<OperatingHoursForm>(defaultOperatingHours);
+
+  const handleHoursChange = (type: 'storeHours' | 'kitchenHours' | 'winterHours', day: string, field: keyof DayHours, value: string | boolean) => {
+    setOperatingHours((prev) => ({
+      ...prev,
+      [type]: {
+        ...prev[type],
+        [day]: {
+          ...prev[type][day],
+          [field]: value,
+        },
+      },
+    }));
+  };
+
+  const addHoliday = () => {
+    setOperatingHours((prev) => ({
+      ...prev,
+      holidays: [
+        ...prev.holidays,
+        {
+          id: generateId('holiday'),
+          date: '',
+          name: '',
+        },
+      ],
+    }));
+  };
+
+  const removeHoliday = (holidayId: string) => {
+    setOperatingHours((prev) => ({
+      ...prev,
+      holidays: prev.holidays.filter((h) => h.id !== holidayId),
+    }));
+  };
+
+  const handleHolidayChange = (holidayId: string, field: 'date' | 'name', value: string) => {
+    setOperatingHours((prev) => ({
+      ...prev,
+      holidays: prev.holidays.map((h) => (h.id === holidayId ? { ...h, [field]: value } : h)),
+    }));
+  };
 
   const handleTierFieldChange = <K extends keyof MembershipTierForm>(tierId: string, field: K, value: MembershipTierForm[K]) => {
     setMembershipProgram((prev) => ({
@@ -393,6 +515,33 @@ export default function Settings() {
         } else {
           setAccessibilityDefaults(defaultAccessibilityDefaults);
         }
+
+        // Load operating hours
+        if (settings.operatingHours && typeof settings.operatingHours === 'object') {
+          const loadedHours = settings.operatingHours as any;
+          setOperatingHours({
+            timezone: loadedHours.timezone || defaultOperatingHours.timezone,
+            storeHours: loadedHours.storeHours || defaultOperatingHours.storeHours,
+            kitchenHours: loadedHours.kitchenHours || defaultOperatingHours.kitchenHours,
+            useKitchenHours: Boolean(loadedHours.useKitchenHours),
+            winterMode: Boolean(loadedHours.winterMode),
+            winterStartDate: loadedHours.winterStartDate || '',
+            winterEndDate: loadedHours.winterEndDate || '',
+            winterHours: loadedHours.winterHours || defaultOperatingHours.winterHours,
+            temporarilyClosed: Boolean(loadedHours.temporarilyClosed),
+            closedMessage: loadedHours.closedMessage || defaultOperatingHours.closedMessage,
+            serviceMode: loadedHours.serviceMode || defaultOperatingHours.serviceMode,
+            holidays: Array.isArray(loadedHours.holidays)
+              ? loadedHours.holidays.map((h: any) => ({
+                  id: h.id || generateId('holiday'),
+                  date: h.date || '',
+                  name: h.name || '',
+                }))
+              : [],
+          });
+        } else {
+          setOperatingHours(defaultOperatingHours);
+        }
       } catch (err) {
         console.error('Failed to load tenant settings', err);
         if (active) {
@@ -533,6 +682,21 @@ export default function Settings() {
         highContrast: Boolean(accessibilityDefaults.highContrast),
         largeText: Boolean(accessibilityDefaults.largeText),
         reducedMotion: Boolean(accessibilityDefaults.reducedMotion),
+      };
+
+      payload.operatingHours = {
+        timezone: operatingHours.timezone,
+        storeHours: operatingHours.storeHours,
+        kitchenHours: operatingHours.kitchenHours,
+        useKitchenHours: Boolean(operatingHours.useKitchenHours),
+        winterMode: Boolean(operatingHours.winterMode),
+        winterStartDate: operatingHours.winterStartDate,
+        winterEndDate: operatingHours.winterEndDate,
+        winterHours: operatingHours.winterHours,
+        temporarilyClosed: Boolean(operatingHours.temporarilyClosed),
+        closedMessage: operatingHours.closedMessage,
+        serviceMode: operatingHours.serviceMode,
+        holidays: operatingHours.holidays.filter((h) => h.date && h.name),
       };
 
       const res = await fetch('/api/admin/tenant-settings', {
@@ -1002,6 +1166,367 @@ export default function Settings() {
                 placeholder="e.g. America/Los_Angeles"
               />
             </div>
+          </div>
+        </section>
+
+        <section>
+          <h3 className="text-base font-semibold text-gray-900 mb-4">Business Hours & Operations</h3>
+          <p className="text-sm text-gray-500 mb-4">
+            Configure store hours, kitchen hours, seasonal schedules, and service modes. Control when customers can place orders.
+          </p>
+
+          {/* Temporary Closure Toggle */}
+          <div className="mb-6 rounded-lg border-2 border-amber-200 bg-amber-50 p-4">
+            <label className="flex items-center justify-between">
+              <div>
+                <p className="text-sm font-semibold text-amber-900">Temporarily Closed</p>
+                <p className="text-xs text-amber-700 mt-1">
+                  Enable this to immediately close online ordering. Customers will see your custom message.
+                </p>
+              </div>
+              <input
+                type="checkbox"
+                className="h-5 w-5 rounded border-gray-300 text-amber-600 focus:ring-amber-500"
+                checked={operatingHours.temporarilyClosed}
+                onChange={(e) =>
+                  setOperatingHours((prev) => ({
+                    ...prev,
+                    temporarilyClosed: e.target.checked,
+                  }))
+                }
+              />
+            </label>
+            {operatingHours.temporarilyClosed && (
+              <div className="mt-3">
+                <label className="block text-xs font-medium text-amber-900">Closure Message</label>
+                <input
+                  type="text"
+                  value={operatingHours.closedMessage}
+                  onChange={(e) =>
+                    setOperatingHours((prev) => ({
+                      ...prev,
+                      closedMessage: e.target.value,
+                    }))
+                  }
+                  className="mt-1 block w-full rounded-md border-gray-300 shadow-sm focus:border-amber-500 focus:ring-amber-500 sm:text-sm"
+                  placeholder="We are temporarily closed. Check back soon!"
+                />
+              </div>
+            )}
+          </div>
+
+          {/* Service Modes */}
+          <div className="mb-6">
+            <h4 className="text-sm font-semibold text-gray-900 mb-3">Service Modes</h4>
+            <div className="grid grid-cols-1 gap-3 sm:grid-cols-3">
+              <label className="flex items-center gap-3 rounded-md border border-gray-200 bg-gray-50 px-3 py-3">
+                <input
+                  type="checkbox"
+                  className="h-5 w-5 rounded border-gray-300 text-blue-600 focus:ring-blue-500"
+                  checked={operatingHours.serviceMode.pickup}
+                  onChange={(e) =>
+                    setOperatingHours((prev) => ({
+                      ...prev,
+                      serviceMode: {
+                        ...prev.serviceMode,
+                        pickup: e.target.checked,
+                      },
+                    }))
+                  }
+                />
+                <span className="text-sm font-medium text-gray-700">Pickup</span>
+              </label>
+              <label className="flex items-center gap-3 rounded-md border border-gray-200 bg-gray-50 px-3 py-3">
+                <input
+                  type="checkbox"
+                  className="h-5 w-5 rounded border-gray-300 text-blue-600 focus:ring-blue-500"
+                  checked={operatingHours.serviceMode.delivery}
+                  onChange={(e) =>
+                    setOperatingHours((prev) => ({
+                      ...prev,
+                      serviceMode: {
+                        ...prev.serviceMode,
+                        delivery: e.target.checked,
+                      },
+                    }))
+                  }
+                />
+                <span className="text-sm font-medium text-gray-700">Delivery</span>
+              </label>
+              <label className="flex items-center gap-3 rounded-md border border-gray-200 bg-gray-50 px-3 py-3">
+                <input
+                  type="checkbox"
+                  className="h-5 w-5 rounded border-gray-300 text-blue-600 focus:ring-blue-500"
+                  checked={operatingHours.serviceMode.dineIn}
+                  onChange={(e) =>
+                    setOperatingHours((prev) => ({
+                      ...prev,
+                      serviceMode: {
+                        ...prev.serviceMode,
+                        dineIn: e.target.checked,
+                      },
+                    }))
+                  }
+                />
+                <span className="text-sm font-medium text-gray-700">Dine-in</span>
+              </label>
+            </div>
+          </div>
+
+          {/* Store Hours */}
+          <div className="mb-6 rounded-lg border border-gray-200 p-4">
+            <h4 className="text-sm font-semibold text-gray-900 mb-3">Store Hours</h4>
+            <div className="space-y-3">
+              {DAYS_OF_WEEK.map((day) => (
+                <div key={day} className="grid grid-cols-12 gap-3 items-center">
+                  <div className="col-span-3">
+                    <span className="text-sm font-medium text-gray-700 capitalize">{day}</span>
+                  </div>
+                  <div className="col-span-3">
+                    <input
+                      type="time"
+                      value={operatingHours.storeHours[day]?.open || '09:00'}
+                      onChange={(e) => handleHoursChange('storeHours', day, 'open', e.target.value)}
+                      disabled={operatingHours.storeHours[day]?.closed}
+                      className="block w-full rounded-md border-gray-300 shadow-sm focus:border-blue-500 focus:ring-blue-500 sm:text-sm disabled:bg-gray-100"
+                    />
+                  </div>
+                  <div className="col-span-3">
+                    <input
+                      type="time"
+                      value={operatingHours.storeHours[day]?.close || '21:00'}
+                      onChange={(e) => handleHoursChange('storeHours', day, 'close', e.target.value)}
+                      disabled={operatingHours.storeHours[day]?.closed}
+                      className="block w-full rounded-md border-gray-300 shadow-sm focus:border-blue-500 focus:ring-blue-500 sm:text-sm disabled:bg-gray-100"
+                    />
+                  </div>
+                  <div className="col-span-3">
+                    <label className="inline-flex items-center gap-2">
+                      <input
+                        type="checkbox"
+                        checked={operatingHours.storeHours[day]?.closed || false}
+                        onChange={(e) => handleHoursChange('storeHours', day, 'closed', e.target.checked)}
+                        className="h-4 w-4 rounded border-gray-300 text-blue-600 focus:ring-blue-500"
+                      />
+                      <span className="text-xs text-gray-600">Closed</span>
+                    </label>
+                  </div>
+                </div>
+              ))}
+            </div>
+          </div>
+
+          {/* Kitchen Hours Toggle */}
+          <div className="mb-6">
+            <label className="flex items-center justify-between rounded-lg border border-gray-200 bg-gray-50 px-4 py-3">
+              <div>
+                <p className="text-sm font-medium text-gray-900">Separate Kitchen Hours</p>
+                <p className="text-xs text-gray-500 mt-1">
+                  Enable if your kitchen closes earlier than your store (e.g., no orders 30min before close)
+                </p>
+              </div>
+              <input
+                type="checkbox"
+                className="h-5 w-5 rounded border-gray-300 text-blue-600 focus:ring-blue-500"
+                checked={operatingHours.useKitchenHours}
+                onChange={(e) =>
+                  setOperatingHours((prev) => ({
+                    ...prev,
+                    useKitchenHours: e.target.checked,
+                  }))
+                }
+              />
+            </label>
+          </div>
+
+          {/* Kitchen Hours (conditional) */}
+          {operatingHours.useKitchenHours && (
+            <div className="mb-6 rounded-lg border border-gray-200 p-4">
+              <h4 className="text-sm font-semibold text-gray-900 mb-3">Kitchen Hours</h4>
+              <p className="text-xs text-gray-500 mb-3">Last call for orders. Should be earlier than store closing time.</p>
+              <div className="space-y-3">
+                {DAYS_OF_WEEK.map((day) => (
+                  <div key={day} className="grid grid-cols-12 gap-3 items-center">
+                    <div className="col-span-3">
+                      <span className="text-sm font-medium text-gray-700 capitalize">{day}</span>
+                    </div>
+                    <div className="col-span-3">
+                      <input
+                        type="time"
+                        value={operatingHours.kitchenHours[day]?.open || '09:00'}
+                        onChange={(e) => handleHoursChange('kitchenHours', day, 'open', e.target.value)}
+                        disabled={operatingHours.kitchenHours[day]?.closed}
+                        className="block w-full rounded-md border-gray-300 shadow-sm focus:border-blue-500 focus:ring-blue-500 sm:text-sm disabled:bg-gray-100"
+                      />
+                    </div>
+                    <div className="col-span-3">
+                      <input
+                        type="time"
+                        value={operatingHours.kitchenHours[day]?.close || '20:30'}
+                        onChange={(e) => handleHoursChange('kitchenHours', day, 'close', e.target.value)}
+                        disabled={operatingHours.kitchenHours[day]?.closed}
+                        className="block w-full rounded-md border-gray-300 shadow-sm focus:border-blue-500 focus:ring-blue-500 sm:text-sm disabled:bg-gray-100"
+                      />
+                    </div>
+                    <div className="col-span-3">
+                      <label className="inline-flex items-center gap-2">
+                        <input
+                          type="checkbox"
+                          checked={operatingHours.kitchenHours[day]?.closed || false}
+                          onChange={(e) => handleHoursChange('kitchenHours', day, 'closed', e.target.checked)}
+                          className="h-4 w-4 rounded border-gray-300 text-blue-600 focus:ring-blue-500"
+                        />
+                        <span className="text-xs text-gray-600">Closed</span>
+                      </label>
+                    </div>
+                  </div>
+                ))}
+              </div>
+            </div>
+          )}
+
+          {/* Winter/Seasonal Hours */}
+          <div className="mb-6">
+            <label className="flex items-center justify-between rounded-lg border border-gray-200 bg-gray-50 px-4 py-3">
+              <div>
+                <p className="text-sm font-medium text-gray-900">Winter/Seasonal Hours</p>
+                <p className="text-xs text-gray-500 mt-1">
+                  Enable different hours during winter or off-season months
+                </p>
+              </div>
+              <input
+                type="checkbox"
+                className="h-5 w-5 rounded border-gray-300 text-blue-600 focus:ring-blue-500"
+                checked={operatingHours.winterMode}
+                onChange={(e) =>
+                  setOperatingHours((prev) => ({
+                    ...prev,
+                    winterMode: e.target.checked,
+                  }))
+                }
+              />
+            </label>
+          </div>
+
+          {operatingHours.winterMode && (
+            <div className="mb-6 rounded-lg border border-gray-200 p-4">
+              <div className="mb-4 grid grid-cols-1 gap-4 sm:grid-cols-2">
+                <div>
+                  <label className="block text-sm font-medium text-gray-700">Winter Start Date</label>
+                  <input
+                    type="date"
+                    value={operatingHours.winterStartDate}
+                    onChange={(e) =>
+                      setOperatingHours((prev) => ({
+                        ...prev,
+                        winterStartDate: e.target.value,
+                      }))
+                    }
+                    className="mt-1 block w-full rounded-md border-gray-300 shadow-sm focus:border-blue-500 focus:ring-blue-500 sm:text-sm"
+                  />
+                </div>
+                <div>
+                  <label className="block text-sm font-medium text-gray-700">Winter End Date</label>
+                  <input
+                    type="date"
+                    value={operatingHours.winterEndDate}
+                    onChange={(e) =>
+                      setOperatingHours((prev) => ({
+                        ...prev,
+                        winterEndDate: e.target.value,
+                      }))
+                    }
+                    className="mt-1 block w-full rounded-md border-gray-300 shadow-sm focus:border-blue-500 focus:ring-blue-500 sm:text-sm"
+                  />
+                </div>
+              </div>
+              <h4 className="text-sm font-semibold text-gray-900 mb-3">Winter Hours</h4>
+              <div className="space-y-3">
+                {DAYS_OF_WEEK.map((day) => (
+                  <div key={day} className="grid grid-cols-12 gap-3 items-center">
+                    <div className="col-span-3">
+                      <span className="text-sm font-medium text-gray-700 capitalize">{day}</span>
+                    </div>
+                    <div className="col-span-3">
+                      <input
+                        type="time"
+                        value={operatingHours.winterHours[day]?.open || '09:00'}
+                        onChange={(e) => handleHoursChange('winterHours', day, 'open', e.target.value)}
+                        disabled={operatingHours.winterHours[day]?.closed}
+                        className="block w-full rounded-md border-gray-300 shadow-sm focus:border-blue-500 focus:ring-blue-500 sm:text-sm disabled:bg-gray-100"
+                      />
+                    </div>
+                    <div className="col-span-3">
+                      <input
+                        type="time"
+                        value={operatingHours.winterHours[day]?.close || '21:00'}
+                        onChange={(e) => handleHoursChange('winterHours', day, 'close', e.target.value)}
+                        disabled={operatingHours.winterHours[day]?.closed}
+                        className="block w-full rounded-md border-gray-300 shadow-sm focus:border-blue-500 focus:ring-blue-500 sm:text-sm disabled:bg-gray-100"
+                      />
+                    </div>
+                    <div className="col-span-3">
+                      <label className="inline-flex items-center gap-2">
+                        <input
+                          type="checkbox"
+                          checked={operatingHours.winterHours[day]?.closed || false}
+                          onChange={(e) => handleHoursChange('winterHours', day, 'closed', e.target.checked)}
+                          className="h-4 w-4 rounded border-gray-300 text-blue-600 focus:ring-blue-500"
+                        />
+                        <span className="text-xs text-gray-600">Closed</span>
+                      </label>
+                    </div>
+                  </div>
+                ))}
+              </div>
+            </div>
+          )}
+
+          {/* Holiday Closures */}
+          <div className="mb-6">
+            <div className="flex items-center justify-between mb-3">
+              <h4 className="text-sm font-semibold text-gray-900">Holiday Closures</h4>
+              <button
+                type="button"
+                onClick={addHoliday}
+                className="inline-flex items-center rounded-md border border-gray-200 bg-white px-3 py-1.5 text-sm font-medium text-gray-700 shadow-sm hover:bg-gray-50"
+              >
+                Add Holiday
+              </button>
+            </div>
+            {operatingHours.holidays.length === 0 && (
+              <p className="rounded-md border border-dashed border-gray-300 bg-gray-50 p-4 text-sm text-gray-500">
+                No holidays configured. Add specific dates when your business will be closed.
+              </p>
+            )}
+            {operatingHours.holidays.length > 0 && (
+              <div className="space-y-3">
+                {operatingHours.holidays.map((holiday) => (
+                  <div key={holiday.id} className="flex items-center gap-3">
+                    <input
+                      type="date"
+                      value={holiday.date}
+                      onChange={(e) => handleHolidayChange(holiday.id, 'date', e.target.value)}
+                      className="flex-1 rounded-md border-gray-300 shadow-sm focus:border-blue-500 focus:ring-blue-500 sm:text-sm"
+                    />
+                    <input
+                      type="text"
+                      value={holiday.name}
+                      onChange={(e) => handleHolidayChange(holiday.id, 'name', e.target.value)}
+                      placeholder="Holiday name"
+                      className="flex-1 rounded-md border-gray-300 shadow-sm focus:border-blue-500 focus:ring-blue-500 sm:text-sm"
+                    />
+                    <button
+                      type="button"
+                      onClick={() => removeHoliday(holiday.id)}
+                      className="text-sm text-red-600 hover:underline"
+                    >
+                      Remove
+                    </button>
+                  </div>
+                ))}
+              </div>
+            )}
           </div>
         </section>
 
