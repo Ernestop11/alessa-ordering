@@ -4,6 +4,8 @@ import { requireTenant } from '@/lib/tenant'
 import { emitOrderEvent } from '@/lib/order-events'
 import { serializeOrder } from '@/lib/order-serializer'
 import { autoPrintOrder } from '@/lib/printer-dispatcher'
+import { orderStatusUpdateSchema } from '@/lib/validation/orders'
+import { validateRequestBody } from '@/lib/validation/validateRequest'
 
 export async function GET() {
   try {
@@ -32,12 +34,13 @@ export async function POST(req: Request) {
 
 export async function PATCH(req: Request) {
   try {
-    const body = await req.json()
-    const tenant = await requireTenant()
-    // Expecting { orderId, status }
-    if (!body.orderId || !body.status) {
-      return NextResponse.json({ error: 'orderId and status required' }, { status: 400 })
+    const validation = await validateRequestBody(req, orderStatusUpdateSchema)
+    if (!validation.success) {
+      return validation.response
     }
+    const body = validation.data
+
+    const tenant = await requireTenant()
 
     const existing = await prisma.order.findUnique({
       where: { id: body.orderId },

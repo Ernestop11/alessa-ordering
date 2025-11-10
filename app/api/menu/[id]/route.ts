@@ -1,6 +1,8 @@
 import { NextResponse } from 'next/server'
 import prisma from '@/lib/prisma'
 import { requireTenant } from '@/lib/tenant'
+import { menuItemUpdateSchema } from '@/lib/validation/menu'
+import { validateRequestBody } from '@/lib/validation/validateRequest'
 
 export async function GET(req: Request, { params }: { params: { id: string } }) {
   try {
@@ -23,7 +25,17 @@ export async function GET(req: Request, { params }: { params: { id: string } }) 
 export async function PATCH(req: Request, { params }: { params: { id: string } }) {
   try {
     const id = params.id
-    const body = await req.json()
+    const validation = await validateRequestBody(req, menuItemUpdateSchema)
+    if (!validation.success) {
+      return validation.response
+    }
+
+    const body = validation.data
+
+    if (Object.keys(body).length === 0) {
+      return NextResponse.json({ error: 'No fields provided for update' }, { status: 400 })
+    }
+
     const tenant = await requireTenant()
 
     const existing = await prisma.menuItem.findUnique({ where: { id } })
@@ -33,18 +45,17 @@ export async function PATCH(req: Request, { params }: { params: { id: string } }
 
     const existingGallery = Array.isArray(existing.gallery)
       ? (existing.gallery as unknown[]).filter((url): url is string => typeof url === 'string' && url.length > 0)
-      : [];
+      : []
+
     const nextGallery =
       body.gallery !== undefined
-        ? Array.isArray(body.gallery)
-          ? body.gallery.filter((url: unknown): url is string => typeof url === 'string' && url.length > 0)
-          : existingGallery
-        : existingGallery;
+        ? body.gallery.filter((url: unknown): url is string => typeof url === 'string' && url.length > 0)
+        : existingGallery
 
     const updatableFields = {
       name: body.name ?? existing.name,
       description: body.description ?? existing.description,
-      price: body.price !== undefined ? parseFloat(String(body.price)) : existing.price,
+      price: body.price !== undefined ? body.price : existing.price,
       category: body.category ?? existing.category,
       image: body.image !== undefined ? body.image : existing.image,
       gallery: nextGallery,

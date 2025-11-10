@@ -4,6 +4,12 @@ import { authOptions } from '@/lib/auth/options';
 import prisma from '@/lib/prisma';
 import { requireTenant } from '@/lib/tenant';
 import { revalidatePath } from 'next/cache';
+import {
+  menuSectionCreateSchema,
+  menuSectionReorderSchema,
+  menuSectionUpdateSchema,
+} from '@/lib/validation/menuSections';
+import { validateRequestBody } from '@/lib/validation/validateRequest';
 
 function unauthorized() {
   return new NextResponse(JSON.stringify({ error: 'Unauthorized' }), {
@@ -46,11 +52,12 @@ export async function POST(req: Request) {
   if (!session || role !== 'admin') return unauthorized();
 
   const tenant = await requireTenant();
-  const body = await req.json();
-
-  if (!body?.name) {
-    return json({ error: 'Name is required' }, { status: 400 });
+  const validation = await validateRequestBody(req, menuSectionCreateSchema);
+  if (!validation.success) {
+    return validation.response;
   }
+
+  const body = validation.data;
 
   const greatestPosition = await prisma.menuSection.aggregate({
     where: { tenantId: tenant.id },
@@ -61,10 +68,10 @@ export async function POST(req: Request) {
     data: {
       tenantId: tenant.id,
       name: body.name,
-      description: body.description || '',
+      description: body.description ?? '',
       type: body.type || 'RESTAURANT',
       position: (greatestPosition._max.position ?? 0) + 1,
-      hero: Boolean(body.hero),
+      hero: body.hero ?? false,
     },
   });
 
@@ -79,23 +86,21 @@ export async function PATCH(req: Request) {
   if (!session || role !== 'admin') return unauthorized();
 
   const tenant = await requireTenant();
-  const body = await req.json();
+  const raw = await req.json();
 
-  if (!body || !body.id) {
-    return json({ error: 'id is required' }, { status: 400 });
-  }
+  if (Array.isArray(raw?.order)) {
+    const reorderValidation = menuSectionReorderSchema.safeParse(raw);
+    if (!reorderValidation.success) {
+      return NextResponse.json(
+        {
+          error: 'Invalid reorder payload',
+          details: reorderValidation.error.flatten(),
+        },
+        { status: 400 },
+      );
+    }
 
-  const existing = await prisma.menuSection.findUnique({
-    where: { id: body.id },
-    select: { id: true, tenantId: true },
-  });
-
-  if (!existing || existing.tenantId !== tenant.id) {
-    return json({ error: 'Not found' }, { status: 404 });
-  }
-
-  if (Array.isArray(body.order)) {
-    const updates = body.order.map((sectionId: string, index: number) =>
+    const updates = reorderValidation.data.order.map((sectionId, index) =>
       prisma.menuSection.updateMany({
         where: { id: sectionId, tenantId: tenant.id },
         data: { position: index },
@@ -106,12 +111,38 @@ export async function PATCH(req: Request) {
     return json({ ok: true });
   }
 
+  const updateValidation = menuSectionUpdateSchema.safeParse(raw);
+  if (!updateValidation.success) {
+    return NextResponse.json(
+      {
+        error: 'Invalid update payload',
+        details: updateValidation.error.flatten(),
+      },
+      { status: 400 },
+    );
+  }
+
+  const body = updateValidation.data;
+
+  const existing = await prisma.menuSection.findUnique({
+    where: { id: body.id },
+    select: { id: true, tenantId: true },
+  });
+
+  if (!existing || existing.tenantId !== tenant.id) {
+    return json({ error: 'Not found' }, { status: 404 });
+  }
+
   const updateData: Record<string, unknown> = {};
   if (body.name !== undefined) updateData.name = body.name;
   if (body.description !== undefined) updateData.description = body.description;
   if (body.type !== undefined) updateData.type = body.type;
-  if (body.hero !== undefined) updateData.hero = Boolean(body.hero);
-  if (body.position !== undefined) updateData.position = Number(body.position);
+  if (body.hero !== undefined) updateData.hero = body.hero;
+  if (body.position !== undefined) updateData.position = body.position;
+
+  if (Object.keys(updateData).length === 0) {
+    return NextResponse.json({ error: 'No fields provided for update' }, { status: 400 });
+  }
 
   const updated = await prisma.menuSection.update({
     where: { id: body.id },

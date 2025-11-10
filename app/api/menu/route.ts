@@ -1,6 +1,8 @@
 import { NextResponse } from 'next/server'
 import prisma from '@/lib/prisma'
 import { requireTenant } from '@/lib/tenant'
+import { menuItemCreateSchema } from '@/lib/validation/menu'
+import { validateRequestBody } from '@/lib/validation/validateRequest'
 
 export async function GET() {
   try {
@@ -18,30 +20,32 @@ export async function GET() {
 
 export async function POST(req: Request) {
   try {
-    const body = await req.json()
-    // Expecting: { name, description, price, category, image?, available? }
-    const price = parseFloat(String(body.price || 0))
+    const validation = await validateRequestBody(req, menuItemCreateSchema)
+    if (!validation.success) {
+      return validation.response
+    }
+
     const tenant = await requireTenant()
+    const body = validation.data
+
     const gallery = Array.isArray(body.gallery)
       ? body.gallery.filter((url: unknown): url is string => typeof url === 'string' && url.trim().length > 0)
       : []
 
-    const data = {
-      name: body.name,
-      description: body.description || '',
-      price,
-      category: body.category || 'uncategorized',
-      image: body.image || null,
-      gallery,
-      available: body.available === undefined ? true : Boolean(body.available),
-      isFeatured: body.isFeatured === undefined ? false : Boolean(body.isFeatured),
-      tags: Array.isArray(body.tags) ? body.tags : [],
-      tenantId: tenant.id,
-      menuSectionId: body.menuSectionId || null,
-    }
-
     const created = await prisma.menuItem.create({
-      data,
+      data: {
+        name: body.name,
+        description: body.description ?? '',
+        price: body.price,
+        category: body.category || 'uncategorized',
+        image: body.image ?? null,
+        gallery,
+        available: body.available ?? true,
+        isFeatured: body.isFeatured ?? false,
+        tags: Array.isArray(body.tags) ? body.tags : [],
+        tenantId: tenant.id,
+        menuSectionId: body.menuSectionId ?? null,
+      },
     })
     return NextResponse.json(created, { status: 201 })
   } catch (err) {
