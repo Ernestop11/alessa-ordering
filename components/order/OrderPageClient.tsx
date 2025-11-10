@@ -371,6 +371,25 @@ export default function OrderPageClient({ sections, featuredItems = [], tenantSl
     setCustomQuantity(1);
   }, []);
 
+  const openHighlightCustomization = useCallback(
+    (card: HighlightCard, sectionType: string = 'SPECIAL') => {
+      // Convert HighlightCard to OrderMenuItem format
+      const menuItem: OrderMenuItem & { displayImage: string } = {
+        id: card.id,
+        name: card.title,
+        description: card.description,
+        price: card.price,
+        category: card.category || 'special',
+        available: true,
+        image: card.image,
+        displayImage: card.image || '',
+        tags: card.badge ? [card.badge] : [],
+      };
+      openCustomization(menuItem, sectionType);
+    },
+    [openCustomization],
+  );
+
   const toggleRemoval = useCallback((removal: string) => {
     setCustomRemovals((prev) =>
       prev.includes(removal) ? prev.filter((item) => item !== removal) : [...prev, removal],
@@ -796,18 +815,18 @@ export default function OrderPageClient({ sections, featuredItems = [], tenantSl
                       </div>
                     )}
                   </div>
-                  <div className="mt-4 flex flex-col gap-2 sm:flex-row">
+                  <div className="mt-3 flex flex-col gap-2 sm:flex-row">
                     <button
-                      className="flex-1 rounded-xl bg-gradient-to-r from-rose-500 via-amber-500 to-yellow-400 px-5 py-3 text-sm font-bold text-white shadow-xl shadow-rose-500/30 transition-all hover:scale-105 hover:shadow-rose-500/50 disabled:cursor-not-allowed disabled:opacity-50"
+                      className="flex-1 rounded-lg bg-gradient-to-r from-rose-500 via-amber-500 to-yellow-400 px-3 py-2 text-xs font-semibold text-white shadow-lg shadow-rose-500/20 transition-all hover:scale-[1.02] hover:shadow-rose-500/40 disabled:cursor-not-allowed disabled:opacity-50"
                       onClick={() => openCustomization(item, section.type)}
                       disabled={!item.available}
                     >
-                      <span className="flex items-center justify-center gap-2">
-                        ✨ {item.available ? 'Customize & Add' : 'Sold Out'}
+                      <span className="flex items-center justify-center gap-1.5">
+                        ✨ {item.available ? 'Customize' : 'Sold Out'}
                       </span>
                     </button>
                     <button
-                      className="rounded-xl border-2 border-white/30 bg-white/10 px-4 py-3 text-sm font-semibold text-white transition-all hover:border-white hover:bg-white/20 disabled:cursor-not-allowed disabled:opacity-50"
+                      className="rounded-lg border border-white/20 bg-white/5 px-3 py-2 text-xs font-medium text-white/90 backdrop-blur-sm transition-all hover:border-white/40 hover:bg-white/10 disabled:cursor-not-allowed disabled:opacity-50"
                       onClick={() => handleAddToCart(item, item.displayImage)}
                       disabled={!item.available}
                     >
@@ -956,21 +975,23 @@ export default function OrderPageClient({ sections, featuredItems = [], tenantSl
                   </div>
                   <div className="flex flex-col gap-2 sm:flex-row">
                     <button
-                      className={`flex-1 rounded-xl px-5 py-3 text-sm font-bold shadow-2xl transition-all hover:scale-105 disabled:cursor-not-allowed disabled:opacity-50 ${
+                      className={`flex-1 rounded-lg px-3 py-2 text-xs font-semibold shadow-lg transition-all hover:scale-[1.02] disabled:cursor-not-allowed disabled:opacity-50 ${
                         isBakery
-                          ? 'bg-gradient-to-r from-amber-400 via-yellow-400 to-amber-400 text-black shadow-amber-500/50 hover:shadow-amber-500/70'
-                          : 'bg-gradient-to-r from-rose-500 via-amber-500 to-yellow-400 text-white shadow-rose-500/40 hover:shadow-rose-500/60'
+                          ? 'bg-gradient-to-r from-amber-400 via-yellow-400 to-amber-400 text-black shadow-amber-500/20 hover:shadow-amber-500/40'
+                          : 'bg-gradient-to-r from-rose-500 via-amber-500 to-yellow-400 text-white shadow-rose-500/20 hover:shadow-rose-500/40'
                       }`}
                       onClick={() => openCustomization(item, section.type)}
                       disabled={!item.available}
                     >
-                      ✨ {item.available ? 'Customize & Add' : 'Sold Out'}
+                      <span className="flex items-center justify-center gap-1.5">
+                        ✨ {item.available ? 'Customize' : 'Sold Out'}
+                      </span>
                     </button>
                     <button
-                      className={`rounded-xl border-2 px-4 py-3 text-sm font-semibold backdrop-blur-sm transition-all hover:scale-105 disabled:cursor-not-allowed disabled:opacity-50 ${
+                      className={`rounded-lg border px-3 py-2 text-xs font-medium backdrop-blur-sm transition-all hover:scale-[1.02] disabled:cursor-not-allowed disabled:opacity-50 ${
                         isBakery
-                          ? 'border-amber-300/40 bg-amber-500/10 text-amber-100 hover:border-amber-300 hover:bg-amber-500/20'
-                          : 'border-white/30 bg-white/5 text-white hover:border-white hover:bg-white/15'
+                          ? 'border-amber-300/20 bg-amber-500/5 text-amber-100/90 hover:border-amber-300/40 hover:bg-amber-500/10'
+                          : 'border-white/20 bg-white/5 text-white/90 hover:border-white/40 hover:bg-white/10'
                       }`}
                       onClick={() => handleAddToCart(item, item.displayImage)}
                       disabled={!item.available}
@@ -1207,14 +1228,14 @@ export default function OrderPageClient({ sections, featuredItems = [], tenantSl
         </section>
 
         {/* Floating Action Buttons - Desktop (Left Side, Vertical Stack) */}
-        <div className="fixed bottom-6 left-6 z-50 hidden sm:flex sm:flex-col sm:gap-3">
+        <div className="fixed bottom-6 left-6 z-50 hidden sm:flex sm:flex-col sm:gap-2.5">
           {/* Catering Button */}
           {cateringEnabled && (
             <button
               onClick={() => setShowCateringPanel(true)}
-              className="group flex min-w-[140px] items-center gap-3 rounded-2xl bg-gradient-to-r from-rose-500 via-orange-500 to-amber-600 px-5 py-3.5 text-sm font-bold text-white shadow-2xl shadow-rose-500/30 transition-all hover:scale-105 hover:shadow-rose-500/50"
+              className="group flex min-w-[120px] items-center gap-2 rounded-xl bg-gradient-to-r from-rose-500 via-orange-500 to-amber-600 px-3.5 py-2.5 text-xs font-semibold text-white shadow-lg shadow-rose-500/20 backdrop-blur-sm transition-all hover:scale-[1.02] hover:shadow-rose-500/30"
             >
-              <span className="text-xl">🎉</span>
+              <span className="text-base">🎉</span>
               <span>Catering</span>
             </button>
           )}
@@ -1223,9 +1244,9 @@ export default function OrderPageClient({ sections, featuredItems = [], tenantSl
           {membershipEnabled && (
             <button
               onClick={() => setShowMembershipPanel(true)}
-              className="group flex min-w-[140px] items-center gap-3 rounded-2xl bg-gradient-to-r from-amber-500 via-yellow-400 to-amber-500 px-5 py-3.5 text-sm font-bold text-black shadow-2xl shadow-amber-500/30 transition-all hover:scale-105 hover:shadow-amber-500/50"
+              className="group flex min-w-[120px] items-center gap-2 rounded-xl bg-gradient-to-r from-amber-500 via-yellow-400 to-amber-500 px-3.5 py-2.5 text-xs font-semibold text-black shadow-lg shadow-amber-500/20 backdrop-blur-sm transition-all hover:scale-[1.02] hover:shadow-amber-500/30"
             >
-              <span className="text-xl">⭐</span>
+              <span className="text-base">⭐</span>
               <span>Rewards</span>
             </button>
           )}
@@ -1233,22 +1254,22 @@ export default function OrderPageClient({ sections, featuredItems = [], tenantSl
           {/* Accessibility Button */}
           <button
             onClick={() => setAccessibilityOpen((prev) => !prev)}
-            className="group flex min-w-[140px] items-center gap-3 rounded-2xl bg-gradient-to-r from-blue-500 via-purple-500 to-rose-500 px-5 py-3.5 text-sm font-bold text-white shadow-2xl shadow-blue-500/30 transition-all hover:scale-105 hover:shadow-blue-500/50"
+            className="group flex min-w-[120px] items-center gap-2 rounded-xl bg-gradient-to-r from-blue-500 via-purple-500 to-rose-500 px-3.5 py-2.5 text-xs font-semibold text-white shadow-lg shadow-blue-500/20 backdrop-blur-sm transition-all hover:scale-[1.02] hover:shadow-blue-500/30"
           >
-            <span className="text-xl">♿</span>
-            <span className="text-xs">Accessibility</span>
+            <span className="text-base">♿</span>
+            <span className="text-[10px]">Accessibility</span>
           </button>
         </div>
 
         {/* Floating Action Buttons - Mobile (Right Side, Vertical Stack above Cart) */}
-        <div className="fixed bottom-20 right-5 z-50 flex flex-col gap-3 sm:hidden">
+        <div className="fixed bottom-20 right-5 z-50 flex flex-col gap-2.5 sm:hidden">
           {/* Catering Button - Mobile */}
           {cateringEnabled && (
             <button
               onClick={() => setShowCateringPanel(true)}
-              className="flex items-center justify-center gap-2 rounded-full bg-gradient-to-r from-rose-500 via-orange-500 to-amber-600 px-5 py-3 text-sm font-bold text-white shadow-2xl shadow-rose-500/30"
+              className="flex items-center justify-center gap-1.5 rounded-xl bg-gradient-to-r from-rose-500 via-orange-500 to-amber-600 px-3.5 py-2.5 text-xs font-semibold text-white shadow-lg shadow-rose-500/20 backdrop-blur-sm transition-all hover:scale-[1.02]"
             >
-              <span className="text-lg">🎉</span>
+              <span className="text-base">🎉</span>
               <span>Catering</span>
             </button>
           )}
@@ -1257,9 +1278,9 @@ export default function OrderPageClient({ sections, featuredItems = [], tenantSl
           {membershipEnabled && (
             <button
               onClick={() => setShowMembershipPanel(true)}
-              className="flex items-center justify-center gap-2 rounded-full bg-gradient-to-r from-amber-500 via-yellow-400 to-amber-500 px-5 py-3 text-sm font-bold text-black shadow-2xl shadow-amber-500/30"
+              className="flex items-center justify-center gap-1.5 rounded-xl bg-gradient-to-r from-amber-500 via-yellow-400 to-amber-500 px-3.5 py-2.5 text-xs font-semibold text-black shadow-lg shadow-amber-500/20 backdrop-blur-sm transition-all hover:scale-[1.02]"
             >
-              <span className="text-lg">⭐</span>
+              <span className="text-base">⭐</span>
               <span>Rewards</span>
             </button>
           )}
@@ -1294,24 +1315,42 @@ export default function OrderPageClient({ sections, featuredItems = [], tenantSl
                   <div className="space-y-3 p-5">
                     <h4 className="text-lg font-semibold text-white">{bundle.name}</h4>
                     <p className="text-sm text-white/70 line-clamp-3">{bundle.description}</p>
-                    <div className="flex items-center justify-between">
+                    <div className="flex flex-col gap-2 sm:flex-row sm:items-center sm:justify-between">
                       <div className="text-lg font-bold text-amber-200">${Number(bundle.price).toFixed(2)}</div>
-                      <button
-                        className="rounded-full bg-gradient-to-r from-rose-500 to-amber-500 px-4 py-2 text-xs font-semibold text-white shadow-md shadow-black/25 transition hover:scale-105"
-                        onClick={() =>
-                          handleAddHighlight({
-                            id: bundle.id || `upsell-${index}`,
-                            title: bundle.name,
-                            description: bundle.description,
-                            price: Number(bundle.price ?? 0),
-                            image: bundle.image || cycleFallbackImage(index + 20),
-                            badge: bundle.tag || undefined,
-                            category: 'upsell',
-                          })
-                        }
-                      >
-                        {(bundle.cta || 'Add to order')}
-                      </button>
+                      <div className="flex gap-2">
+                        <button
+                          className="flex-1 sm:flex-initial rounded-lg bg-gradient-to-r from-rose-500 to-amber-500 px-3 py-2 text-xs font-semibold text-white shadow-lg shadow-rose-500/20 transition-all hover:scale-[1.02] hover:shadow-rose-500/40"
+                          onClick={() =>
+                            openHighlightCustomization({
+                              id: bundle.id || `upsell-${index}`,
+                              title: bundle.name,
+                              description: bundle.description,
+                              price: Number(bundle.price ?? 0),
+                              image: bundle.image || cycleFallbackImage(index + 20),
+                              badge: bundle.tag || undefined,
+                              category: 'upsell',
+                            }, 'SPECIAL')
+                          }
+                        >
+                          ✨ Customize
+                        </button>
+                        <button
+                          className="rounded-lg border border-white/20 bg-white/5 px-3 py-2 text-xs font-medium text-white/90 backdrop-blur-sm transition-all hover:border-white/40 hover:bg-white/10"
+                          onClick={() =>
+                            handleAddHighlight({
+                              id: bundle.id || `upsell-${index}`,
+                              title: bundle.name,
+                              description: bundle.description,
+                              price: Number(bundle.price ?? 0),
+                              image: bundle.image || cycleFallbackImage(index + 20),
+                              badge: bundle.tag || undefined,
+                              category: 'upsell',
+                            })
+                          }
+                        >
+                          Quick Add
+                        </button>
+                      </div>
                     </div>
                   </div>
                 </article>
@@ -1353,19 +1392,27 @@ export default function OrderPageClient({ sections, featuredItems = [], tenantSl
                 <div className="space-y-3 p-5">
                   <h4 className="text-lg font-semibold text-white">{card.title}</h4>
                   <p className="text-sm text-white/70 line-clamp-3">{card.description}</p>
-                  <div className="flex items-center justify-between">
+                  <div className="flex flex-col gap-2 sm:flex-row sm:items-center sm:justify-between">
                     <div className="text-lg font-bold text-rose-200">
                       ${card.price.toFixed(2)}{' '}
                       {card.originalPrice && (
                         <span className="text-xs font-medium text-white/50 line-through">${card.originalPrice.toFixed(2)}</span>
                       )}
                     </div>
-                    <button
-                      className="rounded-full bg-gradient-to-r from-rose-500 to-amber-500 px-4 py-2 text-xs font-semibold text-white shadow-md shadow-black/25 transition hover:scale-105"
-                      onClick={() => handleAddHighlight(card)}
-                    >
-                      Add Combo
-                    </button>
+                    <div className="flex gap-2">
+                      <button
+                        className="flex-1 sm:flex-initial rounded-lg bg-gradient-to-r from-rose-500 to-amber-500 px-3 py-2 text-xs font-semibold text-white shadow-lg shadow-rose-500/20 transition-all hover:scale-[1.02] hover:shadow-rose-500/40"
+                        onClick={() => openHighlightCustomization(card, 'RESTAURANT')}
+                      >
+                        ✨ Customize
+                      </button>
+                      <button
+                        className="rounded-lg border border-white/20 bg-white/5 px-3 py-2 text-xs font-medium text-white/90 backdrop-blur-sm transition-all hover:border-white/40 hover:bg-white/10"
+                        onClick={() => handleAddHighlight(card)}
+                      >
+                        Quick Add
+                      </button>
+                    </div>
                   </div>
                 </div>
               </article>
@@ -1406,14 +1453,22 @@ export default function OrderPageClient({ sections, featuredItems = [], tenantSl
                 <div className="space-y-3 p-5">
                   <h4 className="text-lg font-semibold text-white">{card.title}</h4>
                   <p className="text-sm text-white/70 line-clamp-3">{card.description}</p>
-                  <div className="flex items-center justify-between">
+                  <div className="flex flex-col gap-2 sm:flex-row sm:items-center sm:justify-between">
                     <div className="text-lg font-bold text-sky-200">${card.price.toFixed(2)}</div>
-                    <button
-                      className="rounded-full bg-gradient-to-r from-sky-500 to-indigo-500 px-4 py-2 text-xs font-semibold text-white shadow-md shadow-black/25 transition hover:scale-105"
-                      onClick={() => handleAddHighlight({ ...card, title: `${card.title} Chef Special` })}
-                    >
-                      Add Special
-                    </button>
+                    <div className="flex gap-2">
+                      <button
+                        className="flex-1 sm:flex-initial rounded-lg bg-gradient-to-r from-sky-500 to-indigo-500 px-3 py-2 text-xs font-semibold text-white shadow-lg shadow-sky-500/20 transition-all hover:scale-[1.02] hover:shadow-sky-500/40"
+                        onClick={() => openHighlightCustomization(card, 'SPECIAL')}
+                      >
+                        ✨ Customize
+                      </button>
+                      <button
+                        className="rounded-lg border border-white/20 bg-white/5 px-3 py-2 text-xs font-medium text-white/90 backdrop-blur-sm transition-all hover:border-white/40 hover:bg-white/10"
+                        onClick={() => handleAddHighlight({ ...card, title: `${card.title} Chef Special` })}
+                      >
+                        Quick Add
+                      </button>
+                    </div>
                   </div>
                 </div>
               </article>
@@ -1454,14 +1509,22 @@ export default function OrderPageClient({ sections, featuredItems = [], tenantSl
                 <div className="space-y-3 p-5">
                   <h4 className="text-lg font-semibold text-white">{card.title}</h4>
                   <p className="text-sm text-white/70 line-clamp-3">{card.description}</p>
-                  <div className="flex items-center justify-between">
+                  <div className="flex flex-col gap-2 sm:flex-row sm:items-center sm:justify-between">
                     <div className="text-lg font-bold text-pink-200">${card.price.toFixed(2)}</div>
-                    <button
-                      className="rounded-full bg-gradient-to-r from-pink-500 to-purple-500 px-4 py-2 text-xs font-semibold text-white shadow-md shadow-black/25 transition hover:scale-105"
-                      onClick={() => handleAddHighlight({ ...card, title: `${card.title} Dessert` })}
-                    >
-                      Add Dessert
-                    </button>
+                    <div className="flex gap-2">
+                      <button
+                        className="flex-1 sm:flex-initial rounded-lg bg-gradient-to-r from-pink-500 to-purple-500 px-3 py-2 text-xs font-semibold text-white shadow-lg shadow-pink-500/20 transition-all hover:scale-[1.02] hover:shadow-pink-500/40"
+                        onClick={() => openHighlightCustomization(card, 'SPECIAL')}
+                      >
+                        ✨ Customize
+                      </button>
+                      <button
+                        className="rounded-lg border border-white/20 bg-white/5 px-3 py-2 text-xs font-medium text-white/90 backdrop-blur-sm transition-all hover:border-white/40 hover:bg-white/10"
+                        onClick={() => handleAddHighlight({ ...card, title: `${card.title} Dessert` })}
+                      >
+                        Quick Add
+                      </button>
+                    </div>
                   </div>
                 </div>
               </article>
