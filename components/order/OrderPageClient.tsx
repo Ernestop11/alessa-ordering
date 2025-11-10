@@ -822,7 +822,14 @@ export default function OrderPageClient({ sections, featuredItems = [], tenantSl
                       disabled={!item.available}
                     >
                       <span className="flex items-center justify-center gap-1.5">
-                        ✨ {item.available ? 'Customize' : 'Sold Out'}
+                        {item.available ? (
+                          <>
+                            <svg className="h-4 w-4" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2}>
+                              <path strokeLinecap="round" strokeLinejoin="round" d="M3 3h2l.4 2M7 13h10l4-8H5.4M7 13L5.4 5M7 13l-2.293 2.293c-.63.63-.184 1.707.707 1.707H17m0 0a2 2 0 100 4 2 2 0 000-4zm-8 2a2 2 0 11-4 0 2 2 0 014 0z" />
+                            </svg>
+                            Add to Cart
+                          </>
+                        ) : 'Sold Out'}
                       </span>
                     </button>
                     <button
@@ -888,7 +895,12 @@ export default function OrderPageClient({ sections, featuredItems = [], tenantSl
                         onClick={() => openCustomization(item, section.type)}
                         disabled={!item.available}
                       >
-                        Customize
+                        <span className="flex items-center justify-center gap-1.5">
+                          <svg className="h-4 w-4" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2}>
+                            <path strokeLinecap="round" strokeLinejoin="round" d="M3 3h2l.4 2M7 13h10l4-8H5.4M7 13L5.4 5M7 13l-2.293 2.293c-.63.63-.184 1.707.707 1.707H17m0 0a2 2 0 100 4 2 2 0 000-4zm-8 2a2 2 0 11-4 0 2 2 0 014 0z" />
+                          </svg>
+                          Add to Cart
+                        </span>
                       </button>
                       <button
                         className="rounded-full bg-gradient-to-r from-rose-500 via-amber-500 to-yellow-400 px-4 py-2 text-sm font-semibold text-black transition hover:scale-105 hover:shadow-lg"
@@ -984,7 +996,14 @@ export default function OrderPageClient({ sections, featuredItems = [], tenantSl
                       disabled={!item.available}
                     >
                       <span className="flex items-center justify-center gap-1.5">
-                        ✨ {item.available ? 'Customize' : 'Sold Out'}
+                        {item.available ? (
+                      <>
+                        <svg className="h-4 w-4" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2}>
+                          <path strokeLinecap="round" strokeLinejoin="round" d="M3 3h2l.4 2M7 13h10l4-8H5.4M7 13L5.4 5M7 13l-2.293 2.293c-.63.63-.184 1.707.707 1.707H17m0 0a2 2 0 100 4 2 2 0 000-4zm-8 2a2 2 0 11-4 0 2 2 0 014 0z" />
+                        </svg>
+                        Add to Cart
+                      </>
+                    ) : 'Sold Out'}
                       </span>
                     </button>
                     <button
@@ -1332,7 +1351,10 @@ export default function OrderPageClient({ sections, featuredItems = [], tenantSl
                             }, 'SPECIAL')
                           }
                         >
-                          ✨ Customize
+                          <svg className="inline h-4 w-4 mr-1.5" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2}>
+                    <path strokeLinecap="round" strokeLinejoin="round" d="M3 3h2l.4 2M7 13h10l4-8H5.4M7 13L5.4 5M7 13l-2.293 2.293c-.63.63-.184 1.707.707 1.707H17m0 0a2 2 0 100 4 2 2 0 000-4zm-8 2a2 2 0 11-4 0 2 2 0 014 0z" />
+                  </svg>
+                  Add to Cart
                         </button>
                         <button
                           className="rounded-lg border border-white/20 bg-white/5 px-3 py-2 text-xs font-medium text-white/90 backdrop-blur-sm transition-all hover:border-white/40 hover:bg-white/10"
@@ -1404,7 +1426,10 @@ export default function OrderPageClient({ sections, featuredItems = [], tenantSl
                         className="flex-1 sm:flex-initial rounded-lg bg-gradient-to-r from-rose-500 to-amber-500 px-3 py-2 text-xs font-semibold text-white shadow-lg shadow-rose-500/20 transition-all hover:scale-[1.02] hover:shadow-rose-500/40"
                         onClick={() => openHighlightCustomization(card, 'RESTAURANT')}
                       >
-                        ✨ Customize
+                        <svg className="inline h-4 w-4 mr-1.5" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2}>
+                    <path strokeLinecap="round" strokeLinejoin="round" d="M3 3h2l.4 2M7 13h10l4-8H5.4M7 13L5.4 5M7 13l-2.293 2.293c-.63.63-.184 1.707.707 1.707H17m0 0a2 2 0 100 4 2 2 0 000-4zm-8 2a2 2 0 11-4 0 2 2 0 014 0z" />
+                  </svg>
+                  Add to Cart
                       </button>
                       <button
                         className="rounded-lg border border-white/20 bg-white/5 px-3 py-2 text-xs font-medium text-white/90 backdrop-blur-sm transition-all hover:border-white/40 hover:bg-white/10"
@@ -1460,7 +1485,10 @@ export default function OrderPageClient({ sections, featuredItems = [], tenantSl
                         className="flex-1 sm:flex-initial rounded-lg bg-gradient-to-r from-sky-500 to-indigo-500 px-3 py-2 text-xs font-semibold text-white shadow-lg shadow-sky-500/20 transition-all hover:scale-[1.02] hover:shadow-sky-500/40"
                         onClick={() => openHighlightCustomization(card, 'SPECIAL')}
                       >
-                        ✨ Customize
+                        <svg className="inline h-4 w-4 mr-1.5" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2}>
+                    <path strokeLinecap="round" strokeLinejoin="round" d="M3 3h2l.4 2M7 13h10l4-8H5.4M7 13L5.4 5M7 13l-2.293 2.293c-.63.63-.184 1.707.707 1.707H17m0 0a2 2 0 100 4 2 2 0 000-4zm-8 2a2 2 0 11-4 0 2 2 0 014 0z" />
+                  </svg>
+                  Add to Cart
                       </button>
                       <button
                         className="rounded-lg border border-white/20 bg-white/5 px-3 py-2 text-xs font-medium text-white/90 backdrop-blur-sm transition-all hover:border-white/40 hover:bg-white/10"
@@ -1516,7 +1544,10 @@ export default function OrderPageClient({ sections, featuredItems = [], tenantSl
                         className="flex-1 sm:flex-initial rounded-lg bg-gradient-to-r from-pink-500 to-purple-500 px-3 py-2 text-xs font-semibold text-white shadow-lg shadow-pink-500/20 transition-all hover:scale-[1.02] hover:shadow-pink-500/40"
                         onClick={() => openHighlightCustomization(card, 'SPECIAL')}
                       >
-                        ✨ Customize
+                        <svg className="inline h-4 w-4 mr-1.5" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2}>
+                    <path strokeLinecap="round" strokeLinejoin="round" d="M3 3h2l.4 2M7 13h10l4-8H5.4M7 13L5.4 5M7 13l-2.293 2.293c-.63.63-.184 1.707.707 1.707H17m0 0a2 2 0 100 4 2 2 0 000-4zm-8 2a2 2 0 11-4 0 2 2 0 014 0z" />
+                  </svg>
+                  Add to Cart
                       </button>
                       <button
                         className="rounded-lg border border-white/20 bg-white/5 px-3 py-2 text-xs font-medium text-white/90 backdrop-blur-sm transition-all hover:border-white/40 hover:bg-white/10"
@@ -1822,7 +1853,10 @@ export default function OrderPageClient({ sections, featuredItems = [], tenantSl
                   <div className="mt-4 flex items-center justify-between">
                     <span className="text-2xl font-black text-rose-300">$280</span>
                     <span className="rounded-full bg-rose-500 px-4 py-2 text-xs font-semibold text-white transition group-hover:scale-105">
-                      Customize →
+                      <svg className="inline h-4 w-4 mr-1" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2}>
+                    <path strokeLinecap="round" strokeLinejoin="round" d="M3 3h2l.4 2M7 13h10l4-8H5.4M7 13L5.4 5M7 13l-2.293 2.293c-.63.63-.184 1.707.707 1.707H17m0 0a2 2 0 100 4 2 2 0 000-4zm-8 2a2 2 0 11-4 0 2 2 0 014 0z" />
+                  </svg>
+                  Add →
                     </span>
                   </div>
                 </button>
@@ -1860,7 +1894,10 @@ export default function OrderPageClient({ sections, featuredItems = [], tenantSl
                   <div className="mt-4 flex items-center justify-between">
                     <span className="text-2xl font-black text-rose-300">$180</span>
                     <span className="rounded-full bg-rose-500 px-4 py-2 text-xs font-semibold text-white transition group-hover:scale-105">
-                      Customize →
+                      <svg className="inline h-4 w-4 mr-1" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2}>
+                    <path strokeLinecap="round" strokeLinejoin="round" d="M3 3h2l.4 2M7 13h10l4-8H5.4M7 13L5.4 5M7 13l-2.293 2.293c-.63.63-.184 1.707.707 1.707H17m0 0a2 2 0 100 4 2 2 0 000-4zm-8 2a2 2 0 11-4 0 2 2 0 014 0z" />
+                  </svg>
+                  Add →
                     </span>
                   </div>
                 </button>
@@ -1899,7 +1936,10 @@ export default function OrderPageClient({ sections, featuredItems = [], tenantSl
                   <div className="mt-4 flex items-center justify-between">
                     <span className="text-2xl font-black text-rose-300">$220</span>
                     <span className="rounded-full bg-rose-500 px-4 py-2 text-xs font-semibold text-white transition group-hover:scale-105">
-                      Customize →
+                      <svg className="inline h-4 w-4 mr-1" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2}>
+                    <path strokeLinecap="round" strokeLinejoin="round" d="M3 3h2l.4 2M7 13h10l4-8H5.4M7 13L5.4 5M7 13l-2.293 2.293c-.63.63-.184 1.707.707 1.707H17m0 0a2 2 0 100 4 2 2 0 000-4zm-8 2a2 2 0 11-4 0 2 2 0 014 0z" />
+                  </svg>
+                  Add →
                     </span>
                   </div>
                 </button>
@@ -1938,7 +1978,10 @@ export default function OrderPageClient({ sections, featuredItems = [], tenantSl
                   <div className="mt-4 flex items-center justify-between">
                     <span className="text-2xl font-black text-rose-300">$240</span>
                     <span className="rounded-full bg-rose-500 px-4 py-2 text-xs font-semibold text-white transition group-hover:scale-105">
-                      Customize →
+                      <svg className="inline h-4 w-4 mr-1" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2}>
+                    <path strokeLinecap="round" strokeLinejoin="round" d="M3 3h2l.4 2M7 13h10l4-8H5.4M7 13L5.4 5M7 13l-2.293 2.293c-.63.63-.184 1.707.707 1.707H17m0 0a2 2 0 100 4 2 2 0 000-4zm-8 2a2 2 0 11-4 0 2 2 0 014 0z" />
+                  </svg>
+                  Add →
                     </span>
                   </div>
                 </button>
