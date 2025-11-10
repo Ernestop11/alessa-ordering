@@ -1,16 +1,11 @@
 import { z } from 'zod';
 
-export const menuSectionCreateSchema = z.object({
-  name: z.string().min(1, 'Name is required').max(120, 'Name must be 120 characters or less'),
-  description: z
-    .string()
-    .max(500)
-    .optional()
-    .or(z.literal(''))
-    .transform((value) => (value === '' ? undefined : value)),
-  type: z.string().min(1, 'Type is required'),
-  hero: z.boolean().optional(),
-});
+const optionalDescription = z
+  .string()
+  .max(500)
+  .optional()
+  .or(z.literal(''))
+  .transform((value) => (value === '' ? undefined : value));
 
 const positionSchema = z.preprocess((value) => {
   if (typeof value === 'string' && value.trim().length > 0) {
@@ -19,17 +14,18 @@ const positionSchema = z.preprocess((value) => {
   return value;
 }, z.number().int({ message: 'Position must be an integer' }));
 
+export const menuSectionCreateSchema = z.object({
+  name: z.string().min(1, 'Name is required').max(120, 'Name must be 120 characters or less'),
+  description: optionalDescription.optional(),
+  type: z.string().min(1, 'Type is required'),
+  hero: z.boolean().optional(),
+});
+
 export const menuSectionUpdateSchema = z
   .object({
     id: z.string().min(1, 'Section id is required'),
     name: z.string().min(1).max(120).optional(),
-    description: z
-      .string()
-      .max(500)
-      .optional()
-      .or(z.literal(''))
-      .transform((value) => (value === '' ? undefined : value))
-      .optional(),
+    description: optionalDescription.optional(),
     type: z.string().min(1).optional(),
     hero: z.boolean().optional(),
     position: positionSchema.optional(),

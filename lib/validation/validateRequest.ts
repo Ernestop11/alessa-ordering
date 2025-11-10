@@ -22,10 +22,7 @@ export async function validateRequestBody<T extends ZodTypeAny>(
   } catch {
     return {
       success: false,
-      response: NextResponse.json(
-        { error: 'Invalid JSON body' },
-        { status: 400 }
-      ),
+      response: NextResponse.json({ error: 'Invalid JSON body' }, { status: 400 }),
     };
   }
 
@@ -39,7 +36,7 @@ export async function validateRequestBody<T extends ZodTypeAny>(
           error: 'Invalid request body',
           details: result.error.flatten(),
         },
-        { status: 400 }
+        { status: 400 },
       ),
     };
   }

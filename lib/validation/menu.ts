@@ -1,16 +1,13 @@
 import { z } from 'zod';
 
-const stringOrNumberToNumber = z.preprocess((value) => {
+const priceSchema = z.preprocess((value) => {
   if (typeof value === 'string' && value.trim().length > 0) {
     return Number(value);
-  }
-  if (typeof value === 'number') {
-    return value;
   }
   return value;
 }, z.number({ invalid_type_error: 'Price must be a number' }));
 
-const optionalString = z
+const optionalStringField = z
   .string()
   .max(500)
   .transform((val) => val.trim())
@@ -20,8 +17,8 @@ const optionalString = z
 
 export const menuItemCreateSchema = z.object({
   name: z.string().min(1, 'Name is required').max(120, 'Name must be 120 characters or less'),
-  description: optionalString.optional(),
-  price: stringOrNumberToNumber
+  description: optionalStringField.optional(),
+  price: priceSchema
     .refine((value) => Number.isFinite(value), { message: 'Price must be a valid number' })
     .refine((value) => value >= 0, { message: 'Price must be greater than or equal to zero' }),
   category: z
