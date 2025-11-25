@@ -75,6 +75,8 @@ async function getMenuSections(tenantId: string): Promise<OrderMenuSection[]> {
               .map((url) => addCacheBuster(url, timestamp) as string)
           : [],
         tags: item.tags || [],
+        customizationRemovals: item.customizationRemovals || [],
+        customizationAddons: (item.customizationAddons as any) || [],
       };
     }),
   }));
@@ -102,6 +104,8 @@ async function getMenuSections(tenantId: string): Promise<OrderMenuSection[]> {
                 .map((url) => addCacheBuster(url, timestamp) as string)
             : [],
           tags: item.tags || [],
+          customizationRemovals: (item as any).customizationRemovals || [],
+          customizationAddons: (item as any).customizationAddons || [],
         };
       }),
     });
@@ -143,6 +147,8 @@ async function getFeaturedItems(tenantId: string): Promise<OrderMenuItem[]> {
             .map((url) => addCacheBuster(url) as string)
         : [],
       tags: item.tags || [],
+      customizationRemovals: (item as any).customizationRemovals || [],
+      customizationAddons: (item as any).customizationAddons || [],
     };
   });
 }
