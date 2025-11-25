@@ -48,6 +48,7 @@ model CateringPackage {
   description             String
   pricePerGuest           Float
   image                   String?
+  gallery                 Json?
   badge                   String?
   available               Boolean       @default(true)
   displayOrder            Int           @default(0)

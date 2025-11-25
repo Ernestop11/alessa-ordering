@@ -38,6 +38,7 @@ interface CateringPackage {
   description: string;
   pricePerGuest: number;
   image: string | null;
+  gallery?: string[] | null;
   badge: string | null;
   available: boolean;
   displayOrder: number;
@@ -213,6 +214,7 @@ export default function MenuEditorPage() {
       description: '',
       pricePerGuest: 0,
       image: null,
+      gallery: [],
       badge: null,
       available: true,
       displayOrder: cateringPackages.length,
@@ -483,7 +485,16 @@ export default function MenuEditorPage() {
           ) : (
             /* Catering Packages View */
             <div className="bg-white rounded-lg shadow p-6">
-              <h2 className="text-lg font-semibold text-gray-900 mb-4">Catering Packages</h2>
+              <div className="flex justify-between items-center mb-4">
+                <h2 className="text-lg font-semibold text-gray-900">Catering Packages</h2>
+                <button
+                  onClick={handleAddPackage}
+                  className="inline-flex items-center px-4 py-2 border border-transparent rounded-md shadow-sm text-sm font-medium text-white bg-blue-600 hover:bg-blue-700"
+                >
+                  <Plus className="h-4 w-4 mr-2" />
+                  Add Catering Package
+                </button>
+              </div>
               {loading ? (
                 <div className="text-center py-8 text-gray-500">Loading...</div>
               ) : cateringPackages.length === 0 ? (
@@ -946,6 +957,77 @@ export default function MenuEditorPage() {
                       />
                     )}
                   </div>
+
+                  {/* Gallery */}
+                  <div>
+                    <label className="block text-sm font-medium text-gray-700 mb-2">Additional Images (Gallery)</label>
+                    <div className="space-y-2">
+                      {(editingPackage.gallery || []).map((url, index) => (
+                        <div key={index} className="flex gap-2 items-center">
+                          <img
+                            src={url}
+                            alt={`Gallery ${index + 1}`}
+                            className="h-20 w-20 object-cover rounded border border-gray-300"
+                          />
+                          <input
+                            type="text"
+                            value={url}
+                            onChange={(e) => {
+                              const newGallery = [...(editingPackage.gallery || [])];
+                              newGallery[index] = e.target.value;
+                              setEditingPackage({ ...editingPackage, gallery: newGallery });
+                            }}
+                            className="flex-1 border-gray-300 rounded-md shadow-sm focus:ring-blue-500 focus:border-blue-500 text-sm"
+                            placeholder="https://..."
+                          />
+                          <button
+                            type="button"
+                            onClick={() => {
+                              const newGallery = (editingPackage.gallery || []).filter((_, i) => i !== index);
+                              setEditingPackage({ ...editingPackage, gallery: newGallery });
+                            }}
+                            className="px-3 py-2 text-sm text-red-600 hover:text-red-800 border border-red-300 rounded-md"
+                          >
+                            Remove
+                          </button>
+                        </div>
+                      ))}
+                      <div className="flex gap-2">
+                        <label className="inline-flex items-center px-4 py-2 border border-gray-300 rounded-md shadow-sm text-sm font-medium text-gray-700 bg-white hover:bg-gray-50 cursor-pointer">
+                          <input
+                            type="file"
+                            accept="image/*"
+                            className="hidden"
+                            onChange={async (e) => {
+                              const file = e.target.files?.[0];
+                              if (!file) return;
+                              const formData = new FormData();
+                              formData.append('file', file);
+                              try {
+                                const res = await fetch('/api/admin/assets/upload', {
+                                  method: 'POST',
+                                  body: formData,
+                                });
+                                const data = await res.json();
+                                if (data.url) {
+                                  setEditingPackage((prev) => {
+                                    if (!prev) return prev;
+                                    const currentGallery = prev.gallery || [];
+                                    return { ...prev, gallery: [...currentGallery, data.url] };
+                                  });
+                                }
+                              } catch (err) {
+                                console.error('Failed to upload image', err);
+                                alert('Failed to upload image');
+                              }
+                            }}
+                          />
+                          Upload Image to Gallery
+                        </label>
+                      </div>
+                    </div>
+                  </div>
+
                   <div className="flex items-center">
                     <input
                       type="checkbox"

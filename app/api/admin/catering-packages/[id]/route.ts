@@ -36,6 +36,7 @@ export async function PATCH(
     description: body.description ?? existing.description,
     pricePerGuest: body.pricePerGuest !== undefined ? parseFloat(String(body.pricePerGuest)) : existing.pricePerGuest,
     image: body.image !== undefined ? body.image : existing.image,
+    gallery: body.gallery !== undefined ? body.gallery : existing.gallery,
     badge: body.badge !== undefined ? body.badge : existing.badge,
     available: body.available !== undefined ? Boolean(body.available) : existing.available,
     displayOrder: body.displayOrder !== undefined ? Number(body.displayOrder) : existing.displayOrder,
