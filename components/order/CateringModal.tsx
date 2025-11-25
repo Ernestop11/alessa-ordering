@@ -14,6 +14,7 @@ interface CateringPackage {
   name: string;
   description: string;
   pricePerGuest: number;
+  image: string | null;
   badge: string | null;
   available: boolean;
 }
@@ -49,11 +50,20 @@ export function CateringModal({ open, onClose }: CateringModalProps) {
 
         <div className="grid gap-4 border-b border-[#ff0000]/15 p-6 sm:grid-cols-3">
           {packages.map((pkg) => (
-            <div key={pkg.id} className="rounded-2xl border border-[#ff0000]/50 bg-[#fff6f6] p-6 text-center">
-              {pkg.badge && <p className="text-[11px] uppercase tracking-[0.4em] text-[#cc0000]">{pkg.badge}</p>}
-              <h3 className="text-lg font-semibold text-[#1f0606]">{pkg.name}</h3>
-              <p className="text-sm text-[#5c1a1a]">{pkg.description}</p>
-              <p className="mt-3 text-2xl font-black text-[#ff0000]">${pkg.pricePerGuest} / guest</p>
+            <div key={pkg.id} className="rounded-2xl border border-[#ff0000]/50 bg-[#fff6f6] overflow-hidden">
+              {pkg.image && (
+                <img
+                  src={pkg.image}
+                  alt={pkg.name}
+                  className="w-full h-40 object-cover"
+                />
+              )}
+              <div className="p-6 text-center">
+                {pkg.badge && <p className="text-[11px] uppercase tracking-[0.4em] text-[#cc0000]">{pkg.badge}</p>}
+                <h3 className="text-lg font-semibold text-[#1f0606]">{pkg.name}</h3>
+                <p className="text-sm text-[#5c1a1a]">{pkg.description}</p>
+                <p className="mt-3 text-2xl font-black text-[#ff0000]">${pkg.pricePerGuest.toFixed(2)} / guest</p>
+              </div>
             </div>
           ))}
         </div>

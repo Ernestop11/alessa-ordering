@@ -32,18 +32,33 @@ interface MenuItem {
   customizationAddons?: CustomizationOption[];
 }
 
+interface CateringPackage {
+  id: string;
+  name: string;
+  description: string;
+  pricePerGuest: number;
+  image: string | null;
+  badge: string | null;
+  available: boolean;
+  displayOrder: number;
+}
+
 export default function MenuEditorPage() {
+  const [activeTab, setActiveTab] = useState<'menu' | 'catering'>('menu');
   const [sections, setSections] = useState<MenuSection[]>([]);
   const [items, setItems] = useState<MenuItem[]>([]);
+  const [cateringPackages, setCateringPackages] = useState<CateringPackage[]>([]);
   const [selectedSection, setSelectedSection] = useState<string | null>(null);
   const [editingItem, setEditingItem] = useState<MenuItem | null>(null);
   const [editingSection, setEditingSection] = useState<MenuSection | null>(null);
+  const [editingPackage, setEditingPackage] = useState<CateringPackage | null>(null);
   const [loading, setLoading] = useState(true);
   const [draggedItem, setDraggedItem] = useState<string | null>(null);
 
   useEffect(() => {
     fetchSections();
     fetchItems();
+    fetchCateringPackages();
   }, []);
 
   const fetchSections = async () => {
@@ -178,6 +193,71 @@ export default function MenuEditorPage() {
     }
   };
 
+  const fetchCateringPackages = async () => {
+    setLoading(true);
+    try {
+      const res = await fetch('/api/admin/catering-packages');
+      const data = await res.json();
+      setCateringPackages(data || []);
+    } catch (err) {
+      console.error('Failed to fetch catering packages', err);
+    } finally {
+      setLoading(false);
+    }
+  };
+
+  const handleAddPackage = () => {
+    const newPackage: CateringPackage = {
+      id: '',
+      name: '',
+      description: '',
+      pricePerGuest: 0,
+      image: null,
+      badge: null,
+      available: true,
+      displayOrder: cateringPackages.length,
+    };
+    setEditingPackage(newPackage);
+  };
+
+  const handleSavePackage = async (e: React.FormEvent) => {
+    e.preventDefault();
+    if (!editingPackage) return;
+
+    try {
+      const method = editingPackage.id ? 'PATCH' : 'POST';
+      const url = editingPackage.id
+        ? `/api/admin/catering-packages/${editingPackage.id}`
+        : '/api/admin/catering-packages';
+
+      const res = await fetch(url, {
+        method,
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify(editingPackage),
+      });
+
+      if (!res.ok) throw new Error('Failed to save package');
+      await fetchCateringPackages();
+      setEditingPackage(null);
+    } catch (err) {
+      console.error('Failed to save package', err);
+      alert('Failed to save package');
+    }
+  };
+
+  const handleDeletePackage = async (id: string) => {
+    if (!confirm('Delete this catering package?')) return;
+
+    try {
+      const res = await fetch(`/api/admin/catering-packages/${id}`, { method: 'DELETE' });
+      if (!res.ok) throw new Error('Failed to delete package');
+      await fetchCateringPackages();
+    } catch (err) {
+      console.error('Failed to delete package', err);
+      alert('Failed to delete package');
+    }
+  };
+
   const handleDragStart = (itemId: string) => {
     setDraggedItem(itemId);
   };
@@ -243,21 +323,57 @@ export default function MenuEditorPage() {
                 </Link>
                 <h1 className="text-2xl font-bold text-gray-900">Menu Editor</h1>
               </div>
-              <button
-                onClick={handleAddSection}
-                className="inline-flex items-center px-4 py-2 border border-transparent rounded-md shadow-sm text-sm font-medium text-white bg-blue-600 hover:bg-blue-700"
-              >
-                <Plus className="h-4 w-4 mr-2" />
-                Add Section
-              </button>
+              {activeTab === 'menu' ? (
+                <button
+                  onClick={handleAddSection}
+                  className="inline-flex items-center px-4 py-2 border border-transparent rounded-md shadow-sm text-sm font-medium text-white bg-blue-600 hover:bg-blue-700"
+                >
+                  <Plus className="h-4 w-4 mr-2" />
+                  Add Section
+                </button>
+              ) : (
+                <button
+                  onClick={handleAddPackage}
+                  className="inline-flex items-center px-4 py-2 border border-transparent rounded-md shadow-sm text-sm font-medium text-white bg-blue-600 hover:bg-blue-700"
+                >
+                  <Plus className="h-4 w-4 mr-2" />
+                  Add Package
+                </button>
+              )}
+            </div>
+            {/* Tab Switcher */}
+            <div className="mt-4 border-b border-gray-200">
+              <nav className="-mb-px flex space-x-8">
+                <button
+                  onClick={() => setActiveTab('menu')}
+                  className={`whitespace-nowrap py-4 px-1 border-b-2 font-medium text-sm ${
+                    activeTab === 'menu'
+                      ? 'border-blue-500 text-blue-600'
+                      : 'border-transparent text-gray-500 hover:text-gray-700 hover:border-gray-300'
+                  }`}
+                >
+                  Menu Items
+                </button>
+                <button
+                  onClick={() => setActiveTab('catering')}
+                  className={`whitespace-nowrap py-4 px-1 border-b-2 font-medium text-sm ${
+                    activeTab === 'catering'
+                      ? 'border-blue-500 text-blue-600'
+                      : 'border-transparent text-gray-500 hover:text-gray-700 hover:border-gray-300'
+                  }`}
+                >
+                  Catering Packages
+                </button>
+              </nav>
             </div>
           </div>
         </div>
 
         <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-6">
-          <div className="grid grid-cols-1 lg:grid-cols-4 gap-6">
-            {/* Sections List */}
-            <div className="lg:col-span-1">
+          {activeTab === 'menu' ? (
+            <div className="grid grid-cols-1 lg:grid-cols-4 gap-6">
+              {/* Sections List */}
+              <div className="lg:col-span-1">
               <div className="bg-white rounded-lg shadow p-4">
                 <h2 className="text-lg font-semibold text-gray-900 mb-4">Sections</h2>
                 <div className="space-y-2">
@@ -363,7 +479,53 @@ export default function MenuEditorPage() {
                 )}
               </div>
             </div>
-          </div>
+            </div>
+          ) : (
+            /* Catering Packages View */
+            <div className="bg-white rounded-lg shadow p-6">
+              <h2 className="text-lg font-semibold text-gray-900 mb-4">Catering Packages</h2>
+              {loading ? (
+                <div className="text-center py-8 text-gray-500">Loading...</div>
+              ) : cateringPackages.length === 0 ? (
+                <div className="text-center py-8 text-gray-500">No catering packages yet. Add your first package!</div>
+              ) : (
+                <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
+                  {cateringPackages.sort((a, b) => a.displayOrder - b.displayOrder).map((pkg) => (
+                    <div key={pkg.id} className="border border-gray-200 rounded-lg overflow-hidden hover:shadow-lg transition-shadow">
+                      {pkg.image && (
+                        <img src={pkg.image} alt={pkg.name} className="w-full h-48 object-cover" />
+                      )}
+                      <div className="p-4">
+                        {pkg.badge && (
+                          <span className="inline-block px-2 py-1 text-xs font-semibold text-blue-600 bg-blue-100 rounded-full mb-2">
+                            {pkg.badge}
+                          </span>
+                        )}
+                        <h3 className="font-semibold text-gray-900 text-lg">{pkg.name}</h3>
+                        <p className="text-sm text-gray-600 mt-1 line-clamp-2">{pkg.description}</p>
+                        <p className="text-xl font-bold text-blue-600 mt-2">${pkg.pricePerGuest.toFixed(2)} / guest</p>
+                        <div className="flex gap-2 mt-4">
+                          <button
+                            onClick={() => setEditingPackage(pkg)}
+                            className="flex-1 inline-flex items-center justify-center px-3 py-2 border border-gray-300 rounded-md text-sm font-medium text-gray-700 bg-white hover:bg-gray-50"
+                          >
+                            <Edit2 className="h-4 w-4 mr-1" />
+                            Edit
+                          </button>
+                          <button
+                            onClick={() => handleDeletePackage(pkg.id)}
+                            className="inline-flex items-center justify-center px-3 py-2 border border-transparent rounded-md text-sm font-medium text-white bg-red-600 hover:bg-red-700"
+                          >
+                            <Trash2 className="h-4 w-4" />
+                          </button>
+                        </div>
+                      </div>
+                    </div>
+                  ))}
+                </div>
+              )}
+            </div>
+          )}
         </div>
 
         {/* Edit Section Modal */}
@@ -675,6 +837,175 @@ export default function MenuEditorPage() {
                   <button
                     type="button"
                     onClick={() => setEditingItem(null)}
+                    className="flex-1 px-4 py-2 border border-gray-300 rounded-md shadow-sm text-sm font-medium text-gray-700 bg-white hover:bg-gray-50"
+                  >
+                    Cancel
+                  </button>
+                </div>
+              </form>
+            </div>
+          </div>
+        )}
+
+        {/* Edit Catering Package Modal */}
+        {editingPackage && (
+          <div className="fixed inset-0 bg-gray-500 bg-opacity-75 flex items-center justify-center z-50 p-4">
+            <div className="bg-white rounded-lg p-6 max-w-6xl w-full max-h-[90vh] overflow-y-auto">
+              <h2 className="text-lg font-semibold mb-4">
+                {editingPackage.id ? 'Edit Catering Package' : 'Add Catering Package'}
+              </h2>
+              <form onSubmit={handleSavePackage} className="grid grid-cols-1 lg:grid-cols-2 gap-6">
+                {/* Left Column: Editor Form */}
+                <div className="space-y-4">
+                  <div>
+                    <label className="block text-sm font-medium text-gray-700">Package Name</label>
+                    <input
+                      type="text"
+                      value={editingPackage.name}
+                      onChange={(e) => setEditingPackage({ ...editingPackage, name: e.target.value })}
+                      className="mt-1 block w-full border-gray-300 rounded-md shadow-sm focus:ring-blue-500 focus:border-blue-500"
+                      required
+                    />
+                  </div>
+                  <div>
+                    <label className="block text-sm font-medium text-gray-700">Description</label>
+                    <textarea
+                      value={editingPackage.description}
+                      onChange={(e) => setEditingPackage({ ...editingPackage, description: e.target.value })}
+                      className="mt-1 block w-full border-gray-300 rounded-md shadow-sm focus:ring-blue-500 focus:border-blue-500"
+                      rows={4}
+                      required
+                    />
+                  </div>
+                  <div className="grid grid-cols-2 gap-4">
+                    <div>
+                      <label className="block text-sm font-medium text-gray-700">Price per Guest</label>
+                      <input
+                        type="number"
+                        step="0.01"
+                        value={editingPackage.pricePerGuest}
+                        onChange={(e) => setEditingPackage({ ...editingPackage, pricePerGuest: parseFloat(e.target.value) || 0 })}
+                        className="mt-1 block w-full border-gray-300 rounded-md shadow-sm focus:ring-blue-500 focus:border-blue-500"
+                        required
+                      />
+                    </div>
+                    <div>
+                      <label className="block text-sm font-medium text-gray-700">Badge (optional)</label>
+                      <input
+                        type="text"
+                        value={editingPackage.badge || ''}
+                        onChange={(e) => setEditingPackage({ ...editingPackage, badge: e.target.value || null })}
+                        className="mt-1 block w-full border-gray-300 rounded-md shadow-sm focus:ring-blue-500 focus:border-blue-500"
+                        placeholder="e.g., Popular, Best Value"
+                      />
+                    </div>
+                  </div>
+                  <div>
+                    <label className="block text-sm font-medium text-gray-700">Image</label>
+                    <div className="mt-1 flex gap-2">
+                      <input
+                        type="text"
+                        value={editingPackage.image || ''}
+                        onChange={(e) => setEditingPackage({ ...editingPackage, image: e.target.value })}
+                        className="flex-1 border-gray-300 rounded-md shadow-sm focus:ring-blue-500 focus:border-blue-500"
+                        placeholder="https://... or upload image"
+                      />
+                      <label className="inline-flex items-center px-4 py-2 border border-gray-300 rounded-md shadow-sm text-sm font-medium text-gray-700 bg-white hover:bg-gray-50 cursor-pointer">
+                        <input
+                          type="file"
+                          accept="image/*"
+                          className="hidden"
+                          onChange={async (e) => {
+                            const file = e.target.files?.[0];
+                            if (!file) return;
+                            const formData = new FormData();
+                            formData.append('file', file);
+                            try {
+                              const res = await fetch('/api/admin/assets/upload', {
+                                method: 'POST',
+                                body: formData,
+                              });
+                              const data = await res.json();
+                              if (data.url) {
+                                setEditingPackage((prev) => prev ? { ...prev, image: data.url } : prev);
+                              }
+                            } catch (err) {
+                              console.error('Failed to upload image', err);
+                              alert('Failed to upload image');
+                            }
+                          }}
+                        />
+                        Upload
+                      </label>
+                    </div>
+                    {editingPackage.image && (
+                      <img
+                        src={editingPackage.image}
+                        alt="Preview"
+                        className="mt-2 h-32 w-32 object-cover rounded border border-gray-300"
+                      />
+                    )}
+                  </div>
+                  <div className="flex items-center">
+                    <input
+                      type="checkbox"
+                      checked={editingPackage.available}
+                      onChange={(e) => setEditingPackage({ ...editingPackage, available: e.target.checked })}
+                      className="h-4 w-4 text-blue-600 focus:ring-blue-500 border-gray-300 rounded"
+                    />
+                    <label className="ml-2 block text-sm text-gray-700">Available</label>
+                  </div>
+                </div>
+
+                {/* Right Column: Live Preview */}
+                <div className="lg:sticky lg:top-6 lg:h-fit">
+                  <div className="bg-gradient-to-br from-gray-900 to-gray-800 rounded-2xl p-6 shadow-xl">
+                    <h3 className="text-white text-sm font-semibold mb-4 uppercase tracking-wider">Live Preview</h3>
+                    <div className="bg-white/10 backdrop-blur-sm rounded-2xl border border-white/20 p-4 shadow-2xl">
+                      {editingPackage.image && (
+                        <img
+                          src={editingPackage.image}
+                          alt={editingPackage.name || 'Preview'}
+                          className="w-full h-48 object-cover rounded-xl mb-4"
+                        />
+                      )}
+                      <div className="space-y-2">
+                        {editingPackage.badge && (
+                          <span className="inline-block px-2 py-1 text-xs font-semibold text-yellow-400 bg-yellow-400/20 rounded-full">
+                            {editingPackage.badge}
+                          </span>
+                        )}
+                        <h4 className="text-xl font-bold text-white">
+                          {editingPackage.name || 'Package Name'}
+                        </h4>
+                        <p className="text-sm text-white/70 line-clamp-3">
+                          {editingPackage.description || 'Add a description to see how it looks...'}
+                        </p>
+                        <div className="pt-2">
+                          <span className="text-2xl font-black text-yellow-400">
+                            ${editingPackage.pricePerGuest.toFixed(2)} / guest
+                          </span>
+                        </div>
+                        {!editingPackage.available && (
+                          <div className="mt-2 text-xs text-red-400 bg-red-500/20 px-3 py-1 rounded-full inline-block">
+                            Currently Unavailable
+                          </div>
+                        )}
+                      </div>
+                    </div>
+                  </div>
+                </div>
+
+                <div className="lg:col-span-2 flex gap-2">
+                  <button
+                    type="submit"
+                    className="flex-1 px-4 py-2 border border-transparent rounded-md shadow-sm text-sm font-medium text-white bg-blue-600 hover:bg-blue-700"
+                  >
+                    Save
+                  </button>
+                  <button
+                    type="button"
+                    onClick={() => setEditingPackage(null)}
                     className="flex-1 px-4 py-2 border border-gray-300 rounded-md shadow-sm text-sm font-medium text-gray-700 bg-white hover:bg-gray-50"
                   >
                     Cancel
