@@ -103,6 +103,27 @@ model Order {
   items            OrderItem[]
 }
 
+model CateringInquiry {
+  id               String        @id @default(uuid())
+  tenantId         String
+  customerName     String
+  customerEmail    String
+  customerPhone    String
+  eventDate        DateTime?
+  guestCount       Int?
+  message          String?
+  status           String        @default("new") // new, contacted, quoted, booked, cancelled
+  respondedAt      DateTime?
+  responseNotes    String?
+  createdAt        DateTime      @default(now())
+  updatedAt        DateTime      @updatedAt
+  tenant           Tenant        @relation(fields: [tenantId], references: [id], onDelete: Cascade)
+  
+  @@index([tenantId])
+  @@index([status])
+  @@index([createdAt])
+}
+
 model PaymentSession {
   id              String   @id @default(uuid())
   tenantId        String
@@ -175,6 +196,7 @@ model Tenant {
   orderItems         OrderItem[]
   integrationLogs    IntegrationLog[]
   paymentSessions    PaymentSession[]
+  cateringInquiries  CateringInquiry[]
 
   @@index([status])
 }

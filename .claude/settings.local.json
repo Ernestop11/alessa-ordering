@@ -34,7 +34,8 @@
       "Bash(npx prisma db push:*)",
       "Bash(git reset:*)",
       "Bash(npx prisma:*)",
-      "Bash(node scripts/migrate-catering-sections.mjs:*)"
+      "Bash(node scripts/migrate-catering-sections.mjs:*)",
+      "Bash(node:*)"
     ],
     "deny": [],
     "ask": []

@@ -192,7 +192,10 @@ export default function OrderPageClient({
   const cartItemCount = useMemo(() => cartItems.reduce((sum, item) => sum + item.quantity, 0), [cartItems]);
 
   const safeSections = useMemo(() => Array.isArray(sections) ? sections : [], [sections]);
-  const navSections = useMemo(() => safeSections.filter((section) => section.items.length > 0), [safeSections]);
+  const navSections = useMemo(() => {
+    if (!Array.isArray(safeSections)) return [];
+    return safeSections.filter((section) => section && Array.isArray(section.items) && section.items.length > 0);
+  }, [safeSections]);
   const [activeLayout, setActiveLayout] = useState<LayoutView>(() => {
     const paramView = searchParams.get('view') as LayoutView | null;
     const storedView =
@@ -350,14 +353,16 @@ export default function OrderPageClient({
     };
   }, [sections, tenant.heroTitle, tenant.name]);
 
-  const flattenedMenuItems = useMemo(() =>
-    sections.flatMap((section) =>
-      section.items.map((item) => ({
+  const flattenedMenuItems = useMemo(() => {
+    if (!Array.isArray(sections)) return [];
+    return sections.flatMap((section) => {
+      if (!section || !Array.isArray(section.items)) return [];
+      return section.items.map((item) => ({
         section,
         item,
-      })),
-    ),
-  [sections]);
+      }));
+    });
+  }, [sections]);
 
   const membershipProgram = tenant.membershipProgram;
   const membershipTiers = useMemo(() => {
@@ -580,11 +585,11 @@ export default function OrderPageClient({
   const brandingHighlights = useMemo(() => tenant.branding?.highlights ?? [], [tenant.branding?.highlights]);
   const recommendedItems = useMemo(() => {
     // Use featured items from database if available, otherwise fall back to branding config
-    if (featuredItems.length > 0) {
+    if (Array.isArray(featuredItems) && featuredItems.length > 0) {
       return featuredItems.map((item) => {
         // Find the section for this item
-        const matchingSection = sections.find(section =>
-          section.items.some(sectionItem => sectionItem.id === item.id)
+        const matchingSection = safeSections.find(section =>
+          section && Array.isArray(section.items) && section.items.some(sectionItem => sectionItem.id === item.id)
         );
         return {
           name: item.name,
@@ -595,23 +600,27 @@ export default function OrderPageClient({
     }
 
     // Fallback to branding config
-    const names = tenant.branding?.recommendedItems ?? [];
+    const names = Array.isArray(tenant.branding?.recommendedItems) ? tenant.branding.recommendedItems : [];
     if (names.length === 0) return [] as Array<{ name: string; section?: (typeof sections)[number]; item?: (typeof flattenedMenuItems[number]['item']) }>;
+    if (!Array.isArray(flattenedMenuItems)) return [];
     const lookup = new Map<string, { section: (typeof sections)[number]; item: (typeof flattenedMenuItems[number]['item']) }>();
     flattenedMenuItems.forEach(({ section, item }) => {
-      lookup.set(item.name.toLowerCase(), { section, item });
+      if (item && item.name) {
+        lookup.set(item.name.toLowerCase(), { section, item });
+      }
     });
     return names.map((name) => ({
       name,
-      section: lookup.get(name.toLowerCase())?.section,
-      item: lookup.get(name.toLowerCase())?.item,
+      section: lookup.get(String(name).toLowerCase())?.section,
+      item: lookup.get(String(name).toLowerCase())?.item,
     }));
-  }, [featuredItems, sections, flattenedMenuItems, tenant.branding?.recommendedItems]);
+  }, [featuredItems, safeSections, flattenedMenuItems, tenant.branding?.recommendedItems]);
 
   // Prepare featured items for carousel
   const carouselItems = useMemo(() => {
+    if (!Array.isArray(recommendedItems)) return [];
     return recommendedItems
-      .filter((entry) => entry.item)
+      .filter((entry) => entry && entry.item)
       .map((entry) => {
         const item = entry.item!;
         const section = entry.section;
@@ -757,8 +766,14 @@ export default function OrderPageClient({
   }, []);
 
   // Group packages by category
-  const popularPackages = useMemo(() => cateringPackages.filter(pkg => pkg.category === 'popular'), [cateringPackages]);
-  const holidayPackages = useMemo(() => cateringPackages.filter(pkg => pkg.category === 'holiday'), [cateringPackages]);
+  const popularPackages = useMemo(() => {
+    if (!Array.isArray(cateringPackages)) return [];
+    return cateringPackages.filter(pkg => pkg && pkg.category === 'popular');
+  }, [cateringPackages]);
+  const holidayPackages = useMemo(() => {
+    if (!Array.isArray(cateringPackages)) return [];
+    return cateringPackages.filter(pkg => pkg && pkg.category === 'holiday');
+  }, [cateringPackages]);
 
   // Sample Puebla Mexico themed media - can be replaced with actual tenant media
   const heroMedia = useMemo(() => {
@@ -792,37 +807,70 @@ export default function OrderPageClient({
   const currentHeroBackground = heroMedia[heroBackgroundIndex] || heroImage;
   const nextHeroBackground = heroMedia[(heroBackgroundIndex + 1) % heroMedia.length] || heroImage;
 
-  // Catering gallery - Puebla/Atlixco themed imagery
-  const cateringGallery = useMemo(() => [
-    'https://images.unsplash.com/photo-1504674900247-0877df9cc836?w=1920&q=80', // Food buffet spread
-    'https://images.unsplash.com/photo-1567620905732-2d1ec7ab7445?w=1920&q=80', // Mexican party spread
-    'https://images.unsplash.com/photo-1563379926898-05f4575a45d8?w=1920&q=80', // Catering table
-    'https://images.unsplash.com/photo-1613514785940-daed07799d9b?w=1920&q=80', // Tacos platter
-    'https://images.unsplash.com/photo-1512621776951-a57141f2eefd?w=1920&q=80', // Restaurant table setting
-  ], []);
+  // Catering gallery - fetch from tenant settings, fallback to defaults
+  const [cateringGalleryImages, setCateringGalleryImages] = useState<string[]>([]);
+  useEffect(() => {
+    const fetchGallery = async () => {
+      try {
+        const res = await fetch('/api/catering-packages/gallery');
+        if (res.ok) {
+          const data = await res.json();
+          setCateringGalleryImages(data.gallery || []);
+        }
+      } catch (err) {
+        console.error('Failed to fetch catering gallery:', err);
+      }
+    };
+    fetchGallery();
+  }, []);
+  const cateringGallery = useMemo(() => {
+    if (cateringGalleryImages.length > 0) return cateringGalleryImages;
+    // Fallback to defaults if no gallery images set
+    return [
+      'https://images.unsplash.com/photo-1504674900247-0877df9cc836?w=1920&q=80',
+      'https://images.unsplash.com/photo-1567620905732-2d1ec7ab7445?w=1920&q=80',
+      'https://images.unsplash.com/photo-1563379926898-05f4575a45d8?w=1920&q=80',
+      'https://images.unsplash.com/photo-1613514785940-daed07799d9b?w=1920&q=80',
+      'https://images.unsplash.com/photo-1512621776951-a57141f2eefd?w=1920&q=80',
+    ];
+  }, [cateringGalleryImages]);
 
   const cateringEnabled = tenant.featureFlags?.includes('catering') ?? false;
 
-  const handleCateringSubmit = useCallback((e: React.FormEvent) => {
+  const handleCateringSubmit = useCallback(async (e: React.FormEvent) => {
     e.preventDefault();
-    // In production, this would send to an API endpoint
-    console.log('Catering inquiry submitted:', {
-      name: cateringName,
-      email: cateringEmail,
-      phone: cateringPhone,
-      eventDate: cateringEventDate,
-      guestCount: cateringGuestCount,
-      message: cateringMessage,
-    });
-    showNotification('Catering inquiry submitted! We\'ll contact you soon.');
-    setShowCateringPanel(false);
-    // Reset form
-    setCateringName('');
-    setCateringEmail('');
-    setCateringPhone('');
-    setCateringEventDate('');
-    setCateringGuestCount('');
-    setCateringMessage('');
+    try {
+      const response = await fetch('/api/catering/inquiry', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({
+          name: cateringName,
+          email: cateringEmail,
+          phone: cateringPhone,
+          eventDate: cateringEventDate || null,
+          guestCount: cateringGuestCount || null,
+          message: cateringMessage || null,
+        }),
+      });
+
+      if (!response.ok) {
+        const error = await response.json();
+        throw new Error(error.error || 'Failed to submit inquiry');
+      }
+
+      showNotification('Catering inquiry submitted! We\'ll contact you soon.');
+      setShowCateringPanel(false);
+      // Reset form
+      setCateringName('');
+      setCateringEmail('');
+      setCateringPhone('');
+      setCateringEventDate('');
+      setCateringGuestCount('');
+      setCateringMessage('');
+    } catch (error) {
+      console.error('Failed to submit catering inquiry:', error);
+      showNotification(error instanceof Error ? error.message : 'Failed to submit inquiry. Please try again.');
+    }
   }, [cateringName, cateringEmail, cateringPhone, cateringEventDate, cateringGuestCount, cateringMessage, showNotification]);
 
   const renderSectionItems = useCallback(
@@ -1771,8 +1819,7 @@ export default function OrderPageClient({
               </div>
             )}
 
-            {/* Fallback: Original hardcoded Holiday & Event Bundles (shown only if no database packages) */}
-            {holidayPackages.length === 0 && (
+            {/* Holiday Packages from Editor - no hardcoded fallback */}
             <div className="mb-8 space-y-4 rounded-2xl border-2 border-red-600/20 bg-gradient-to-br from-red-600/10 to-orange-500/10 p-6">
               <h4 className="text-xl font-bold text-red-200">🎉 Holiday & Event Bundles</h4>
               <p className="text-sm text-white/70">Pre-packaged bundles perfect for celebrations</p>

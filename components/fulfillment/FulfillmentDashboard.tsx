@@ -5,6 +5,7 @@ import FulfillmentBoard from './FulfillmentBoard';
 import NewOrderAlerts, { type AlertSettings } from './NewOrderAlerts';
 import { useOrderFeed } from './useOrderFeed';
 import type { FulfillmentOrder } from './types';
+import CateringInquiriesTab from './CateringInquiriesTab';
 
 interface Props {
   initialOrders: FulfillmentOrder[];
@@ -87,6 +88,7 @@ function useAudioNotification() {
 
 export default function FulfillmentDashboard({ initialOrders, feedUrl, scope }: Props) {
   const [error, setError] = useState<string | null>(null);
+  const [activeTab, setActiveTab] = useState<'orders' | 'inquiries'>('orders');
   const [busyOrderId, setBusyOrderId] = useState<string | null>(null);
   const [notificationBanner, setNotificationBanner] = useState<string | null>(null);
   const [notificationError, setNotificationError] = useState<string | null>(null);
@@ -401,14 +403,15 @@ export default function FulfillmentDashboard({ initialOrders, feedUrl, scope }: 
         onSettingsChange={setAlertSettings}
       />
 
-      <header className="flex flex-wrap items-center justify-between gap-4 rounded-2xl border border-gray-200 bg-white px-6 py-4 shadow-sm">
-        <div>
-          <h1 className="text-xl font-semibold text-gray-900">Fulfillment Dashboard</h1>
-          <p className="text-sm text-gray-500">
-            Monitor live orders, trigger printing, and progress tickets through each stage.
-          </p>
-        </div>
-        <div className="flex items-center gap-3">
+      <header className="space-y-4 rounded-2xl border border-gray-200 bg-white px-6 py-4 shadow-sm">
+        <div className="flex flex-wrap items-center justify-between gap-4">
+          <div>
+            <h1 className="text-xl font-semibold text-gray-900">Fulfillment Dashboard</h1>
+            <p className="text-sm text-gray-500">
+              Monitor live orders, trigger printing, and progress tickets through each stage.
+            </p>
+          </div>
+          <div className="flex items-center gap-3">
           <span
             className={`flex items-center gap-2 rounded-full px-3 py-1 text-xs font-semibold ${
               connected ? 'bg-emerald-100 text-emerald-700' : 'bg-red-100 text-red-700'
@@ -457,6 +460,29 @@ export default function FulfillmentDashboard({ initialOrders, feedUrl, scope }: 
               Install App
             </button>
           )}
+          </div>
+        </div>
+        <div className="flex gap-2 border-b border-gray-200">
+          <button
+            onClick={() => setActiveTab('orders')}
+            className={`px-4 py-2 text-sm font-medium ${
+              activeTab === 'orders'
+                ? 'border-b-2 border-blue-600 text-blue-600'
+                : 'text-gray-600 hover:text-gray-900'
+            }`}
+          >
+            Orders
+          </button>
+          <button
+            onClick={() => setActiveTab('inquiries')}
+            className={`px-4 py-2 text-sm font-medium ${
+              activeTab === 'inquiries'
+                ? 'border-b-2 border-blue-600 text-blue-600'
+                : 'text-gray-600 hover:text-gray-900'
+            }`}
+          >
+            Catering Inquiries
+          </button>
         </div>
       </header>
 
@@ -474,21 +500,26 @@ export default function FulfillmentDashboard({ initialOrders, feedUrl, scope }: 
         </p>
       )}
 
-      <FulfillmentBoard
-        orders={orders}
-        scope={scope}
-        onAccept={handleAccept}
-        onMarkReady={handleMarkReady}
-        onComplete={handleComplete}
-        onPrint={handlePrint}
-        onCancel={handleCancel}
-        onRefund={handleRefund}
-        tabletMode={tabletMode}
-      />
-
-      <footer className="rounded-2xl border border-dashed border-gray-300 bg-gray-50 px-4 py-3 text-xs text-gray-500">
-        Showing {orders.length} orders · {newOrders.length} waiting acceptance.
-      </footer>
+      {activeTab === 'orders' ? (
+        <>
+          <FulfillmentBoard
+            orders={orders}
+            scope={scope}
+            onAccept={handleAccept}
+            onMarkReady={handleMarkReady}
+            onComplete={handleComplete}
+            onPrint={handlePrint}
+            onCancel={handleCancel}
+            onRefund={handleRefund}
+            tabletMode={tabletMode}
+          />
+          <footer className="rounded-2xl border border-dashed border-gray-300 bg-gray-50 px-4 py-3 text-xs text-gray-500">
+            Showing {orders.length} orders · {newOrders.length} waiting acceptance.
+          </footer>
+        </>
+      ) : (
+        <CateringInquiriesTab />
+      )}
     </div>
   );
 }

@@ -22,14 +22,18 @@ export interface CateringOption {
 
 export default function CateringManager() {
   const [options, setOptions] = useState<CateringOption[]>([]);
+  const [gallery, setGallery] = useState<string[]>([]);
   const [loading, setLoading] = useState(true);
   const [saving, setSaving] = useState(false);
+  const [uploadingGallery, setUploadingGallery] = useState(false);
   const [editingId, setEditingId] = useState<string | null>(null);
   const [editForm, setEditForm] = useState<CateringOption | null>(null);
   const [showAddForm, setShowAddForm] = useState(false);
+  const [galleryInput, setGalleryInput] = useState('');
 
   useEffect(() => {
     fetchCateringOptions();
+    fetchCateringGallery();
   }, []);
 
   const fetchCateringOptions = async () => {
@@ -42,6 +46,63 @@ export default function CateringManager() {
       console.error('Error fetching catering options:', error);
     } finally {
       setLoading(false);
+    }
+  };
+
+  const fetchCateringGallery = async () => {
+    try {
+      const response = await fetch('/api/admin/catering/gallery');
+      if (!response.ok) throw new Error('Failed to fetch gallery');
+      const data = await response.json();
+      setGallery(data.gallery || []);
+    } catch (error) {
+      console.error('Error fetching gallery:', error);
+    }
+  };
+
+  const handleGalleryUpload = async (file?: File | null) => {
+    if (!file) return;
+    setUploadingGallery(true);
+    try {
+      const payload = new FormData();
+      payload.append('file', file);
+      const res = await fetch('/api/admin/assets/upload', {
+        method: 'POST',
+        body: payload,
+      });
+      if (!res.ok) throw new Error(await res.text());
+      const data = await res.json();
+      const newGallery = [...gallery, data.url];
+      setGallery(newGallery);
+      
+      // Save to backend
+      const saveRes = await fetch('/api/admin/catering/gallery', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ gallery: newGallery }),
+      });
+      if (!saveRes.ok) throw new Error('Failed to save gallery');
+    } catch (err) {
+      console.error('Gallery upload failed:', err);
+      alert('Failed to upload image');
+    } finally {
+      setUploadingGallery(false);
+    }
+  };
+
+  const handleRemoveGalleryImage = async (url: string) => {
+    const newGallery = gallery.filter(img => img !== url);
+    setGallery(newGallery);
+    try {
+      const res = await fetch('/api/admin/catering/gallery', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ gallery: newGallery }),
+      });
+      if (!res.ok) throw new Error('Failed to save gallery');
+    } catch (err) {
+      console.error('Failed to remove image:', err);
+      alert('Failed to remove image');
     }
   };
 
@@ -191,6 +252,86 @@ export default function CateringManager() {
           <Plus className="h-4 w-4" />
           Add Catering Option
         </button>
+      </div>
+
+      {/* Catering Gallery Management */}
+      <div className="rounded-lg border border-gray-200 bg-white p-6 shadow-sm">
+        <h3 className="mb-2 text-lg font-bold text-gray-900">Catering Modal Gallery</h3>
+        <p className="mb-4 text-sm text-gray-600">
+          These images will rotate at the top of the catering modal. Recommended: 1200x600px landscape images.
+        </p>
+        <div className="grid grid-cols-2 gap-4 sm:grid-cols-3 md:grid-cols-4">
+          {gallery.map((url, index) => (
+            <div key={index} className="group relative aspect-video overflow-hidden rounded-lg border border-gray-200">
+              <img
+                src={url}
+                alt={`Gallery ${index + 1}`}
+                className="h-full w-full object-cover"
+              />
+              <button
+                onClick={() => handleRemoveGalleryImage(url)}
+                className="absolute right-2 top-2 rounded-full bg-red-500 p-1.5 text-white opacity-0 transition-opacity group-hover:opacity-100"
+              >
+                <X className="h-3 w-3" />
+              </button>
+            </div>
+          ))}
+          <label className="flex aspect-video cursor-pointer items-center justify-center rounded-lg border-2 border-dashed border-gray-300 bg-gray-50 transition hover:border-blue-400 hover:bg-gray-100">
+            <input
+              type="file"
+              accept="image/*"
+              onChange={(e) => handleGalleryUpload(e.target.files?.[0])}
+              className="hidden"
+              disabled={uploadingGallery}
+            />
+            {uploadingGallery ? (
+              <div className="h-6 w-6 animate-spin rounded-full border-2 border-blue-600 border-t-transparent" />
+            ) : (
+              <Plus className="h-8 w-8 text-gray-400" />
+            )}
+          </label>
+        </div>
+        <div className="mt-4">
+          <label className="block text-sm font-medium text-gray-700">Or add image URL</label>
+          <div className="mt-1 flex gap-2">
+            <input
+              type="text"
+              value={galleryInput}
+              onChange={(e) => setGalleryInput(e.target.value)}
+              placeholder="https://example.com/image.jpg"
+              className="flex-1 rounded-lg border border-gray-300 px-3 py-2"
+              onKeyDown={(e) => {
+                if (e.key === 'Enter' && galleryInput.trim()) {
+                  const newGallery = [...gallery, galleryInput.trim()];
+                  setGallery(newGallery);
+                  setGalleryInput('');
+                  fetch('/api/admin/catering/gallery', {
+                    method: 'POST',
+                    headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify({ gallery: newGallery }),
+                  }).catch(console.error);
+                }
+              }}
+            />
+            <button
+              onClick={() => {
+                if (galleryInput.trim()) {
+                  const newGallery = [...gallery, galleryInput.trim()];
+                  setGallery(newGallery);
+                  setGalleryInput('');
+                  fetch('/api/admin/catering/gallery', {
+                    method: 'POST',
+                    headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify({ gallery: newGallery }),
+                  }).catch(console.error);
+                }
+              }}
+              className="rounded-lg bg-blue-600 px-4 py-2 text-sm font-medium text-white hover:bg-blue-700"
+            >
+              Add
+            </button>
+          </div>
+        </div>
       </div>
 
       {/* Add/Edit Form */}
