@@ -32,6 +32,8 @@ export function CateringModal({ open, onClose }: CateringModalProps) {
   const tenant = useTenantTheme();
   const [sections, setSections] = useState<CateringSection[]>([]);
   const [packages, setPackages] = useState<CateringPackage[]>([]);
+  const [gallery, setGallery] = useState<string[]>([]);
+  const [currentSlide, setCurrentSlide] = useState(0);
 
   useEffect(() => {
     if (open) {
@@ -39,6 +41,7 @@ export function CateringModal({ open, onClose }: CateringModalProps) {
         .then((res) => res.json())
         .then((data) => {
           setSections(data.sections || []);
+          setGallery(data.gallery || []);
           // Flatten all packages for the form dropdown
           const allPackages = (data.sections || []).flatMap((s: CateringSection) => s.packages);
           setPackages(allPackages);
@@ -47,11 +50,54 @@ export function CateringModal({ open, onClose }: CateringModalProps) {
     }
   }, [open]);
 
+  // Auto-rotate gallery every 5 seconds
+  useEffect(() => {
+    if (gallery.length <= 1) return;
+    const interval = setInterval(() => {
+      setCurrentSlide((prev) => (prev + 1) % gallery.length);
+    }, 5000);
+    return () => clearInterval(interval);
+  }, [gallery.length]);
+
   if (!open) return null;
 
   return (
     <div className="fixed inset-0 z-50 flex items-end justify-center bg-black/80 backdrop-blur-md sm:items-center">
       <div className="w-full max-w-6xl rounded-t-3xl border border-[#ff0000]/50 bg-white text-center text-[#2b0909] shadow-2xl sm:rounded-3xl max-h-[90vh] overflow-y-auto">
+        {/* Gallery Carousel */}
+        {gallery.length > 0 && (
+          <div className="relative w-full h-64 overflow-hidden sm:rounded-t-3xl">
+            {gallery.map((url, i) => (
+              <img
+                key={url}
+                src={url}
+                alt={`Catering ${i + 1}`}
+                className={`absolute inset-0 w-full h-full object-cover transition-opacity duration-1000 ${
+                  i === currentSlide ? 'opacity-100' : 'opacity-0'
+                }`}
+              />
+            ))}
+            {/* Gradient overlay */}
+            <div className="absolute inset-0 bg-gradient-to-t from-black/40 to-transparent" />
+
+            {/* Slide indicators */}
+            {gallery.length > 1 && (
+              <div className="absolute bottom-4 left-1/2 -translate-x-1/2 flex gap-2">
+                {gallery.map((_, i) => (
+                  <button
+                    key={i}
+                    onClick={() => setCurrentSlide(i)}
+                    className={`w-2 h-2 rounded-full transition-all ${
+                      i === currentSlide ? 'bg-white w-8' : 'bg-white/50'
+                    }`}
+                    aria-label={`Go to slide ${i + 1}`}
+                  />
+                ))}
+              </div>
+            )}
+          </div>
+        )}
+
         <div className="flex items-center justify-between border-b border-[#ff0000]/20 px-6 py-4">
           <div className="mx-auto space-y-1">
             <p className="text-xs font-semibold uppercase tracking-[0.4em] text-[#cc0000]">Las Reinas Catering</p>
