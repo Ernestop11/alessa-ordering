@@ -153,10 +153,32 @@ async function getFeaturedItems(tenantId: string): Promise<OrderMenuItem[]> {
   });
 }
 
+async function getCateringTabConfig(tenantId: string) {
+  const settings = await prisma.tenantSettings.findUnique({
+    where: { tenantId },
+    select: { cateringTabConfig: true },
+  });
+
+  return (settings?.cateringTabConfig as any) || {
+    enabled: true,
+    label: 'Catering',
+    icon: 'ChefHat',
+    description: 'Full-service events, delivered',
+  };
+}
+
 export default async function OrderPage() {
   const tenant = await requireTenant();
   const sections = await getMenuSections(tenant.id);
   const featuredItems = await getFeaturedItems(tenant.id);
+  const cateringTabConfig = await getCateringTabConfig(tenant.id);
 
-  return <OrderPageClient sections={sections} featuredItems={featuredItems} tenantSlug={tenant.slug} />;
+  return (
+    <OrderPageClient
+      sections={sections}
+      featuredItems={featuredItems}
+      tenantSlug={tenant.slug}
+      cateringTabConfig={cateringTabConfig}
+    />
+  );
 }

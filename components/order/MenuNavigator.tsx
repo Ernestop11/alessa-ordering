@@ -9,6 +9,13 @@ import RewardsTab from './RewardsTab';
 
 export type CatalogView = 'grid' | 'list' | 'showcase';
 
+interface CateringTabConfig {
+  enabled: boolean;
+  label: string;
+  icon?: string;
+  description?: string;
+}
+
 interface MenuNavigatorProps {
   categories: Array<{ id: string; name: string; icon?: string }>;
   activeCategoryId: string;
@@ -20,6 +27,7 @@ interface MenuNavigatorProps {
   onOpenCart: () => void;
   highlightItem?: OrderMenuItem | null;
   onOpenRewards?: () => void;
+  cateringTabConfig?: CateringTabConfig;
 }
 
 const VIEW_OPTIONS: Array<{ id: CatalogView; label: string; icon: ComponentType<{ className?: string }> }> = [
@@ -39,25 +47,28 @@ export function MenuNavigator({
   onOpenCart,
   highlightItem,
   onOpenRewards,
+  cateringTabConfig = { enabled: true, label: 'Catering', icon: 'ChefHat', description: 'Full-service events, delivered' },
 }: MenuNavigatorProps) {
   const tenant = useTenantTheme();
-  
+
   return (
     <div className="fixed inset-x-0 bottom-0 z-40 border-t border-white/10 bg-black/85 backdrop-blur-xl">
       <div className="mx-auto flex w-full max-w-6xl flex-col gap-3 px-4 py-3 text-white">
         <div className="flex items-center gap-2">
-          <button
-            onClick={onOpenCatering}
-            style={{
-              borderColor: `${tenant.primaryColor}99`,
-              backgroundColor: `${tenant.primaryColor}26`,
-              boxShadow: `inset 0 2px 4px ${tenant.primaryColor}4D`,
-            }}
-            className="inline-flex flex-1 items-center justify-center gap-2 rounded-full border px-3 py-2 text-sm font-semibold text-white transition hover:opacity-80"
-          >
-            <ChefHat className="h-4 w-4" />
-            Catering
-          </button>
+          {cateringTabConfig.enabled && (
+            <button
+              onClick={onOpenCatering}
+              style={{
+                borderColor: `${tenant.primaryColor}99`,
+                backgroundColor: `${tenant.primaryColor}26`,
+                boxShadow: `inset 0 2px 4px ${tenant.primaryColor}4D`,
+              }}
+              className="inline-flex flex-1 items-center justify-center gap-2 rounded-full border px-3 py-2 text-sm font-semibold text-white transition hover:opacity-80"
+            >
+              <ChefHat className="h-4 w-4" />
+              {cateringTabConfig.label}
+            </button>
+          )}
           <button
             onClick={onOpenAccessibility}
             style={{

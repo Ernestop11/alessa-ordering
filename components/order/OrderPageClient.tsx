@@ -44,10 +44,18 @@ export interface OrderMenuSection {
   items: OrderMenuItem[];
 }
 
+interface CateringTabConfig {
+  enabled: boolean;
+  label: string;
+  icon?: string;
+  description?: string;
+}
+
 interface OrderPageClientProps {
   sections: OrderMenuSection[];
   featuredItems?: OrderMenuItem[];
   tenantSlug: string;
+  cateringTabConfig?: CateringTabConfig;
 }
 
 type LayoutView = 'grid' | 'list' | 'cards';
@@ -154,7 +162,12 @@ function getEmojiForItem(item: OrderMenuItem, sectionType: string) {
   return SECTION_ICONS[sectionType] || '🍽️';
 }
 
-export default function OrderPageClient({ sections, featuredItems = [], tenantSlug }: OrderPageClientProps) {
+export default function OrderPageClient({
+  sections,
+  featuredItems = [],
+  tenantSlug,
+  cateringTabConfig = { enabled: true, label: 'Catering', icon: 'ChefHat', description: 'Full-service events, delivered' }
+}: OrderPageClientProps) {
   const searchParams = useSearchParams();
   const router = useRouter();
   const tenant = useTenantTheme();

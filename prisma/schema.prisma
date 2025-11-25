@@ -176,6 +176,7 @@ model TenantSettings {
   upsellBundles          Json?
   accessibilityDefaults  Json?
   branding               Json?
+  cateringTabConfig      Json?
   isOpen                 Boolean? @default(true)
   createdAt              DateTime @default(now())
   updatedAt              DateTime @updatedAt
