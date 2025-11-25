@@ -42,6 +42,7 @@ export async function POST(req: Request) {
     name: body.name || '',
     description: body.description || '',
     pricePerGuest: parseFloat(String(body.pricePerGuest || 0)),
+    image: body.image || null,
     badge: body.badge || null,
     available: body.available === undefined ? true : Boolean(body.available),
     displayOrder: body.displayOrder !== undefined ? Number(body.displayOrder) : 0,
