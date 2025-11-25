@@ -5,9 +5,10 @@ import { authOptions } from '@/lib/auth/options'
 import prisma from '@/lib/prisma'
 import { requireTenant } from '@/lib/tenant'
 
-export async function GET(req: Request, { params }: { params: { id: string } }) {
+export async function GET(req: Request, { params }: { params: Promise<{ id: string }> | { id: string } }) {
   try {
-    const id = params.id
+    const resolvedParams = await Promise.resolve(params);
+    const id = resolvedParams.id
     const tenant = await requireTenant()
     const item = await prisma.menuItem.findUnique({
       where: { id },
@@ -23,7 +24,7 @@ export async function GET(req: Request, { params }: { params: { id: string } }) 
   }
 }
 
-export async function PATCH(req: Request, { params }: { params: { id: string } }) {
+export async function PATCH(req: Request, { params }: { params: Promise<{ id: string }> | { id: string } }) {
   try {
     // Check authentication and role
     const session = await getServerSession(authOptions)
@@ -32,7 +33,8 @@ export async function PATCH(req: Request, { params }: { params: { id: string } }
       return NextResponse.json({ error: 'Unauthorized' }, { status: 401 })
     }
 
-    const id = params.id
+    const resolvedParams = await Promise.resolve(params);
+    const id = resolvedParams.id
     const body = await req.json()
     const tenant = await requireTenant()
 
@@ -41,8 +43,8 @@ export async function PATCH(req: Request, { params }: { params: { id: string } }
       return NextResponse.json({ error: 'Not found' }, { status: 404 })
     }
 
-    const existingGallery = Array.isArray(existing.gallery)
-      ? (existing.gallery as unknown[]).filter((url): url is string => typeof url === 'string' && url.length > 0)
+    const existingGallery = Array.isArray((existing as any).gallery)
+      ? ((existing as any).gallery as unknown[]).filter((url): url is string => typeof url === 'string' && url.length > 0)
       : [];
     const nextGallery =
       body.gallery !== undefined
@@ -59,7 +61,7 @@ export async function PATCH(req: Request, { params }: { params: { id: string } }
       image: body.image !== undefined ? body.image : existing.image,
       gallery: nextGallery,
       available: body.available !== undefined ? Boolean(body.available) : existing.available,
-      isFeatured: body.isFeatured !== undefined ? Boolean(body.isFeatured) : existing.isFeatured,
+      isFeatured: body.isFeatured !== undefined ? Boolean(body.isFeatured) : (existing as any).isFeatured ?? false,
       tags: Array.isArray(body.tags) ? body.tags : existing.tags,
       menuSectionId: body.menuSectionId !== undefined ? body.menuSectionId : existing.menuSectionId,
     }
@@ -81,7 +83,12 @@ export async function PATCH(req: Request, { params }: { params: { id: string } }
   }
 }
 
-export async function DELETE(req: Request, { params }: { params: { id: string } }) {
+// Also support PUT for backwards compatibility
+export async function PUT(req: Request, { params }: { params: Promise<{ id: string }> | { id: string } }) {
+  return PATCH(req, { params })
+}
+
+export async function DELETE(req: Request, { params }: { params: Promise<{ id: string }> | { id: string } }) {
   try {
     // Check authentication and role
     const session = await getServerSession(authOptions)
@@ -90,7 +97,8 @@ export async function DELETE(req: Request, { params }: { params: { id: string } 
       return NextResponse.json({ error: 'Unauthorized' }, { status: 401 })
     }
 
-    const id = params.id
+    const resolvedParams = await Promise.resolve(params);
+    const id = resolvedParams.id
     const tenant = await requireTenant()
 
     const existing = await prisma.menuItem.findUnique({ where: { id } })

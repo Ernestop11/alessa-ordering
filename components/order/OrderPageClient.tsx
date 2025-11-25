@@ -3,11 +3,15 @@
 import Image from 'next/image';
 import Link from 'next/link';
 import { useCallback, useEffect, useMemo, useRef, useState } from 'react';
+import { useSearchParams, useRouter } from 'next/navigation';
 import { getStockImageForCategory, cycleFallbackImage } from '../../lib/menu-imagery';
 import { useCart } from '../../lib/store/cart';
 import { getTenantAssets } from '../../lib/tenant-assets';
 import { useTenantTheme } from '../TenantThemeProvider';
 import FeaturedCarousel from './FeaturedCarousel';
+import CartLauncher from '../CartLauncher';
+import RewardsModal from './RewardsModal';
+import MenuSectionGrid from './MenuSectionGrid';
 
 export interface OrderMenuItem {
   id: string;
@@ -149,16 +153,28 @@ function getEmojiForItem(item: OrderMenuItem, sectionType: string) {
 }
 
 export default function OrderPageClient({ sections, featuredItems = [], tenantSlug }: OrderPageClientProps) {
+  const searchParams = useSearchParams();
+  const router = useRouter();
   const tenant = useTenantTheme();
   const assets = getTenantAssets(tenantSlug || tenant.slug);
-  const { addToCart } = useCart();
+  const { addToCart, items: cartItems } = useCart();
+  const cartItemCount = useMemo(() => cartItems.reduce((sum, item) => sum + item.quantity, 0), [cartItems]);
 
   const navSections = useMemo(() => sections.filter((section) => section.items.length > 0), [sections]);
   const [activeLayout, setActiveLayout] = useState<LayoutView>(() => {
-    if (typeof window === 'undefined') return 'grid';
-    return window.innerWidth < 768 ? 'cards' : 'grid';
+    const paramView = searchParams.get('view') as LayoutView | null;
+    const storedView =
+      typeof window !== 'undefined' ? (window.localStorage.getItem('alessa_view_mode') as LayoutView | null) : null;
+    if (paramView && ['grid', 'list', 'cards'].includes(paramView)) return paramView;
+    if (storedView && ['grid', 'list', 'cards'].includes(storedView)) return storedView;
+    if (typeof window !== 'undefined' && window.innerWidth < 768) return 'cards';
+    return 'grid';
   });
-  const [activeSectionId, setActiveSectionId] = useState(navSections[0]?.id ?? '');
+  const [activeSectionId, setActiveSectionId] = useState(() => {
+    const categoryParam = searchParams.get('category');
+    if (categoryParam && navSections.some((section) => section.id === categoryParam)) return categoryParam;
+    return navSections[0]?.id ?? '';
+  });
   const [notification, setNotification] = useState('');
 
   const [isAccessibilityOpen, setAccessibilityOpen] = useState(false);
@@ -173,6 +189,7 @@ export default function OrderPageClient({ sections, featuredItems = [], tenantSl
   const [customAddons, setCustomAddons] = useState<string[]>([]);
   const [customNote, setCustomNote] = useState('');
   const [customQuantity, setCustomQuantity] = useState(1);
+  const [isRewardsOpen, setRewardsOpen] = useState(false);
 
   useEffect(() => {
     if (typeof window === 'undefined') return;
@@ -184,10 +201,11 @@ export default function OrderPageClient({ sections, featuredItems = [], tenantSl
   }, []);
 
   useEffect(() => {
-    const body = document.body;
-    body.classList.toggle('high-contrast', accessibilityState.highContrast);
-    body.classList.toggle('large-text', accessibilityState.largeText);
-    body.classList.toggle('reduced-motion', accessibilityState.reducedMotion);
+    if (typeof document === 'undefined') return;
+    const root = document.documentElement;
+    root.classList.toggle('ada-contrast', accessibilityState.highContrast);
+    root.classList.toggle('ada-mode', accessibilityState.largeText);
+    root.classList.toggle('ada-reduced-motion', accessibilityState.reducedMotion);
   }, [accessibilityState]);
 
   useEffect(() => {
@@ -207,6 +225,38 @@ export default function OrderPageClient({ sections, featuredItems = [], tenantSl
       setHasHydratedAccessibility(true);
     }
   }, [accessibilityStorageKey, tenant.accessibilityDefaults]);
+
+  useEffect(() => {
+    if (typeof window === 'undefined') return;
+    const params = new URLSearchParams(window.location.search);
+    if (activeLayout !== 'grid') {
+      params.set('view', activeLayout);
+    } else {
+      params.delete('view');
+    }
+    if (activeSectionId) {
+      params.set('category', activeSectionId);
+    }
+    if (tenantSlug) {
+      params.set('tenant', tenantSlug);
+    }
+    const query = params.toString();
+    const newUrl = query ? `${window.location.pathname}?${query}` : window.location.pathname;
+    router.replace(newUrl, { scroll: false });
+  }, [activeLayout, activeSectionId, tenantSlug, router]);
+
+  useEffect(() => {
+    if (typeof window === 'undefined') return;
+    window.localStorage.setItem('alessa_view_mode', activeLayout);
+  }, [activeLayout]);
+
+  useEffect(() => {
+    if (typeof window === 'undefined') return;
+    const sectionEl = document.getElementById(`section-${activeSectionId}`);
+    if (sectionEl) {
+      sectionEl.scrollIntoView({ behavior: 'smooth', block: 'start' });
+    }
+  }, [activeSectionId]);
 
   useEffect(() => {
     let canceled = false;
@@ -441,72 +491,7 @@ export default function OrderPageClient({ sections, featuredItems = [], tenantSl
     closeCustomization();
   }, [addToCart, closeCustomization, customModal, customNote, customQuantity, customRemovals, perItemCustomizedPrice, selectedAddonObjects]);
 
-  const highlightData = useMemo(() => {
-    const flattened = sections.flatMap((section) =>
-      section.items.map((item, index) => ({
-        sectionType: section.type,
-        sectionName: section.name,
-        item,
-        image: item.image || getStockImageForCategory(item.category || section.type, index),
-      })),
-    );
-
-    const combos: HighlightCard[] = flattened.slice(0, 6).map((entry, index) => ({
-      id: `${entry.item.id}-bundle`,
-      title: `${entry.item.name} Bundle`,
-      description: `Includes ${entry.item.name}, a craft beverage, and a sweet treat.`,
-      price: Number((entry.item.price + 6.5).toFixed(2)),
-      originalPrice: Number((entry.item.price + 9.5).toFixed(2)),
-      badge: index === 0 ? 'Chef Pick' : index === 1 ? 'Save $3' : 'Popular',
-      image: entry.image,
-      category: entry.item.category || entry.sectionType,
-    }));
-
-    const specials = flattened
-      .filter((entry) => entry.sectionType === 'SPECIAL' || entry.item.tags?.includes('special'))
-      .slice(0, 5);
-    const sweets = flattened
-      .filter((entry) => entry.sectionType === 'BAKERY' || entry.item.category?.toLowerCase().includes('dessert'))
-      .slice(0, 5);
-
-    const fallbackSpecials = combos.slice(0, 4);
-    const fallbackSweets = combos.slice(2, 6);
-
-    return {
-      combos,
-      specials: specials.length > 0
-        ? specials.map((entry, index) => ({
-            id: `${entry.item.id}-special`,
-            title: entry.item.name,
-            description: entry.item.description,
-            price: entry.item.price,
-            badge: index === 0 ? 'Limited' : 'Signature',
-            image: entry.image,
-            category: entry.item.category || entry.sectionType,
-          }))
-        : fallbackSpecials,
-      sweets: sweets.length > 0
-        ? sweets.map((entry, index) => ({
-            id: `${entry.item.id}-sweet`,
-            title: entry.item.name,
-            description: entry.item.description,
-            price: entry.item.price,
-            badge: index === 0 ? 'Just Baked' : 'Sweet Pick',
-            image: entry.image,
-            category: entry.item.category || entry.sectionType,
-          }))
-        : fallbackSweets,
-    };
-  }, [sections]);
-
-  const combosRef = useRef<HTMLDivElement | null>(null);
-  const specialsRef = useRef<HTMLDivElement | null>(null);
-  const sweetsRef = useRef<HTMLDivElement | null>(null);
   const sectionRefs = useRef<Record<string, HTMLElement | null>>({});
-
-  const scrollHorizontal = useCallback((ref: React.RefObject<HTMLDivElement>, offset: number) => {
-    ref.current?.scrollBy({ left: offset, behavior: 'smooth' });
-  }, []);
 
   useEffect(() => {
     const sectionsToObserve = Object.entries(sectionRefs.current)
@@ -632,7 +617,7 @@ export default function OrderPageClient({ sections, featuredItems = [], tenantSl
   }, []);
 
   const handleAddToCart = useCallback(
-    (item: OrderMenuItem, image: string) => {
+    (item: OrderMenuItem, image?: string) => {
       if (!item.available) return;
 
       addToCart({
@@ -641,7 +626,7 @@ export default function OrderPageClient({ sections, featuredItems = [], tenantSl
         description: item.description,
         price: item.price,
         quantity: 1,
-        image,
+        image: image || item.image || undefined,
       });
 
       showNotification(`Added ${item.name} to cart`);
@@ -784,9 +769,32 @@ export default function OrderPageClient({ sections, featuredItems = [], tenantSl
         return (
           <div className="space-y-4">
             {section.items.map((item) => (
-              <article key={item.id} className="flex gap-4 rounded-2xl bg-white/8 p-4 shadow-xl shadow-black/10 backdrop-blur-md">
-                <div className="relative h-28 w-28 flex-shrink-0 overflow-hidden rounded-2xl">
-                  <Image src={item.displayImage} alt={item.name} fill className="object-cover" sizes="(min-width: 768px) 120px, 96px" />
+              <article key={item.id} className="group flex gap-4 rounded-2xl bg-white/8 p-4 shadow-xl shadow-black/10 backdrop-blur-md transition hover:bg-white/12 hover:shadow-xl hover:shadow-red-600/20">
+                <div className="relative h-28 w-28 flex-shrink-0 overflow-hidden rounded-2xl border border-white/10 bg-gradient-to-br from-gray-800 to-gray-900">
+                  {item.displayImage && item.displayImage.startsWith('http') ? (
+                    <img 
+                      src={item.displayImage || getStockImageForCategory(item.category || section.type, 0)} 
+                      alt={item.name} 
+                      className="h-full w-full object-cover transition-transform group-hover:scale-110" 
+                      onError={(e) => {
+                        const target = e.target as HTMLImageElement;
+                        target.src = getStockImageForCategory(item.category || section.type, 0);
+                      }}
+                    />
+                  ) : (
+                    <Image 
+                      src={item.displayImage || getStockImageForCategory(item.category || section.type, 0)} 
+                      alt={item.name} 
+                      fill 
+                      className="object-cover transition-transform group-hover:scale-110" 
+                      sizes="(min-width: 768px) 120px, 96px"
+                      unoptimized={item.displayImage?.startsWith('http') || item.displayImage?.startsWith('/tenant/')}
+                      onError={(e) => {
+                        const target = e.target as HTMLImageElement;
+                        target.src = getStockImageForCategory(item.category || section.type, 0);
+                      }}
+                    />
+                  )}
                   <span className="absolute bottom-2 left-2 rounded-full bg-black/60 px-2 text-lg">{item.emoji}</span>
                 </div>
                 <div className="flex flex-1 flex-col justify-between">
@@ -817,7 +825,7 @@ export default function OrderPageClient({ sections, featuredItems = [], tenantSl
                   </div>
                   <div className="mt-3 flex flex-col gap-2 sm:flex-row">
                     <button
-                      className="flex-1 rounded-lg bg-gradient-to-r from-rose-500 via-amber-500 to-yellow-400 px-3 py-2 text-xs font-semibold text-white shadow-lg shadow-rose-500/20 transition-all hover:scale-[1.02] hover:shadow-rose-500/40 disabled:cursor-not-allowed disabled:opacity-50"
+                      className="flex-1 rounded-lg bg-[#ff0000] px-3 py-2 text-xs font-semibold text-white shadow-lg shadow-[#ff0000]/30 transition-all hover:scale-[1.02] hover:shadow-[#ff0000]/50 disabled:cursor-not-allowed disabled:opacity-50"
                       onClick={() => openCustomization(item, section.type)}
                       disabled={!item.available}
                     >
@@ -833,7 +841,7 @@ export default function OrderPageClient({ sections, featuredItems = [], tenantSl
                       </span>
                     </button>
                     <button
-                      className="rounded-lg border border-white/20 bg-white/5 px-3 py-2 text-xs font-medium text-white/90 backdrop-blur-sm transition-all hover:border-white/40 hover:bg-white/10 disabled:cursor-not-allowed disabled:opacity-50"
+                      className="rounded-lg border border-white/20 bg-white/5 px-3 py-2 text-xs font-medium text-white/90 backdrop-blur-sm transition-all hover:border-[#ff0000]/40 hover:bg-[#ff0000]/10 hover:scale-[1.02] disabled:cursor-not-allowed disabled:opacity-50"
                       onClick={() => handleAddToCart(item, item.displayImage)}
                       disabled={!item.available}
                     >
@@ -855,8 +863,31 @@ export default function OrderPageClient({ sections, featuredItems = [], tenantSl
                 key={item.id}
                 className="group relative overflow-hidden rounded-3xl border border-white/10 bg-white/8 shadow-2xl shadow-black/20 transition hover:-translate-y-1 hover:border-white/20"
               >
-                <div className="relative h-48 w-full overflow-hidden">
-                  <Image src={item.displayImage} alt={item.name} fill className="object-cover transition duration-500 group-hover:scale-110" sizes="(min-width: 1024px) 480px, 100vw" />
+                <div className="relative h-48 w-full overflow-hidden bg-gradient-to-br from-gray-800 to-gray-900">
+                  {item.displayImage && item.displayImage.startsWith('http') ? (
+                    <img 
+                      src={item.displayImage} 
+                      alt={item.name} 
+                      className="h-full w-full object-cover transition duration-500 group-hover:scale-110" 
+                      onError={(e) => {
+                        const target = e.target as HTMLImageElement;
+                        target.src = getStockImageForCategory(item.category || section.type, 0);
+                      }}
+                    />
+                  ) : (
+                    <Image 
+                      src={item.displayImage || getStockImageForCategory(item.category || section.type, 0)} 
+                      alt={item.name} 
+                      fill 
+                      className="object-cover transition duration-500 group-hover:scale-110" 
+                      sizes="(min-width: 1024px) 480px, 100vw"
+                      unoptimized={item.displayImage?.startsWith('http') || item.displayImage?.startsWith('/tenant/')}
+                      onError={(e) => {
+                        const target = e.target as HTMLImageElement;
+                        target.src = getStockImageForCategory(item.category || section.type, 0);
+                      }}
+                    />
+                  )}
                   <div className="absolute inset-0 bg-gradient-to-t from-black/80 via-black/20 to-black/10" />
                   <div className="absolute bottom-4 left-4 flex items-center gap-3">
                     <span className="text-3xl">{item.emoji}</span>
@@ -903,7 +934,7 @@ export default function OrderPageClient({ sections, featuredItems = [], tenantSl
                         </span>
                       </button>
                       <button
-                        className="rounded-full bg-gradient-to-r from-rose-500 via-amber-500 to-yellow-400 px-4 py-2 text-sm font-semibold text-black transition hover:scale-105 hover:shadow-lg"
+                        className="rounded-full bg-gradient-to-r from-red-600 via-amber-400 to-yellow-400 px-4 py-2 text-sm font-semibold text-black transition hover:scale-105 hover:shadow-lg"
                         onClick={() => handleAddToCart(item, item.displayImage)}
                         disabled={!item.available}
                       >
@@ -925,13 +956,36 @@ export default function OrderPageClient({ sections, featuredItems = [], tenantSl
           {section.items.map((item) => (
             <article key={item.id} className={`group relative overflow-hidden rounded-3xl border-2 backdrop-blur-xl transition-all hover:scale-105 hover:shadow-2xl ${
               isBakery
-                ? 'border-amber-400/30 bg-gradient-to-br from-amber-500/20 via-rose-500/15 to-yellow-400/20 hover:border-amber-400/50 hover:shadow-amber-500/40'
-                : 'border-white/10 bg-white/10 hover:border-white/30 hover:shadow-rose-500/30'
+                ? 'border-amber-400/30 bg-gradient-to-br from-amber-400/20 via-red-600/15 to-yellow-400/20 hover:border-amber-400/50 hover:shadow-amber-500/40'
+                : 'border-white/10 bg-white/10 hover:border-white/30 hover:shadow-red-600/30'
             }`}>
-              <div className="relative h-56 w-full overflow-hidden sm:h-64">
-                <Image src={item.displayImage} alt={item.name} fill className="object-cover transition-transform duration-500 group-hover:scale-110" sizes="(min-width: 1280px) 360px, (min-width: 768px) 280px, 100vw" />
+              <div className="relative h-56 w-full overflow-hidden sm:h-64 bg-gradient-to-br from-gray-800 to-gray-900">
+                {item.displayImage && item.displayImage.startsWith('http') ? (
+                  <img 
+                    src={item.displayImage || getStockImageForCategory(item.category || section.type, 0)} 
+                    alt={item.name} 
+                    className="h-full w-full object-cover transition-transform duration-500 group-hover:scale-110" 
+                    onError={(e) => {
+                      const target = e.target as HTMLImageElement;
+                      target.src = getStockImageForCategory(item.category || section.type, 0);
+                    }}
+                  />
+                ) : (
+                  <Image 
+                    src={item.displayImage || getStockImageForCategory(item.category || section.type, 0)} 
+                    alt={item.name} 
+                    fill 
+                    className="object-cover transition-transform duration-500 group-hover:scale-110" 
+                    sizes="(min-width: 1280px) 360px, (min-width: 768px) 280px, 100vw"
+                    unoptimized={item.displayImage?.startsWith('http') || item.displayImage?.startsWith('/tenant/')}
+                    onError={(e) => {
+                      const target = e.target as HTMLImageElement;
+                      target.src = getStockImageForCategory(item.category || section.type, 0);
+                    }}
+                  />
+                )}
                 <div className={`absolute inset-0 bg-gradient-to-t ${
-                  isBakery ? 'from-amber-900/90 via-rose-900/30 to-transparent' : 'from-black/90 via-black/30 to-transparent'
+                  isBakery ? 'from-amber-900/90 via-red-900/30 to-transparent' : 'from-black/90 via-black/30 to-transparent'
                 }`} />
                 <div className="absolute bottom-4 left-4 flex items-center gap-3">
                   <span className="text-3xl drop-shadow-lg">{item.emoji}</span>
@@ -947,8 +1001,8 @@ export default function OrderPageClient({ sections, featuredItems = [], tenantSl
                   <div className="absolute top-4 right-4">
                     <span className={`rounded-full px-3 py-1 text-xs font-bold text-white shadow-lg ${
                       isBakery
-                        ? 'bg-gradient-to-r from-amber-500 to-rose-500'
-                        : 'bg-gradient-to-r from-rose-500 to-amber-500'
+                        ? 'bg-gradient-to-r from-amber-400 to-red-600'
+                        : 'bg-gradient-to-r from-red-600 to-amber-400'
                     }`}>
                       {item.tags[0]}
                     </span>
@@ -963,7 +1017,7 @@ export default function OrderPageClient({ sections, featuredItems = [], tenantSl
                     {item.name}
                   </h3>
                   <span className={`text-2xl font-black ${
-                    isBakery ? 'text-amber-200' : 'text-rose-200'
+                    isBakery ? 'text-amber-200' : 'text-red-300'
                   }`}>
                     ${item.price.toFixed(2)}
                   </span>
@@ -990,7 +1044,7 @@ export default function OrderPageClient({ sections, featuredItems = [], tenantSl
                       className={`flex-1 rounded-lg px-3 py-2 text-xs font-semibold shadow-lg transition-all hover:scale-[1.02] disabled:cursor-not-allowed disabled:opacity-50 ${
                         isBakery
                           ? 'bg-gradient-to-r from-amber-400 via-yellow-400 to-amber-400 text-black shadow-amber-500/20 hover:shadow-amber-500/40'
-                          : 'bg-gradient-to-r from-rose-500 via-amber-500 to-yellow-400 text-white shadow-rose-500/20 hover:shadow-rose-500/40'
+                          : 'bg-[#ff0000] text-white shadow-[#ff0000]/30 hover:shadow-[#ff0000]/50'
                       }`}
                       onClick={() => openCustomization(item, section.type)}
                       disabled={!item.available}
@@ -1036,126 +1090,143 @@ export default function OrderPageClient({ sections, featuredItems = [], tenantSl
   return (
     <div className="min-h-screen bg-gradient-to-br from-[#050A1C] via-[#0A1C2F] to-[#041326] text-white">
       <header className="sticky top-0 z-40 border-b border-white/10 bg-black/60 backdrop-blur-xl">
-        <div className="mx-auto flex max-w-6xl flex-col gap-4 px-6 py-4 md:flex-row md:items-center md:justify-between">
-          <div className="flex items-center gap-4">
-            {tenant.logoUrl ? (
-              <Image
-                src={tenant.logoUrl}
-                alt={`${tenant.name} logo`}
-                width={56}
-                height={56}
-                className="h-14 w-14 rounded-full border border-white/20 object-cover"
-              />
-            ) : (
-              <div className="flex h-14 w-14 items-center justify-center rounded-full border border-white/20 text-2xl">🍽️</div>
+        <div className="mx-auto max-w-6xl px-6 py-4">
+          {/* Top Row: Logo + Tabs */}
+          <div className="flex flex-col gap-4 md:flex-row md:items-center md:justify-between">
+            <div className="flex items-center gap-4">
+              {tenant.logoUrl ? (
+                <Image
+                  src={tenant.logoUrl}
+                  alt={`${tenant.name} logo`}
+                  width={56}
+                  height={56}
+                  className="h-14 w-14 rounded-full border border-white/20 object-cover"
+                />
+              ) : (
+                <div className="flex h-14 w-14 items-center justify-center rounded-full border border-white/20 text-2xl">🍽️</div>
+              )}
+              <div>
+                <h1 className="text-2xl font-semibold text-white">{tenant.name}</h1>
+                {tenant.tagline && <p className="text-sm text-white/60">{tenant.tagline}</p>}
+              </div>
+            </div>
+            
+            {/* Tab Bar: Catering, ADA, Cart (right-aligned) */}
+            <div className="flex items-center gap-2">
+              {cateringEnabled && (
+                <button
+                  onClick={() => setShowCateringPanel(true)}
+                  className="flex items-center gap-2 rounded-full border border-white/20 bg-white/5 px-4 py-2 text-sm font-semibold text-white transition-all hover:border-[#ff0000] hover:bg-[#ff0000]/20 hover:text-white"
+                  style={{ 
+                    borderColor: showCateringPanel ? '#ff0000' : undefined,
+                    backgroundColor: showCateringPanel ? '#ff0000' : undefined
+                  }}
+                >
+                  <span>🎉</span>
+                  <span>Catering</span>
+                </button>
+              )}
+              <button
+                onClick={() => setAccessibilityOpen((prev) => !prev)}
+                className="flex items-center gap-2 rounded-full border border-white/20 bg-white/5 px-4 py-2 text-sm font-semibold text-white transition-all hover:border-[#ff0000] hover:bg-[#ff0000]/20 hover:text-white"
+                style={{ 
+                  borderColor: isAccessibilityOpen ? '#ff0000' : undefined,
+                  backgroundColor: isAccessibilityOpen ? '#ff0000' : undefined
+                }}
+              >
+                <span>♿</span>
+                <span className="hidden sm:inline">ADA</span>
+                <span className="sm:hidden">Accessibility</span>
+              </button>
+              <button
+                onClick={() => {
+                  const cartButton = document.querySelector('[data-cart-launcher]') as HTMLElement;
+                  cartButton?.click();
+                }}
+                className="flex items-center gap-2 rounded-full border border-white/20 bg-white/5 px-4 py-2 text-sm font-semibold text-white transition-all hover:border-[#ff0000] hover:bg-[#ff0000]/20 hover:text-white"
+              >
+                <span>🛒</span>
+                <span>Cart</span>
+                {cartItemCount > 0 && (
+                  <span className="rounded-full bg-[#ff0000] px-2 py-0.5 text-xs font-bold text-white">
+                    {cartItemCount > 99 ? '99+' : cartItemCount}
+                  </span>
+                )}
+              </button>
+            </div>
+          </div>
+          
+          {/* Bottom Row: Category Chips + View Toggles */}
+          <div className="mt-4 flex flex-col gap-3 md:flex-row md:items-center md:justify-between">
+            {navSections.length > 0 && (
+              <nav className="flex max-w-full items-center gap-2 overflow-x-auto text-sm font-medium text-white/80 scrollbar-hide pb-2">
+                {navSections.map((section) => {
+                  const isActive = activeSectionId === section.id;
+                  return (
+                    <button
+                      key={section.id}
+                      onClick={() => {
+                        setActiveSectionId(section.id);
+                        const element = document.getElementById(`section-${section.id}`);
+                        element?.scrollIntoView({ behavior: 'smooth', block: 'start' });
+                      }}
+                      className={`flex-shrink-0 rounded-full border px-4 py-2.5 text-sm transition-all hover:scale-105 ${
+                        isActive 
+                          ? 'border-[#ff0000] bg-[#ff0000] text-white font-semibold shadow-lg shadow-[#ff0000]/40' 
+                          : 'border-white/20 hover:border-[#ff0000]/40 hover:text-white hover:bg-white/5'
+                      }`}
+                    >
+                      <span className="text-base">{SECTION_ICONS[section.type] || '🍽️'}</span>
+                      <span className="ml-1.5">{section.name}</span>
+                    </button>
+                  );
+                })}
+              </nav>
             )}
-          <div>
-            <h1 className="text-2xl font-semibold text-white">{tenant.name}</h1>
-            {tenant.tagline && <p className="text-sm text-white/60">{tenant.tagline}</p>}
+
+            <div className="flex flex-wrap items-center gap-2">
+              <button
+                type="button"
+                onClick={() => setRewardsOpen(true)}
+                className="inline-flex items-center gap-2 rounded-full border border-[#ff0000]/60 bg-[#ff0000]/15 px-4 py-2 text-xs font-semibold uppercase tracking-wide text-[#ff0000] transition hover:bg-[#ff0000]/30"
+              >
+                <span>🎁</span>
+                Rewards
+              </button>
+            </div>
+            
+            {/* View Toggles: Grid | List | Showcase */}
+            <div className="flex items-center gap-2">
+              {LAYOUTS.map((layout) => (
+                <button
+                  key={layout.id}
+                  onClick={() => setActiveLayout(layout.id)}
+                  className={`flex items-center gap-2 rounded-full border px-3 py-1.5 text-xs font-semibold transition ${
+                    activeLayout === layout.id
+                      ? 'border-[#ff0000] bg-[#ff0000] text-white shadow-lg shadow-[#ff0000]/40'
+                      : 'border-white/20 text-white/70 hover:border-[#ff0000]/40 hover:text-white hover:bg-white/5'
+                  }`}
+                >
+                  <span>{layout.icon}</span>
+                  <span className="hidden sm:inline">{layout.label}</span>
+                </button>
+              ))}
+            </div>
           </div>
-          </div>
-          {navSections.length > 0 && (
-            <nav className="flex max-w-full items-center gap-2 overflow-x-auto text-sm font-medium text-white/80 scrollbar-hide pb-2">
-              {navSections.map((section) => {
-                const isActive = activeSectionId === section.id;
-                const isBakery = section.type === 'BAKERY' || section.name.toLowerCase().includes('panad') || section.name.toLowerCase().includes('bakery');
-                const baseClass = isBakery
-                  ? 'border-transparent bg-gradient-to-r from-rose-500 via-amber-400 to-yellow-300 text-black shadow-lg shadow-rose-500/40 font-bold'
-                  : 'border-white/70 bg-white/10 text-white font-semibold';
-                return (
-                  <button
-                    key={section.id}
-                    onClick={() => {
-                      setActiveSectionId(section.id);
-                      const element = document.getElementById(`section-${section.id}`);
-                      element?.scrollIntoView({ behavior: 'smooth', block: 'start' });
-                    }}
-                    className={`flex-shrink-0 rounded-full border px-4 py-2.5 text-sm transition-all hover:scale-105 ${
-                      isActive ? baseClass : 'border-white/20 hover:border-white/40 hover:text-white hover:bg-white/5'
-                    }`}
-                  >
-                    <span className="text-base">{SECTION_ICONS[section.type] || '🍽️'}</span>
-                    <span className="ml-1.5">{section.name}</span>
-                  </button>
-                );
-              })}
-            </nav>
-          )}
         </div>
       </header>
 
       <section className="relative flex min-h-[85vh] items-center justify-center overflow-hidden text-white">
-        {/* Background Images/Videos with Smooth Transitions */}
+        {/* Red Gradient Background */}
         <div className="absolute inset-0">
-          {heroMedia.map((media, index) => {
-            const isVideo = media.endsWith('.mp4') || media.endsWith('.webm') || media.endsWith('.mov') || media.includes('video');
-            const isGif = media.endsWith('.gif') || media.includes('gif');
-            const isActive = index === heroBackgroundIndex;
-            
-            if (isVideo) {
-              return (
-                <video
-                  key={`hero-media-${index}`}
-                  className={`absolute inset-0 h-full w-full object-cover transition-opacity duration-1000 ease-in-out ${
-                    isActive ? 'opacity-100 z-10' : 'opacity-0 z-0'
-                  }`}
-                  autoPlay
-                  loop
-                  muted
-                  playsInline
-                  src={media}
-                />
-              );
-            }
-            
-            return (
-              <div
-                key={`hero-media-${index}`}
-                className={`absolute inset-0 transition-opacity duration-1000 ease-in-out ${
-                  isActive ? 'opacity-100 z-10' : 'opacity-0 z-0'
-                }`}
-                style={{
-                  backgroundImage: isGif ? `url(${media})` : `url(${media})`,
-                  backgroundSize: 'cover',
-                  backgroundPosition: 'center',
-                  backgroundRepeat: 'no-repeat',
-                }}
-              >
-                {isGif && (
-                  <img
-                    src={media}
-                    alt="Hero background"
-                    className="h-full w-full object-cover"
-                  />
-                )}
-              </div>
-            );
-          })}
-          {/* Gradient Overlay */}
+          {/* Red Gradient Background for Las Reinas */}
           <div
-            className={`absolute inset-0 z-20 bg-gradient-to-br transition-opacity duration-700 ${
-              activeSection?.type === 'BAKERY'
-                ? 'from-rose-500/80 via-amber-400/50 to-black/40'
-                : 'from-black/75 via-black/50 to-black/30'
-            }`}
+            className="absolute inset-0 z-10 bg-gradient-to-br from-[#ff0000] via-[#cc0000] to-[#990000]"
           />
-          {/* Animated Gradient Overlay for Depth */}
-          <div className="absolute inset-0 z-30 bg-gradient-to-t from-black/70 via-transparent to-transparent" />
-          {/* Image Indicators */}
-          {!motionReduced && heroMedia.length > 1 && (
-            <div className="absolute bottom-8 left-1/2 z-40 flex -translate-x-1/2 gap-2">
-              {heroMedia.map((_, index) => (
-                <button
-                  key={index}
-                  onClick={() => setHeroBackgroundIndex(index)}
-                  className={`h-2 rounded-full transition-all ${
-                    index === heroBackgroundIndex ? 'w-8 bg-white' : 'w-2 bg-white/40'
-                  }`}
-                  aria-label={`Go to image ${index + 1}`}
-                />
-              ))}
-            </div>
-          )}
+          {/* Subtle Pattern Overlay */}
+          <div className="absolute inset-0 z-20 bg-[radial-gradient(circle_at_50%_50%,rgba(255,255,255,0.05)_0%,transparent_50%)]" />
+          {/* Gradient Overlay for Depth */}
+          <div className="absolute inset-0 z-30 bg-gradient-to-t from-black/60 via-black/30 to-transparent" />
         </div>
         <div className="relative z-40 mx-auto max-w-5xl px-6 text-center">
           <div className="mb-8 inline-flex items-center gap-2 rounded-full border border-white/20 bg-white/10 px-4 py-2 text-sm font-semibold text-white backdrop-blur-sm">
@@ -1171,17 +1242,11 @@ export default function OrderPageClient({ sections, featuredItems = [], tenantSl
           <div className="mt-12 flex flex-wrap items-center justify-center gap-4">
             <a
               href="#menu"
-              className="group relative overflow-hidden rounded-full bg-gradient-to-r from-rose-500 via-amber-500 to-yellow-400 px-10 py-5 text-lg font-bold text-black shadow-2xl shadow-amber-400/40 transition-all hover:scale-105 hover:shadow-amber-400/60"
+              className="group relative overflow-hidden rounded-full bg-[#ff0000] px-10 py-5 text-lg font-bold text-white shadow-2xl shadow-[#ff0000]/40 transition-all hover:scale-105 hover:shadow-[#ff0000]/60"
             >
               <span className="relative z-10">Explore Menu ✨</span>
-              <span className="absolute inset-0 bg-gradient-to-r from-yellow-400 via-amber-500 to-rose-500 opacity-0 transition-opacity group-hover:opacity-100"></span>
+              <span className="absolute inset-0 bg-gradient-to-r from-yellow-400 via-amber-400 to-red-600 opacity-0 transition-opacity group-hover:opacity-100"></span>
             </a>
-            <Link
-              href={`/customer/login?tenant=${tenant.slug}`}
-              className="rounded-full border-2 border-white/50 bg-white/10 px-8 py-5 text-base font-bold text-white backdrop-blur-md transition-all hover:border-white hover:bg-white/20 hover:scale-105"
-            >
-              View Order History →
-            </Link>
           </div>
           {/* Stats moved to bottom of hero - less prominent */}
           <div className="mt-12 grid gap-3 rounded-2xl border border-white/10 bg-black/30 p-4 backdrop-blur-sm sm:grid-cols-2 md:grid-cols-4">
@@ -1221,89 +1286,51 @@ export default function OrderPageClient({ sections, featuredItems = [], tenantSl
           </div>
         )}
 
-        <section className="rounded-3xl border border-white/10 bg-white/5 p-6 shadow-lg shadow-black/20">
-          <div className="flex flex-col gap-6 md:flex-row md:items-center md:justify-between">
-            <div>
-              <h3 className="text-xl font-semibold text-white">Customize your view</h3>
-              <p className="text-sm text-white/60">Switch layouts to browse how you like and jump into categories instantly.</p>
-            </div>
-            <div className="flex flex-wrap items-center gap-3">
-              {LAYOUTS.map((layout) => (
-                <button
-                  key={layout.id}
-                  onClick={() => setActiveLayout(layout.id)}
-                  className={`flex items-center gap-2 rounded-full border px-4 py-2 text-sm font-semibold transition ${
-                    activeLayout === layout.id
-                      ? 'border-white/70 bg-white/10 text-white'
-                      : 'border-white/20 text-white/70 hover:border-white/40 hover:text-white'
-                  }`}
-                >
-                  <span>{layout.icon}</span>
-                  {layout.label}
-                </button>
-              ))}
-            </div>
-          </div>
-        </section>
 
-        {/* Floating Action Buttons - Desktop (Left Side, Vertical Stack) */}
-        <div className="fixed bottom-6 left-6 z-50 hidden sm:flex sm:flex-col sm:gap-2.5">
-          {/* Catering Button */}
+        {/* Mobile Sticky Bottom Bar */}
+        <div className="fixed bottom-0 left-0 right-0 z-50 flex items-center justify-around border-t border-white/10 bg-black/90 backdrop-blur-xl px-4 py-3 sm:hidden">
           {cateringEnabled && (
             <button
               onClick={() => setShowCateringPanel(true)}
-              className="group flex min-w-[120px] items-center gap-2 rounded-xl bg-gradient-to-r from-rose-500 via-orange-500 to-amber-600 px-3.5 py-2.5 text-xs font-semibold text-white shadow-lg shadow-rose-500/20 backdrop-blur-sm transition-all hover:scale-[1.02] hover:shadow-rose-500/30"
+              className={`flex flex-col items-center gap-1 rounded-lg px-3 py-2 text-xs font-semibold transition ${
+                showCateringPanel 
+                  ? 'text-[#ff0000]' 
+                  : 'text-white/70 hover:text-white'
+              }`}
             >
-              <span className="text-base">🎉</span>
+              <span className="text-lg">🎉</span>
               <span>Catering</span>
             </button>
           )}
-
-          {/* Rewards Button */}
-          {membershipEnabled && (
-            <button
-              onClick={() => setShowMembershipPanel(true)}
-              className="group flex min-w-[120px] items-center gap-2 rounded-xl bg-gradient-to-r from-amber-500 via-yellow-400 to-amber-500 px-3.5 py-2.5 text-xs font-semibold text-black shadow-lg shadow-amber-500/20 backdrop-blur-sm transition-all hover:scale-[1.02] hover:shadow-amber-500/30"
-            >
-              <span className="text-base">⭐</span>
-              <span>Rewards</span>
-            </button>
-          )}
-
-          {/* Accessibility Button */}
           <button
             onClick={() => setAccessibilityOpen((prev) => !prev)}
-            className="group flex min-w-[120px] items-center gap-2 rounded-xl bg-gradient-to-r from-blue-500 via-purple-500 to-rose-500 px-3.5 py-2.5 text-xs font-semibold text-white shadow-lg shadow-blue-500/20 backdrop-blur-sm transition-all hover:scale-[1.02] hover:shadow-blue-500/30"
+            className={`flex flex-col items-center gap-1 rounded-lg px-3 py-2 text-xs font-semibold transition ${
+              isAccessibilityOpen 
+                ? 'text-[#ff0000]' 
+                : 'text-white/70 hover:text-white'
+            }`}
           >
-            <span className="text-base">♿</span>
-            <span className="text-[10px]">Accessibility</span>
+            <span className="text-lg">♿</span>
+            <span>ADA</span>
+          </button>
+          <button
+            onClick={() => {
+              const cartButton = document.querySelector('[data-cart-launcher]') as HTMLElement;
+              cartButton?.click();
+            }}
+            className="relative flex flex-col items-center gap-1 rounded-lg px-3 py-2 text-xs font-semibold text-white/70 hover:text-white transition"
+          >
+            <span className="text-lg">🛒</span>
+            <span>Cart</span>
+            {cartItemCount > 0 && (
+              <span className="absolute -top-1 -right-1 flex h-5 w-5 items-center justify-center rounded-full bg-[#ff0000] text-[10px] font-bold text-white">
+                {cartItemCount > 9 ? '9+' : cartItemCount}
+              </span>
+            )}
           </button>
         </div>
-
-        {/* Floating Action Buttons - Mobile (Right Side, Vertical Stack above Cart) */}
-        <div className="fixed bottom-20 right-5 z-50 flex flex-col gap-2.5 sm:hidden">
-          {/* Catering Button - Mobile */}
-          {cateringEnabled && (
-            <button
-              onClick={() => setShowCateringPanel(true)}
-              className="flex items-center justify-center gap-1.5 rounded-xl bg-gradient-to-r from-rose-500 via-orange-500 to-amber-600 px-3.5 py-2.5 text-xs font-semibold text-white shadow-lg shadow-rose-500/20 backdrop-blur-sm transition-all hover:scale-[1.02]"
-            >
-              <span className="text-base">🎉</span>
-              <span>Catering</span>
-            </button>
-          )}
-
-          {/* Rewards Button - Mobile */}
-          {membershipEnabled && (
-            <button
-              onClick={() => setShowMembershipPanel(true)}
-              className="flex items-center justify-center gap-1.5 rounded-xl bg-gradient-to-r from-amber-500 via-yellow-400 to-amber-500 px-3.5 py-2.5 text-xs font-semibold text-black shadow-lg shadow-amber-500/20 backdrop-blur-sm transition-all hover:scale-[1.02]"
-            >
-              <span className="text-base">⭐</span>
-              <span>Rewards</span>
-            </button>
-          )}
-        </div>
+        
+        {/* Cart Launcher - Only rendered in root layout, header buttons trigger it */}
 
         {carouselItems.length > 0 && (
           <FeaturedCarousel
@@ -1312,256 +1339,7 @@ export default function OrderPageClient({ sections, featuredItems = [], tenantSl
           />
         )}
 
-        {menuUpsells.length > 0 && (
-          <section className="rounded-3xl border border-white/10 bg-white/5 p-6 shadow-lg shadow-black/20">
-            <header className="flex flex-col gap-3 md:flex-row md:items-center md:justify-between">
-              <div>
-                <h3 className="text-2xl font-semibold text-white">✨ Add-on Bundles</h3>
-                <p className="text-sm text-white/60">Chef-curated extras to level up your order.</p>
-              </div>
-            </header>
-            <div className="mt-4 grid gap-5 sm:grid-cols-2">
-              {menuUpsells.map((bundle, index) => (
-                <article key={bundle.id ?? index} className="group overflow-hidden rounded-3xl border border-white/10 bg-white/8 shadow-lg shadow-black/20 transition hover:-translate-y-1 hover:border-white/20">
-                  <div className="relative h-36 w-full">
-                    <Image src={bundle.image || cycleFallbackImage(index + 20)} alt={bundle.name} fill className="object-cover transition duration-500 group-hover:scale-105" sizes="(min-width: 768px) 320px, 100vw" />
-                    {bundle.tag && (
-                      <span className="absolute right-4 top-4 rounded-full bg-white/15 px-3 py-1 text-xs font-semibold text-white">
-                        {bundle.tag}
-                      </span>
-                    )}
-                  </div>
-                  <div className="space-y-3 p-5">
-                    <h4 className="text-lg font-semibold text-white">{bundle.name}</h4>
-                    <p className="text-sm text-white/70 line-clamp-3">{bundle.description}</p>
-                    <div className="flex flex-col gap-2 sm:flex-row sm:items-center sm:justify-between">
-                      <div className="text-lg font-bold text-amber-200">${Number(bundle.price).toFixed(2)}</div>
-                      <div className="flex gap-2">
-                        <button
-                          className="flex-1 sm:flex-initial rounded-lg bg-gradient-to-r from-rose-500 to-amber-500 px-3 py-2 text-xs font-semibold text-white shadow-lg shadow-rose-500/20 transition-all hover:scale-[1.02] hover:shadow-rose-500/40"
-                          onClick={() =>
-                            openHighlightCustomization({
-                              id: bundle.id || `upsell-${index}`,
-                              title: bundle.name,
-                              description: bundle.description,
-                              price: Number(bundle.price ?? 0),
-                              image: bundle.image || cycleFallbackImage(index + 20),
-                              badge: bundle.tag || undefined,
-                              category: 'upsell',
-                            }, 'SPECIAL')
-                          }
-                        >
-                          <svg className="inline h-4 w-4 mr-1.5" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2}>
-                    <path strokeLinecap="round" strokeLinejoin="round" d="M3 3h2l.4 2M7 13h10l4-8H5.4M7 13L5.4 5M7 13l-2.293 2.293c-.63.63-.184 1.707.707 1.707H17m0 0a2 2 0 100 4 2 2 0 000-4zm-8 2a2 2 0 11-4 0 2 2 0 014 0z" />
-                  </svg>
-                  Add to Cart
-                        </button>
-                        <button
-                          className="rounded-lg border border-white/20 bg-white/5 px-3 py-2 text-xs font-medium text-white/90 backdrop-blur-sm transition-all hover:border-white/40 hover:bg-white/10"
-                          onClick={() =>
-                            handleAddHighlight({
-                              id: bundle.id || `upsell-${index}`,
-                              title: bundle.name,
-                              description: bundle.description,
-                              price: Number(bundle.price ?? 0),
-                              image: bundle.image || cycleFallbackImage(index + 20),
-                              badge: bundle.tag || undefined,
-                              category: 'upsell',
-                            })
-                          }
-                        >
-                          Quick Add
-                        </button>
-                      </div>
-                    </div>
-                  </div>
-                </article>
-              ))}
-            </div>
-          </section>
-        )}
-
-        <section className="rounded-3xl border border-white/10 bg-white/5 p-6 shadow-lg shadow-black/20">
-          <header className="flex flex-col gap-4 md:flex-row md:items-center md:justify-between">
-            <div>
-              <h3 className="text-2xl font-semibold text-white">🔥 Combos Populares</h3>
-              <p className="text-sm text-white/60">Perfect pairings curated by our chefs.</p>
-            </div>
-            <div className="flex gap-3">
-              <button className="rounded-full border border-white/20 px-3 py-2 hover:border-white/40" onClick={() => scrollHorizontal(combosRef, -320)}>
-                ←
-              </button>
-              <button className="rounded-full border border-white/20 px-3 py-2 hover:border-white/40" onClick={() => scrollHorizontal(combosRef, 320)}>
-                →
-              </button>
-            </div>
-          </header>
-          <div ref={combosRef} className="mt-4 flex gap-5 overflow-x-auto pb-2 scrollbar-hide">
-            {highlightData.combos.map((card, index) => (
-              <article
-                key={card.id}
-                className="relative w-[280px] flex-shrink-0 overflow-hidden rounded-3xl border border-white/10 bg-white/8 shadow-lg shadow-black/20 transition hover:-translate-y-1 hover:border-white/20"
-                style={motionReduced ? undefined : { transitionDuration: '300ms' }}
-              >
-                {card.badge && (
-                  <span className="absolute right-4 top-4 rounded-full bg-gradient-to-r from-rose-500 to-amber-500 px-3 py-1 text-xs font-semibold text-white shadow-lg">
-                    {card.badge}
-                  </span>
-                )}
-                <div className="relative h-36 w-full">
-                  <Image src={card.image || cycleFallbackImage(index)} alt={card.title} fill className="object-cover" sizes="280px" />
-                </div>
-                <div className="space-y-3 p-5">
-                  <h4 className="text-lg font-semibold text-white">{card.title}</h4>
-                  <p className="text-sm text-white/70 line-clamp-3">{card.description}</p>
-                  <div className="flex flex-col gap-2 sm:flex-row sm:items-center sm:justify-between">
-                    <div className="text-lg font-bold text-rose-200">
-                      ${card.price.toFixed(2)}{' '}
-                      {card.originalPrice && (
-                        <span className="text-xs font-medium text-white/50 line-through">${card.originalPrice.toFixed(2)}</span>
-                      )}
-                    </div>
-                    <div className="flex gap-2">
-                      <button
-                        className="flex-1 sm:flex-initial rounded-lg bg-gradient-to-r from-rose-500 to-amber-500 px-3 py-2 text-xs font-semibold text-white shadow-lg shadow-rose-500/20 transition-all hover:scale-[1.02] hover:shadow-rose-500/40"
-                        onClick={() => openHighlightCustomization(card, 'RESTAURANT')}
-                      >
-                        <svg className="inline h-4 w-4 mr-1.5" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2}>
-                    <path strokeLinecap="round" strokeLinejoin="round" d="M3 3h2l.4 2M7 13h10l4-8H5.4M7 13L5.4 5M7 13l-2.293 2.293c-.63.63-.184 1.707.707 1.707H17m0 0a2 2 0 100 4 2 2 0 000-4zm-8 2a2 2 0 11-4 0 2 2 0 014 0z" />
-                  </svg>
-                  Add to Cart
-                      </button>
-                      <button
-                        className="rounded-lg border border-white/20 bg-white/5 px-3 py-2 text-xs font-medium text-white/90 backdrop-blur-sm transition-all hover:border-white/40 hover:bg-white/10"
-                        onClick={() => handleAddHighlight(card)}
-                      >
-                        Quick Add
-                      </button>
-                    </div>
-                  </div>
-                </div>
-              </article>
-            ))}
-          </div>
-        </section>
-
-        <section className="rounded-3xl border border-white/10 bg-white/5 p-6 shadow-lg shadow-black/20">
-          <header className="flex flex-col gap-4 md:flex-row md:items-center md:justify-between">
-            <div>
-              <h3 className="text-2xl font-semibold text-white">👨‍🍳 Especialidades del Chef</h3>
-              <p className="text-sm text-white/60">Signature dishes crafted with love.</p>
-            </div>
-            <div className="flex gap-3">
-              <button className="rounded-full border border-white/20 px-3 py-2 hover:border-white/40" onClick={() => scrollHorizontal(specialsRef, -320)}>
-                ←
-              </button>
-              <button className="rounded-full border border-white/20 px-3 py-2 hover:border-white/40" onClick={() => scrollHorizontal(specialsRef, 320)}>
-                →
-              </button>
-            </div>
-          </header>
-          <div ref={specialsRef} className="mt-4 flex gap-5 overflow-x-auto pb-2 scrollbar-hide">
-            {highlightData.specials.map((card, index) => (
-              <article
-                key={card.id}
-                className="relative w-[280px] flex-shrink-0 overflow-hidden rounded-3xl border border-white/10 bg-white/8 shadow-lg shadow-black/20 transition hover:-translate-y-1 hover:border-white/20"
-                style={motionReduced ? undefined : { transitionDuration: '300ms' }}
-              >
-                {card.badge && (
-                  <span className="absolute right-4 top-4 rounded-full bg-gradient-to-r from-sky-500 to-indigo-500 px-3 py-1 text-xs font-semibold text-white shadow-lg">
-                    {card.badge}
-                  </span>
-                )}
-                <div className="relative h-36 w-full">
-                  <Image src={card.image || cycleFallbackImage(index)} alt={card.title} fill className="object-cover" sizes="280px" />
-                </div>
-                <div className="space-y-3 p-5">
-                  <h4 className="text-lg font-semibold text-white">{card.title}</h4>
-                  <p className="text-sm text-white/70 line-clamp-3">{card.description}</p>
-                  <div className="flex flex-col gap-2 sm:flex-row sm:items-center sm:justify-between">
-                    <div className="text-lg font-bold text-sky-200">${card.price.toFixed(2)}</div>
-                    <div className="flex gap-2">
-                      <button
-                        className="flex-1 sm:flex-initial rounded-lg bg-gradient-to-r from-sky-500 to-indigo-500 px-3 py-2 text-xs font-semibold text-white shadow-lg shadow-sky-500/20 transition-all hover:scale-[1.02] hover:shadow-sky-500/40"
-                        onClick={() => openHighlightCustomization(card, 'SPECIAL')}
-                      >
-                        <svg className="inline h-4 w-4 mr-1.5" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2}>
-                    <path strokeLinecap="round" strokeLinejoin="round" d="M3 3h2l.4 2M7 13h10l4-8H5.4M7 13L5.4 5M7 13l-2.293 2.293c-.63.63-.184 1.707.707 1.707H17m0 0a2 2 0 100 4 2 2 0 000-4zm-8 2a2 2 0 11-4 0 2 2 0 014 0z" />
-                  </svg>
-                  Add to Cart
-                      </button>
-                      <button
-                        className="rounded-lg border border-white/20 bg-white/5 px-3 py-2 text-xs font-medium text-white/90 backdrop-blur-sm transition-all hover:border-white/40 hover:bg-white/10"
-                        onClick={() => handleAddHighlight({ ...card, title: `${card.title} Chef Special` })}
-                      >
-                        Quick Add
-                      </button>
-                    </div>
-                  </div>
-                </div>
-              </article>
-            ))}
-          </div>
-        </section>
-
-        <section className="rounded-3xl border border-white/10 bg-white/5 p-6 shadow-lg shadow-black/20">
-          <header className="flex flex-col gap-4 md:flex-row md:items-center md:justify-between">
-            <div>
-              <h3 className="text-2xl font-semibold text-white">🍰 Dulces Tradicionales</h3>
-              <p className="text-sm text-white/60">Authentic sweets to close out your meal.</p>
-            </div>
-            <div className="flex gap-3">
-              <button className="rounded-full border border-white/20 px-3 py-2 hover:border-white/40" onClick={() => scrollHorizontal(sweetsRef, -320)}>
-                ←
-              </button>
-              <button className="rounded-full border border-white/20 px-3 py-2 hover:border-white/40" onClick={() => scrollHorizontal(sweetsRef, 320)}>
-                →
-              </button>
-            </div>
-          </header>
-          <div ref={sweetsRef} className="mt-4 flex gap-5 overflow-x-auto pb-2 scrollbar-hide">
-            {highlightData.sweets.map((card, index) => (
-              <article
-                key={card.id}
-                className="relative w-[280px] flex-shrink-0 overflow-hidden rounded-3xl border border-white/10 bg-white/8 shadow-lg shadow-black/20 transition hover:-translate-y-1 hover:border-white/20"
-                style={motionReduced ? undefined : { transitionDuration: '300ms' }}
-              >
-                {card.badge && (
-                  <span className="absolute right-4 top-4 rounded-full bg-gradient-to-r from-pink-500 to-purple-500 px-3 py-1 text-xs font-semibold text-white shadow-lg">
-                    {card.badge}
-                  </span>
-                )}
-                <div className="relative h-36 w-full">
-                  <Image src={card.image || cycleFallbackImage(index)} alt={card.title} fill className="object-cover" sizes="280px" />
-                </div>
-                <div className="space-y-3 p-5">
-                  <h4 className="text-lg font-semibold text-white">{card.title}</h4>
-                  <p className="text-sm text-white/70 line-clamp-3">{card.description}</p>
-                  <div className="flex flex-col gap-2 sm:flex-row sm:items-center sm:justify-between">
-                    <div className="text-lg font-bold text-pink-200">${card.price.toFixed(2)}</div>
-                    <div className="flex gap-2">
-                      <button
-                        className="flex-1 sm:flex-initial rounded-lg bg-gradient-to-r from-pink-500 to-purple-500 px-3 py-2 text-xs font-semibold text-white shadow-lg shadow-pink-500/20 transition-all hover:scale-[1.02] hover:shadow-pink-500/40"
-                        onClick={() => openHighlightCustomization(card, 'SPECIAL')}
-                      >
-                        <svg className="inline h-4 w-4 mr-1.5" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2}>
-                    <path strokeLinecap="round" strokeLinejoin="round" d="M3 3h2l.4 2M7 13h10l4-8H5.4M7 13L5.4 5M7 13l-2.293 2.293c-.63.63-.184 1.707.707 1.707H17m0 0a2 2 0 100 4 2 2 0 000-4zm-8 2a2 2 0 11-4 0 2 2 0 014 0z" />
-                  </svg>
-                  Add to Cart
-                      </button>
-                      <button
-                        className="rounded-lg border border-white/20 bg-white/5 px-3 py-2 text-xs font-medium text-white/90 backdrop-blur-sm transition-all hover:border-white/40 hover:bg-white/10"
-                        onClick={() => handleAddHighlight({ ...card, title: `${card.title} Dessert` })}
-                      >
-                        Quick Add
-                      </button>
-                    </div>
-                  </div>
-                </div>
-              </article>
-            ))}
-          </div>
-        </section>
+        {/* Removed hardcoded sections - only show database sections now */}
 
         {enrichedSections.map((section) => {
           const isBakery = section.type === 'BAKERY' || section.name.toLowerCase().includes('panad') || section.name.toLowerCase().includes('bakery');
@@ -1574,7 +1352,7 @@ export default function OrderPageClient({ sections, featuredItems = [], tenantSl
               }}
               className={`scroll-mt-32 space-y-8 rounded-3xl p-8 transition-all mb-8 ${
                 isBakery
-                  ? 'bg-gradient-to-br from-amber-500/15 via-rose-500/12 to-yellow-400/15 border-2 border-amber-400/30 shadow-2xl shadow-amber-500/20'
+                  ? 'bg-gradient-to-br from-amber-400/15 via-red-600/12 to-yellow-400/15 border-2 border-amber-400/30 shadow-2xl shadow-amber-500/20'
                   : 'bg-white/5 border border-white/10'
               }`}
             >
@@ -1587,7 +1365,7 @@ export default function OrderPageClient({ sections, featuredItems = [], tenantSl
                   </p>
                   <h2 className={`text-4xl font-black mb-2 ${
                     isBakery 
-                      ? 'bg-gradient-to-r from-amber-300 via-rose-300 to-yellow-300 bg-clip-text text-transparent drop-shadow-lg' 
+                      ? 'bg-gradient-to-r from-amber-300 via-red-400 to-yellow-300 bg-clip-text text-transparent drop-shadow-lg' 
                       : 'text-white'
                   }`}>
                     {section.name}
@@ -1602,13 +1380,18 @@ export default function OrderPageClient({ sections, featuredItems = [], tenantSl
                 </div>
                 <span className={`rounded-full border-2 px-5 py-2.5 text-sm font-black shadow-lg ${
                   isBakery
-                    ? 'border-amber-400/60 bg-gradient-to-r from-amber-500/30 to-yellow-400/30 text-amber-100 shadow-amber-500/30'
+                    ? 'border-amber-400/60 bg-gradient-to-r from-amber-400/30 to-yellow-400/30 text-amber-100 shadow-amber-500/30'
                     : 'border-white/10 bg-white/5 text-white/70'
                 }`}>
                   {section.items.length} item{section.items.length === 1 ? '' : 's'}
                 </span>
               </header>
-              {renderSectionItems(section)}
+              <MenuSectionGrid
+                section={section}
+                layout={activeLayout}
+                onAddToCart={handleAddToCart}
+                onCustomize={openCustomization}
+              />
             </section>
           );
         })}
@@ -1681,7 +1464,7 @@ export default function OrderPageClient({ sections, featuredItems = [], tenantSl
             </div>
 
             {/* Menu Highlights - Clickable Catering Options */}
-            <div className="mb-8 space-y-4 rounded-2xl border-2 border-amber-500/20 bg-gradient-to-br from-amber-500/10 to-orange-500/10 p-6">
+            <div className="mb-8 space-y-4 rounded-2xl border-2 border-amber-500/20 bg-gradient-to-br from-amber-400/10 to-orange-500/10 p-6">
               <h4 className="text-xl font-bold text-amber-100">Popular Catering Options</h4>
               <div className="grid gap-3 sm:grid-cols-2">
                 <button
@@ -1812,8 +1595,8 @@ export default function OrderPageClient({ sections, featuredItems = [], tenantSl
             </div>
 
             {/* Upsell Bundles - Holiday & Event Packages */}
-            <div className="mb-8 space-y-4 rounded-2xl border-2 border-rose-500/20 bg-gradient-to-br from-rose-500/10 to-orange-500/10 p-6">
-              <h4 className="text-xl font-bold text-rose-100">🎉 Holiday & Event Bundles</h4>
+            <div className="mb-8 space-y-4 rounded-2xl border-2 border-red-600/20 bg-gradient-to-br from-red-600/10 to-orange-500/10 p-6">
+              <h4 className="text-xl font-bold text-red-200">🎉 Holiday & Event Bundles</h4>
               <p className="text-sm text-white/70">Pre-packaged bundles perfect for celebrations</p>
               <div className="grid gap-4 sm:grid-cols-2">
                 <button
@@ -1842,17 +1625,17 @@ export default function OrderPageClient({ sections, featuredItems = [], tenantSl
                       },
                     });
                   }}
-                  className="group relative overflow-hidden rounded-xl border border-rose-400/30 bg-black/40 p-5 text-left transition hover:border-rose-400 hover:bg-black/50"
+                  className="group relative overflow-hidden rounded-xl border border-red-500/30 bg-black/40 p-5 text-left transition hover:border-red-500 hover:bg-black/50"
                 >
-                  <div className="absolute right-3 top-3 rounded-full bg-rose-500/80 px-3 py-1 text-xs font-bold text-white">
+                  <div className="absolute right-3 top-3 rounded-full bg-red-600/80 px-3 py-1 text-xs font-bold text-white">
                     Popular
                   </div>
-                  <h5 className="text-lg font-bold text-rose-200">Thanksgiving Dinner Bundle</h5>
+                  <h5 className="text-lg font-bold text-red-300">Thanksgiving Dinner Bundle</h5>
                   <p className="mt-2 text-sm text-white/70">Complete feast for 8-10 people</p>
                   <p className="mt-1 text-xs text-white/50">Turkey, mole, sides, desserts</p>
                   <div className="mt-4 flex items-center justify-between">
-                    <span className="text-2xl font-black text-rose-300">$280</span>
-                    <span className="rounded-full bg-rose-500 px-4 py-2 text-xs font-semibold text-white transition group-hover:scale-105">
+                    <span className="text-2xl font-black text-red-400">$280</span>
+                    <span className="rounded-full bg-red-600 px-4 py-2 text-xs font-semibold text-white transition group-hover:scale-105">
                       <svg className="inline h-4 w-4 mr-1" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2}>
                     <path strokeLinecap="round" strokeLinejoin="round" d="M3 3h2l.4 2M7 13h10l4-8H5.4M7 13L5.4 5M7 13l-2.293 2.293c-.63.63-.184 1.707.707 1.707H17m0 0a2 2 0 100 4 2 2 0 000-4zm-8 2a2 2 0 11-4 0 2 2 0 014 0z" />
                   </svg>
@@ -1886,14 +1669,14 @@ export default function OrderPageClient({ sections, featuredItems = [], tenantSl
                       },
                     });
                   }}
-                  className="group overflow-hidden rounded-xl border border-rose-400/30 bg-black/40 p-5 text-left transition hover:border-rose-400 hover:bg-black/50"
+                  className="group overflow-hidden rounded-xl border border-red-500/30 bg-black/40 p-5 text-left transition hover:border-red-500 hover:bg-black/50"
                 >
-                  <h5 className="text-lg font-bold text-rose-200">Christmas Fiesta Bundle</h5>
+                  <h5 className="text-lg font-bold text-red-300">Christmas Fiesta Bundle</h5>
                   <p className="mt-2 text-sm text-white/70">Traditional holiday celebration</p>
                   <p className="mt-1 text-xs text-white/50">Tamales, pozole, pan dulce</p>
                   <div className="mt-4 flex items-center justify-between">
-                    <span className="text-2xl font-black text-rose-300">$180</span>
-                    <span className="rounded-full bg-rose-500 px-4 py-2 text-xs font-semibold text-white transition group-hover:scale-105">
+                    <span className="text-2xl font-black text-red-400">$180</span>
+                    <span className="rounded-full bg-red-600 px-4 py-2 text-xs font-semibold text-white transition group-hover:scale-105">
                       <svg className="inline h-4 w-4 mr-1" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2}>
                     <path strokeLinecap="round" strokeLinejoin="round" d="M3 3h2l.4 2M7 13h10l4-8H5.4M7 13L5.4 5M7 13l-2.293 2.293c-.63.63-.184 1.707.707 1.707H17m0 0a2 2 0 100 4 2 2 0 000-4zm-8 2a2 2 0 11-4 0 2 2 0 014 0z" />
                   </svg>
@@ -1928,14 +1711,14 @@ export default function OrderPageClient({ sections, featuredItems = [], tenantSl
                       },
                     });
                   }}
-                  className="group overflow-hidden rounded-xl border border-rose-400/30 bg-black/40 p-5 text-left transition hover:border-rose-400 hover:bg-black/50"
+                  className="group overflow-hidden rounded-xl border border-red-500/30 bg-black/40 p-5 text-left transition hover:border-red-500 hover:bg-black/50"
                 >
-                  <h5 className="text-lg font-bold text-rose-200">Birthday Party Bundle</h5>
+                  <h5 className="text-lg font-bold text-red-300">Birthday Party Bundle</h5>
                   <p className="mt-2 text-sm text-white/70">Perfect for celebrations</p>
                   <p className="mt-1 text-xs text-white/50">Taco bar, cake, drinks for 15</p>
                   <div className="mt-4 flex items-center justify-between">
-                    <span className="text-2xl font-black text-rose-300">$220</span>
-                    <span className="rounded-full bg-rose-500 px-4 py-2 text-xs font-semibold text-white transition group-hover:scale-105">
+                    <span className="text-2xl font-black text-red-400">$220</span>
+                    <span className="rounded-full bg-red-600 px-4 py-2 text-xs font-semibold text-white transition group-hover:scale-105">
                       <svg className="inline h-4 w-4 mr-1" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2}>
                     <path strokeLinecap="round" strokeLinejoin="round" d="M3 3h2l.4 2M7 13h10l4-8H5.4M7 13L5.4 5M7 13l-2.293 2.293c-.63.63-.184 1.707.707 1.707H17m0 0a2 2 0 100 4 2 2 0 000-4zm-8 2a2 2 0 11-4 0 2 2 0 014 0z" />
                   </svg>
@@ -1970,14 +1753,14 @@ export default function OrderPageClient({ sections, featuredItems = [], tenantSl
                       },
                     });
                   }}
-                  className="group overflow-hidden rounded-xl border border-rose-400/30 bg-black/40 p-5 text-left transition hover:border-rose-400 hover:bg-black/50"
+                  className="group overflow-hidden rounded-xl border border-red-500/30 bg-black/40 p-5 text-left transition hover:border-red-500 hover:bg-black/50"
                 >
-                  <h5 className="text-lg font-bold text-rose-200">Office Lunch Bundle</h5>
+                  <h5 className="text-lg font-bold text-red-300">Office Lunch Bundle</h5>
                   <p className="mt-2 text-sm text-white/70">Team meals made easy</p>
                   <p className="mt-1 text-xs text-white/50">Burrito bar, sides for 20</p>
                   <div className="mt-4 flex items-center justify-between">
-                    <span className="text-2xl font-black text-rose-300">$240</span>
-                    <span className="rounded-full bg-rose-500 px-4 py-2 text-xs font-semibold text-white transition group-hover:scale-105">
+                    <span className="text-2xl font-black text-red-400">$240</span>
+                    <span className="rounded-full bg-red-600 px-4 py-2 text-xs font-semibold text-white transition group-hover:scale-105">
                       <svg className="inline h-4 w-4 mr-1" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2}>
                     <path strokeLinecap="round" strokeLinejoin="round" d="M3 3h2l.4 2M7 13h10l4-8H5.4M7 13L5.4 5M7 13l-2.293 2.293c-.63.63-.184 1.707.707 1.707H17m0 0a2 2 0 100 4 2 2 0 000-4zm-8 2a2 2 0 11-4 0 2 2 0 014 0z" />
                   </svg>
@@ -2058,7 +1841,7 @@ export default function OrderPageClient({ sections, featuredItems = [], tenantSl
               </div>
               <button
                 type="submit"
-                className="w-full rounded-2xl bg-gradient-to-r from-rose-500 via-orange-500 to-amber-600 px-6 py-4 text-lg font-black text-white shadow-2xl shadow-rose-500/40 transition-all hover:scale-105 hover:shadow-rose-500/60"
+                className="w-full rounded-2xl bg-gradient-to-r from-red-600 via-orange-500 to-amber-600 px-6 py-4 text-lg font-black text-white shadow-2xl shadow-red-600/40 transition-all hover:scale-105 hover:shadow-red-600/60"
               >
                 Submit Inquiry
               </button>
@@ -2092,7 +1875,7 @@ export default function OrderPageClient({ sections, featuredItems = [], tenantSl
             
             {membershipEnabled ? (
               <div className="space-y-6">
-                <div className="relative overflow-hidden rounded-3xl border-2 border-amber-500/30 bg-gradient-to-br from-amber-500/20 to-yellow-400/20 p-6">
+                <div className="relative overflow-hidden rounded-3xl border-2 border-amber-500/30 bg-gradient-to-br from-amber-400/20 to-yellow-400/20 p-6">
                   <Image src={membershipImage} alt="Membership" fill className="object-cover opacity-20" sizes="400px" />
                   <div className="relative space-y-4">
                     <div className="flex items-center justify-between">
@@ -2156,7 +1939,7 @@ export default function OrderPageClient({ sections, featuredItems = [], tenantSl
                   </ul>
                 </div>
 
-                <button className="w-full rounded-2xl bg-gradient-to-r from-amber-500 via-yellow-400 to-amber-500 px-6 py-4 text-lg font-black text-black shadow-2xl shadow-amber-500/40 transition-all hover:scale-105 hover:shadow-amber-500/60">
+                <button className="w-full rounded-2xl bg-gradient-to-r from-amber-400 via-yellow-400 to-amber-400 px-6 py-4 text-lg font-black text-black shadow-2xl shadow-amber-500/40 transition-all hover:scale-105 hover:shadow-amber-500/60">
                   Join Rewards Program
                 </button>
               </div>
@@ -2267,7 +2050,7 @@ export default function OrderPageClient({ sections, featuredItems = [], tenantSl
                         key={removal}
                         onClick={() => toggleRemoval(removal)}
                         className={`rounded-full border px-3 py-1 text-xs font-semibold transition ${
-                          active ? 'border-rose-400 bg-rose-500/30 text-white' : 'border-white/20 text-white/70 hover:border-white/40 hover:text-white'
+                          active ? 'border-red-500 bg-red-600/30 text-white' : 'border-white/20 text-white/70 hover:border-white/40 hover:text-white'
                         }`}
                       >
                         {active ? '✓ ' : ''}{removal}
@@ -2356,7 +2139,7 @@ export default function OrderPageClient({ sections, featuredItems = [], tenantSl
             <div className="mt-6 flex flex-col gap-3 sm:flex-row">
               <button
                 onClick={handleConfirmCustomization}
-                className="flex-1 rounded-full bg-gradient-to-r from-rose-500 via-amber-500 to-yellow-400 px-4 py-3 text-sm font-semibold text-black shadow-lg shadow-amber-500/30 transition hover:-translate-y-0.5"
+                className="flex-1 rounded-full bg-gradient-to-r from-red-600 via-amber-400 to-yellow-400 px-4 py-3 text-sm font-semibold text-black shadow-lg shadow-amber-500/30 transition hover:-translate-y-0.5"
               >
                 Add to Cart · ${totalCustomizedPrice.toFixed(2)}
               </button>
@@ -2415,6 +2198,8 @@ export default function OrderPageClient({ sections, featuredItems = [], tenantSl
             </button>
         </div>
       )}
+
+      <RewardsModal open={isRewardsOpen} onClose={() => setRewardsOpen(false)} />
     </div>
   );
 }

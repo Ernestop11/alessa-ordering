@@ -3,7 +3,8 @@ import type { Metadata, Viewport } from 'next'
 import type { CSSProperties } from 'react'
 import CartLauncher from '../components/CartLauncher'
 import { Providers } from './providers'
-import { requireTenant } from '../lib/tenant'
+import { getTenantSlugFromHeaders, requireTenant } from '../lib/tenant'
+import { getStaticTenantTheme } from '../lib/tenant-theme-map'
 import {
   TenantThemeProvider,
   type TenantTheme,
@@ -19,20 +20,36 @@ export const metadata: Metadata = {
     template: '%s · Alessa Cloud',
   },
   description: 'Multi-tenant restaurant ordering platform powered by Alessa Cloud.',
-  manifest: '/manifest.webmanifest',
+  manifest: '/manifest.json',
+  appleWebApp: {
+    capable: true,
+    statusBarStyle: 'default',
+    title: 'Alessa Ordering',
+  },
   icons: {
     icon: [
-      { url: '/icons/alessa-cloud-icon-192.png', sizes: '192x192', type: 'image/png' },
-      { url: '/icons/alessa-cloud-icon-512.png', sizes: '512x512', type: 'image/png' },
+      { url: '/icon-192.png', sizes: '192x192', type: 'image/png' },
+      { url: '/icon-512.png', sizes: '512x512', type: 'image/png' },
     ],
     apple: [
-      { url: '/icons/alessa-cloud-icon-192.png', sizes: '192x192', type: 'image/png' },
+      { url: '/icon-192.png', sizes: '192x192', type: 'image/png' },
     ],
   },
 }
 
-export const viewport: Viewport = {
-  themeColor: '#38c4ff',
+export function generateViewport(): Viewport {
+  try {
+    const slug = getTenantSlugFromHeaders();
+    const theme = getStaticTenantTheme(slug);
+    return {
+      themeColor: theme.themeColor,
+    };
+  } catch {
+    const fallback = getStaticTenantTheme();
+    return {
+      themeColor: fallback.themeColor,
+    };
+  }
 }
 
 // Force dynamic rendering to ensure tenant data is always fresh
@@ -44,6 +61,7 @@ export default async function RootLayout({
   children: React.ReactNode
 }) {
   const tenant = await requireTenant()
+  const staticTheme = getStaticTenantTheme(tenant.slug)
 
   // Add cache-busting to tenant images using updatedAt timestamp
   const tenantTimestamp = new Date(tenant.updatedAt).getTime();
@@ -56,13 +74,14 @@ export default async function RootLayout({
     id: tenant.id,
     name: tenant.name,
     slug: tenant.slug,
-    logoUrl: addCacheBuster(tenant.logoUrl),
-    heroImageUrl: addCacheBuster(tenant.heroImageUrl),
+    logoUrl: addCacheBuster(tenant.logoUrl || staticTheme.assets.logo),
+    heroImageUrl: addCacheBuster(tenant.heroImageUrl || staticTheme.assets.hero),
     heroTitle: tenant.heroTitle || tenant.name,
     heroSubtitle: tenant.heroSubtitle || tenant.settings?.tagline || '',
     tagline: tenant.settings?.tagline || '',
-    primaryColor: tenant.primaryColor || '#38c4ff',
-    secondaryColor: tenant.secondaryColor || '#071836',
+    primaryColor: tenant.primaryColor || staticTheme.primaryColor,
+    secondaryColor: tenant.secondaryColor || staticTheme.secondaryColor,
+    themeColor: staticTheme.themeColor,
     featureFlags: tenant.featureFlags || [],
     contactEmail: tenant.contactEmail || null,
     contactPhone: tenant.contactPhone || null,
@@ -96,10 +115,18 @@ export default async function RootLayout({
   const themeVars = {
     '--tenant-primary': tenantTheme.primaryColor,
     '--tenant-secondary': tenantTheme.secondaryColor,
+    '--tenant-theme-color': tenantTheme.themeColor || tenantTheme.primaryColor,
   } as CSSProperties
 
   return (
     <html lang="en">
+      <head>
+        <link rel="manifest" href="/manifest.json" />
+        <meta name="theme-color" content={tenantTheme.themeColor || tenantTheme.primaryColor} />
+        <meta name="apple-mobile-web-app-capable" content="yes" />
+        <meta name="apple-mobile-web-app-status-bar-style" content="default" />
+        <meta name="apple-mobile-web-app-title" content={tenantTheme.name} />
+      </head>
       <body className="font-sans antialiased" style={themeVars}>
         <Providers>
           <TenantThemeProvider tenant={tenantTheme}>

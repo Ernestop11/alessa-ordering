@@ -71,10 +71,10 @@ export default function StripeConnectRefreshPage() {
             <h1 className="text-xl font-semibold text-gray-900">Error</h1>
             <p className="mt-2 text-sm text-gray-600">{error}</p>
             <button
-              onClick={() => router.push('/admin?tab=settings')}
+              onClick={() => router.push('/admin/payments')}
               className="mt-6 rounded-md bg-blue-600 px-4 py-2 text-sm font-medium text-white hover:bg-blue-700"
             >
-              Back to Settings
+              Back to Payments
             </button>
           </>
         )}

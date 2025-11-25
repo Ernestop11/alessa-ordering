@@ -1,0 +1,785 @@
+{
+  "tenant": {
+    "name": "Las Reinas Colusa",
+    "slug": "lasreinas",
+    "domain": "lasreinas.order.alessacloud.com",
+    "description": "Authentic Mexican Taqueria & Carniceria in Colusa, CA",
+    "address": "751 Fremont St, Colusa, CA 95932",
+    "phone": "(530) 458-7775",
+    "email": "info@lasreinascolusa.com",
+    "hours": {
+      "monday": "8:00 AM - 8:00 PM",
+      "tuesday": "8:00 AM - 8:00 PM",
+      "wednesday": "8:00 AM - 8:00 PM",
+      "thursday": "8:00 AM - 8:00 PM",
+      "friday": "8:00 AM - 8:00 PM",
+      "saturday": "8:00 AM - 8:00 PM",
+      "sunday": "8:00 AM - 6:00 PM"
+    },
+    "settings": {
+      "primaryColor": "#DC2626",
+      "secondaryColor": "#991B1B",
+      "accentColor": "#FBBF24",
+      "deliveryEnabled": true,
+      "pickupEnabled": true,
+      "deliveryRadius": 10,
+      "minimumOrder": 15,
+      "taxRate": 0.0775,
+      "platformFee": 0.05
+    }
+  },
+  "sections": [
+    {
+      "name": "Desayunos",
+      "description": "Breakfast served all day",
+      "type": "RESTAURANT",
+      "position": 1,
+      "icon": "☀️"
+    },
+    {
+      "name": "Especialidades de la Casa",
+      "description": "House Specialties",
+      "type": "SPECIAL",
+      "position": 2,
+      "icon": "⭐"
+    },
+    {
+      "name": "Tacos",
+      "description": "Street-style tacos on fresh corn tortillas",
+      "type": "RESTAURANT",
+      "position": 3,
+      "icon": "🌮"
+    },
+    {
+      "name": "Quesabirrias",
+      "description": "Our signature dish",
+      "type": "SPECIAL",
+      "position": 4,
+      "icon": "🔥"
+    },
+    {
+      "name": "Burritos",
+      "description": "Oversized flour tortilla burritos",
+      "type": "RESTAURANT",
+      "position": 5,
+      "icon": "🌯"
+    },
+    {
+      "name": "Platillos",
+      "description": "Dinner plates with rice and beans",
+      "type": "RESTAURANT",
+      "position": 6,
+      "icon": "🍽️"
+    },
+    {
+      "name": "Tortas",
+      "description": "Mexican sandwiches on telera bread",
+      "type": "RESTAURANT",
+      "position": 7,
+      "icon": "🥖"
+    },
+    {
+      "name": "Nachos y Quesadillas",
+      "description": "Shareable appetizers",
+      "type": "RESTAURANT",
+      "position": 8,
+      "icon": "🧀"
+    },
+    {
+      "name": "A La Carta",
+      "description": "Individual items",
+      "type": "OTHER",
+      "position": 9,
+      "icon": "📋"
+    },
+    {
+      "name": "Bebidas",
+      "description": "Drinks and beverages",
+      "type": "OTHER",
+      "position": 10,
+      "icon": "🥤"
+    }
+  ],
+  "items": [
+    {
+      "section": "Desayunos",
+      "name": "Huevos Rancheros",
+      "description": "Two eggs over easy on corn tortillas topped with ranchero sauce, served with rice, beans, and tortillas",
+      "price": 9.99,
+      "category": "breakfast",
+      "available": true,
+      "isFeatured": false,
+      "tags": ["breakfast", "eggs", "popular"]
+    },
+    {
+      "section": "Desayunos",
+      "name": "Huevos con Chorizo",
+      "description": "Scrambled eggs mixed with chorizo, served with rice, beans, and choice of corn or flour tortillas",
+      "price": 10.49,
+      "category": "breakfast",
+      "available": true,
+      "isFeatured": false,
+      "tags": ["breakfast", "eggs", "spicy"]
+    },
+    {
+      "section": "Desayunos",
+      "name": "Chilaquiles Verdes",
+      "description": "Crispy tortilla chips smothered in salsa verde, topped with two eggs, onions, cilantro, crema, and queso fresco. Served with rice and beans",
+      "price": 11.99,
+      "category": "breakfast",
+      "available": true,
+      "isFeatured": true,
+      "tags": ["breakfast", "eggs", "popular"]
+    },
+    {
+      "section": "Desayunos",
+      "name": "Chilaquiles Rojos",
+      "description": "Crispy tortilla chips in red salsa, topped with two eggs, onions, cilantro, crema, and queso fresco. Served with rice and beans",
+      "price": 11.99,
+      "category": "breakfast",
+      "available": true,
+      "isFeatured": false,
+      "tags": ["breakfast", "eggs"]
+    },
+    {
+      "section": "Desayunos",
+      "name": "Breakfast Tacos Plate",
+      "description": "Three tacos with scrambled eggs, ham, potatoes, onions, cilantro, and cheese with salsa roja. Served with rice and beans",
+      "price": 10.99,
+      "category": "breakfast",
+      "available": true,
+      "isFeatured": false,
+      "tags": ["breakfast", "tacos"]
+    },
+    {
+      "section": "Desayunos",
+      "name": "Machaca con Huevo",
+      "description": "Shredded dried beef scrambled with eggs, onions, tomatoes, and peppers. Served with rice, beans, and tortillas",
+      "price": 12.49,
+      "category": "breakfast",
+      "available": true,
+      "isFeatured": false,
+      "tags": ["breakfast", "eggs", "beef"]
+    },
+    {
+      "section": "Desayunos",
+      "name": "Breakfast Burrito",
+      "description": "Large flour tortilla filled with scrambled eggs, chorizo, potatoes, cheese, and beans",
+      "price": 8.99,
+      "category": "breakfast",
+      "available": true,
+      "isFeatured": false,
+      "tags": ["breakfast", "burrito"]
+    },
+    {
+      "section": "Desayunos",
+      "name": "Nopales con Huevo",
+      "description": "Scrambled eggs with cactus, onions, and tomatoes. Served with rice, beans, and tortillas",
+      "price": 10.99,
+      "category": "breakfast",
+      "available": true,
+      "isFeatured": false,
+      "tags": ["breakfast", "eggs", "vegetarian"]
+    },
+    {
+      "section": "Especialidades de la Casa",
+      "name": "Molcajete Las Reinas",
+      "description": "Sizzling volcanic stone bowl filled with grilled steak, chicken, shrimp, chorizo, cactus, grilled onions, and peppers in our signature molcajete sauce. Topped with queso fresco. Serves 2-3",
+      "price": 34.99,
+      "category": "specialty",
+      "available": true,
+      "isFeatured": true,
+      "tags": ["specialty", "signature", "shareable", "spicy"]
+    },
+    {
+      "section": "Especialidades de la Casa",
+      "name": "Parrillada Las Reinas",
+      "description": "Mixed grill with carne asada, chicken, chorizo, and shrimp. Served with grilled onions, peppers, rice, beans, guacamole, and tortillas. Serves 2",
+      "price": 29.99,
+      "category": "specialty",
+      "available": true,
+      "isFeatured": true,
+      "tags": ["specialty", "shareable", "grilled"]
+    },
+    {
+      "section": "Especialidades de la Casa",
+      "name": "Carne Asada Las Reinas",
+      "description": "Premium grilled steak served with grilled onions, jalapeños, rice, beans, guacamole, and tortillas",
+      "price": 16.99,
+      "category": "specialty",
+      "available": true,
+      "isFeatured": false,
+      "tags": ["specialty", "beef", "grilled"]
+    },
+    {
+      "section": "Quesabirrias",
+      "name": "Quesabirria Individual",
+      "description": "One crispy quesabirria taco filled with tender birria beef and melted cheese, served with consommé for dipping, onions, cilantro, lime, and salsa",
+      "price": 4.99,
+      "category": "quesabirria",
+      "available": true,
+      "isFeatured": false,
+      "tags": ["quesabirria", "signature"]
+    },
+    {
+      "section": "Quesabirrias",
+      "name": "Quesabirrias (3)",
+      "description": "Three crispy quesabirria tacos with birria beef and cheese, served with consommé, onions, cilantro, lime, and salsa",
+      "price": 13.99,
+      "category": "quesabirria",
+      "available": true,
+      "isFeatured": true,
+      "tags": ["quesabirria", "signature", "popular"]
+    },
+    {
+      "section": "Quesabirrias",
+      "name": "Quesabirria Plate",
+      "description": "Two quesabirrias with rice, beans, consommé, onions, cilantro, radish, lime, and salsa",
+      "price": 14.99,
+      "category": "quesabirria",
+      "available": true,
+      "isFeatured": true,
+      "tags": ["quesabirria", "signature", "popular"]
+    },
+    {
+      "section": "Quesabirrias",
+      "name": "Birria Ramen",
+      "description": "Ramen noodles in rich birria consommé with tender birria beef, topped with onions, cilantro, lime, and radish",
+      "price": 12.99,
+      "category": "quesabirria",
+      "available": true,
+      "isFeatured": false,
+      "tags": ["quesabirria", "fusion"]
+    },
+    {
+      "section": "Tacos",
+      "name": "Tacos de Asada",
+      "description": "Grilled steak tacos with onions and cilantro on corn tortillas. Order of 3",
+      "price": 11.99,
+      "category": "tacos",
+      "available": true,
+      "isFeatured": false,
+      "tags": ["tacos", "beef"]
+    },
+    {
+      "section": "Tacos",
+      "name": "Tacos de Carnitas",
+      "description": "Slow-cooked pork tacos with onions and cilantro on corn tortillas. Order of 3",
+      "price": 11.49,
+      "category": "tacos",
+      "available": true,
+      "isFeatured": false,
+      "tags": ["tacos", "pork"]
+    },
+    {
+      "section": "Tacos",
+      "name": "Tacos de Pollo",
+      "description": "Grilled chicken tacos with onions and cilantro on corn tortillas. Order of 3",
+      "price": 10.99,
+      "category": "tacos",
+      "available": true,
+      "isFeatured": false,
+      "tags": ["tacos", "chicken"]
+    },
+    {
+      "section": "Tacos",
+      "name": "Tacos de Lengua",
+      "description": "Beef tongue tacos with onions and cilantro on corn tortillas. Order of 3",
+      "price": 13.99,
+      "category": "tacos",
+      "available": true,
+      "isFeatured": false,
+      "tags": ["tacos", "beef", "specialty"]
+    },
+    {
+      "section": "Tacos",
+      "name": "Tacos de Cabeza",
+      "description": "Beef head tacos with onions and cilantro on corn tortillas. Order of 3",
+      "price": 13.49,
+      "category": "tacos",
+      "available": true,
+      "isFeatured": false,
+      "tags": ["tacos", "beef", "specialty"]
+    },
+    {
+      "section": "Tacos",
+      "name": "Tacos de Tripa",
+      "description": "Crispy beef tripe tacos with onions and cilantro on corn tortillas. Order of 3",
+      "price": 12.99,
+      "category": "tacos",
+      "available": true,
+      "isFeatured": false,
+      "tags": ["tacos", "beef", "specialty"]
+    },
+    {
+      "section": "Tacos",
+      "name": "Tacos de Chorizo",
+      "description": "Spicy chorizo tacos with onions and cilantro on corn tortillas. Order of 3",
+      "price": 11.49,
+      "category": "tacos",
+      "available": true,
+      "isFeatured": false,
+      "tags": ["tacos", "pork", "spicy"]
+    },
+    {
+      "section": "Tacos",
+      "name": "Tacos al Pastor",
+      "description": "Marinated pork tacos with pineapple, onions, and cilantro on corn tortillas. Order of 3",
+      "price": 12.49,
+      "category": "tacos",
+      "available": true,
+      "isFeatured": false,
+      "tags": ["tacos", "pork", "popular"]
+    },
+    {
+      "section": "Tacos",
+      "name": "Fish Tacos",
+      "description": "Grilled or fried fish tacos with cabbage, pico de gallo, and chipotle cream. Order of 3",
+      "price": 13.99,
+      "category": "tacos",
+      "available": true,
+      "isFeatured": false,
+      "tags": ["tacos", "seafood"]
+    },
+    {
+      "section": "Burritos",
+      "name": "Burrito de Asada",
+      "description": "Large flour tortilla filled with grilled steak, rice, beans, onions, cilantro, and salsa",
+      "price": 10.99,
+      "category": "burritos",
+      "available": true,
+      "isFeatured": false,
+      "tags": ["burrito", "beef"]
+    },
+    {
+      "section": "Burritos",
+      "name": "Burrito de Carnitas",
+      "description": "Large flour tortilla filled with slow-cooked pork, rice, beans, onions, cilantro, and salsa",
+      "price": 10.49,
+      "category": "burritos",
+      "available": true,
+      "isFeatured": false,
+      "tags": ["burrito", "pork"]
+    },
+    {
+      "section": "Burritos",
+      "name": "Burrito de Pollo",
+      "description": "Large flour tortilla filled with grilled chicken, rice, beans, onions, cilantro, and salsa",
+      "price": 9.99,
+      "category": "burritos",
+      "available": true,
+      "isFeatured": false,
+      "tags": ["burrito", "chicken"]
+    },
+    {
+      "section": "Burritos",
+      "name": "California Burrito",
+      "description": "Carne asada, french fries, cheese, sour cream, guacamole, and pico de gallo in a large flour tortilla",
+      "price": 12.99,
+      "category": "burritos",
+      "available": true,
+      "isFeatured": true,
+      "tags": ["burrito", "beef", "popular"]
+    },
+    {
+      "section": "Burritos",
+      "name": "Burrito Mojado",
+      "description": "Your choice of meat burrito smothered in red or green sauce, topped with cheese, sour cream, and guacamole",
+      "price": 13.49,
+      "category": "burritos",
+      "available": true,
+      "isFeatured": false,
+      "tags": ["burrito", "sauce"]
+    },
+    {
+      "section": "Burritos",
+      "name": "Bean & Cheese Burrito",
+      "description": "Simple and delicious - refried beans and melted cheese in a flour tortilla",
+      "price": 6.99,
+      "category": "burritos",
+      "available": true,
+      "isFeatured": false,
+      "tags": ["burrito", "vegetarian"]
+    },
+    {
+      "section": "Platillos",
+      "name": "Carne Asada Plate",
+      "description": "Grilled steak served with rice, beans, guacamole, pico de gallo, and choice of corn or flour tortillas",
+      "price": 15.99,
+      "category": "plates",
+      "available": true,
+      "isFeatured": false,
+      "tags": ["plates", "beef"]
+    },
+    {
+      "section": "Platillos",
+      "name": "Carnitas Plate",
+      "description": "Slow-cooked pork served with rice, beans, guacamole, pico de gallo, and tortillas",
+      "price": 14.99,
+      "category": "plates",
+      "available": true,
+      "isFeatured": false,
+      "tags": ["plates", "pork"]
+    },
+    {
+      "section": "Platillos",
+      "name": "Pollo Asado Plate",
+      "description": "Grilled chicken breast served with rice, beans, guacamole, pico de gallo, and tortillas",
+      "price": 13.99,
+      "category": "plates",
+      "available": true,
+      "isFeatured": false,
+      "tags": ["plates", "chicken"]
+    },
+    {
+      "section": "Platillos",
+      "name": "Fajitas de Res",
+      "description": "Sizzling beef fajitas with grilled peppers and onions. Served with rice, beans, guacamole, sour cream, and tortillas",
+      "price": 16.99,
+      "category": "plates",
+      "available": true,
+      "isFeatured": false,
+      "tags": ["plates", "beef", "grilled"]
+    },
+    {
+      "section": "Platillos",
+      "name": "Fajitas de Pollo",
+      "description": "Sizzling chicken fajitas with grilled peppers and onions. Served with rice, beans, guacamole, sour cream, and tortillas",
+      "price": 15.99,
+      "category": "plates",
+      "available": true,
+      "isFeatured": false,
+      "tags": ["plates", "chicken", "grilled"]
+    },
+    {
+      "section": "Platillos",
+      "name": "Fajitas Mixtas",
+      "description": "Mixed fajitas with steak, chicken, and shrimp with grilled peppers and onions. Served with rice, beans, guacamole, sour cream, and tortillas",
+      "price": 18.99,
+      "category": "plates",
+      "available": true,
+      "isFeatured": false,
+      "tags": ["plates", "mixed", "grilled"]
+    },
+    {
+      "section": "Platillos",
+      "name": "Chile Verde",
+      "description": "Tender pork in green tomatillo sauce, served with rice, beans, and tortillas",
+      "price": 14.49,
+      "category": "plates",
+      "available": true,
+      "isFeatured": false,
+      "tags": ["plates", "pork", "sauce"]
+    },
+    {
+      "section": "Platillos",
+      "name": "Chile Rojo",
+      "description": "Tender beef in red chile sauce, served with rice, beans, and tortillas",
+      "price": 14.49,
+      "category": "plates",
+      "available": true,
+      "isFeatured": false,
+      "tags": ["plates", "beef", "sauce", "spicy"]
+    },
+    {
+      "section": "Platillos",
+      "name": "Enchiladas Rojas",
+      "description": "Three cheese enchiladas in red sauce topped with lettuce, tomato, cheese, and sour cream. Served with rice and beans",
+      "price": 11.99,
+      "category": "plates",
+      "available": true,
+      "isFeatured": false,
+      "tags": ["plates", "enchiladas"]
+    },
+    {
+      "section": "Platillos",
+      "name": "Enchiladas Verdes",
+      "description": "Three chicken enchiladas in green tomatillo sauce topped with cheese, sour cream, and onions. Served with rice and beans",
+      "price": 12.99,
+      "category": "plates",
+      "available": true,
+      "isFeatured": false,
+      "tags": ["plates", "enchiladas", "chicken"]
+    },
+    {
+      "section": "Platillos",
+      "name": "Camarones a la Diabla",
+      "description": "Grilled shrimp in spicy diabla sauce, served with rice, beans, and tortillas",
+      "price": 16.99,
+      "category": "plates",
+      "available": true,
+      "isFeatured": false,
+      "tags": ["plates", "seafood", "spicy"]
+    },
+    {
+      "section": "Platillos",
+      "name": "Camarones al Mojo de Ajo",
+      "description": "Shrimp sautéed in garlic butter sauce, served with rice, beans, and tortillas",
+      "price": 16.99,
+      "category": "plates",
+      "available": true,
+      "isFeatured": false,
+      "tags": ["plates", "seafood"]
+    },
+    {
+      "section": "Tortas",
+      "name": "Torta de Asada",
+      "description": "Grilled steak torta with beans, lettuce, tomato, onions, avocado, jalapeños, and mayo on telera bread",
+      "price": 9.99,
+      "category": "tortas",
+      "available": true,
+      "isFeatured": false,
+      "tags": ["tortas", "beef"]
+    },
+    {
+      "section": "Tortas",
+      "name": "Torta de Carnitas",
+      "description": "Slow-cooked pork torta with beans, lettuce, tomato, onions, avocado, jalapeños, and mayo on telera bread",
+      "price": 9.49,
+      "category": "tortas",
+      "available": true,
+      "isFeatured": false,
+      "tags": ["tortas", "pork"]
+    },
+    {
+      "section": "Tortas",
+      "name": "Torta de Pollo",
+      "description": "Grilled chicken torta with beans, lettuce, tomato, onions, avocado, jalapeños, and mayo on telera bread",
+      "price": 8.99,
+      "category": "tortas",
+      "available": true,
+      "isFeatured": false,
+      "tags": ["tortas", "chicken"]
+    },
+    {
+      "section": "Tortas",
+      "name": "Torta Cubana",
+      "description": "The ultimate torta with ham, chorizo, milanesa, egg, hot dog, beans, cheese, lettuce, tomato, avocado, jalapeños, and mayo",
+      "price": 12.99,
+      "category": "tortas",
+      "available": true,
+      "isFeatured": true,
+      "tags": ["tortas", "specialty", "popular"]
+    },
+    {
+      "section": "Tortas",
+      "name": "Torta Ahogada",
+      "description": "Carnitas torta drowned in spicy tomato sauce, served with pickled onions",
+      "price": 11.49,
+      "category": "tortas",
+      "available": true,
+      "isFeatured": false,
+      "tags": ["tortas", "pork", "spicy"]
+    },
+    {
+      "section": "Nachos y Quesadillas",
+      "name": "Nachos Supreme",
+      "description": "Crispy tortilla chips topped with your choice of meat, beans, cheese, sour cream, guacamole, jalapeños, and pico de gallo",
+      "price": 12.99,
+      "category": "appetizers",
+      "available": true,
+      "isFeatured": false,
+      "tags": ["appetizers", "nachos", "shareable"]
+    },
+    {
+      "section": "Nachos y Quesadillas",
+      "name": "Cheese Nachos",
+      "description": "Crispy tortilla chips topped with melted cheese and jalapeños",
+      "price": 7.99,
+      "category": "appetizers",
+      "available": true,
+      "isFeatured": false,
+      "tags": ["appetizers", "nachos"]
+    },
+    {
+      "section": "Nachos y Quesadillas",
+      "name": "Quesadilla de Asada",
+      "description": "Large flour tortilla filled with grilled steak and melted cheese, served with sour cream and guacamole",
+      "price": 11.99,
+      "category": "appetizers",
+      "available": true,
+      "isFeatured": false,
+      "tags": ["appetizers", "quesadilla", "beef"]
+    },
+    {
+      "section": "Nachos y Quesadillas",
+      "name": "Quesadilla de Pollo",
+      "description": "Large flour tortilla filled with grilled chicken and melted cheese, served with sour cream and guacamole",
+      "price": 10.99,
+      "category": "appetizers",
+      "available": true,
+      "isFeatured": false,
+      "tags": ["appetizers", "quesadilla", "chicken"]
+    },
+    {
+      "section": "Nachos y Quesadillas",
+      "name": "Cheese Quesadilla",
+      "description": "Simple and delicious cheese quesadilla, served with sour cream",
+      "price": 7.99,
+      "category": "appetizers",
+      "available": true,
+      "isFeatured": false,
+      "tags": ["appetizers", "quesadilla", "vegetarian"]
+    },
+    {
+      "section": "A La Carta",
+      "name": "Rice",
+      "description": "Mexican rice",
+      "price": 3.49,
+      "category": "sides",
+      "available": true,
+      "isFeatured": false,
+      "tags": ["sides"]
+    },
+    {
+      "section": "A La Carta",
+      "name": "Beans",
+      "description": "Refried pinto beans",
+      "price": 3.49,
+      "category": "sides",
+      "available": true,
+      "isFeatured": false,
+      "tags": ["sides"]
+    },
+    {
+      "section": "A La Carta",
+      "name": "Guacamole",
+      "description": "Fresh made guacamole with chips",
+      "price": 6.99,
+      "category": "sides",
+      "available": true,
+      "isFeatured": false,
+      "tags": ["sides", "vegetarian"]
+    },
+    {
+      "section": "A La Carta",
+      "name": "Chips & Salsa",
+      "description": "Crispy tortilla chips with fresh salsa roja",
+      "price": 4.99,
+      "category": "sides",
+      "available": true,
+      "isFeatured": false,
+      "tags": ["sides", "vegetarian"]
+    },
+    {
+      "section": "A La Carta",
+      "name": "Pico de Gallo",
+      "description": "Fresh chopped tomatoes, onions, cilantro, and jalapeños",
+      "price": 3.99,
+      "category": "sides",
+      "available": true,
+      "isFeatured": false,
+      "tags": ["sides", "vegetarian"]
+    },
+    {
+      "section": "A La Carta",
+      "name": "Sour Cream",
+      "description": "Side of sour cream",
+      "price": 1.99,
+      "category": "sides",
+      "available": true,
+      "isFeatured": false,
+      "tags": ["sides"]
+    },
+    {
+      "section": "A La Carta",
+      "name": "Cheese",
+      "description": "Side of shredded cheese",
+      "price": 1.99,
+      "category": "sides",
+      "available": true,
+      "isFeatured": false,
+      "tags": ["sides"]
+    },
+    {
+      "section": "A La Carta",
+      "name": "Jalapeños",
+      "description": "Pickled or fresh jalapeños",
+      "price": 1.49,
+      "category": "sides",
+      "available": true,
+      "isFeatured": false,
+      "tags": ["sides", "spicy"]
+    },
+    {
+      "section": "A La Carta",
+      "name": "Tortillas (3)",
+      "description": "Corn or flour tortillas",
+      "price": 1.99,
+      "category": "sides",
+      "available": true,
+      "isFeatured": false,
+      "tags": ["sides"]
+    },
+    {
+      "section": "A La Carta",
+      "name": "Consommé",
+      "description": "Rich birria broth for dipping",
+      "price": 2.99,
+      "category": "sides",
+      "available": true,
+      "isFeatured": false,
+      "tags": ["sides"]
+    },
+    {
+      "section": "Bebidas",
+      "name": "Horchata",
+      "description": "Traditional rice and cinnamon drink",
+      "price": 3.99,
+      "category": "drinks",
+      "available": true,
+      "isFeatured": false,
+      "tags": ["drinks", "popular"]
+    },
+    {
+      "section": "Bebidas",
+      "name": "Jamaica",
+      "description": "Hibiscus tea",
+      "price": 3.99,
+      "category": "drinks",
+      "available": true,
+      "isFeatured": false,
+      "tags": ["drinks"]
+    },
+    {
+      "section": "Bebidas",
+      "name": "Tamarindo",
+      "description": "Tamarind agua fresca",
+      "price": 3.99,
+      "category": "drinks",
+      "available": true,
+      "isFeatured": false,
+      "tags": ["drinks"]
+    },
+    {
+      "section": "Bebidas",
+      "name": "Mexican Coke",
+      "description": "Coca-Cola made with real sugar",
+      "price": 2.99,
+      "category": "drinks",
+      "available": true,
+      "isFeatured": false,
+      "tags": ["drinks"]
+    },
+    {
+      "section": "Bebidas",
+      "name": "Jarritos",
+      "description": "Mexican soda - various flavors",
+      "price": 2.99,
+      "category": "drinks",
+      "available": true,
+      "isFeatured": false,
+      "tags": ["drinks"]
+    },
+    {
+      "section": "Bebidas",
+      "name": "Bottled Water",
+      "description": "Purified water",
+      "price": 1.99,
+      "category": "drinks",
+      "available": true,
+      "isFeatured": false,
+      "tags": ["drinks"]
+    }
+  ]
+}

@@ -1,0 +1,84 @@
+{
+  "tenant": {
+    "name": "Villa Corona Catering",
+    "heroTitle": "Villa Corona Catering",
+    "heroSubtitle": "Premium catering services for your special events",
+    "contactEmail": "info@villacoronacatering.com",
+    "contactPhone": "",
+    "addressLine1": "",
+    "city": "",
+    "state": "",
+    "postalCode": "",
+    "heroImageUrl": "https://images.unsplash.com/photo-1556910103-1c02745aae4d?auto=format&fit=crop&w=1600&q=80",
+    "logoUrl": "https://images.unsplash.com/photo-1633984302429-68ba3e01eff6?auto=format&fit=crop&w=400&q=80",
+    "primaryColor": "#b91c1c",
+    "secondaryColor": "#fbbf24",
+    "featureFlags": []
+  },
+  "status": "PENDING_REVIEW",
+  "statusNotes": "Auto-seeded from villacoronacatering.com - needs review and approval",
+  "subscription": {
+    "plan": "alessa-starter",
+    "monthlyFee": 30,
+    "addons": ["ada-compliance"]
+  },
+  "settings": {
+    "tagline": "Elegant catering for memorable events",
+    "about": "Professional catering services for weddings, corporate events, and special occasions",
+    "socialInstagram": "",
+    "socialFacebook": "",
+    "deliveryRadiusMi": 25,
+    "minimumOrderValue": 200,
+    "currency": "USD",
+    "timeZone": "America/Los_Angeles",
+    "branding": {
+      "heroImages": [
+        "https://images.unsplash.com/photo-1556910103-1c02745aae4d?auto=format&fit=crop&w=1600&q=80"
+      ]
+    },
+    "operatingHours": {
+      "timezone": "America/Los_Angeles",
+      "storeHours": {
+        "monday": { "open": "08:00", "close": "18:00", "closed": false },
+        "tuesday": { "open": "08:00", "close": "18:00", "closed": false },
+        "wednesday": { "open": "08:00", "close": "18:00", "closed": false },
+        "thursday": { "open": "08:00", "close": "18:00", "closed": false },
+        "friday": { "open": "08:00", "close": "18:00", "closed": false },
+        "saturday": { "open": "09:00", "close": "17:00", "closed": false },
+        "sunday": { "open": "10:00", "close": "16:00", "closed": false }
+      },
+      "serviceMode": {
+        "pickup": true,
+        "delivery": true,
+        "dineIn": false
+      }
+    }
+  },
+  "integrations": {
+    "platformPercentFee": 0.029,
+    "platformFlatFee": 0.3,
+    "defaultTaxRate": 0.0825,
+    "deliveryBaseFee": 4.99,
+    "fulfillmentNotificationsEnabled": true,
+    "autoPrintOrders": false
+  },
+  "heroGallery": [],
+  "menu": [
+    {
+      "name": "Catering Packages",
+      "description": "Complete catering packages for events",
+      "type": "SPECIAL",
+      "items": [
+        {
+          "name": "Basic Catering Package",
+          "description": "Perfect for small gatherings",
+          "price": 200,
+          "category": "packages",
+          "image": "https://images.unsplash.com/photo-1556910103-1c02745aae4d?auto=format&fit=crop&w=1200&q=80",
+          "tags": ["popular"]
+        }
+      ]
+    }
+  ]
+}
+

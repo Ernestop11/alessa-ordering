@@ -1,6 +1,7 @@
+import net from 'net';
 import prisma from './prisma';
 import { sendOrderToClover } from './cloverPrinter';
-import { formatReceiptForPrinter, stringToBytes } from './printer-service';
+import { formatReceiptForPrinter } from './printer-service';
 import type { SerializedOrder } from './order-serializer';
 
 type PrintReason = 'order.created' | 'order.confirmed' | 'manual';
@@ -23,6 +24,40 @@ interface BluetoothConfig {
 }
 
 const DEFAULT_PROFILE = 'escpos-58mm';
+const NETWORK_PRINTER_TIMEOUT = Number(process.env.PRINTER_TCP_TIMEOUT ?? 5000);
+
+async function sendEscPosToNetworkPrinter(host: string, port: number, data: string) {
+  return new Promise<void>((resolve, reject) => {
+    const socket = net.createConnection({ host, port, timeout: NETWORK_PRINTER_TIMEOUT }, () => {
+      socket.write(Buffer.from(data, 'binary'), (err) => {
+        if (err) {
+          socket.destroy();
+          reject(err);
+          return;
+        }
+        socket.end();
+      });
+    });
+
+    let settled = false;
+    const finalize = (err?: Error) => {
+      if (settled) return;
+      settled = true;
+      if (err) {
+        reject(err);
+      } else {
+        resolve();
+      }
+    };
+
+    socket.on('close', () => finalize());
+    socket.on('error', (error) => finalize(error instanceof Error ? error : new Error(String(error))));
+    socket.on('timeout', () => {
+      socket.destroy();
+      finalize(new Error('Network printer connection timed out'));
+    });
+  });
+}
 
 function formatCurrency(value: number | null | undefined) {
   if (!value || Number.isNaN(value)) return '$0.00';
@@ -203,33 +238,31 @@ async function sendOrderWithESCPOS(order: SerializedOrder, printerConfig: any): 
 
     // Send to printer based on type
     if (printerConfig.type === 'network') {
-      // For network printers, send via server-side endpoint
-      const response = await fetch('/api/admin/fulfillment/printer/send', {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({
-          ipAddress: printerConfig.ipAddress,
-          port: printerConfig.port || 9100,
-          data: receiptData,
-          orderId: order.id,
-        }),
-      });
+      const ipAddress = printerConfig.ipAddress || printerConfig.host;
+      const port = Number(printerConfig.port ?? 9100);
 
-      if (!response.ok) {
-        const error = await response.text();
+      if (!ipAddress) {
         return {
           ok: false,
-          status: response.status,
           provider: 'network',
-          message: error || 'Network printer failed',
+          message: 'Network printer IP address is missing.',
         };
       }
 
-      return {
-        ok: true,
-        status: 200,
-        provider: 'network',
-      };
+      try {
+        await sendEscPosToNetworkPrinter(ipAddress, port, receiptData);
+        return {
+          ok: true,
+          status: 200,
+          provider: 'network',
+        };
+      } catch (error) {
+        return {
+          ok: false,
+          provider: 'network',
+          message: error instanceof Error ? error.message : 'Network printer failed',
+        };
+      }
     } else if (printerConfig.type === 'bluetooth') {
       // For Bluetooth, this would need to run client-side
       // For now, log that it needs client-side handling

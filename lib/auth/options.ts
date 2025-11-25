@@ -73,6 +73,17 @@ export const authOptions: NextAuthOptions = {
   pages: {
     signIn: '/admin/login',
   },
+  cookies: {
+    sessionToken: {
+      name: process.env.NEXTAUTH_COOKIE_NAME || 'session_ordering',
+      options: {
+        httpOnly: true,
+        sameSite: 'lax',
+        path: '/',
+        secure: process.env.NODE_ENV === 'production',
+      },
+    },
+  },
   callbacks: {
     async jwt({ token, user }) {
       const typedToken = token as TokenWithRole;

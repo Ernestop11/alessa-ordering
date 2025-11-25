@@ -22,7 +22,10 @@ interface Props {
   onMarkReady: (order: FulfillmentOrder) => void;
   onComplete: (order: FulfillmentOrder) => void;
   onPrint: (order: FulfillmentOrder) => void;
+  onCancel?: (order: FulfillmentOrder) => void;
+  onRefund?: (order: FulfillmentOrder) => void;
   scope: 'tenant' | 'platform';
+  tabletMode?: boolean;
 }
 
 function getColumnForOrder(order: FulfillmentOrder): ColumnKey {
@@ -37,7 +40,10 @@ export default function FulfillmentBoard({
   onMarkReady,
   onComplete,
   onPrint,
+  onCancel,
+  onRefund,
   scope,
+  tabletMode = false,
 }: Props) {
   const grouped: Record<ColumnKey, FulfillmentOrder[]> = {
     new: [],
@@ -53,7 +59,7 @@ export default function FulfillmentBoard({
   });
 
   return (
-    <div className="grid gap-6 lg:grid-cols-4 md:grid-cols-2">
+    <div className={`grid gap-6 ${tabletMode ? 'grid-cols-2' : 'lg:grid-cols-4 md:grid-cols-2'}`}>
       {COLUMNS.map((column) => (
         <section key={column.key} className="rounded-2xl border border-gray-200 bg-white shadow-sm">
           <header className="flex items-center justify-between border-b border-gray-200 px-4 py-3">
@@ -82,6 +88,8 @@ export default function FulfillmentBoard({
                   onMarkReady={onMarkReady}
                   onComplete={onComplete}
                   onPrint={onPrint}
+                  onCancel={onCancel}
+                  onRefund={onRefund}
                 />
               ))
             )}

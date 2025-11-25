@@ -5,16 +5,15 @@ import { useState } from 'react';
 import DashboardLayout from './DashboardLayout';
 import OrderList from './OrderList';
 import MenuEditor from './MenuEditor';
-import MenuManager from './MenuManager';
 import Settings from './Settings';
 import MenuSectionsManager from './MenuSectionsManager';
 import CustomerList from './CustomerList';
 import IntegrationLogs from './IntegrationLogs';
-import CustomizeTab from './CustomizeTab';
 import CateringManager from './CateringManager';
+// import CustomizeTab from './CustomizeTab'; // Not needed for tenant admin
 import { signOut } from 'next-auth/react';
 
-type Tab = 'orders' | 'customers' | 'logs' | 'sections' | 'menu' | 'menu-manager' | 'customize' | 'catering' | 'settings';
+type Tab = 'orders' | 'customers' | 'logs' | 'sections' | 'menu' | 'catering' | 'customize' | 'settings';
 
 export default function AdminDashboardClient() {
   const [activeTab, setActiveTab] = useState<Tab>('orders');
@@ -31,12 +30,10 @@ export default function AdminDashboardClient() {
         return <MenuSectionsManager />;
       case 'menu':
         return <MenuEditor />;
-      case 'menu-manager':
-        return <MenuManager />;
-      case 'customize':
-        return <CustomizeTab />;
       case 'catering':
         return <CateringManager />;
+      case 'customize':
+        return <div className="p-6">Customize feature coming soon</div>;
       case 'settings':
         return <Settings />;
       default:
@@ -57,7 +54,6 @@ export default function AdminDashboardClient() {
                 <div className="hidden sm:ml-6 sm:flex sm:space-x-8">
                   {[
                     { key: 'orders', label: 'Orders' },
-                    { key: 'menu-manager', label: 'Menu Manager' },
                     { key: 'customers', label: 'Customers' },
                     { key: 'sections', label: 'Sections' },
                     { key: 'menu', label: 'Menu Items' },

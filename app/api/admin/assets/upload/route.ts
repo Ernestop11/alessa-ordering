@@ -5,6 +5,7 @@ import { promises as fs } from 'fs';
 import { randomUUID } from 'crypto';
 import { authOptions } from '@/lib/auth/options';
 import { revalidatePath } from 'next/cache';
+import { requireTenant } from '@/lib/tenant';
 
 export const runtime = 'nodejs';
 
@@ -15,6 +16,8 @@ export async function POST(req: NextRequest) {
   if (!session || (role !== 'admin' && role !== 'super_admin')) {
     return NextResponse.json({ error: 'Unauthorized' }, { status: 401 });
   }
+
+  const tenant = await requireTenant();
 
   const formData = await req.formData();
   const file = formData.get('file');
@@ -44,6 +47,8 @@ export async function POST(req: NextRequest) {
   // but we revalidate here to ensure fresh data is available
   revalidatePath('/');
   revalidatePath('/order');
+  revalidatePath(`/${tenant.slug}`);
+  revalidatePath(`/${tenant.slug}/order`);
   
   return NextResponse.json({ url });
 }

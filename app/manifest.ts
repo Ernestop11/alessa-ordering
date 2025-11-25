@@ -1,4 +1,7 @@
 import { MetadataRoute } from 'next';
+import { getStaticTenantTheme } from '../lib/tenant-theme-map';
+
+const defaultTheme = getStaticTenantTheme();
 
 export default function manifest(): MetadataRoute.Manifest {
   return {
@@ -9,8 +12,8 @@ export default function manifest(): MetadataRoute.Manifest {
     scope: '/',
     display: 'standalone',
     orientation: 'portrait-primary',
-    background_color: '#071836',
-    theme_color: '#38c4ff',
+    background_color: defaultTheme.secondaryColor,
+    theme_color: defaultTheme.themeColor,
     icons: [
       {
         src: '/icons/alessa-cloud-icon-192.png',

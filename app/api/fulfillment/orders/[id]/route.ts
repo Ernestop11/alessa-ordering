@@ -14,7 +14,7 @@ function unauthorized() {
   return NextResponse.json({ error: 'Unauthorized' }, { status: 401 });
 }
 
-export async function PATCH(request: Request, { params }: { params: { id: string } }) {
+export async function PATCH(request: Request, { params }: { params: Promise<{ id: string }> | { id: string } }) {
   const session = await getServerSession(authOptions);
   const role = (session?.user as { role?: string } | undefined)?.role;
   if (!session || (role !== 'admin' && role !== 'super_admin')) return unauthorized();
@@ -24,8 +24,9 @@ export async function PATCH(request: Request, { params }: { params: { id: string
     return NextResponse.json({ error: 'status is required' }, { status: 400 });
   }
 
+  const resolvedParams = await Promise.resolve(params);
   const existing = await prisma.order.findUnique({
-    where: { id: params.id },
+    where: { id: resolvedParams.id },
     include: {
       tenant: {
         select: {

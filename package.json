@@ -3,7 +3,7 @@
   "version": "0.1.0",
   "private": true,
   "scripts": {
-    "dev": "next dev -p 3001",
+    "dev": "next dev -p ${PORT:-3001} -H ${NEXTHOST:-127.0.0.1}",
     "build": "next build",
     "start": "next start",
     "lint": "next lint",
@@ -18,13 +18,15 @@
     "test:types": "tsc --noEmit --skipLibCheck",
     "test:smoke": "node -e \"try{require('fs').rmSync('.smoke-tests',{recursive:true,force:true});}catch{}\" && tsc --project tsconfig.smoke.json && node .smoke-tests/tests/smoke/index.js",
     "verify": "npm run lint && npm run test:types && npm run test:smoke",
-    "verify:full": "bash scripts/verify.sh"
+    "verify:full": "bash scripts/verify.sh",
+    "seed:lasreinas": "node scripts/seed-lasreinas.mjs"
   },
   "dependencies": {
     "@prisma/client": "^5.22.0",
     "@stripe/react-stripe-js": "^2.4.0",
     "@stripe/stripe-js": "^2.4.0",
     "framer-motion": "^12.23.24",
+    "jsonwebtoken": "^9.0.2",
     "lucide-react": "^0.552.0",
     "next": "14.0.3",
     "next-auth": "^4.24.13",
@@ -35,6 +37,7 @@
     "zustand": "^4.5.7"
   },
   "devDependencies": {
+    "@types/jsonwebtoken": "^9.0.10",
     "@types/node": "^20.9.2",
     "@types/react": "^18.2.37",
     "@types/react-dom": "^18.2.15",
@@ -43,6 +46,7 @@
     "eslint-config-next": "14.0.3",
     "postcss": "^8.5.6",
     "prisma": "^5.22.0",
+    "puppeteer": "^24.31.0",
     "typescript": "^5.2.2"
   }
 }

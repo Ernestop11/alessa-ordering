@@ -5,8 +5,8 @@ import { requireTenant } from '@/lib/tenant';
 import prisma from '@/lib/prisma';
 import { getStripeClient } from '@/lib/stripe';
 
-const RETURN_URL = process.env.STRIPE_ONBOARD_RETURN_URL || 'http://localhost:3000/admin?onboarding=success';
-const REFRESH_URL = process.env.STRIPE_ONBOARD_REFRESH_URL || 'http://localhost:3000/admin?onboarding=refresh';
+const RETURN_URL = process.env.STRIPE_ONBOARD_RETURN_URL || `${process.env.NEXTAUTH_URL || 'http://localhost:3001'}/admin?onboarding=success`;
+const REFRESH_URL = process.env.STRIPE_ONBOARD_REFRESH_URL || `${process.env.NEXTAUTH_URL || 'http://localhost:3001'}/admin?onboarding=refresh`;
 
 export async function POST() {
   const session = await getServerSession(authOptions);

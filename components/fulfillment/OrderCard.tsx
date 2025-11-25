@@ -10,6 +10,8 @@ interface Props {
   onMarkReady: (order: FulfillmentOrder) => void;
   onComplete: (order: FulfillmentOrder) => void;
   onPrint: (order: FulfillmentOrder) => void;
+  onCancel?: (order: FulfillmentOrder) => void;
+  onRefund?: (order: FulfillmentOrder) => void;
 }
 
 function formatCurrency(value: number) {
@@ -21,12 +23,14 @@ function formatTime(value: string) {
   return `${date.toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' })}`;
 }
 
-export default function OrderCard({ order, scope, onAccept, onMarkReady, onComplete, onPrint }: Props) {
+export default function OrderCard({ order, scope, onAccept, onMarkReady, onComplete, onPrint, onCancel, onRefund }: Props) {
   const status = (order.status ?? '').toLowerCase();
   const isDelivery = order.fulfillmentMethod === 'delivery';
   const canAccept = status === 'pending' || status === 'confirmed';
   const canMarkReady = status === 'preparing';
   const canComplete = status === 'ready' || status === 'preparing';
+  const canCancel = status !== 'completed' && status !== 'cancelled';
+  const canRefund = status === 'completed' || status === 'cancelled';
 
   const customerLabel = useMemo(() => {
     if (order.customerName) return order.customerName;
@@ -123,6 +127,24 @@ export default function OrderCard({ order, scope, onAccept, onMarkReady, onCompl
               className="rounded-full border border-gray-300 px-3 py-1.5 text-xs font-semibold text-gray-700 hover:border-gray-400 hover:text-gray-900"
             >
               Complete
+            </button>
+          )}
+          {canCancel && onCancel && (
+            <button
+              type="button"
+              onClick={() => onCancel(order)}
+              className="rounded-full border border-red-300 px-3 py-1.5 text-xs font-semibold text-red-700 hover:border-red-400 hover:bg-red-50"
+            >
+              Cancel
+            </button>
+          )}
+          {canRefund && onRefund && (
+            <button
+              type="button"
+              onClick={() => onRefund(order)}
+              className="rounded-full bg-red-600 px-3 py-1.5 text-xs font-semibold text-white shadow hover:bg-red-700"
+            >
+              Refund
             </button>
           )}
         </div>

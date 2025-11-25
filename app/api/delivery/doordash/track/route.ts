@@ -1,6 +1,7 @@
 import { NextRequest, NextResponse } from 'next/server';
 import { requireTenant } from '@/lib/tenant';
 import prisma from '@/lib/prisma';
+import { getDoorDashAuthToken } from '@/lib/doordash/jwt';
 
 // Force dynamic rendering - this route uses searchParams
 export const dynamic = 'force-dynamic';
@@ -39,17 +40,16 @@ interface DoorDashAPITrackResponse {
   cancel_reason?: string;
 }
 
-// Get DoorDash API credentials
+// Get DoorDash API configuration
 function getDoorDashConfig() {
-  const apiKey = process.env.DOORDASH_API_KEY;
-  const developerId = process.env.DOORDASH_DEVELOPER_ID;
+  const authToken = getDoorDashAuthToken();
   const isSandbox = process.env.DOORDASH_SANDBOX === 'true';
 
-  if (!apiKey || !developerId) {
-    return { enabled: false, apiKey: null, developerId: null, isSandbox: false };
+  if (!authToken) {
+    return { enabled: false, authToken: null, isSandbox: false };
   }
 
-  return { enabled: true, apiKey, developerId, isSandbox };
+  return { enabled: true, authToken, isSandbox };
 }
 
 export async function GET(req: NextRequest) {
@@ -126,7 +126,7 @@ export async function GET(req: NextRequest) {
       {
         method: 'GET',
         headers: {
-          'Authorization': `Bearer ${config.apiKey}`,
+          'Authorization': `Bearer ${config.authToken}`,
         },
       }
     );

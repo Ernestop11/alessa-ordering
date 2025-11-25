@@ -2,7 +2,19 @@
   "permissions": {
     "allow": [
       "Bash(ssh root@77.243.85.8 \"sudo -u postgres psql -c \"\"CREATE DATABASE alessa_ordering OWNER alessa_ordering_user;\"\"\")",
-      "Bash(ssh root@77.243.85.8 \"sudo -u postgres psql -c \"\"GRANT ALL PRIVILEGES ON DATABASE alessa_ordering TO alessa_ordering_user;\"\"\")"
+      "Bash(ssh root@77.243.85.8 \"sudo -u postgres psql -c \"\"GRANT ALL PRIVILEGES ON DATABASE alessa_ordering TO alessa_ordering_user;\"\"\")",
+      "Bash(npm run dev:*)",
+      "Bash(npx tsc:*)",
+      "Bash(pkill:*)",
+      "Bash(cat:*)",
+      "Bash(pg_isready:*)",
+      "Bash(curl:*)",
+      "Bash(psql:*)",
+      "Bash(ssh root@77.243.85.8 \"cd /var/www/alessa-ordering && git status\")",
+      "Bash(git add:*)",
+      "Bash(git commit -m \"$(cat <<''EOF''\nfeat: Las Reinas cart, checkout, and admin enhancements\n\n- Update cart drawer with Las Reinas red/gold theme\n- Add complete checkout page with Stripe payment integration\n- Create payment intent API endpoint\n- Enhance admin menu editor with live preview panel\n- Add checkout navigation from cart\n\n🤖 Generated with [Claude Code](https://claude.com/claude-code)\n\nCo-Authored-By: Claude <noreply@anthropic.com>\nEOF\n)\")",
+      "Bash(git push:*)",
+      "Bash(git commit:*)"
     ],
     "deny": [],
     "ask": []

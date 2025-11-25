@@ -1,5 +1,5 @@
 "use client";
-import { useState } from "react";
+import { useState, useMemo } from "react";
 import { ShoppingCart } from "lucide-react";
 import Cart from "./Cart";
 import { useCart } from "../lib/store/cart";
@@ -17,6 +17,7 @@ export default function CartDrawer() {
   const [error, setError] = useState<string | null>(null);
   const [checkoutStep, setCheckoutStep] = useState<CheckoutStep>('cart');
   const [customerData, setCustomerData] = useState<CheckoutFormData | null>(null);
+  const drawerTotal = useMemo(() => items.reduce((sum, item) => sum + item.price * item.quantity, 0), [items]);
 
   return (
     <>
@@ -147,7 +148,7 @@ export default function CartDrawer() {
                 >
                   ← Edit Information
                 </button>
-                <StripeCheckoutWrapper clientSecret={clientSecret} />
+                <StripeCheckoutWrapper clientSecret={clientSecret} totalAmount={drawerTotal} />
               </div>
             )}
           </div>
@@ -156,4 +157,3 @@ export default function CartDrawer() {
     </>
   );
 }
-

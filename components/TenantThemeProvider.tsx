@@ -13,6 +13,7 @@ export interface TenantTheme {
   tagline?: string | null;
   primaryColor: string;
   secondaryColor: string;
+  themeColor?: string | null;
   featureFlags: string[];
   contactEmail?: string | null;
   contactPhone?: string | null;
@@ -91,6 +92,7 @@ const DEFAULT_THEME: TenantTheme = {
   slug: 'alessa',
   primaryColor: '#38c4ff',
   secondaryColor: '#071836',
+  themeColor: '#38c4ff',
   featureFlags: [],
   contactEmail: 'support@alessacloud.com',
   contactPhone: null,
@@ -131,7 +133,15 @@ interface TenantThemeProviderProps {
 }
 
 export function TenantThemeProvider({ tenant, children }: TenantThemeProviderProps) {
-  const theme = useMemo(() => tenant, [tenant]);
+  const theme = useMemo<TenantTheme>(() => {
+    const merged = {
+      ...DEFAULT_THEME,
+      ...tenant,
+    };
+    merged.featureFlags = Array.isArray(tenant.featureFlags) ? tenant.featureFlags : DEFAULT_THEME.featureFlags;
+    merged.themeColor = tenant.themeColor ?? DEFAULT_THEME.themeColor;
+    return merged;
+  }, [tenant]);
 
   useEffect(() => {
     const root = document.documentElement;
@@ -141,7 +151,8 @@ export function TenantThemeProvider({ tenant, children }: TenantThemeProviderPro
     root.style.setProperty('--tenant-hero-gradient-end', hexToRgba(theme.secondaryColor, 0.6));
     root.style.setProperty('--tenant-primary-soft', hexToRgba(theme.primaryColor, 0.25));
     root.style.setProperty('--tenant-secondary-soft', hexToRgba(theme.secondaryColor, 0.25));
-  }, [theme.primaryColor, theme.secondaryColor]);
+    root.style.setProperty('--tenant-theme-color', theme.themeColor || theme.primaryColor);
+  }, [theme.primaryColor, theme.secondaryColor, theme.themeColor]);
 
   return <TenantThemeContext.Provider value={theme}>{children}</TenantThemeContext.Provider>;
 }

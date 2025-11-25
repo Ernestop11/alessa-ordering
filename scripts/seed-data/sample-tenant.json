@@ -1,0 +1,178 @@
+{
+  "tenant": {
+    "name": "Sample Taqueria",
+    "heroTitle": "Authentic Street Tacos",
+    "heroSubtitle": "Family recipes from Jalisco since 1995",
+    "contactEmail": "hola@sampletaqueria.com",
+    "contactPhone": "(555) 000-1234",
+    "addressLine1": "123 Flavor Ave",
+    "city": "Los Angeles",
+    "state": "CA",
+    "postalCode": "90001",
+    "heroImageUrl": "https://images.unsplash.com/photo-1612874472677-5a039d1fd025?auto=format&fit=crop&w=1600&q=80",
+    "logoUrl": "https://images.unsplash.com/photo-1633984302429-68ba3e01eff6?auto=format&fit=crop&w=400&q=80",
+    "primaryColor": "#f97316",
+    "secondaryColor": "#0f172a",
+    "featureFlags": ["loyalty", "upsells"]
+  },
+  "status": "PENDING_REVIEW",
+  "statusNotes": "Auto-seeded from Sample Taqueria marketing site on 2025-11-10.",
+  "subscription": {
+    "plan": "alessa-starter",
+    "monthlyFee": 30,
+    "addons": ["ada-compliance", "premium-support"]
+  },
+  "settings": {
+    "tagline": "Pick-up, delivery, and catering available daily",
+    "about": "Handmade tortillas, slow-smoked meats, and seasonal agua frescas.",
+    "socialInstagram": "@sampletaqueria",
+    "socialFacebook": "https://facebook.com/sampletaqueria",
+    "deliveryRadiusMi": 5,
+    "minimumOrderValue": 15,
+    "membershipProgram": {
+      "enabled": true,
+      "pointsPerDollar": 10,
+      "heroCopy": "Earn puntos every time you feast.",
+      "featuredMemberName": "Doña Maria",
+      "tiers": [
+        {
+          "id": "tier-bronze",
+          "name": "Bronze",
+          "threshold": 0,
+          "rewardDescription": "Earn points on every order",
+          "perks": ["Exclusive tastings", "Monthly chef tips"],
+          "badgeColor": "#f97316"
+        },
+        {
+          "id": "tier-gold",
+          "name": "Gold",
+          "threshold": 500,
+          "rewardDescription": "Dessert on us every month",
+          "perks": ["Birthday churros", "VIP invitations"],
+          "badgeColor": "#facc15"
+        }
+      ]
+    },
+    "branding": {
+      "heroImages": [
+        "https://images.unsplash.com/photo-1562967914-608f82629710?auto=format&fit=crop&w=1600&q=80",
+        "https://images.unsplash.com/photo-1589308078055-124b5c095772?auto=format&fit=crop&w=1600&q=80"
+      ]
+    },
+    "operatingHours": {
+      "timezone": "America/Los_Angeles",
+      "storeHours": {
+        "monday": { "open": "09:00", "close": "21:00", "closed": false },
+        "tuesday": { "open": "09:00", "close": "21:00", "closed": false },
+        "wednesday": { "open": "09:00", "close": "21:00", "closed": false },
+        "thursday": { "open": "09:00", "close": "22:00", "closed": false },
+        "friday": { "open": "09:00", "close": "23:00", "closed": false },
+        "saturday": { "open": "09:00", "close": "23:00", "closed": false },
+        "sunday": { "open": "10:00", "close": "21:00", "closed": false }
+      },
+      "serviceMode": {
+        "pickup": true,
+        "delivery": true,
+        "dineIn": true
+      }
+    }
+  },
+  "integrations": {
+    "platformPercentFee": 0.035,
+    "platformFlatFee": 0.35,
+    "taxProvider": "builtin"
+  },
+  "heroGallery": [
+    "https://images.unsplash.com/photo-1563379926898-05f4575a45d8?auto=format&fit=crop&w=1600&q=80",
+    "https://images.unsplash.com/photo-1608039755401-28912c8341d6?auto=format&fit=crop&w=1600&q=80"
+  ],
+  "menu": [
+    {
+      "name": "Street Tacos",
+      "description": "Grilled-to-order tacos on handmade tortillas",
+      "type": "RESTAURANT",
+      "items": [
+        {
+          "name": "Al Pastor Taco",
+          "description": "Charred pork, guajillo adobo, roasted pineapple, cilantro, onion",
+          "price": 4.75,
+          "category": "tacos",
+          "image": "https://images.unsplash.com/photo-1543339494-b4cd4fd226b3?auto=format&fit=crop&w=1200&q=80",
+          "tags": ["popular", "spicy"],
+          "isFeatured": true
+        },
+        {
+          "name": "Carne Asada Taco",
+          "description": "Flame grilled skirt steak, chimichurri, pickled onions",
+          "price": 4.95,
+          "category": "tacos",
+          "image": "https://images.unsplash.com/photo-1543353071-10c8ba85a904?auto=format&fit=crop&w=1200&q=80",
+          "tags": ["signature"]
+        },
+        {
+          "name": "Birria Taco",
+          "description": "Slow-braised beef, ancho consommé, melted Oaxaca cheese",
+          "price": 5.5,
+          "category": "tacos",
+          "image": "https://images.unsplash.com/photo-1608039863924-35bcbadb7d46?auto=format&fit=crop&w=1200&q=80",
+          "tags": ["limited", "spicy"]
+        }
+      ]
+    },
+    {
+      "name": "Platos Fuertes",
+      "description": "Weekend specials and hearty plates",
+      "type": "SPECIAL",
+      "items": [
+        {
+          "name": "Mole Poblano",
+          "description": "Free-range chicken, 23-ingredient dark chocolate mole, sesame seeds",
+          "price": 17.5,
+          "category": "entrees",
+          "image": "https://images.unsplash.com/photo-1586190848861-99aa4a171e90?auto=format&fit=crop&w=1200&q=80",
+          "tags": ["family"]
+        },
+        {
+          "name": "Carnitas Plate",
+          "description": "Slow-cooked shoulder, salsa verde, charro beans, rice, tortillas",
+          "price": 16.25,
+          "category": "entrees",
+          "image": "https://images.unsplash.com/photo-1594007654729-407eedc4be65?auto=format&fit=crop&w=1200&q=80",
+          "tags": ["gluten-free"]
+        }
+      ]
+    },
+    {
+      "name": "Sweets & Drinks",
+      "description": "Housemade aguas frescas and rotating desserts",
+      "type": "BEVERAGE",
+      "items": [
+        {
+          "name": "Horchata",
+          "description": "Rice, cinnamon, piloncillo, toasted almond",
+          "price": 4,
+          "category": "drinks",
+          "image": "https://images.unsplash.com/photo-1514996937319-344454492b37?auto=format&fit=crop&w=1200&q=80",
+          "tags": ["vegan"]
+        },
+        {
+          "name": "Guayaba Agua Fresca",
+          "description": "Pink guava, lime, mint",
+          "price": 4,
+          "category": "drinks",
+          "image": "https://images.unsplash.com/photo-1546171753-97d7676eab30?auto=format&fit=crop&w=1200&q=80",
+          "tags": ["seasonal"]
+        },
+        {
+          "name": "Churros con Cajeta",
+          "description": "Cinnamon sugar, goat’s milk caramel",
+          "price": 6.5,
+          "category": "desserts",
+          "image": "https://images.unsplash.com/photo-1529042410759-befb1204b468?auto=format&fit=crop&w=1200&q=80",
+          "tags": ["vegetarian"]
+        }
+      ]
+    }
+  ]
+}
+

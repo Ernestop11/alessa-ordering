@@ -85,9 +85,41 @@ export function useOrderFeed({ feedUrl, initialOrders }: Options) {
       }
     };
 
+    // Polling fallback every 5 seconds
+    const pollInterval = setInterval(async () => {
+      if (closed) return;
+      try {
+        const response = await fetch(feedUrl.replace('/stream', ''));
+        if (response.ok) {
+          const data = await response.json();
+          if (Array.isArray(data)) {
+            setOrders((prev) => {
+              const previousIds = new Set(prev.map(o => o.id));
+              const newOrders = data.filter((o: FulfillmentOrder) => !previousIds.has(o.id));
+              
+              if (newOrders.length > 0) {
+                newOrders.forEach((order: FulfillmentOrder) => {
+                  newOrderIdsRef.current.add(order.id);
+                  setLastCreatedOrder(order);
+                });
+                forceTick((tick) => tick + 1);
+              }
+              
+              return sortOrders(data);
+            });
+            setConnected(true);
+          }
+        }
+      } catch (err) {
+        console.error('[Polling] Failed to fetch orders', err);
+        setConnected(false);
+      }
+    }, 5000);
+
     return () => {
       closed = true;
       eventSource.close();
+      clearInterval(pollInterval);
       setConnected(false);
     };
   }, [feedUrl]);

@@ -38,6 +38,8 @@ export default function MenuEditor() {
   const [uploadingGallery, setUploadingGallery] = useState(false);
   const [uploadError, setUploadError] = useState<string | null>(null);
   const [galleryInput, setGalleryInput] = useState('');
+  const [tagsInput, setTagsInput] = useState('');
+  const [successMessage, setSuccessMessage] = useState<string | null>(null);
 
   const fetchItems = async () => {
     setLoading(true);
@@ -90,6 +92,8 @@ export default function MenuEditor() {
     setUploadingImage(false);
     setUploadingGallery(false);
     setGalleryInput('');
+    setTagsInput('');
+    setSuccessMessage(null);
     setEditingItem(newItem);
   };
 
@@ -98,6 +102,8 @@ export default function MenuEditor() {
     setUploadingImage(false);
     setUploadingGallery(false);
     setGalleryInput('');
+    setTagsInput('');
+    setSuccessMessage(null);
     setEditingItem({
       ...item,
       menuSectionId: item.menuSectionId ?? item.section?.id ?? null,
@@ -167,8 +173,12 @@ export default function MenuEditor() {
       setUploadingImage(false);
       setUploadingGallery(false);
       setGalleryInput('');
+      setTagsInput('');
+      setSuccessMessage(editingItem.id ? 'Menu item updated successfully' : 'Menu item created successfully');
+      setTimeout(() => setSuccessMessage(null), 3000);
     } catch (err) {
       console.error('Save failed', err);
+      setUploadError('Failed to save item. Please try again.');
     } finally {
       setSaving(false);
     }
@@ -237,199 +247,102 @@ export default function MenuEditor() {
       </div>
 
       {editingItem && (
-        <div className="fixed inset-0 bg-gray-500 bg-opacity-75 flex items-center justify-center">
-          <div className="bg-white rounded-lg p-6 max-w-md w-full">
-            <form onSubmit={handleSaveItem} className="space-y-4">
-              {uploadError && <p className="text-sm text-red-600">{uploadError}</p>}
-              <div>
-                <label className="block text-sm font-medium text-gray-700">Name
-                  <input type="text" value={editingItem.name} onChange={e => setEditingItem({ ...editingItem, name: e.target.value })} className="mt-1 block w-full border-gray-300 rounded-md shadow-sm focus:ring-blue-500 focus:border-blue-500 sm:text-sm" />
-                </label>
-              </div>
-              <div>
-                <label className="block text-sm font-medium text-gray-700">Gallery Images</label>
-                {editingItem.gallery && editingItem.gallery.length > 0 && (
-                  <div className="mt-2 flex flex-wrap gap-3">
-                    {editingItem.gallery.map((url, index) => (
-                      <div key={`${url}-${index}`} className="relative">
-                        {/* eslint-disable-next-line @next/next/no-img-element */}
-                        <img
-                          src={url}
-                          alt={`${editingItem.name} gallery ${index + 1}`}
-                          className="h-12 w-12 rounded border border-gray-200 object-cover"
-                        />
-                        <button
-                          type="button"
-                          onClick={() =>
-                            setEditingItem((prev) =>
-                              prev
-                                ? {
-                                    ...prev,
-                                    gallery: prev.gallery?.filter((_, i) => i !== index) ?? [],
-                                  }
-                                : prev,
-                            )
-                          }
-                          className="absolute -right-2 -top-2 inline-flex h-5 w-5 items-center justify-center rounded-full bg-white text-xs text-gray-600 shadow hover:bg-gray-100"
-                          aria-label="Remove gallery image"
-                        >
-                          ×
-                        </button>
-                      </div>
-                    ))}
-                  </div>
-                )}
-                <div className="mt-2 flex flex-col gap-2">
-                  <div className="flex items-center gap-2">
-                    <input
-                      type="text"
-                      value={galleryInput}
-                      onChange={(event) => setGalleryInput(event.target.value)}
-                      placeholder="https://... or /uploads/item-2.jpg"
-                      className="flex-1 rounded-md border border-gray-300 px-3 py-2 text-sm shadow-sm focus:border-blue-500 focus:ring-blue-500"
-                    />
-                    <button
-                      type="button"
-                      onClick={() => {
-                        const value = galleryInput.trim();
-                        if (!value) return;
-                        setEditingItem((prev) =>
-                          prev
-                            ? {
-                                ...prev,
-                                gallery: prev.gallery && prev.gallery.includes(value)
-                                  ? prev.gallery
-                                  : [...(prev.gallery ?? []), value],
-                              }
-                            : prev,
-                        );
-                        setGalleryInput('');
-                      }}
-                      className="rounded-md bg-blue-600 px-3 py-2 text-xs font-semibold text-white hover:bg-blue-700"
-                    >
-                      Add
-                    </button>
-                  </div>
-                  <div className="flex items-center gap-2">
-                    <input
-                      id="menu-item-gallery-upload"
-                      type="file"
-                      accept="image/*"
-                      className="hidden"
-                      onChange={(event) => {
-                        const file = event.target.files?.[0];
-                        void handleGalleryUpload(file);
-                        event.target.value = '';
-                      }}
-                    />
-                    <label
-                      htmlFor="menu-item-gallery-upload"
-                      className={`inline-flex items-center rounded-md border border-gray-300 px-3 py-1.5 text-xs font-medium text-gray-700 transition ${
-                        uploadingGallery ? 'cursor-not-allowed opacity-60' : 'cursor-pointer hover:border-gray-400 hover:text-gray-900'
-                      }`}
-                    >
-                      {uploadingGallery ? 'Uploading…' : 'Upload to gallery'}
-                    </label>
-                  </div>
+        <div className="fixed inset-0 bg-black/50 flex items-center justify-center z-50 p-4">
+          <div className="bg-white rounded-xl shadow-2xl max-w-3xl w-full max-h-[90vh] overflow-y-auto">
+            <div className="sticky top-0 bg-white border-b border-gray-200 px-6 py-4 flex justify-between items-center">
+              <h3 className="text-xl font-bold text-gray-900">
+                {editingItem.id ? 'Edit Menu Item' : 'New Menu Item'}
+              </h3>
+              <button
+                onClick={() => {
+                  setEditingItem(null);
+                  setUploadError(null);
+                  setTagsInput('');
+                  setGalleryInput('');
+                }}
+                className="text-gray-400 hover:text-gray-600 transition-colors"
+              >
+                ×
+              </button>
+            </div>
+            <form onSubmit={handleSaveItem} className="p-6 space-y-4">
+              {uploadError && (
+                <div className="p-3 bg-red-50 border border-red-200 rounded-lg text-red-800 text-sm">
+                  {uploadError}
+                </div>
+              )}
+              
+              {/* Basic Info */}
+              <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                <div>
+                  <label className="block text-sm font-medium text-gray-700 mb-2">
+                    Name <span className="text-red-500">*</span>
+                  </label>
+                  <input
+                    type="text"
+                    value={editingItem.name}
+                    onChange={(e) => setEditingItem({ ...editingItem, name: e.target.value })}
+                    className="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-blue-500"
+                    required
+                  />
+                </div>
+                <div>
+                  <label className="block text-sm font-medium text-gray-700 mb-2">
+                    Price <span className="text-red-500">*</span>
+                  </label>
+                  <input
+                    type="number"
+                    step="0.01"
+                    min="0"
+                    value={editingItem.price}
+                    onChange={(e) => setEditingItem({ ...editingItem, price: parseFloat(e.target.value || '0') })}
+                    className="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-blue-500"
+                    required
+                  />
                 </div>
               </div>
+
               <div>
-                <label className="block text-sm font-medium text-gray-700">Gallery Images</label>
-                {editingItem.gallery && editingItem.gallery.length > 0 && (
-                  <div className="mt-2 flex flex-wrap gap-3">
-                    {editingItem.gallery.map((url, index) => (
-                      <div key={`${url}-${index}`} className="relative">
-                        {/* eslint-disable-next-line @next/next/no-img-element */}
-                        <img src={url} alt={`${editingItem.name} gallery ${index + 1}`} className="h-12 w-12 rounded border border-gray-200 object-cover" />
-                        <button
-                          type="button"
-                          onClick={() =>
-                            setEditingItem((prev) =>
-                              prev
-                                ? {
-                                    ...prev,
-                                    gallery: prev.gallery?.filter((_, i) => i !== index) ?? [],
-                                  }
-                                : prev,
-                            )
-                          }
-                          className="absolute -right-2 -top-2 inline-flex h-5 w-5 items-center justify-center rounded-full bg-white text-xs text-gray-600 shadow hover:bg-gray-100"
-                          aria-label="Remove gallery image"
-                        >
-                          ×
-                        </button>
-                      </div>
-                    ))}
-                  </div>
-                )}
-                <div className="mt-2 flex flex-col gap-2">
-                  <div className="flex items-center gap-2">
-                    <input
-                      type="text"
-                      value={galleryInput}
-                      onChange={(event) => setGalleryInput(event.target.value)}
-                      placeholder="https://... or /uploads/item-2.jpg"
-                      className="flex-1 rounded-md border border-gray-300 px-3 py-2 text-sm shadow-sm focus:border-blue-500 focus:ring-blue-500"
-                    />
-                    <button
-                      type="button"
-                      onClick={() => {
-                        const value = galleryInput.trim();
-                        if (!value) return;
-                        setEditingItem((prev) =>
-                          prev
-                            ? {
-                                ...prev,
-                                gallery: prev.gallery && prev.gallery.includes(value)
-                                  ? prev.gallery
-                                  : [...(prev.gallery ?? []), value],
-                              }
-                            : prev,
-                        );
-                        setGalleryInput('');
-                      }}
-                      className="rounded-md bg-blue-600 px-3 py-2 text-xs font-semibold text-white hover:bg-blue-700"
-                    >
-                      Add
-                    </button>
-                  </div>
-                  <div className="flex items-center gap-2">
-                    <input
-                      id="menu-item-gallery-upload"
-                      type="file"
-                      accept="image/*"
-                      className="hidden"
-                      onChange={(event) => {
-                        const file = event.target.files?.[0];
-                        void handleGalleryUpload(file);
-                        event.target.value = '';
-                      }}
-                    />
-                    <label
-                      htmlFor="menu-item-gallery-upload"
-                      className={`inline-flex items-center rounded-md border border-gray-300 px-3 py-1.5 text-xs font-medium text-gray-700 transition ${
-                        uploadingGallery ? 'cursor-not-allowed opacity-60' : 'cursor-pointer hover:border-gray-400 hover:text-gray-900'
-                      }`}
-                    >
-                      {uploadingGallery ? 'Uploading…' : 'Upload to gallery'}
-                    </label>
-                  </div>
+                <label className="block text-sm font-medium text-gray-700 mb-2">Description</label>
+                <textarea
+                  value={editingItem.description}
+                  onChange={(e) => setEditingItem({ ...editingItem, description: e.target.value })}
+                  rows={3}
+                  className="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-blue-500"
+                  placeholder="Describe this menu item..."
+                />
+              </div>
+
+              <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                <div>
+                  <label className="block text-sm font-medium text-gray-700 mb-2">Category</label>
+                  <input
+                    type="text"
+                    value={editingItem.category}
+                    onChange={(e) => setEditingItem({ ...editingItem, category: e.target.value })}
+                    className="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-blue-500"
+                    placeholder="e.g., tacos, breakfast, beverages"
+                  />
                 </div>
-              </div>
-              <div>
-                <label className="block text-sm font-medium text-gray-700">Description
-                  <textarea value={editingItem.description} onChange={e => setEditingItem({ ...editingItem, description: e.target.value })} className="mt-1 block w-full border-gray-300 rounded-md shadow-sm focus:ring-blue-500 focus:border-blue-500 sm:text-sm" />
-                </label>
-              </div>
-              <div>
-                <label className="block text-sm font-medium text-gray-700">Price
-                  <input type="number" step="0.01" value={editingItem.price} onChange={e => setEditingItem({ ...editingItem, price: parseFloat(e.target.value || '0') })} className="mt-1 block w-full border-gray-300 rounded-md shadow-sm focus:ring-blue-500 focus:border-blue-500 sm:text-sm" />
-                </label>
-              </div>
-              <div>
-                <label className="block text-sm font-medium text-gray-700">Category
-                  <input type="text" value={editingItem.category} onChange={e => setEditingItem({ ...editingItem, category: e.target.value })} className="mt-1 block w-full border-gray-300 rounded-md shadow-sm focus:ring-blue-500 focus:border-blue-500 sm:text-sm" />
-                </label>
+                <div>
+                  <label className="block text-sm font-medium text-gray-700 mb-2">
+                    Section <span className="text-red-500">*</span>
+                  </label>
+                  <select
+                    value={editingItem.menuSectionId || ''}
+                    onChange={(e) => setEditingItem({ ...editingItem, menuSectionId: e.target.value || null })}
+                    className="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-blue-500"
+                    disabled={sectionsLoading}
+                    required
+                  >
+                    <option value="">Select a section...</option>
+                    {sections.map((section) => (
+                      <option key={section.id} value={section.id}>
+                        {section.name} ({section.type})
+                      </option>
+                    ))}
+                  </select>
+                </div>
               </div>
               <div>
                 <label className="block text-sm font-medium text-gray-700">Image URL
@@ -438,8 +351,24 @@ export default function MenuEditor() {
                     value={editingItem.image ?? ''}
                     onChange={e => setEditingItem({ ...editingItem, image: e.target.value })}
                     className="mt-1 block w-full border border-gray-300 rounded-md shadow-sm focus:ring-blue-500 focus:border-blue-500 sm:text-sm"
-                    placeholder="https://... or /uploads/item.jpg"
+                    placeholder="/tenant/lasreinas/images/menu-items/item.jpg"
+                    onKeyDown={(e) => {
+                      if (e.key === 'Enter') {
+                        e.preventDefault();
+                        const url = (e.target as HTMLInputElement).value.trim();
+                        if (url && editingItem) {
+                          const currentGallery = editingItem.gallery || [];
+                          if (!currentGallery.includes(url)) {
+                            setEditingItem({ ...editingItem, gallery: [...currentGallery, url] });
+                          }
+                          (e.target as HTMLInputElement).value = '';
+                        }
+                      }
+                    }}
                   />
+                  <p className="text-xs text-gray-500 mt-1">
+                    Use tenant paths like <code>/tenant/lasreinas/images/menu-items/</code> or full URLs. Press Enter to add to gallery.
+                  </p>
                 </label>
                 <div className="mt-2 flex items-center gap-3">
                   <input
@@ -455,37 +384,156 @@ export default function MenuEditor() {
                   />
                   <label
                     htmlFor="menu-item-image-upload"
-                    className={`inline-flex items-center rounded-md border border-gray-300 px-3 py-1.5 text-xs font-medium text-gray-700 transition ${
-                      uploadingImage ? 'cursor-not-allowed opacity-60' : 'cursor-pointer hover:border-gray-400 hover:text-gray-900'
+                    className={`inline-flex items-center gap-2 px-4 py-2 border border-gray-300 rounded-lg cursor-pointer transition ${
+                      uploadingImage ? 'bg-gray-100 cursor-not-allowed opacity-60' : 'bg-white hover:bg-gray-50'
                     }`}
                   >
-                    {uploadingImage ? 'Uploading…' : 'Upload image'}
+                    {uploadingImage ? 'Uploading…' : '📤 Upload Image'}
                   </label>
                   {editingItem.image && (
-                    // eslint-disable-next-line @next/next/no-img-element
-                    <img
-                      src={editingItem.image}
-                      alt={`${editingItem.name} preview`}
-                      className="h-12 w-12 rounded border border-gray-200 object-cover"
-                    />
+                    <div className="relative w-20 h-20 border border-gray-300 rounded-lg overflow-hidden">
+                      {/* eslint-disable-next-line @next/next/no-img-element */}
+                      <img
+                        src={editingItem.image}
+                        alt="Preview"
+                        className="w-full h-full object-cover"
+                        onError={(e) => {
+                          (e.target as HTMLImageElement).src = '/placeholder-food.jpg';
+                        }}
+                      />
+                    </div>
                   )}
                 </div>
               </div>
+
+              {/* Gallery Images */}
               <div>
-                <label className="block text-sm font-medium text-gray-700">Section</label>
-                <select
-                  value={editingItem.menuSectionId || ''}
-                  onChange={e => setEditingItem({ ...editingItem, menuSectionId: e.target.value || null })}
-                  className="mt-1 block w-full border-gray-300 rounded-md shadow-sm focus:ring-blue-500 focus:border-blue-500 sm:text-sm"
-                  disabled={sectionsLoading}
-                >
-                  <option value="">Unassigned</option>
-                  {sections.map((section) => (
-                    <option key={section.id} value={section.id}>
-                      {section.name}
-                    </option>
+                <label className="block text-sm font-medium text-gray-700 mb-2">Gallery Images</label>
+                {editingItem.gallery && editingItem.gallery.length > 0 && (
+                  <div className="grid grid-cols-4 gap-3 mb-3">
+                    {editingItem.gallery.map((url, index) => (
+                      <div key={index} className="relative group">
+                        {/* eslint-disable-next-line @next/next/no-img-element */}
+                        <img
+                          src={url}
+                          alt={`Gallery ${index + 1}`}
+                          className="w-full h-24 object-cover rounded-lg border border-gray-300"
+                          onError={(e) => {
+                            (e.target as HTMLImageElement).src = '/placeholder-food.jpg';
+                          }}
+                        />
+                        <button
+                          type="button"
+                          onClick={() =>
+                            setEditingItem((prev) =>
+                              prev
+                                ? {
+                                    ...prev,
+                                    gallery: prev.gallery?.filter((_, i) => i !== index) ?? [],
+                                  }
+                                : prev
+                            )
+                          }
+                          className="absolute -top-2 -right-2 bg-red-500 text-white rounded-full p-1 opacity-0 group-hover:opacity-100 transition-opacity"
+                        >
+                          ×
+                        </button>
+                      </div>
+                    ))}
+                  </div>
+                )}
+                <div className="flex gap-2">
+                  <input
+                    type="text"
+                    value={galleryInput}
+                    onChange={(e) => setGalleryInput(e.target.value)}
+                    placeholder="/tenant/lasreinas/images/menu-items/item.jpg"
+                    className="flex-1 px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-blue-500"
+                    onKeyDown={(e) => {
+                      if (e.key === 'Enter') {
+                        e.preventDefault();
+                        const url = galleryInput.trim();
+                        if (url && editingItem) {
+                          const currentGallery = editingItem.gallery || [];
+                          if (!currentGallery.includes(url)) {
+                            setEditingItem({ ...editingItem, gallery: [...currentGallery, url] });
+                          }
+                          setGalleryInput('');
+                        }
+                      }
+                    }}
+                  />
+                  <input
+                    id="menu-item-gallery-upload"
+                    type="file"
+                    accept="image/*"
+                    className="hidden"
+                    onChange={(event) => {
+                      const file = event.target.files?.[0];
+                      void handleGalleryUpload(file);
+                      event.target.value = '';
+                    }}
+                  />
+                  <label
+                    htmlFor="menu-item-gallery-upload"
+                    className={`inline-flex items-center gap-2 px-4 py-2 border border-gray-300 rounded-lg cursor-pointer transition ${
+                      uploadingGallery ? 'bg-gray-100 cursor-not-allowed opacity-60' : 'bg-white hover:bg-gray-50'
+                    }`}
+                  >
+                    {uploadingGallery ? 'Uploading…' : '📤 Upload'}
+                  </label>
+                </div>
+              </div>
+
+              {/* Tags */}
+              <div>
+                <label className="block text-sm font-medium text-gray-700 mb-2">Tags</label>
+                <div className="flex flex-wrap gap-2 mb-2">
+                  {(editingItem.tags || []).map((tag) => (
+                    <span
+                      key={tag}
+                      className="inline-flex items-center gap-1 px-3 py-1 bg-blue-100 text-blue-800 rounded-full text-sm"
+                    >
+                      {tag}
+                      <button
+                        type="button"
+                        onClick={() =>
+                          setEditingItem((prev) =>
+                            prev
+                              ? {
+                                  ...prev,
+                                  tags: (prev.tags || []).filter((t) => t !== tag),
+                                }
+                              : prev
+                          )
+                        }
+                        className="hover:text-blue-600"
+                      >
+                        ×
+                      </button>
+                    </span>
                   ))}
-                </select>
+                </div>
+                <input
+                  type="text"
+                  value={tagsInput}
+                  onChange={(e) => setTagsInput(e.target.value)}
+                  onKeyDown={(e) => {
+                    if (e.key === 'Enter') {
+                      e.preventDefault();
+                      const tag = tagsInput.trim();
+                      if (tag && editingItem) {
+                        const currentTags = editingItem.tags || [];
+                        if (!currentTags.includes(tag)) {
+                          setEditingItem({ ...editingItem, tags: [...currentTags, tag] });
+                        }
+                        setTagsInput('');
+                      }
+                    }
+                  }}
+                  placeholder="Type tag and press Enter (e.g., popular, spicy, vegetarian)"
+                  className="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-blue-500"
+                />
               </div>
               <div className="flex items-center">
                 <label className="flex items-center text-sm font-medium text-gray-700"><input type="checkbox" checked={editingItem.available} onChange={e => setEditingItem({ ...editingItem, available: e.target.checked })} className="mr-2 h-4 w-4 text-blue-600 focus:ring-blue-500 border-gray-300 rounded" />Available</label>
@@ -494,20 +542,27 @@ export default function MenuEditor() {
                 <label className="flex items-center text-sm font-medium text-gray-700"><input type="checkbox" checked={editingItem.isFeatured || false} onChange={e => setEditingItem({ ...editingItem, isFeatured: e.target.checked })} className="mr-2 h-4 w-4 text-blue-600 focus:ring-blue-500 border-gray-300 rounded" />Featured (appears in &quot;Chef Recommends&quot;)</label>
               </div>
               <div className="flex justify-end space-x-3">
-                <button
-                  type="button"
-                  onClick={() => {
-                    setEditingItem(null);
-                    setUploadError(null);
-                    setUploadingImage(false);
-                    setUploadingGallery(false);
-                    setGalleryInput('');
-                  }}
-                  className="inline-flex items-center px-4 py-2 border border-gray-300 text-sm font-medium rounded-md text-gray-700 bg-white hover:bg-gray-50"
-                >
-                  Cancel
-                </button>
-                <button type="submit" disabled={saving} className="inline-flex items-center px-4 py-2 border border-transparent text-sm font-medium rounded-md text-white bg-blue-600 hover:bg-blue-700">{saving ? 'Saving...' : 'Save'}</button>
+                  <button
+                    type="button"
+                    onClick={() => {
+                      setEditingItem(null);
+                      setUploadError(null);
+                      setUploadingImage(false);
+                      setUploadingGallery(false);
+                      setGalleryInput('');
+                      setTagsInput('');
+                    }}
+                    className="inline-flex items-center px-4 py-2 border border-gray-300 text-sm font-medium rounded-md text-gray-700 bg-white hover:bg-gray-50 transition-colors"
+                  >
+                    Cancel
+                  </button>
+                  <button 
+                    type="submit" 
+                    disabled={saving} 
+                    className="inline-flex items-center px-4 py-2 border border-transparent text-sm font-medium rounded-md text-white bg-blue-600 hover:bg-blue-700 transition-colors disabled:opacity-50 disabled:cursor-not-allowed"
+                  >
+                    {saving ? 'Saving...' : editingItem.id ? 'Update Item' : 'Create Item'}
+                  </button>
               </div>
             </form>
           </div>

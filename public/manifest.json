@@ -1,0 +1,42 @@
+{
+  "name": "Alessa Ordering",
+  "short_name": "Alessa",
+  "description": "Restaurant ordering and fulfillment platform",
+  "start_url": "/",
+  "display": "standalone",
+  "background_color": "#ffffff",
+  "theme_color": "#dc2626",
+  "orientation": "any",
+  "icons": [
+    {
+      "src": "/icon-192.png",
+      "sizes": "192x192",
+      "type": "image/png",
+      "purpose": "any maskable"
+    },
+    {
+      "src": "/icon-512.png",
+      "sizes": "512x512",
+      "type": "image/png",
+      "purpose": "any maskable"
+    }
+  ],
+  "categories": ["food", "business"],
+  "screenshots": [],
+  "shortcuts": [
+    {
+      "name": "Fulfillment Dashboard",
+      "short_name": "Fulfillment",
+      "description": "View and manage orders",
+      "url": "/admin/fulfillment",
+      "icons": [{ "src": "/icon-192.png", "sizes": "192x192" }]
+    },
+    {
+      "name": "Menu Editor",
+      "short_name": "Menu",
+      "description": "Edit menu items",
+      "url": "/admin/menu",
+      "icons": [{ "src": "/icon-192.png", "sizes": "192x192" }]
+    }
+  ]
+}

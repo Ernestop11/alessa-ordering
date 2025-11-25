@@ -4,10 +4,24 @@ import Link from 'next/link';
 import { useCallback, useEffect, useMemo, useState } from 'react';
 import OnboardingWizard from './OnboardingWizard';
 
+type TenantLifecycleStatus =
+  | 'PENDING_REVIEW'
+  | 'READY_FOR_APPROVAL'
+  | 'APPROVED'
+  | 'LIVE'
+  | 'PAUSED'
+  | 'ARCHIVED';
+
 interface TenantSummary {
   id: string;
   name: string;
   slug: string;
+  status: TenantLifecycleStatus;
+  statusUpdatedAt: string | null;
+  statusNotes: string | null;
+  subscriptionPlan: string | null;
+  subscriptionMonthlyFee: number;
+  subscriptionAddons: string[];
   contactEmail?: string | null;
   contactPhone?: string | null;
   addressLine1?: string | null;
@@ -22,6 +36,7 @@ interface TenantSummary {
   heroTitle?: string | null;
   heroSubtitle?: string | null;
   stripeAccountId?: string | null;
+  doorDashStoreId?: string | null;
   platformPercentFee?: number | null;
   platformFlatFee?: number | null;
   defaultTaxRate?: number | null;
@@ -87,6 +102,12 @@ interface TenantListItem {
   id: string;
   name: string;
   slug: string;
+  status: TenantLifecycleStatus;
+  statusUpdatedAt?: string | null;
+  statusNotes?: string | null;
+  subscriptionPlan?: string | null;
+  subscriptionMonthlyFee?: number;
+  subscriptionAddons?: string[];
   contactEmail?: string | null;
   contactPhone?: string | null;
   addressLine1?: string | null;
@@ -101,6 +122,7 @@ interface TenantListItem {
   heroTitle?: string | null;
   heroSubtitle?: string | null;
   stripeAccountId?: string | null;
+  doorDashStoreId?: string | null;
   platformPercentFee?: number | null;
   platformFlatFee?: number | null;
   defaultTaxRate?: number | null;
@@ -127,6 +149,8 @@ interface TenantForm {
   id: string;
   name: string;
   slug: string;
+  status: TenantLifecycleStatus;
+  statusNotes: string;
   contactEmail: string;
   contactPhone: string;
   addressLine1: string;
@@ -152,6 +176,9 @@ interface TenantForm {
   stripeAccountId: string;
   cloverMerchantId: string;
   cloverApiKey: string;
+  subscriptionPlan: string;
+  subscriptionMonthlyFee: string;
+  subscriptionAddons: string;
   autoPrintOrders: boolean;
   fulfillmentNotificationsEnabled: boolean;
   isOpen: boolean;
@@ -159,6 +186,13 @@ interface TenantForm {
   socialFacebook: string;
   socialTikTok: string;
   socialYouTube: string;
+}
+
+interface StatusAction {
+  label: string;
+  next: TenantLifecycleStatus;
+  icon: string;
+  confirm?: string;
 }
 
 const defaultCreateForm = {
@@ -242,6 +276,10 @@ function formatDateTime(value: string | null) {
   return `${date.toLocaleDateString()} ${date.toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' })}`;
 }
 
+function formatStatus(status: TenantLifecycleStatus) {
+  return STATUS_META[status]?.label ?? status;
+}
+
 const BADGE_CLASSES = {
   success: 'bg-emerald-100 text-emerald-700',
   warning: 'bg-amber-100 text-amber-700',
@@ -250,8 +288,57 @@ const BADGE_CLASSES = {
   neutral: 'bg-gray-100 text-gray-600',
 } as const;
 
+const STATUS_META: Record<TenantLifecycleStatus, { label: string; className: string }> = {
+  PENDING_REVIEW: { label: 'Pending Review', className: BADGE_CLASSES.warning },
+  READY_FOR_APPROVAL: { label: 'Ready for Approval', className: BADGE_CLASSES.info },
+  APPROVED: { label: 'Approved', className: BADGE_CLASSES.success },
+  LIVE: { label: 'Live', className: BADGE_CLASSES.success },
+  PAUSED: { label: 'Paused', className: BADGE_CLASSES.neutral },
+  ARCHIVED: { label: 'Archived', className: BADGE_CLASSES.danger },
+};
+
+const STATUS_OPTIONS: Array<{ value: TenantLifecycleStatus; label: string; description: string }> = [
+  {
+    value: 'PENDING_REVIEW',
+    label: STATUS_META.PENDING_REVIEW.label,
+    description: 'Auto-seeded tenant awaiting internal QA.',
+  },
+  {
+    value: 'READY_FOR_APPROVAL',
+    label: STATUS_META.READY_FOR_APPROVAL.label,
+    description: 'Preview ready for client walkthrough.',
+  },
+  {
+    value: 'APPROVED',
+    label: STATUS_META.APPROVED.label,
+    description: 'Client approved; ready for go-live.',
+  },
+  {
+    value: 'LIVE',
+    label: STATUS_META.LIVE.label,
+    description: 'Tenant is live on production.',
+  },
+  {
+    value: 'PAUSED',
+    label: STATUS_META.PAUSED.label,
+    description: 'Temporarily paused (billing or operational hold).',
+  },
+  {
+    value: 'ARCHIVED',
+    label: STATUS_META.ARCHIVED.label,
+    description: 'Offboarded tenant kept for records.',
+  },
+];
+
 function getTenantBadges(summary: TenantSummary) {
   const badges: Array<{ key: string; label: string; className: string }> = [];
+
+  const statusMeta = STATUS_META[summary.status] ?? STATUS_META.PENDING_REVIEW;
+  badges.push({
+    key: 'lifecycle',
+    label: statusMeta.label,
+    className: statusMeta.className,
+  });
 
   badges.push({
     key: 'status',
@@ -263,6 +350,12 @@ function getTenantBadges(summary: TenantSummary) {
     key: 'stripe',
     label: summary.stripeAccountId ? 'Stripe connected' : 'Stripe pending',
     className: summary.stripeAccountId ? BADGE_CLASSES.success : BADGE_CLASSES.warning,
+  });
+
+  badges.push({
+    key: 'doordash',
+    label: summary.doorDashStoreId ? 'DoorDash connected' : 'DoorDash pending',
+    className: summary.doorDashStoreId ? BADGE_CLASSES.success : BADGE_CLASSES.warning,
   });
 
   if (summary.autoPrintOrders) {
@@ -289,6 +382,8 @@ function toTenantForm(summary: TenantSummary): TenantForm {
     id: summary.id,
     name: summary.name,
     slug: summary.slug,
+    status: summary.status,
+    statusNotes: summary.statusNotes ?? '',
     contactEmail: summary.contactEmail ?? '',
     contactPhone: summary.contactPhone ?? '',
     addressLine1: summary.addressLine1 ?? '',
@@ -314,6 +409,11 @@ function toTenantForm(summary: TenantSummary): TenantForm {
     stripeAccountId: summary.stripeAccountId ?? '',
     cloverMerchantId: summary.cloverMerchantId ?? '',
     cloverApiKey: summary.cloverApiKey ?? '',
+    subscriptionPlan: summary.subscriptionPlan ?? 'alessa-starter',
+    subscriptionMonthlyFee: summary.subscriptionMonthlyFee
+      ? summary.subscriptionMonthlyFee.toString()
+      : '',
+    subscriptionAddons: summary.subscriptionAddons.join(', '),
     autoPrintOrders: summary.autoPrintOrders,
     fulfillmentNotificationsEnabled: summary.fulfillmentNotificationsEnabled,
     isOpen: summary.isOpen,
@@ -339,6 +439,10 @@ export default function SuperAdminDashboard({ initialTenants, initialMetrics, ro
   const selectedTenant = useMemo(
     () => tenants.find((tenant) => tenant.id === selectedTenantId) ?? null,
     [selectedTenantId, tenants],
+  );
+  const previewUrl = useMemo(
+    () => (selectedTenant ? `https://${selectedTenant.slug}.${rootDomain}` : null),
+    [rootDomain, selectedTenant],
   );
   const [editForm, setEditForm] = useState<TenantForm | null>(selectedTenant ? toTenantForm(selectedTenant) : null);
   const [editMessage, setEditMessage] = useState<string | null>(null);
@@ -412,6 +516,12 @@ export default function SuperAdminDashboard({ initialTenants, initialMetrics, ro
         id: tenant.id,
         name: tenant.name,
         slug: tenant.slug,
+        status: tenant.status,
+        statusUpdatedAt: tenant.statusUpdatedAt ?? null,
+        statusNotes: tenant.statusNotes ?? null,
+        subscriptionPlan: tenant.subscriptionPlan ?? null,
+        subscriptionMonthlyFee: tenant.subscriptionMonthlyFee ?? 0,
+        subscriptionAddons: tenant.subscriptionAddons ?? [],
         contactEmail: tenant.contactEmail,
         contactPhone: tenant.contactPhone,
         addressLine1: tenant.addressLine1,
@@ -531,16 +641,41 @@ export default function SuperAdminDashboard({ initialTenants, initialMetrics, ro
     setEditForm({ ...editForm, [name]: value });
   };
 
+  const handleEditSelectChange = (event: React.ChangeEvent<HTMLSelectElement>) => {
+    if (!editForm) return;
+    const { name, value } = event.target;
+    if (name === 'status') {
+      setEditForm({ ...editForm, status: value as TenantLifecycleStatus });
+    } else {
+      setEditForm({ ...editForm, [name]: value });
+    }
+  };
   const handleSaveTenant = async () => {
     if (!editForm) return;
     setEditLoading(true);
     setEditError(null);
     setEditMessage(null);
     try {
+      const subscriptionAddons = editForm.subscriptionAddons
+        .split(',')
+        .map((addon) => addon.trim())
+        .filter(Boolean);
+      const subscriptionMonthlyFee =
+        editForm.subscriptionMonthlyFee && editForm.subscriptionMonthlyFee.trim().length > 0
+          ? Number(editForm.subscriptionMonthlyFee)
+          : 0;
+      if (Number.isNaN(subscriptionMonthlyFee)) {
+        setEditError('Subscription monthly fee must be a valid number.');
+        setEditLoading(false);
+        return;
+      }
+
       const payload = {
         id: editForm.id,
         name: editForm.name,
         slug: editForm.slug,
+        status: editForm.status,
+        statusNotes: editForm.statusNotes || null,
         contactEmail: editForm.contactEmail || null,
         contactPhone: editForm.contactPhone || null,
         addressLine1: editForm.addressLine1 || null,
@@ -566,6 +701,9 @@ export default function SuperAdminDashboard({ initialTenants, initialMetrics, ro
         stripeAccountId: editForm.stripeAccountId || null,
         cloverMerchantId: editForm.cloverMerchantId || null,
         cloverApiKey: editForm.cloverApiKey || null,
+        subscriptionPlan: editForm.subscriptionPlan || null,
+        subscriptionMonthlyFee,
+        subscriptionAddons,
         autoPrintOrders: editForm.autoPrintOrders,
         fulfillmentNotificationsEnabled: editForm.fulfillmentNotificationsEnabled,
         isOpen: editForm.isOpen,
@@ -595,6 +733,99 @@ export default function SuperAdminDashboard({ initialTenants, initialMetrics, ro
       setEditLoading(false);
     }
   };
+
+  const updateTenantStatus = useCallback(
+    async (nextStatus: TenantLifecycleStatus, note?: string) => {
+      if (!selectedTenantId) return;
+      setEditLoading(true);
+      setEditError(null);
+      setEditMessage(null);
+      try {
+        const res = await fetch('/api/super/tenants', {
+          method: 'PATCH',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({
+            id: selectedTenantId,
+            status: nextStatus,
+            statusNotes: note ?? editForm?.statusNotes ?? null,
+          }),
+        });
+        if (!res.ok) {
+          throw new Error(await res.text());
+        }
+        await res.json();
+        await refreshTenants();
+        setEditMessage(`Status updated to ${formatStatus(nextStatus)}.`);
+      } catch (err) {
+        console.error(err);
+        setEditError('Failed to update status.');
+      } finally {
+        setEditLoading(false);
+      }
+    },
+    [editForm?.statusNotes, refreshTenants, selectedTenantId],
+  );
+
+  const statusQuickActions = useMemo<StatusAction[]>(() => {
+    if (!editForm) return [];
+    switch (editForm.status) {
+      case 'PENDING_REVIEW':
+        return [
+          { label: 'Mark Ready for Approval', next: 'READY_FOR_APPROVAL', icon: '✅' },
+          { label: 'Launch Now', next: 'LIVE', icon: '🚀', confirm: 'Launch tenant immediately?' },
+        ];
+      case 'READY_FOR_APPROVAL':
+        return [
+          { label: 'Approve Template', next: 'APPROVED', icon: '👍' },
+          { label: 'Launch Live', next: 'LIVE', icon: '🚀', confirm: 'Launch tenant live now?' },
+          { label: 'Back to Pending', next: 'PENDING_REVIEW', icon: '↩️' },
+        ];
+      case 'APPROVED':
+        return [
+          { label: 'Launch Live', next: 'LIVE', icon: '🚀', confirm: 'Launch tenant live now?' },
+          { label: 'Pause / Hold', next: 'PAUSED', icon: '⏸️' },
+        ];
+      case 'LIVE':
+        return [
+          { label: 'Pause Tenant', next: 'PAUSED', icon: '⏸️', confirm: 'Pause orders for this tenant?' },
+          { label: 'Archive Tenant', next: 'ARCHIVED', icon: '🗂️', confirm: 'Archive tenant and stop billing?' },
+        ];
+      case 'PAUSED':
+        return [
+          { label: 'Resume Live', next: 'LIVE', icon: '▶️' },
+          { label: 'Archive Tenant', next: 'ARCHIVED', icon: '🗂️', confirm: 'Archive tenant and stop billing?' },
+        ];
+      case 'ARCHIVED':
+        return [{ label: 'Reopen (Pending Review)', next: 'PENDING_REVIEW', icon: '🔁' }];
+      default:
+        return [];
+    }
+  }, [editForm]);
+
+  const subscriptionMonthlyFeePreview = useMemo(() => {
+    if (!editForm) {
+      return formatCurrency(selectedTenant?.subscriptionMonthlyFee ?? 0);
+    }
+    const value = editForm.subscriptionMonthlyFee.trim();
+    if (!value) {
+      return formatCurrency(selectedTenant?.subscriptionMonthlyFee ?? 0);
+    }
+    const numeric = Number(value);
+    if (Number.isNaN(numeric)) {
+      return '$0.00';
+    }
+    return formatCurrency(numeric);
+  }, [editForm, selectedTenant?.subscriptionMonthlyFee]);
+
+  const subscriptionAddonsPreview = useMemo(() => {
+    if (editForm) {
+      return editForm.subscriptionAddons
+        .split(',')
+        .map((addon) => addon.trim())
+        .filter(Boolean);
+    }
+    return selectedTenant?.subscriptionAddons ?? [];
+  }, [editForm, selectedTenant?.subscriptionAddons]);
 
   const handleDeleteTenant = async (tenantId: string) => {
     if (!confirm('Are you sure you want to delete this tenant? This action cannot be undone.')) {
@@ -803,6 +1034,9 @@ export default function SuperAdminDashboard({ initialTenants, initialMetrics, ro
                       <span className="font-semibold text-gray-900">{tenant.name}</span>
                       <span className="text-xs uppercase text-gray-500">{tenant.slug}</span>
                     </div>
+                    <div className="mt-0.5 text-xs text-gray-500">
+                      Plan: {tenant.subscriptionPlan ?? '—'} · {formatCurrency(tenant.subscriptionMonthlyFee ?? 0)}
+                    </div>
                     <div className="mt-1 flex flex-wrap items-center gap-2 text-xs text-gray-500">
                       <span>{tenant.ordersLastSevenDays} orders · {formatCurrency(tenant.grossLastSevenDays)}</span>
                       {badges.map((badge) => (
@@ -836,6 +1070,92 @@ export default function SuperAdminDashboard({ initialTenants, initialMetrics, ro
             <div className="space-y-6">
               {editMessage && <p className="rounded-md bg-emerald-50 px-3 py-2 text-sm text-emerald-700">{editMessage}</p>}
               {editError && <p className="rounded-md bg-red-50 px-3 py-2 text-sm text-red-700">{editError}</p>}
+
+              <div className="rounded-3xl border border-blue-100 bg-gradient-to-br from-white via-blue-50 to-indigo-50 p-6 shadow-lg shadow-blue-500/10">
+                <div className="flex flex-col gap-4 md:flex-row md:items-start md:justify-between">
+                  <div>
+                    <p className="text-xs font-semibold uppercase tracking-wide text-blue-600">Lifecycle</p>
+                    <h3 className="mt-1 text-2xl font-bold text-gray-900">{formatStatus(editForm.status)}</h3>
+                    <p className="mt-1 text-sm text-gray-500">
+                      Last updated {formatDateTime(selectedTenant?.statusUpdatedAt ?? null)}
+                    </p>
+                    {selectedTenant?.statusNotes && (
+                      <p className="mt-2 rounded-lg bg-blue-100/50 px-3 py-2 text-sm text-blue-800">
+                        “{selectedTenant.statusNotes}”
+                      </p>
+                    )}
+                  </div>
+                  <div className="flex flex-col items-end gap-3">
+                    <span
+                      className={`rounded-full px-3 py-1 text-sm font-semibold ${STATUS_META[editForm.status].className}`}
+                    >
+                      {formatStatus(editForm.status)}
+                    </span>
+                    {previewUrl && (
+                      <Link
+                        href={previewUrl}
+                        target="_blank"
+                        rel="noopener noreferrer"
+                        className="inline-flex items-center gap-2 rounded-full border border-blue-200 bg-white px-3 py-1.5 text-sm font-semibold text-blue-600 shadow-sm transition hover:border-blue-300 hover:bg-blue-50"
+                      >
+                        🌐 Preview storefront
+                      </Link>
+                    )}
+                  </div>
+                </div>
+
+                <div className="mt-6 grid gap-4 md:grid-cols-[240px,1fr]">
+                  <label className="text-sm font-medium text-gray-700">
+                    <span>Status</span>
+                    <select
+                      name="status"
+                      value={editForm.status}
+                      onChange={handleEditSelectChange}
+                      className="mt-1 w-full rounded border border-gray-300 px-3 py-2 text-sm focus:border-blue-500 focus:outline-none focus:ring-2 focus:ring-blue-500/40"
+                    >
+                      {STATUS_OPTIONS.map((option) => (
+                        <option key={option.value} value={option.value}>
+                          {option.label}
+                        </option>
+                      ))}
+                    </select>
+                  </label>
+                  <label className="text-sm font-medium text-gray-700">
+                    <span>Internal status notes</span>
+                    <textarea
+                      name="statusNotes"
+                      value={editForm.statusNotes}
+                      onChange={handleEditChange}
+                      rows={3}
+                      placeholder="Internal notes or reminders for this tenant status."
+                      className="mt-1 w-full rounded border border-gray-300 px-3 py-2 text-sm focus:border-blue-500 focus:outline-none focus:ring-2 focus:ring-blue-500/40"
+                    />
+                  </label>
+                </div>
+                <p className="mt-2 text-xs text-gray-500">
+                  {STATUS_OPTIONS.find((option) => option.value === editForm.status)?.description}
+                </p>
+
+                {statusQuickActions.length > 0 && (
+                  <div className="mt-5 flex flex-wrap gap-2">
+                    {statusQuickActions.map((action) => (
+                      <button
+                        key={action.label}
+                        type="button"
+                        onClick={() => {
+                          if (action.confirm && !confirm(action.confirm)) return;
+                          void updateTenantStatus(action.next);
+                        }}
+                        className="inline-flex items-center gap-2 rounded-lg border border-gray-200 bg-white px-3 py-1.5 text-sm font-semibold text-gray-700 shadow-sm transition hover:border-gray-300 hover:bg-gray-50 hover:shadow"
+                        disabled={editLoading}
+                      >
+                        <span>{action.icon}</span>
+                        {action.label}
+                      </button>
+                    ))}
+                  </div>
+                )}
+              </div>
 
               <div className="grid gap-4 md:grid-cols-2">
                 <label className="text-sm">
@@ -947,6 +1267,61 @@ export default function SuperAdminDashboard({ initialTenants, initialMetrics, ro
                     type="color"
                   />
                 </label>
+              </div>
+
+              <div className="rounded-2xl border border-gray-200 bg-white p-5 shadow-sm">
+                <div className="flex flex-col gap-2 md:flex-row md:items-center md:justify-between">
+                  <div>
+                    <h3 className="text-lg font-semibold text-gray-900">Subscription & Billing</h3>
+                    <p className="text-sm text-gray-500">
+                      Set the SaaS billing plan that super admin uses for this tenant.
+                    </p>
+                  </div>
+                  <div className="text-sm text-gray-600">
+                    Monthly billing:{' '}
+                    <span className="font-semibold text-gray-900">{subscriptionMonthlyFeePreview}</span>
+                    {subscriptionAddonsPreview.length > 0 && (
+                      <span className="ml-1 text-xs text-gray-500">
+                        (+{subscriptionAddonsPreview.length} add-on{subscriptionAddonsPreview.length > 1 ? 's' : ''})
+                      </span>
+                    )}
+                  </div>
+                </div>
+                <div className="mt-4 grid gap-4 md:grid-cols-3">
+                  <label className="text-sm font-medium text-gray-700">
+                    <span>Plan ID</span>
+                    <input
+                      name="subscriptionPlan"
+                      value={editForm.subscriptionPlan}
+                      onChange={handleEditChange}
+                      placeholder="alessa-starter"
+                      className="mt-1 w-full rounded border border-gray-300 px-3 py-2 text-sm focus:border-blue-500 focus:outline-none focus:ring-2 focus:ring-blue-500/40"
+                    />
+                  </label>
+                  <label className="text-sm font-medium text-gray-700">
+                    <span>Monthly Fee (USD)</span>
+                    <input
+                      name="subscriptionMonthlyFee"
+                      value={editForm.subscriptionMonthlyFee}
+                      onChange={handleEditChange}
+                      type="number"
+                      step="0.01"
+                      min="0"
+                      placeholder="30"
+                      className="mt-1 w-full rounded border border-gray-300 px-3 py-2 text-sm focus:border-blue-500 focus:outline-none focus:ring-2 focus:ring-blue-500/40"
+                    />
+                  </label>
+                  <label className="text-sm font-medium text-gray-700 md:col-span-1">
+                    <span>Add-on Services (comma separated)</span>
+                    <input
+                      name="subscriptionAddons"
+                      value={editForm.subscriptionAddons}
+                      onChange={handleEditChange}
+                      placeholder="ada-compliance, premium-support"
+                      className="mt-1 w-full rounded border border-gray-300 px-3 py-2 text-sm focus:border-blue-500 focus:outline-none focus:ring-2 focus:ring-blue-500/40"
+                    />
+                  </label>
+                </div>
               </div>
 
               <div className="grid gap-4 md:grid-cols-2">

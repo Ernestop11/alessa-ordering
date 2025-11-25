@@ -26,15 +26,15 @@ export default function StripeConnectCompletePage() {
           setStatus('success');
           setMessage('Your Stripe account is connected and ready to accept payments!');
 
-          // Redirect to settings after 2 seconds
+          // Redirect to payments page after 2 seconds
           setTimeout(() => {
-            router.push('/admin?tab=settings');
+            router.push('/admin/payments');
           }, 2000);
         } else if (data.connected && data.detailsSubmitted) {
           setStatus('success');
           setMessage('Account connected! Stripe is reviewing your information.');
           setTimeout(() => {
-            router.push('/admin?tab=settings');
+            router.push('/admin/payments');
           }, 2000);
         } else {
           setStatus('error');
@@ -104,10 +104,10 @@ export default function StripeConnectCompletePage() {
             <h1 className="text-xl font-semibold text-gray-900">Something went wrong</h1>
             <p className="mt-2 text-sm text-gray-600">{message}</p>
             <Link
-              href="/admin?tab=settings"
+              href="/admin/payments"
               className="mt-6 inline-block rounded-md bg-blue-600 px-4 py-2 text-sm font-medium text-white hover:bg-blue-700"
             >
-              Go to Settings
+              Go to Payments
             </Link>
           </div>
         )}

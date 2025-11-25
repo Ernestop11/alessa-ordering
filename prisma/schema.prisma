@@ -10,6 +10,15 @@ datasource db {
   url      = env("DATABASE_URL")
 }
 
+enum TenantStatus {
+  PENDING_REVIEW
+  READY_FOR_APPROVAL
+  APPROVED
+  LIVE
+  PAUSED
+  ARCHIVED
+}
+
 model MenuItem {
   id             String        @id @default(uuid())
   tenantId       String
@@ -108,6 +117,12 @@ model Tenant {
   heroSubtitle     String?
   primaryColor     String?           @default("#dc2626")
   secondaryColor   String?           @default("#f59e0b")
+  status           TenantStatus      @default(PENDING_REVIEW)
+  statusNotes      String?
+  statusUpdatedAt  DateTime?         @default(now())
+  subscriptionPlan String?
+  subscriptionMonthlyFee Float       @default(0)
+  subscriptionAddons  String[]       @default([])
   featureFlags     String[]          @default([])
   createdAt        DateTime          @default(now())
   updatedAt        DateTime          @updatedAt
@@ -120,8 +135,10 @@ model Tenant {
   orders           Order[]
   orderItems       OrderItem[]
   integrationLogs  IntegrationLog[]
-    paymentSessions  PaymentSession[]
-  }
+  paymentSessions  PaymentSession[]
+
+  @@index([status])
+}
 
 model TenantSettings {
   id                     String   @id @default(uuid())

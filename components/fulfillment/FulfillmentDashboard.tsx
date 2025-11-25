@@ -92,6 +92,9 @@ export default function FulfillmentDashboard({ initialOrders, feedUrl, scope }: 
   const [notificationError, setNotificationError] = useState<string | null>(null);
   const [notificationsSupported, setNotificationsSupported] = useState(false);
   const [notificationPermission, setNotificationPermission] = useState<NotificationPermission>('default');
+  const [tabletMode, setTabletMode] = useState(false);
+  const [deferredPrompt, setDeferredPrompt] = useState<any>(null);
+  const [isInstallable, setIsInstallable] = useState(false);
   const [alertSettings, setAlertSettings] = useState<AlertSettings>({
     enabled: true,
     volume: 0.7,
@@ -99,6 +102,24 @@ export default function FulfillmentDashboard({ initialOrders, feedUrl, scope }: 
     flashingEnabled: true,
   });
   const playNotification = useAudioNotification();
+
+  // Detect tablet mode
+  useEffect(() => {
+    const checkTabletMode = () => {
+      const isTablet = window.matchMedia('(min-width: 768px) and (max-width: 1024px)').matches;
+      const isLandscape = window.matchMedia('(orientation: landscape)').matches;
+      setTabletMode(isTablet || (window.innerWidth >= 768 && isLandscape));
+    };
+    
+    checkTabletMode();
+    window.addEventListener('resize', checkTabletMode);
+    window.addEventListener('orientationchange', checkTabletMode);
+    
+    return () => {
+      window.removeEventListener('resize', checkTabletMode);
+      window.removeEventListener('orientationchange', checkTabletMode);
+    };
+  }, []);
   const { orders, connected, newOrderCount, ackNewOrders, lastCreatedOrder } = useOrderFeed({
     feedUrl,
     initialOrders,
@@ -123,6 +144,35 @@ export default function FulfillmentDashboard({ initialOrders, feedUrl, scope }: 
     } else {
       setNotificationPermission('denied');
     }
+  }, [isClient]);
+
+  // Handle PWA install prompt
+  useEffect(() => {
+    if (!isClient) return;
+
+    const handleBeforeInstallPrompt = (e: Event) => {
+      e.preventDefault();
+      setDeferredPrompt(e);
+      setIsInstallable(true);
+    };
+
+    const handleAppInstalled = () => {
+      setIsInstallable(false);
+      setDeferredPrompt(null);
+    };
+
+    window.addEventListener('beforeinstallprompt', handleBeforeInstallPrompt);
+    window.addEventListener('appinstalled', handleAppInstalled);
+
+    // Check if already installed
+    if (window.matchMedia('(display-mode: standalone)').matches) {
+      setIsInstallable(false);
+    }
+
+    return () => {
+      window.removeEventListener('beforeinstallprompt', handleBeforeInstallPrompt);
+      window.removeEventListener('appinstalled', handleAppInstalled);
+    };
   }, [isClient]);
 
   useEffect(() => {
@@ -203,42 +253,95 @@ export default function FulfillmentDashboard({ initialOrders, feedUrl, scope }: 
   const handleMarkReady = (order: FulfillmentOrder) => void handleAction(order, READY_TARGET_STATUS);
   const handleComplete = (order: FulfillmentOrder) => void handleAction(order, COMPLETE_TARGET_STATUS);
 
-  const handlePrint = (order: FulfillmentOrder) => {
-    const printable = window.open('', '_blank', 'width=600,height=800');
-    if (!printable) return;
+  const handleCancel = async (order: FulfillmentOrder) => {
+    if (!confirm(`Cancel order ${order.id.slice(-6).toUpperCase()}?`)) return;
+    setBusyOrderId(order.id);
+    try {
+      await patchOrderStatus(order.id, 'cancelled');
+    } catch (err) {
+      console.error('Failed to cancel order', err);
+      setError('Failed to cancel order');
+    } finally {
+      setBusyOrderId(null);
+    }
+  };
 
-    printable.document.write(`
-      <html>
-        <head>
-          <title>Order ${order.id}</title>
-          <style>
-            body { font-family: sans-serif; padding: 16px; }
-            h1 { font-size: 18px; margin-bottom: 8px; }
-            ul { padding-left: 18px; }
-            li { margin-bottom: 6px; }
-          </style>
-        </head>
-        <body>
-          <h1>Order ${order.id}</h1>
-          <p><strong>Status:</strong> ${order.status}</p>
-          <p><strong>Placed:</strong> ${new Date(order.createdAt).toLocaleString()}</p>
-          <p><strong>Customer:</strong> ${order.customerName ?? order.customer?.name ?? 'Guest'}</p>
-          <h2>Items</h2>
-          <ul>
-            ${order.items
-              .map(
-                (item) =>
-                  `<li>${item.quantity} × ${item.menuItemName ?? 'Menu Item'} — $${Number(item.price).toFixed(2)}</li>`,
-              )
-              .join('')}
-          </ul>
-          <p><strong>Total:</strong> $${Number(order.totalAmount ?? 0).toFixed(2)}</p>
-          ${order.notes ? `<p><strong>Notes:</strong> ${order.notes}</p>` : ''}
-          <script>window.print();window.onafterprint = () => window.close();</script>
-        </body>
-      </html>
-    `);
-    printable.document.close();
+  const handleRefund = async (order: FulfillmentOrder) => {
+    if (!confirm(`Refund order ${order.id.slice(-6).toUpperCase()}? This will process a Stripe refund.`)) return;
+    setBusyOrderId(order.id);
+    try {
+      const res = await fetch(`/api/admin/orders/${order.id}/refund`, {
+        method: 'POST',
+      });
+      if (!res.ok) {
+        const error = await res.json();
+        throw new Error(error.error || 'Failed to process refund');
+      }
+      await patchOrderStatus(order.id, 'cancelled');
+    } catch (err: any) {
+      console.error('Failed to refund order', err);
+      setError(err.message || 'Failed to process refund');
+    } finally {
+      setBusyOrderId(null);
+    }
+  };
+
+  const handlePrint = async (order: FulfillmentOrder) => {
+    try {
+      // Try auto-dispatch first
+      const response = await fetch('/api/fulfillment/print', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ orderId: order.id }),
+      });
+
+      if (response.ok) {
+        const result = await response.json();
+        if (result.success) {
+          console.log('[Print] Order sent to printer:', result.jobId);
+          return;
+        }
+      }
+
+      // Fallback to browser print
+      const printable = window.open('', '_blank', 'width=600,height=800');
+      if (!printable) return;
+
+      printable.document.write(`
+        <html>
+          <head>
+            <title>Order ${order.id}</title>
+            <style>
+              body { font-family: sans-serif; padding: 16px; }
+              h1 { font-size: 18px; margin-bottom: 8px; }
+              ul { padding-left: 18px; }
+              li { margin-bottom: 6px; }
+            </style>
+          </head>
+          <body>
+            <h1>Order ${order.id}</h1>
+            <p><strong>Status:</strong> ${order.status}</p>
+            <p><strong>Placed:</strong> ${new Date(order.createdAt).toLocaleString()}</p>
+            <p><strong>Customer:</strong> ${order.customerName ?? order.customer?.name ?? 'Guest'}</p>
+            <h2>Items</h2>
+            <ul>
+              ${order.items
+                .map(
+                  (item) =>
+                    `<li>${item.quantity} × ${item.menuItemName ?? 'Menu Item'} — $${Number(item.price).toFixed(2)}</li>`,
+                )
+                .join('')}
+            </ul>
+            <p><strong>Total:</strong> $${Number(order.totalAmount ?? 0).toFixed(2)}</p>
+            ${order.notes ? `<p><strong>Notes:</strong> ${order.notes}</p>` : ''}
+            <script>window.print();window.onafterprint = () => window.close();</script>
+          </body>
+        </html>
+      `);
+      printable.document.close();
+    } catch (err) {
+      console.error('[Print] Failed to print order:', err);
+    }
   };
 
   const handleEnableNotifications = async () => {
@@ -257,6 +360,18 @@ export default function FulfillmentDashboard({ initialOrders, feedUrl, scope }: 
       console.error(err);
       setNotificationError('Unable to request notification permission.');
     }
+  };
+
+  const handleInstallPWA = async () => {
+    if (!deferredPrompt) return;
+
+    deferredPrompt.prompt();
+    const { outcome } = await deferredPrompt.userChoice;
+
+    if (outcome === 'accepted') {
+      setIsInstallable(false);
+    }
+    setDeferredPrompt(null);
   };
 
   const handleAcknowledge = async (orderId: string) => {
@@ -329,6 +444,19 @@ export default function FulfillmentDashboard({ initialOrders, feedUrl, scope }: 
               {notificationsEnabled ? 'Notifications On' : 'Enable Notifications'}
             </button>
           )}
+          {isInstallable && (
+            <button
+              type="button"
+              onClick={handleInstallPWA}
+              className="inline-flex items-center gap-2 rounded-full border border-blue-200 bg-blue-50 px-3 py-1 text-xs font-semibold text-blue-700 hover:border-blue-300 hover:bg-blue-100"
+              title="Install app for easier access"
+            >
+              <svg className="h-4 w-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 4v16m8-8H4" />
+              </svg>
+              Install App
+            </button>
+          )}
         </div>
       </header>
 
@@ -353,6 +481,9 @@ export default function FulfillmentDashboard({ initialOrders, feedUrl, scope }: 
         onMarkReady={handleMarkReady}
         onComplete={handleComplete}
         onPrint={handlePrint}
+        onCancel={handleCancel}
+        onRefund={handleRefund}
+        tabletMode={tabletMode}
       />
 
       <footer className="rounded-2xl border border-dashed border-gray-300 bg-gray-50 px-4 py-3 text-xs text-gray-500">

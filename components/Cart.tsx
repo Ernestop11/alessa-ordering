@@ -56,6 +56,11 @@ export default function Cart() {
   const [taxQuote, setTaxQuote] = useState<{ amount: number; rate: number; provider: string } | null>(null);
   const [taxQuoteLoading, setTaxQuoteLoading] = useState(false);
   const [taxQuoteError, setTaxQuoteError] = useState<string | null>(null);
+  const [becomeMember, setBecomeMember] = useState(false);
+  
+  // Get tenant theme colors
+  const primaryColor = tenant.primaryColor || "#dc2626";
+  const secondaryColor = tenant.secondaryColor || "#f59e0b";
 
   const subtotal = useMemo(
     () => roundCurrency(items.reduce((sum, item) => sum + item.price * item.quantity, 0)),
@@ -397,8 +402,14 @@ export default function Cart() {
 
       const data = await response.json();
       if (!response.ok || !data.clientSecret) {
+        console.error('[Cart] Payment intent creation failed:', data);
         throw new Error(data.error || "Failed to create Stripe payment intent.");
       }
+
+      console.log('[Cart] Payment intent created successfully:', {
+        hasClientSecret: !!data.clientSecret,
+        paymentIntentId: data.paymentIntentId,
+      });
 
       setClientSecret(data.clientSecret);
       setPaymentIntentId(data.paymentIntentId ?? null);
@@ -445,21 +456,38 @@ export default function Cart() {
       {/* Progress Indicator */}
       {items.length > 0 && (
         <div className="flex items-center gap-2">
-          <div className={`flex h-10 w-10 items-center justify-center rounded-full border-2 font-semibold transition ${
-            checkoutStep === "details"
-              ? "border-blue-600 bg-blue-600 text-white"
-              : "border-green-500 bg-green-500 text-white"
-          }`}>
+          <div 
+            className={`flex h-10 w-10 items-center justify-center rounded-full border-2 font-semibold transition ${
+              checkoutStep === "details"
+                ? "text-white"
+                : "border-green-500 bg-green-500 text-white"
+            }`}
+            style={checkoutStep === "details" ? {
+              borderColor: primaryColor,
+              backgroundColor: primaryColor,
+            } : {}}
+          >
             {checkoutStep === "payment" ? "✓" : "1"}
           </div>
-          <div className={`h-1 flex-1 transition ${
-            checkoutStep === "payment" ? "bg-green-500" : "bg-gray-200"
-          }`}></div>
-          <div className={`flex h-10 w-10 items-center justify-center rounded-full border-2 font-semibold transition ${
-            checkoutStep === "payment"
-              ? "border-blue-600 bg-blue-600 text-white"
-              : "border-gray-300 bg-white text-gray-400"
-          }`}>
+          <div 
+            className={`h-1 flex-1 transition ${
+              checkoutStep === "payment" ? "" : "bg-gray-200"
+            }`}
+            style={checkoutStep === "payment" ? {
+              backgroundColor: primaryColor,
+            } : {}}
+          ></div>
+          <div 
+            className={`flex h-10 w-10 items-center justify-center rounded-full border-2 font-semibold transition ${
+              checkoutStep === "payment"
+                ? "text-white"
+                : "border-gray-300 bg-white text-gray-400"
+            }`}
+            style={checkoutStep === "payment" ? {
+              borderColor: primaryColor,
+              backgroundColor: primaryColor,
+            } : {}}
+          >
             2
           </div>
         </div>
@@ -597,9 +625,14 @@ export default function Cart() {
                     onClick={() => setFulfillmentMethod("pickup")}
                     className={`flex-1 rounded-xl border-2 px-4 py-3 text-sm font-bold transition ${
                       fulfillmentMethod === "pickup"
-                        ? "border-blue-500 bg-blue-50 text-blue-700 shadow-md"
+                        ? "shadow-md"
                         : "border-gray-200 bg-white text-gray-700 hover:border-gray-300"
                     }`}
+                    style={fulfillmentMethod === "pickup" ? {
+                      borderColor: primaryColor,
+                      backgroundColor: `${primaryColor}15`,
+                      color: primaryColor,
+                    } : {}}
                     type="button"
                   >
                     🏃 Pickup
@@ -608,9 +641,14 @@ export default function Cart() {
                     onClick={() => setFulfillmentMethod("delivery")}
                     className={`flex-1 rounded-xl border-2 px-4 py-3 text-sm font-bold transition ${
                       fulfillmentMethod === "delivery"
-                        ? "border-blue-500 bg-blue-50 text-blue-700 shadow-md"
+                        ? "shadow-md"
                         : "border-gray-200 bg-white text-gray-700 hover:border-gray-300"
                     }`}
+                    style={fulfillmentMethod === "delivery" ? {
+                      borderColor: primaryColor,
+                      backgroundColor: `${primaryColor}15`,
+                      color: primaryColor,
+                    } : {}}
                     type="button"
                   >
                     🚗 Delivery
@@ -676,9 +714,14 @@ export default function Cart() {
                       type="button"
                       className={`rounded-xl border-2 px-3 py-2.5 text-sm font-bold transition ${
                         tipSelection === option
-                          ? "border-blue-500 bg-blue-50 text-blue-700 shadow-md"
+                          ? "shadow-md"
                           : "border-gray-200 bg-white text-gray-700 hover:border-gray-300"
                       }`}
+                      style={tipSelection === option ? {
+                        borderColor: primaryColor,
+                        backgroundColor: `${primaryColor}15`,
+                        color: primaryColor,
+                      } : {}}
                     >
                       {option === "custom" ? "Custom" : `${option}%`}
                     </button>
@@ -698,6 +741,38 @@ export default function Cart() {
                   </div>
                 )}
               </div>
+
+              {/* Membership Toggle */}
+              {membershipProgram && (
+                <div 
+                  className="rounded-xl border-2 border-dashed p-4"
+                  style={{
+                    borderColor: `${primaryColor}40`,
+                    backgroundColor: `${primaryColor}08`,
+                  }}
+                >
+                  <label className="flex items-start gap-3 cursor-pointer">
+                    <input
+                      type="checkbox"
+                      checked={becomeMember}
+                      onChange={(e) => setBecomeMember(e.target.checked)}
+                      className="mt-1 h-5 w-5 rounded cursor-pointer"
+                      style={{
+                        accentColor: primaryColor,
+                      }}
+                    />
+                    <div className="flex-1">
+                      <div className="flex items-center gap-2">
+                        <span className="text-lg">🎁</span>
+                        <span className="font-semibold text-gray-900">Become a Member</span>
+                      </div>
+                      <p className="text-xs text-gray-600 mt-1">
+                        Save your info for faster checkout next time. Earn {membershipProgram.pointsPerDollar ? `${membershipProgram.pointsPerDollar} points per $1` : 'points'} on every order! {estimatedPoints && estimatedPoints > 0 && `This order: ${estimatedPoints} points.`}
+                      </p>
+                    </div>
+                  </label>
+                </div>
+              )}
             </section>
           )}
 
@@ -753,23 +828,46 @@ export default function Cart() {
           )}
 
           {checkoutStep === "payment" && clientSecret ? (
-            <div className="space-y-4 rounded-2xl border-2 border-blue-200 bg-blue-50 p-6 shadow-lg">
-              <div className="flex items-center gap-2">
-                <div className="flex h-8 w-8 items-center justify-center rounded-full bg-blue-600 text-white">
+            <div className="space-y-4">
+              <div className="flex items-center gap-3 pb-4 border-b border-gray-200">
+                <div 
+                  className="flex h-10 w-10 items-center justify-center rounded-full text-white text-lg"
+                  style={{
+                    backgroundColor: primaryColor,
+                  }}
+                >
                   🔒
                 </div>
-                <p className="text-sm font-bold text-gray-900">
-                  Secure Payment
-                </p>
+                <div>
+                  <p className="text-base font-bold text-gray-900">
+                    Secure Payment
+                  </p>
+                  <p className="text-xs text-gray-500">
+                    Your payment information is encrypted and secure
+                  </p>
+                </div>
               </div>
-              <p className="text-sm text-gray-700">
-                Enter your payment details below. You will be redirected to a confirmation page once the payment succeeds.
-              </p>
-              <StripeCheckoutWrapper clientSecret={clientSecret} successPath="/order/success" />
+              
+              {/* Payment Form - ALWAYS visible */}
+              <div className="relative">
+                <StripeCheckoutWrapper clientSecret={clientSecret} successPath="/order/success" totalAmount={totalAmount} />
+              </div>
+              
               <button
                 onClick={resetPaymentState}
                 type="button"
-                className="w-full rounded-xl border-2 border-gray-300 bg-white px-4 py-2 text-sm font-semibold text-gray-700 transition hover:border-gray-400 hover:bg-gray-50"
+                className="w-full rounded-lg border-2 bg-white px-4 py-2.5 text-sm font-semibold text-gray-700 transition hover:bg-gray-50"
+                style={{
+                  borderColor: `${primaryColor}40`,
+                }}
+                onMouseEnter={(e) => {
+                  e.currentTarget.style.borderColor = primaryColor;
+                  e.currentTarget.style.backgroundColor = `${primaryColor}08`;
+                }}
+                onMouseLeave={(e) => {
+                  e.currentTarget.style.borderColor = `${primaryColor}40`;
+                  e.currentTarget.style.backgroundColor = 'white';
+                }}
               >
                 ← Back to order details
               </button>
@@ -778,7 +876,21 @@ export default function Cart() {
             <button
               onClick={handleCheckout}
               disabled={loading || items.length === 0 || !isContactValid}
-              className="w-full rounded-2xl bg-gradient-to-r from-blue-600 via-indigo-600 to-purple-600 px-6 py-4 text-base font-bold text-white shadow-2xl shadow-blue-500/40 transition-all hover:scale-105 hover:shadow-blue-500/60 disabled:cursor-not-allowed disabled:opacity-50 disabled:hover:scale-100"
+              className="w-full rounded-lg px-6 py-3 text-sm font-semibold text-white shadow-lg transition-all hover:scale-[1.02] disabled:cursor-not-allowed disabled:opacity-50 disabled:hover:scale-100"
+              style={{
+                backgroundColor: primaryColor,
+                boxShadow: `0 10px 15px -3px ${primaryColor}40, 0 4px 6px -2px ${primaryColor}20`,
+              }}
+              onMouseEnter={(e) => {
+                if (!e.currentTarget.disabled) {
+                  e.currentTarget.style.boxShadow = `0 10px 15px -3px ${primaryColor}60, 0 4px 6px -2px ${primaryColor}40`;
+                }
+              }}
+              onMouseLeave={(e) => {
+                if (!e.currentTarget.disabled) {
+                  e.currentTarget.style.boxShadow = `0 10px 15px -3px ${primaryColor}40, 0 4px 6px -2px ${primaryColor}20`;
+                }
+              }}
             >
               {loading ? (
                 <span className="flex items-center justify-center gap-2">
@@ -795,4 +907,3 @@ export default function Cart() {
     </div>
   );
 }
-

@@ -1,6 +1,21 @@
+'use client';
+
+import { useEffect } from 'react';
+
 export default function AdminLayout({ children }: { children: React.ReactNode }) {
-  // This layout intentionally doesn't enforce authentication so that
-  // the login page (app/admin/login) can render without redirect loops.
-  // Protection is applied at the admin index page (app/admin/page.tsx).
+  useEffect(() => {
+    // Register service worker for PWA support
+    if (typeof window !== 'undefined' && 'serviceWorker' in navigator) {
+      navigator.serviceWorker
+        .register('/service-worker.js')
+        .then((registration) => {
+          console.log('[SW] Service Worker registered:', registration.scope);
+        })
+        .catch((error) => {
+          console.error('[SW] Service Worker registration failed:', error);
+        });
+    }
+  }, []);
+
   return <>{children}</>;
 }

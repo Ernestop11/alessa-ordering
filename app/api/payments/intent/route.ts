@@ -62,6 +62,9 @@ export async function POST(req: Request) {
       amount: derivedAmount,
       currency,
       metadata: intentMetadata,
+      automatic_payment_methods: {
+        enabled: true,
+      },
     };
 
     // Only add application fee and stripe account for Stripe Connect mode

@@ -86,7 +86,7 @@ export async function GET() {
   });
 }
 
-export async function PATCH(req: Request) {
+export async function PUT(req: Request) {
   const session = await getServerSession(authOptions);
   const role = (session?.user as { role?: string } | undefined)?.role;
   if (!session || role !== 'admin') {
@@ -134,6 +134,10 @@ export async function PATCH(req: Request) {
   if (body.minimumOrderValue !== undefined) {
     const minOrder = Number(body.minimumOrderValue);
     settingsData.minimumOrderValue = Number.isFinite(minOrder) ? minOrder : null;
+  }
+
+  if (body.operatingHours !== undefined) {
+    settingsData.operatingHours = body.operatingHours || null;
   }
 
   if (body.isOpen !== undefined) {
@@ -219,6 +223,34 @@ export async function PATCH(req: Request) {
       }
     } else if (typeof body.taxConfig === 'object') {
       integrationsData.taxConfig = body.taxConfig;
+    }
+  }
+
+  // Handle Clover credentials (stored in settings JSONB)
+  if (body.clover !== undefined && typeof body.clover === 'object') {
+    const cloverData = body.clover as { merchantId?: string; apiKey?: string };
+    if (cloverData.merchantId !== undefined) {
+      integrationsData.cloverMerchantId = cloverData.merchantId || null;
+    }
+    if (cloverData.apiKey !== undefined) {
+      integrationsData.cloverApiKey = cloverData.apiKey || null;
+    }
+  }
+
+  // Handle Davo credentials (stored in taxConfig JSONB)
+  if (body.davo !== undefined && typeof body.davo === 'object') {
+    const davoData = body.davo as { accountId?: string; licenseKey?: string; companyCode?: string };
+    const currentTaxConfig = tenant.integrations?.taxConfig as Record<string, any> || {};
+    integrationsData.taxConfig = {
+      ...currentTaxConfig,
+      davo: {
+        accountId: davoData.accountId || currentTaxConfig.davo?.accountId || null,
+        licenseKey: davoData.licenseKey || currentTaxConfig.davo?.licenseKey || null,
+        companyCode: davoData.companyCode || currentTaxConfig.davo?.companyCode || null,
+      },
+    };
+    if (davoData.accountId || davoData.licenseKey) {
+      integrationsData.taxProvider = 'davo';
     }
   }
 

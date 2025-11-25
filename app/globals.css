@@ -96,29 +96,29 @@
   overflow: hidden;
 }
 
-body.high-contrast {
-  background-color: #000;
-  color: #fff;
+html.ada-contrast body {
+  background-color: #ffffff;
+  color: #000000;
 }
 
-body.high-contrast * {
-  color: #fff !important;
-  border-color: rgba(255, 255, 255, 0.6) !important;
+html.ada-contrast body * {
+  color: #000000 !important;
+  border-color: #ff0000 !important;
 }
 
-body.large-text {
-  font-size: 110%;
+html.ada-mode body {
+  font-size: 112%;
 }
 
-body.large-text h1,
-body.large-text h2,
-body.large-text h3 {
-  letter-spacing: 0.02em;
+html.ada-mode button,
+html.ada-mode a {
+  padding-top: 0.9rem !important;
+  padding-bottom: 0.9rem !important;
 }
 
-body.reduced-motion *,
-body.reduced-motion *::before,
-body.reduced-motion *::after {
+html.ada-reduced-motion *,
+html.ada-reduced-motion *::before,
+html.ada-reduced-motion *::after {
   animation: none !important;
   transition: none !important;
   scroll-behavior: auto !important;

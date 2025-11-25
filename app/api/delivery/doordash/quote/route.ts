@@ -1,6 +1,7 @@
 import { NextRequest, NextResponse } from 'next/server';
 import { requireTenant } from '@/lib/tenant';
 import prisma from '@/lib/prisma';
+import { getDoorDashAuthToken } from '@/lib/doordash/jwt';
 
 /**
  * DoorDash Drive API - Delivery Quote
@@ -57,17 +58,16 @@ function formatAddress(address: { street: string; city: string; state: string; z
   return `${address.street}, ${address.city}, ${address.state} ${address.zipCode}`;
 }
 
-// Get DoorDash API credentials
+// Get DoorDash API configuration
 function getDoorDashConfig() {
-  const apiKey = process.env.DOORDASH_API_KEY;
-  const developerId = process.env.DOORDASH_DEVELOPER_ID;
+  const authToken = getDoorDashAuthToken();
   const isSandbox = process.env.DOORDASH_SANDBOX === 'true';
 
-  if (!apiKey || !developerId) {
-    return { enabled: false, apiKey: null, developerId: null, isSandbox: false };
+  if (!authToken) {
+    return { enabled: false, authToken: null, isSandbox: false };
   }
 
-  return { enabled: true, apiKey, developerId, isSandbox };
+  return { enabled: true, authToken, isSandbox };
 }
 
 export async function POST(req: NextRequest) {
@@ -144,7 +144,7 @@ export async function POST(req: NextRequest) {
     const doordashResponse = await fetch('https://openapi.doordash.com/drive/v2/quotes', {
       method: 'POST',
       headers: {
-        'Authorization': `Bearer ${config.apiKey}`,
+        'Authorization': `Bearer ${config.authToken}`,
         'Content-Type': 'application/json',
       },
       body: JSON.stringify(doordashRequest),

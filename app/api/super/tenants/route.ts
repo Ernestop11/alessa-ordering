@@ -3,6 +3,7 @@ import { getServerSession } from 'next-auth';
 import { authOptions } from '@/lib/auth/options';
 import prisma from '@/lib/prisma';
 import type { MenuSectionType } from '@prisma/client';
+import { TenantStatus } from '@prisma/client';
 
 function unauthorized() {
   return NextResponse.json({ error: 'Unauthorized' }, { status: 401 });
@@ -166,7 +167,14 @@ export async function GET() {
       heroImageUrl: tenant.heroImageUrl,
       heroTitle: tenant.heroTitle,
       heroSubtitle: tenant.heroSubtitle,
+      status: tenant.status,
+      statusUpdatedAt: tenant.statusUpdatedAt?.toISOString() ?? null,
+      statusNotes: tenant.statusNotes,
+      subscriptionPlan: tenant.subscriptionPlan,
+      subscriptionMonthlyFee: tenant.subscriptionMonthlyFee,
+      subscriptionAddons: tenant.subscriptionAddons,
       stripeAccountId: tenant.integrations?.stripeAccountId,
+      doorDashStoreId: tenant.integrations?.doorDashStoreId ?? null,
       platformPercentFee: tenant.integrations?.platformPercentFee ?? null,
       platformFlatFee: tenant.integrations?.platformFlatFee ?? null,
       defaultTaxRate: tenant.integrations?.defaultTaxRate ?? null,
@@ -223,6 +231,17 @@ export async function POST(req: Request) {
   const platformFlatFee = body.platformFlatFee ? Number(body.platformFlatFee) : 0.3;
   const defaultTaxRate = body.defaultTaxRate ? Number(body.defaultTaxRate) : 0.0825;
   const deliveryBaseFee = body.deliveryBaseFee ? Number(body.deliveryBaseFee) : 4.99;
+  const requestedStatus = typeof body.status === 'string' ? body.status.trim().toUpperCase() : TenantStatus.PENDING_REVIEW;
+  const status = Object.values(TenantStatus).includes(requestedStatus as TenantStatus)
+    ? (requestedStatus as TenantStatus)
+    : TenantStatus.PENDING_REVIEW;
+  const statusNotes = typeof body.statusNotes === 'string' ? body.statusNotes : null;
+  const subscriptionPlan = typeof body.subscriptionPlan === 'string' ? body.subscriptionPlan : 'alessa-starter';
+  const subscriptionMonthlyFee =
+    body.subscriptionMonthlyFee !== undefined ? Number(body.subscriptionMonthlyFee) || 0 : 0;
+  const subscriptionAddons = Array.isArray(body.subscriptionAddons)
+    ? body.subscriptionAddons.map((addon: unknown) => String(addon))
+    : [];
 
   const tenant = await prisma.tenant.create({
     data: {
@@ -241,6 +260,11 @@ export async function POST(req: Request) {
       heroSubtitle: body.heroSubtitle || body.tagline || 'Order direct for pickup or delivery.',
       primaryColor,
       secondaryColor,
+      status,
+      statusNotes,
+      subscriptionPlan,
+      subscriptionMonthlyFee,
+      subscriptionAddons,
       featureFlags: [],
       settings: {
         create: {
@@ -310,6 +334,7 @@ export async function POST(req: Request) {
     id: tenant.id,
     name: tenant.name,
     slug: tenant.slug,
+    status: tenant.status,
     stripeAccountId: tenant.integrations?.stripeAccountId || null,
     autoPrintOrders: tenant.integrations?.autoPrintOrders ?? false,
   });
@@ -349,6 +374,23 @@ export async function PATCH(req: Request) {
   if (body.heroSubtitle !== undefined) tenantData.heroSubtitle = body.heroSubtitle || null;
   if (body.primaryColor !== undefined) tenantData.primaryColor = body.primaryColor || null;
   if (body.secondaryColor !== undefined) tenantData.secondaryColor = body.secondaryColor || null;
+  if (body.status !== undefined) {
+    const requestedStatus = String(body.status).trim().toUpperCase();
+    if (!Object.values(TenantStatus).includes(requestedStatus as TenantStatus)) {
+      return NextResponse.json({ error: 'Invalid status value' }, { status: 400 });
+    }
+    tenantData.status = requestedStatus as TenantStatus;
+    tenantData.statusUpdatedAt = new Date();
+  }
+  if (body.statusNotes !== undefined) tenantData.statusNotes = body.statusNotes || null;
+  if (body.subscriptionPlan !== undefined) tenantData.subscriptionPlan = body.subscriptionPlan || null;
+  if (body.subscriptionMonthlyFee !== undefined)
+    tenantData.subscriptionMonthlyFee = Number(body.subscriptionMonthlyFee) || 0;
+  if (body.subscriptionAddons !== undefined) {
+    tenantData.subscriptionAddons = Array.isArray(body.subscriptionAddons)
+      ? body.subscriptionAddons.map((addon: unknown) => String(addon))
+      : [];
+  }
 
   if (body.slug !== undefined) {
     const newSlug = slugify(body.slug);
@@ -417,11 +459,18 @@ export async function PATCH(req: Request) {
     id: updated.id,
     name: updated.name,
     slug: updated.slug,
+    status: updated.status,
+    statusUpdatedAt: updated.statusUpdatedAt?.toISOString() ?? null,
+    statusNotes: updated.statusNotes,
+    subscriptionPlan: updated.subscriptionPlan,
+    subscriptionMonthlyFee: updated.subscriptionMonthlyFee,
+    subscriptionAddons: updated.subscriptionAddons,
     contactEmail: updated.contactEmail,
     contactPhone: updated.contactPhone,
     primaryColor: updated.primaryColor,
     secondaryColor: updated.secondaryColor,
     stripeAccountId: updated.integrations?.stripeAccountId ?? null,
+    doorDashStoreId: updated.integrations?.doorDashStoreId ?? null,
     platformPercentFee: updated.integrations?.platformPercentFee ?? null,
     platformFlatFee: updated.integrations?.platformFlatFee ?? null,
     defaultTaxRate: updated.integrations?.defaultTaxRate ?? null,

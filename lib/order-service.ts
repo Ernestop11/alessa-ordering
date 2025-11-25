@@ -3,6 +3,7 @@ import { emitOrderEvent } from './order-events';
 import { serializeOrder } from './order-serializer';
 import { autoPrintOrder } from './printer-dispatcher';
 import { calculateOrderTax } from './tax/calculate-tax';
+import { notifyFulfillmentTeam } from './notifications/fulfillment';
 
 export interface OrderItemPayload {
   menuItemId: string;
@@ -48,6 +49,9 @@ export interface OrderPayload {
 interface TenantWithRelations {
   id: string;
   slug: string;
+  name?: string;
+  contactEmail?: string | null;
+  contactPhone?: string | null;
   country?: string | null;
   state?: string | null;
   city?: string | null;
@@ -262,6 +266,8 @@ export async function createOrderFromPayload({
           id: true,
           name: true,
           slug: true,
+          contactEmail: true,
+          contactPhone: true,
           primaryColor: true,
           secondaryColor: true,
         },
@@ -287,6 +293,84 @@ export async function createOrderFromPayload({
   void autoPrintOrder(serialized, { reason: 'order.created' }).catch((error) => {
     console.error('[printer] Auto-print dispatch failed', error);
   });
+
+  void (async () => {
+    try {
+      const integration = await prisma.tenantIntegration.findUnique({
+        where: { tenantId: tenant.id },
+        select: {
+          fulfillmentNotificationsEnabled: true,
+        },
+      });
+
+      if (integration?.fulfillmentNotificationsEnabled === false) {
+        return;
+      }
+
+      const tenantContact = await prisma.tenant.findUnique({
+        where: { id: tenant.id },
+        select: {
+          name: true,
+          contactEmail: true,
+          contactPhone: true,
+        },
+      });
+
+      if (!tenantContact) return;
+
+      const targets = {
+        email: tenantContact.contactEmail ?? null,
+        phone: tenantContact.contactPhone ?? null,
+      };
+
+      if (!targets.email && !targets.phone) return;
+
+      const results = await notifyFulfillmentTeam({
+        tenantName: tenantContact.name ?? tenant.slug,
+        targets,
+        order: serialized,
+      });
+
+      await prisma.integrationLog.create({
+        data: {
+          tenantId: tenant.id,
+          source: 'fulfillment-notify',
+          level:
+            (results.email?.ok ?? true) && (results.sms?.ok ?? true)
+              ? 'info'
+              : 'error',
+          message:
+            (results.email?.ok ?? true) && (results.sms?.ok ?? true)
+              ? `Sent fulfillment notifications for order ${serialized.id.slice(-6)}.`
+              : `One or more fulfillment notifications failed for order ${serialized.id.slice(-6)}.`,
+          payload: {
+            orderId: serialized.id,
+            email: results.email
+              ? {
+                  ok: results.email.ok,
+                  reason:
+                    'reason' in results.email && !results.email.ok
+                      ? results.email.reason
+                      : undefined,
+                }
+              : null,
+            sms: results.sms
+              ? {
+                  ok: results.sms.ok,
+                  reason:
+                    'reason' in results.sms && !results.sms.ok
+                      ? results.sms.reason
+                      : undefined,
+                }
+              : null,
+          },
+        },
+      });
+    } catch (error) {
+      console.error('[notifications] fulfillment dispatch failed', error);
+    }
+  })();
+
   emitOrderEvent({ type: 'order.created', order: serialized });
   return serialized;
 }

@@ -1,11 +1,28 @@
 import prisma from '@/lib/prisma';
 import { requireTenant } from '@/lib/tenant';
 import OrderPageClient, { type OrderMenuSection, type OrderMenuItem } from '../../components/order/OrderPageClient';
+import type { Metadata } from 'next';
 
 // Force dynamic rendering to ensure tenant data is always fresh
 export const dynamic = 'force-dynamic'
 export const revalidate = 0 // Disable all caching
 export const fetchCache = 'force-no-store' // Disable fetch caching
+
+export async function generateMetadata(): Promise<Metadata> {
+  const tenant = await requireTenant();
+
+  if (tenant.slug === 'lasreinas') {
+    return {
+      title: 'Las Reinas Colusa - Order Authentic Quesabirrias Online',
+      description: 'Order authentic quesabirrias, tacos, and Mexican cuisine from Las Reinas Colusa. Fast delivery in Colusa, CA. Family recipes made fresh daily.',
+    };
+  }
+
+  return {
+    title: `${tenant.name} - Order Online`,
+    description: `Order from ${tenant.name}. Fast delivery and pickup available.`,
+  };
+}
 
 async function getMenuSections(tenantId: string): Promise<OrderMenuSection[]> {
   // Helper to add cache-busting timestamps

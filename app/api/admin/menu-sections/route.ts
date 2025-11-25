@@ -73,7 +73,7 @@ export async function POST(req: Request) {
   return json(section, { status: 201 });
 }
 
-export async function PATCH(req: Request) {
+export async function PUT(req: Request) {
   const session = await getServerSession(authOptions);
   const role = (session?.user as { role?: string } | undefined)?.role;
   if (!session || role !== 'admin') return unauthorized();

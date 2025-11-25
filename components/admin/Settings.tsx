@@ -3,6 +3,7 @@
 import { useEffect, useState } from 'react';
 import { useRouter } from 'next/navigation';
 import StripeConnectButton from './StripeConnectButton';
+import DoorDashConnectButton from './DoorDashConnectButton';
 
 interface SettingsForm {
   restaurantName: string;
@@ -1573,27 +1574,8 @@ export default function Settings() {
           </div>
 
           {/* DoorDash Integration */}
-          <div className="mb-6 rounded-lg border-2 border-gray-200 bg-white p-6">
-            <div className="flex items-start justify-between">
-              <div className="flex items-center gap-4">
-                <div className="flex h-12 w-12 items-center justify-center rounded-lg bg-red-100">
-                  <span className="text-2xl">🚗</span>
-                </div>
-                <div>
-                  <h4 className="text-sm font-semibold text-gray-900">DoorDash Delivery</h4>
-                  <p className="text-xs text-gray-500 mt-1">
-                    Integrate DoorDash for delivery fulfillment
-                  </p>
-                  <p className="text-xs text-amber-600 mt-1 font-medium">⚠ Not Connected</p>
-                </div>
-              </div>
-              <button
-                type="button"
-                className="inline-flex items-center rounded-md border border-transparent bg-red-600 px-4 py-2 text-sm font-medium text-white shadow-sm hover:bg-red-700 focus:outline-none focus:ring-2 focus:ring-red-500 focus:ring-offset-2"
-              >
-                Connect DoorDash
-              </button>
-            </div>
+          <div className="mb-6">
+            <DoorDashConnectButton />
           </div>
 
           {/* Printer Integration */}

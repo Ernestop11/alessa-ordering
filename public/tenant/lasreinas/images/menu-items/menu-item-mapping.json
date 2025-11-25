@@ -1,0 +1,15 @@
+{
+  "tenant": "Las Reinas Colusa",
+  "slug": "lasreinas",
+  "updatedAt": "2025-11-25T01:23:18.361Z",
+  "mappings": [
+    {
+      "itemName": "Al Pastor Taco",
+      "imagePath": "/tenant/lasreinas/images/menu-items/tacos.jpg"
+    },
+    {
+      "itemName": "Carne Asada Taco",
+      "imagePath": "/tenant/lasreinas/images/menu-items/tacos.jpg"
+    }
+  ]
+}

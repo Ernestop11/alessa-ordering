@@ -153,15 +153,28 @@ export default function FeaturedCarousel({
 
               <div className="grid gap-6 md:grid-cols-2">
                 {/* Image Section */}
-                <div className="relative h-64 overflow-hidden md:h-96">
-                  <Image
-                    src={currentItem.displayImage || currentItem.image || '/placeholder.jpg'}
-                    alt={currentItem.name}
-                    fill
-                    className="object-cover transition-transform duration-500 group-hover:scale-110"
-                    sizes="(min-width: 768px) 50vw, 100vw"
-                    priority
-                  />
+                <div className="relative h-64 overflow-hidden md:h-96 bg-gradient-to-br from-gray-800 to-gray-900">
+                  {(currentItem.displayImage || currentItem.image) && (currentItem.displayImage || currentItem.image)?.startsWith('http') ? (
+                    <img
+                      src={currentItem.displayImage || currentItem.image || '/placeholder.jpg'}
+                      alt={currentItem.name}
+                      className="h-full w-full object-cover transition-transform duration-500 group-hover:scale-110"
+                      onError={(e) => {
+                        const target = e.target as HTMLImageElement;
+                        target.src = 'https://images.unsplash.com/photo-1551504734-5ee1c4a1479b?auto=format&fit=crop&w=1400&q=80';
+                      }}
+                    />
+                  ) : (
+                    <Image
+                      src={currentItem.displayImage || currentItem.image || '/placeholder.jpg'}
+                      alt={currentItem.name}
+                      fill
+                      className="object-cover transition-transform duration-500 group-hover:scale-110"
+                      sizes="(min-width: 768px) 50vw, 100vw"
+                      priority
+                      unoptimized={(currentItem.displayImage || currentItem.image)?.startsWith('http') || (currentItem.displayImage || currentItem.image)?.startsWith('/tenant/')}
+                    />
+                  )}
                   <div className="absolute inset-0 bg-gradient-to-t from-black/60 via-black/20 to-transparent" />
                 </div>
 

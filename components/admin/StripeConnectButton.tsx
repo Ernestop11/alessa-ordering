@@ -100,6 +100,17 @@ export default function StripeConnectButton() {
                 </svg>
               </div>
               <h3 className="font-semibold text-green-900">Stripe Connected</h3>
+              <span className="inline-flex items-center gap-1 rounded-full bg-green-100 px-2 py-0.5 text-xs font-medium text-green-700">
+                <svg className="h-3 w-3" fill="currentColor" viewBox="0 0 8 8">
+                  <circle cx="4" cy="4" r="3" />
+                </svg>
+                Connected
+              </span>
+              {status.chargesEnabled && (
+                <span className="inline-flex items-center rounded-full bg-blue-100 px-2 py-0.5 text-xs font-medium text-blue-700">
+                  Payments Active
+                </span>
+              )}
             </div>
 
             <div className="mt-3 space-y-2 text-sm">
@@ -139,14 +150,28 @@ export default function StripeConnectButton() {
             <p className="mt-3 text-xs text-green-600">
               ✓ You&apos;re ready to accept payments from customers!
             </p>
-          </div>
 
-          <button
-            onClick={fetchStatus}
-            className="text-sm text-green-700 hover:text-green-800 underline"
-          >
-            Refresh
-          </button>
+            <div className="mt-4 flex items-center gap-3">
+              <a
+                href={`https://dashboard.stripe.com/${status.accountId}`}
+                target="_blank"
+                rel="noopener noreferrer"
+                className="inline-flex items-center gap-2 rounded-md bg-green-600 px-3 py-1.5 text-sm font-medium text-white hover:bg-green-700"
+              >
+                <svg className="h-4 w-4" fill="currentColor" viewBox="0 0 20 20">
+                  <path d="M11 3a1 1 0 100 2h2.586l-6.293 6.293a1 1 0 101.414 1.414L15 6.414V9a1 1 0 102 0V4a1 1 0 00-1-1h-5z" />
+                  <path d="M5 5a2 2 0 00-2 2v8a2 2 0 002 2h8a2 2 0 002-2v-3a1 1 0 10-2 0v3H5V7h3a1 1 0 000-2H5z" />
+                </svg>
+                View Stripe Dashboard
+              </a>
+              <button
+                onClick={fetchStatus}
+                className="text-sm text-green-700 hover:text-green-800 underline"
+              >
+                Refresh Status
+              </button>
+            </div>
+          </div>
         </div>
       </div>
     );
@@ -173,29 +198,38 @@ export default function StripeConnectButton() {
             </svg>
           </div>
           <div className="flex-1">
-            <h3 className="font-semibold text-yellow-900">Onboarding Incomplete</h3>
+            <div className="flex items-center gap-2">
+              <h3 className="font-semibold text-yellow-900">Onboarding Incomplete</h3>
+              <span className="inline-flex items-center gap-1 rounded-full bg-yellow-100 px-2 py-0.5 text-xs font-medium text-yellow-700">
+                <svg className="h-3 w-3" fill="currentColor" viewBox="0 0 8 8">
+                  <circle cx="4" cy="4" r="3" />
+                </svg>
+                Pending
+              </span>
+            </div>
             <p className="mt-1 text-sm text-yellow-700">
               {status.detailsSubmitted
                 ? 'Stripe is reviewing your information. This usually takes 1-2 business days.'
                 : "You started the onboarding process but haven't finished yet."}
             </p>
 
-            {!status.detailsSubmitted && (
+            <div className="mt-4 flex items-center gap-3">
+              {!status.detailsSubmitted && (
+                <button
+                  onClick={handleConnect}
+                  disabled={connecting}
+                  className="inline-flex items-center gap-2 rounded-md bg-yellow-600 px-4 py-2 text-sm font-medium text-white hover:bg-yellow-700 disabled:opacity-50"
+                >
+                  {connecting ? 'Loading...' : 'Resume Onboarding'}
+                </button>
+              )}
               <button
-                onClick={handleConnect}
-                disabled={connecting}
-                className="mt-4 rounded-md bg-yellow-600 px-4 py-2 text-sm font-medium text-white hover:bg-yellow-700 disabled:opacity-50"
+                onClick={fetchStatus}
+                className="text-sm text-yellow-700 hover:text-yellow-800 underline"
               >
-                {connecting ? 'Loading...' : 'Continue Onboarding'}
+                Refresh Status
               </button>
-            )}
-
-            <button
-              onClick={fetchStatus}
-              className="ml-3 mt-4 text-sm text-yellow-700 hover:text-yellow-800 underline"
-            >
-              Refresh Status
-            </button>
+            </div>
           </div>
         </div>
       </div>
@@ -212,7 +246,15 @@ export default function StripeConnectButton() {
           </svg>
         </div>
         <div className="flex-1">
-          <h3 className="font-semibold text-blue-900">Connect Your Stripe Account</h3>
+          <div className="flex items-center gap-2">
+            <h3 className="font-semibold text-blue-900">Connect Your Stripe Account</h3>
+            <span className="inline-flex items-center gap-1 rounded-full bg-gray-100 px-2 py-0.5 text-xs font-medium text-gray-600">
+              <svg className="h-3 w-3" fill="currentColor" viewBox="0 0 8 8">
+                <circle cx="4" cy="4" r="3" />
+              </svg>
+              Not Connected
+            </span>
+          </div>
           <p className="mt-1 text-sm text-blue-700">
             Connect your Stripe account to receive payments directly from customers. Your funds
             will be automatically deposited to your bank account.
