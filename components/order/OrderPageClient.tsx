@@ -1995,7 +1995,6 @@ export default function OrderPageClient({
                 </button>
               </div>
             </div>
-            )}
 
             {/* Quick Inquiry Form */}
             <form onSubmit={handleCateringSubmit} className="space-y-4 rounded-2xl border-2 border-white/20 bg-white/5 p-6">
