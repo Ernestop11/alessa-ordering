@@ -30,8 +30,9 @@ export function CatalogPageClient({ sections, featuredItems = [], tenantSlug }: 
   const searchParams = useSearchParams();
   const router = useRouter();
 
-  const availableSections = useMemo(() => sections.filter((section) => section.items.length > 0), [sections]);
-  const initialSection = availableSections[0]?.id ?? sections[0]?.id ?? '';
+  const safeSections = useMemo(() => Array.isArray(sections) ? sections : [], [sections]);
+  const availableSections = useMemo(() => safeSections.filter((section) => section.items.length > 0), [safeSections]);
+  const initialSection = availableSections[0]?.id ?? safeSections[0]?.id ?? '';
 
   // Initialize from URL params or defaults
   const [activeCategoryId, setActiveCategoryId] = useState(() => {
@@ -114,8 +115,8 @@ export function CatalogPageClient({ sections, featuredItems = [], tenantSlug }: 
   }, [accessibilityState]);
 
   const activeSection = useMemo(
-    () => sections.find((section) => section.id === activeCategoryId) ?? sections[0],
-    [sections, activeCategoryId],
+    () => safeSections.find((section) => section.id === activeCategoryId) ?? safeSections[0],
+    [safeSections, activeCategoryId],
   );
 
   const highlightItem = useMemo<OrderMenuItem | null>(() => {
