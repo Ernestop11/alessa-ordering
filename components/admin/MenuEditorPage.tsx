@@ -37,6 +37,7 @@ interface CateringSection {
   name: string;
   description: string | null;
   position: number;
+  imageUrl?: string | null;
   _count?: { packages: number };
 }
 
@@ -772,6 +773,53 @@ export default function MenuEditorPage() {
                     rows={3}
                     placeholder="Brief description of this section"
                   />
+                </div>
+                <div>
+                  <label className="block text-sm font-medium text-gray-700">Hero Image (optional)</label>
+                  <div className="mt-1 space-y-2">
+                    {editingCateringSection.imageUrl && (
+                      <div className="relative w-full h-32 border border-gray-300 rounded-md overflow-hidden">
+                        <img
+                          src={editingCateringSection.imageUrl}
+                          alt="Section hero"
+                          className="w-full h-full object-cover"
+                        />
+                        <button
+                          type="button"
+                          onClick={() => setEditingCateringSection({ ...editingCateringSection, imageUrl: null })}
+                          className="absolute top-2 right-2 bg-red-600 text-white rounded-full p-1 hover:bg-red-700"
+                        >
+                          <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                            <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M6 18L18 6M6 6l12 12" />
+                          </svg>
+                        </button>
+                      </div>
+                    )}
+                    <input
+                      type="file"
+                      accept="image/*"
+                      onChange={async (e) => {
+                        const file = e.target.files?.[0];
+                        if (!file) return;
+                        const formData = new FormData();
+                        formData.append('file', file);
+                        try {
+                          const res = await fetch('/api/admin/assets/upload', {
+                            method: 'POST',
+                            body: formData,
+                          });
+                          const data = await res.json();
+                          if (data.url) {
+                            setEditingCateringSection({ ...editingCateringSection, imageUrl: data.url });
+                          }
+                        } catch (err) {
+                          console.error('Failed to upload image', err);
+                        }
+                      }}
+                      className="block w-full text-sm text-gray-500 file:mr-4 file:py-2 file:px-4 file:rounded-md file:border-0 file:text-sm file:font-semibold file:bg-orange-50 file:text-orange-700 hover:file:bg-orange-100"
+                    />
+                    <p className="text-xs text-gray-500">Recommended: 1200x400px landscape image for hero display</p>
+                  </div>
                 </div>
                 <div className="flex gap-2">
                   <button

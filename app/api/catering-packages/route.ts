@@ -5,15 +5,20 @@ import { requireTenant } from '@/lib/tenant';
 export async function GET() {
   try {
     const tenant = await requireTenant();
-    const packages = await prisma.cateringPackage.findMany({
-      where: {
-        tenantId: tenant.id,
-        available: true,
+
+    // Fetch sections with their packages
+    const sections = await prisma.cateringSection.findMany({
+      where: { tenantId: tenant.id },
+      orderBy: { position: 'asc' },
+      include: {
+        packages: {
+          where: { available: true },
+          orderBy: { displayOrder: 'asc' },
+        },
       },
-      orderBy: { displayOrder: 'asc' },
     });
 
-    return NextResponse.json(packages);
+    return NextResponse.json({ sections });
   } catch (err) {
     console.error('Failed to fetch catering packages', err);
     return NextResponse.json({ error: 'Failed to fetch catering packages' }, { status: 500 });

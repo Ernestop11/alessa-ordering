@@ -19,16 +19,30 @@ interface CateringPackage {
   available: boolean;
 }
 
+interface CateringSection {
+  id: string;
+  name: string;
+  description: string | null;
+  imageUrl: string | null;
+  packages: CateringPackage[];
+}
+
 export function CateringModal({ open, onClose }: CateringModalProps) {
   const formId = useId();
   const tenant = useTenantTheme();
+  const [sections, setSections] = useState<CateringSection[]>([]);
   const [packages, setPackages] = useState<CateringPackage[]>([]);
 
   useEffect(() => {
     if (open) {
       fetch('/api/catering-packages')
         .then((res) => res.json())
-        .then((data) => setPackages(data))
+        .then((data) => {
+          setSections(data.sections || []);
+          // Flatten all packages for the form dropdown
+          const allPackages = (data.sections || []).flatMap((s: CateringSection) => s.packages);
+          setPackages(allPackages);
+        })
         .catch((err) => console.error('Failed to fetch catering packages', err));
     }
   }, [open]);
@@ -37,7 +51,7 @@ export function CateringModal({ open, onClose }: CateringModalProps) {
 
   return (
     <div className="fixed inset-0 z-50 flex items-end justify-center bg-black/80 backdrop-blur-md sm:items-center">
-      <div className="w-full max-w-3xl rounded-t-3xl border border-[#ff0000]/50 bg-white text-center text-[#2b0909] shadow-2xl sm:rounded-3xl">
+      <div className="w-full max-w-6xl rounded-t-3xl border border-[#ff0000]/50 bg-white text-center text-[#2b0909] shadow-2xl sm:rounded-3xl max-h-[90vh] overflow-y-auto">
         <div className="flex items-center justify-between border-b border-[#ff0000]/20 px-6 py-4">
           <div className="mx-auto space-y-1">
             <p className="text-xs font-semibold uppercase tracking-[0.4em] text-[#cc0000]">Las Reinas Catering</p>
@@ -48,21 +62,56 @@ export function CateringModal({ open, onClose }: CateringModalProps) {
           </button>
         </div>
 
-        <div className="grid gap-4 border-b border-[#ff0000]/15 p-6 sm:grid-cols-3">
-          {packages.map((pkg) => (
-            <div key={pkg.id} className="rounded-2xl border border-[#ff0000]/50 bg-[#fff6f6] overflow-hidden">
-              {pkg.image && (
-                <img
-                  src={pkg.image}
-                  alt={pkg.name}
-                  className="w-full h-40 object-cover"
-                />
+        {/* Display sections with hero images */}
+        <div className="space-y-8 p-6">
+          {sections.map((section) => (
+            <div key={section.id} className="space-y-4">
+              {/* Section Header with Hero Image */}
+              {section.imageUrl && (
+                <div className="relative w-full h-48 rounded-2xl overflow-hidden border border-[#ff0000]/30">
+                  <img
+                    src={section.imageUrl}
+                    alt={section.name}
+                    className="w-full h-full object-cover"
+                  />
+                  <div className="absolute inset-0 bg-gradient-to-t from-black/60 to-transparent flex items-end">
+                    <div className="p-6 text-left w-full">
+                      <h3 className="text-2xl font-black text-white mb-1">{section.name}</h3>
+                      {section.description && (
+                        <p className="text-sm text-white/90">{section.description}</p>
+                      )}
+                    </div>
+                  </div>
+                </div>
               )}
-              <div className="p-6 text-center">
-                {pkg.badge && <p className="text-[11px] uppercase tracking-[0.4em] text-[#cc0000]">{pkg.badge}</p>}
-                <h3 className="text-lg font-semibold text-[#1f0606]">{pkg.name}</h3>
-                <p className="text-sm text-[#5c1a1a]">{pkg.description}</p>
-                <p className="mt-3 text-2xl font-black text-[#ff0000]">${pkg.pricePerGuest.toFixed(2)} / guest</p>
+              {!section.imageUrl && (
+                <div className="text-left">
+                  <h3 className="text-2xl font-black text-[#cc0000] mb-1">{section.name}</h3>
+                  {section.description && (
+                    <p className="text-sm text-[#5c1a1a]">{section.description}</p>
+                  )}
+                </div>
+              )}
+
+              {/* Packages Grid */}
+              <div className="grid gap-4 sm:grid-cols-2 lg:grid-cols-3">
+                {section.packages.map((pkg) => (
+                  <div key={pkg.id} className="rounded-2xl border border-[#ff0000]/50 bg-[#fff6f6] overflow-hidden">
+                    {pkg.image && (
+                      <img
+                        src={pkg.image}
+                        alt={pkg.name}
+                        className="w-full h-40 object-cover"
+                      />
+                    )}
+                    <div className="p-6 text-center">
+                      {pkg.badge && <p className="text-[11px] uppercase tracking-[0.4em] text-[#cc0000]">{pkg.badge}</p>}
+                      <h4 className="text-lg font-semibold text-[#1f0606]">{pkg.name}</h4>
+                      <p className="text-sm text-[#5c1a1a]">{pkg.description}</p>
+                      <p className="mt-3 text-2xl font-black text-[#ff0000]">${pkg.pricePerGuest.toFixed(2)} / guest</p>
+                    </div>
+                  </div>
+                ))}
               </div>
             </div>
           ))}
@@ -70,7 +119,7 @@ export function CateringModal({ open, onClose }: CateringModalProps) {
 
         <form
           aria-labelledby={`${formId}-label`}
-          className="grid gap-3 p-6 text-center sm:grid-cols-2"
+          className="grid gap-3 p-6 text-center sm:grid-cols-2 border-t border-[#ff0000]/15"
         >
           <div className="sm:col-span-2">
             <p id={`${formId}-label`} className="text-xs uppercase tracking-[0.4em] text-[#cc0000]">

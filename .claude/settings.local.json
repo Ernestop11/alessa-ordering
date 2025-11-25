@@ -33,7 +33,8 @@
       "Bash(ssh root@77.243.85.8:*)",
       "Bash(npx prisma db push:*)",
       "Bash(git reset:*)",
-      "Bash(npx prisma:*)"
+      "Bash(npx prisma:*)",
+      "Bash(node scripts/migrate-catering-sections.mjs:*)"
     ],
     "deny": [],
     "ask": []
