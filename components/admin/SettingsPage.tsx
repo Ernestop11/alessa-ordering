@@ -33,6 +33,7 @@ const DAYS = ['monday', 'tuesday', 'wednesday', 'thursday', 'friday', 'saturday'
 export default function SettingsPage({ tenant }: SettingsPageProps) {
   const [formData, setFormData] = useState({
     restaurantName: tenant.name,
+    logoUrl: (tenant as any).logoUrl || '',
     contactEmail: tenant.contactEmail || '',
     contactPhone: tenant.contactPhone || '',
     addressLine1: tenant.addressLine1 || '',
@@ -80,6 +81,7 @@ export default function SettingsPage({ tenant }: SettingsPageProps) {
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({
           name: formData.restaurantName,
+          logoUrl: formData.logoUrl,
           contactEmail: formData.contactEmail,
           contactPhone: formData.contactPhone,
           addressLine1: formData.addressLine1,
@@ -148,6 +150,52 @@ export default function SettingsPage({ tenant }: SettingsPageProps) {
                     className="mt-1 block w-full border-gray-300 rounded-md shadow-sm focus:ring-blue-500 focus:border-blue-500"
                     required
                   />
+                </div>
+                <div>
+                  <label className="block text-sm font-medium text-gray-700 mb-2">Restaurant Logo</label>
+                  <div className="flex gap-2 items-start">
+                    <input
+                      type="text"
+                      value={formData.logoUrl}
+                      onChange={(e) => setFormData({ ...formData, logoUrl: e.target.value })}
+                      className="flex-1 border-gray-300 rounded-md shadow-sm focus:ring-blue-500 focus:border-blue-500"
+                      placeholder="https://... or upload logo"
+                    />
+                    <label className="inline-flex items-center px-4 py-2 border border-gray-300 rounded-md shadow-sm text-sm font-medium text-gray-700 bg-white hover:bg-gray-50 cursor-pointer">
+                      <input
+                        type="file"
+                        accept="image/*"
+                        className="hidden"
+                        onChange={async (e) => {
+                          const file = e.target.files?.[0];
+                          if (!file) return;
+                          const formDataObj = new FormData();
+                          formDataObj.append('file', file);
+                          try {
+                            const res = await fetch('/api/admin/assets/upload', {
+                              method: 'POST',
+                              body: formDataObj,
+                            });
+                            const data = await res.json();
+                            if (data.url) {
+                              setFormData((prev) => ({ ...prev, logoUrl: data.url }));
+                            }
+                          } catch (err) {
+                            console.error('Failed to upload logo', err);
+                            alert('Failed to upload logo');
+                          }
+                        }}
+                      />
+                      Upload Logo
+                    </label>
+                  </div>
+                  {formData.logoUrl && (
+                    <img
+                      src={formData.logoUrl}
+                      alt="Logo Preview"
+                      className="mt-2 h-20 w-20 object-contain rounded border border-gray-300 bg-white p-2"
+                    />
+                  )}
                 </div>
                 <div className="grid grid-cols-2 gap-4">
                   <div>

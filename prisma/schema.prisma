@@ -20,23 +20,25 @@ enum TenantStatus {
 }
 
 model MenuItem {
-  id             String        @id @default(uuid())
-  tenantId       String
-  menuSectionId  String?
-  name           String
-  description    String
-  price          Float
-  category       String        @default("general")
-  image          String?
-  gallery        Json?
-  available      Boolean       @default(true)
-  isFeatured     Boolean       @default(false)
-  tags           String[]      @default([])
-  createdAt      DateTime      @default(now())
-  updatedAt      DateTime      @updatedAt
-  tenant         Tenant        @relation(fields: [tenantId], references: [id], onDelete: Cascade)
-  section        MenuSection?  @relation(fields: [menuSectionId], references: [id], onDelete: SetNull)
-  orders         OrderItem[]
+  id                      String        @id @default(uuid())
+  tenantId                String
+  menuSectionId           String?
+  name                    String
+  description             String
+  price                   Float
+  category                String        @default("general")
+  image                   String?
+  gallery                 Json?
+  available               Boolean       @default(true)
+  isFeatured              Boolean       @default(false)
+  tags                    String[]      @default([])
+  customizationRemovals   String[]      @default([])
+  customizationAddons     Json?
+  createdAt               DateTime      @default(now())
+  updatedAt               DateTime      @updatedAt
+  tenant                  Tenant        @relation(fields: [tenantId], references: [id], onDelete: Cascade)
+  section                 MenuSection?  @relation(fields: [menuSectionId], references: [id], onDelete: SetNull)
+  orders                  OrderItem[]
 }
 
 model Order {

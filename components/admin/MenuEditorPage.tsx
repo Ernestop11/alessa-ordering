@@ -12,6 +12,12 @@ interface MenuSection {
   displayOrder: number | null;
 }
 
+interface CustomizationOption {
+  id: string;
+  label: string;
+  price: number;
+}
+
 interface MenuItem {
   id: string;
   name: string;
@@ -22,6 +28,8 @@ interface MenuItem {
   image: string | null;
   menuSectionId: string | null;
   displayOrder: number | null;
+  customizationRemovals?: string[];
+  customizationAddons?: CustomizationOption[];
 }
 
 export default function MenuEditorPage() {
@@ -128,6 +136,8 @@ export default function MenuEditorPage() {
       image: null,
       menuSectionId: selectedSection || null,
       displayOrder: items.filter(i => i.menuSectionId === selectedSection).length,
+      customizationRemovals: [],
+      customizationAddons: [],
     };
     setEditingItem(newItem);
   };
@@ -484,7 +494,8 @@ export default function MenuEditorPage() {
                             });
                             const data = await res.json();
                             if (data.url) {
-                              setEditingItem({ ...editingItem, image: data.url });
+                              // Use callback to get current state
+                              setEditingItem((prev) => prev ? { ...prev, image: data.url } : prev);
                             }
                           } catch (err) {
                             console.error('Failed to upload image', err);
@@ -503,6 +514,107 @@ export default function MenuEditorPage() {
                     />
                   )}
                 </div>
+
+                {/* Customization: Removals */}
+                <div>
+                  <label className="block text-sm font-medium text-gray-700 mb-2">Customization Options - Removals</label>
+                  <div className="space-y-2">
+                    {(editingItem.customizationRemovals || []).map((removal, index) => (
+                      <div key={index} className="flex gap-2">
+                        <input
+                          type="text"
+                          value={removal}
+                          onChange={(e) => {
+                            const newRemovals = [...(editingItem.customizationRemovals || [])];
+                            newRemovals[index] = e.target.value;
+                            setEditingItem({ ...editingItem, customizationRemovals: newRemovals });
+                          }}
+                          className="flex-1 border-gray-300 rounded-md shadow-sm focus:ring-blue-500 focus:border-blue-500 text-sm"
+                          placeholder="e.g., No onions"
+                        />
+                        <button
+                          type="button"
+                          onClick={() => {
+                            const newRemovals = (editingItem.customizationRemovals || []).filter((_, i) => i !== index);
+                            setEditingItem({ ...editingItem, customizationRemovals: newRemovals });
+                          }}
+                          className="px-3 py-1 text-sm text-red-600 hover:text-red-800"
+                        >
+                          Remove
+                        </button>
+                      </div>
+                    ))}
+                    <button
+                      type="button"
+                      onClick={() => {
+                        setEditingItem({
+                          ...editingItem,
+                          customizationRemovals: [...(editingItem.customizationRemovals || []), ''],
+                        });
+                      }}
+                      className="text-sm text-blue-600 hover:text-blue-800"
+                    >
+                      + Add Removal Option
+                    </button>
+                  </div>
+                </div>
+
+                {/* Customization: Addons */}
+                <div>
+                  <label className="block text-sm font-medium text-gray-700 mb-2">Customization Options - Paid Add-ons</label>
+                  <div className="space-y-2">
+                    {(editingItem.customizationAddons || []).map((addon, index) => (
+                      <div key={index} className="flex gap-2">
+                        <input
+                          type="text"
+                          value={addon.label}
+                          onChange={(e) => {
+                            const newAddons = [...(editingItem.customizationAddons || [])];
+                            newAddons[index] = { ...newAddons[index], label: e.target.value };
+                            setEditingItem({ ...editingItem, customizationAddons: newAddons });
+                          }}
+                          className="flex-1 border-gray-300 rounded-md shadow-sm focus:ring-blue-500 focus:border-blue-500 text-sm"
+                          placeholder="e.g., Extra cheese"
+                        />
+                        <input
+                          type="number"
+                          step="0.01"
+                          value={addon.price}
+                          onChange={(e) => {
+                            const newAddons = [...(editingItem.customizationAddons || [])];
+                            newAddons[index] = { ...newAddons[index], price: parseFloat(e.target.value) || 0 };
+                            setEditingItem({ ...editingItem, customizationAddons: newAddons });
+                          }}
+                          className="w-24 border-gray-300 rounded-md shadow-sm focus:ring-blue-500 focus:border-blue-500 text-sm"
+                          placeholder="0.00"
+                        />
+                        <button
+                          type="button"
+                          onClick={() => {
+                            const newAddons = (editingItem.customizationAddons || []).filter((_, i) => i !== index);
+                            setEditingItem({ ...editingItem, customizationAddons: newAddons });
+                          }}
+                          className="px-3 py-1 text-sm text-red-600 hover:text-red-800"
+                        >
+                          Remove
+                        </button>
+                      </div>
+                    ))}
+                    <button
+                      type="button"
+                      onClick={() => {
+                        setEditingItem({
+                          ...editingItem,
+                          customizationAddons: [...(editingItem.customizationAddons || []), { id: `addon_${Date.now()}`, label: '', price: 0 }],
+                        });
+                      }}
+                      className="text-sm text-blue-600 hover:text-blue-800"
+                    >
+                      + Add Paid Add-on
+                    </button>
+                  </div>
+                </div>
+
                 <div className="flex items-center">
                   <input
                     type="checkbox"

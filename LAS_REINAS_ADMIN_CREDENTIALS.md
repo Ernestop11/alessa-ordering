@@ -33,6 +33,8 @@ Password: TA7FfVDGCH05eqh+sa2zOSGVwHkkcz1E
 ## 🧪 Test Locally
 
 **URL**: http://localhost:3001/admin/login
-**Email**: admin@lapoblanita.com
-**Password**: Check `.env` file or use VPS password above
+**Email**: admin@lasreinas.com
+**Password**: admin123
+
+**Note**: Local `.env` now uses Las Reinas branding: `ADMIN_EMAIL=admin@lasreinas.com`
 
