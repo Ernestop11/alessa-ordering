@@ -19,12 +19,17 @@ export async function GET() {
   }
 
   const tenant = await requireTenant();
-  const packages = await prisma.cateringPackage.findMany({
+  const sections = await prisma.cateringSection.findMany({
     where: { tenantId: tenant.id },
-    orderBy: { displayOrder: 'asc' },
+    orderBy: { position: 'asc' },
+    include: {
+      _count: {
+        select: { packages: true },
+      },
+    },
   });
 
-  return NextResponse.json(packages);
+  return NextResponse.json(sections);
 }
 
 export async function POST(req: Request) {
@@ -39,21 +44,12 @@ export async function POST(req: Request) {
 
   const data = {
     tenantId: tenant.id,
-    cateringSectionId: body.cateringSectionId || null,
     name: body.name || '',
-    description: body.description || '',
-    pricePerGuest: parseFloat(String(body.pricePerGuest || 0)),
-    price: body.price !== undefined && body.price !== null ? parseFloat(String(body.price)) : null,
-    category: body.category || 'popular',
-    image: body.image || null,
-    gallery: body.gallery || null,
-    badge: body.badge || null,
-    customizationRemovals: body.customizationRemovals || [],
-    customizationAddons: body.customizationAddons || null,
-    available: body.available === undefined ? true : Boolean(body.available),
-    displayOrder: body.displayOrder !== undefined ? Number(body.displayOrder) : 0,
+    description: body.description || null,
+    position: body.position !== undefined ? Number(body.position) : 0,
+    imageUrl: body.imageUrl || null,
   };
 
-  const created = await prisma.cateringPackage.create({ data });
+  const created = await prisma.cateringSection.create({ data });
   return NextResponse.json(created, { status: 201 });
 }

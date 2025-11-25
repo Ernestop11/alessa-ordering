@@ -32,8 +32,17 @@ interface MenuItem {
   customizationAddons?: CustomizationOption[];
 }
 
+interface CateringSection {
+  id: string;
+  name: string;
+  description: string | null;
+  position: number;
+  _count?: { packages: number };
+}
+
 interface CateringPackage {
   id: string;
+  cateringSectionId: string | null;
   name: string;
   description: string;
   pricePerGuest: number;
@@ -52,10 +61,13 @@ export default function MenuEditorPage() {
   const [activeTab, setActiveTab] = useState<'menu' | 'catering'>('menu');
   const [sections, setSections] = useState<MenuSection[]>([]);
   const [items, setItems] = useState<MenuItem[]>([]);
+  const [cateringSections, setCateringSections] = useState<CateringSection[]>([]);
   const [cateringPackages, setCateringPackages] = useState<CateringPackage[]>([]);
   const [selectedSection, setSelectedSection] = useState<string | null>(null);
+  const [selectedCateringSection, setSelectedCateringSection] = useState<string | null>(null);
   const [editingItem, setEditingItem] = useState<MenuItem | null>(null);
   const [editingSection, setEditingSection] = useState<MenuSection | null>(null);
+  const [editingCateringSection, setEditingCateringSection] = useState<CateringSection | null>(null);
   const [editingPackage, setEditingPackage] = useState<CateringPackage | null>(null);
   const [loading, setLoading] = useState(true);
   const [draggedItem, setDraggedItem] = useState<string | null>(null);
@@ -63,6 +75,7 @@ export default function MenuEditorPage() {
   useEffect(() => {
     fetchSections();
     fetchItems();
+    fetchCateringSections();
     fetchCateringPackages();
   }, []);
 
@@ -198,6 +211,19 @@ export default function MenuEditorPage() {
     }
   };
 
+  const fetchCateringSections = async () => {
+    try {
+      const res = await fetch('/api/admin/catering-sections');
+      const data = await res.json();
+      setCateringSections(data || []);
+      if (data && data.length > 0 && !selectedCateringSection) {
+        setSelectedCateringSection(data[0].id);
+      }
+    } catch (err) {
+      console.error('Failed to fetch catering sections', err);
+    }
+  };
+
   const fetchCateringPackages = async () => {
     setLoading(true);
     try {
@@ -211,9 +237,59 @@ export default function MenuEditorPage() {
     }
   };
 
+  const handleAddCateringSection = () => {
+    const newSection: CateringSection = {
+      id: '',
+      name: '',
+      description: null,
+      position: cateringSections.length,
+    };
+    setEditingCateringSection(newSection);
+  };
+
+  const handleSaveCateringSection = async (e: React.FormEvent) => {
+    e.preventDefault();
+    if (!editingCateringSection) return;
+
+    try {
+      const method = editingCateringSection.id ? 'PATCH' : 'POST';
+      const url = editingCateringSection.id
+        ? `/api/admin/catering-sections/${editingCateringSection.id}`
+        : '/api/admin/catering-sections';
+
+      const res = await fetch(url, {
+        method,
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify(editingCateringSection),
+      });
+
+      if (!res.ok) throw new Error('Failed to save catering section');
+      await fetchCateringSections();
+      setEditingCateringSection(null);
+    } catch (err) {
+      console.error('Failed to save catering section', err);
+      alert('Failed to save catering section');
+    }
+  };
+
+  const handleDeleteCateringSection = async (id: string) => {
+    if (!confirm('Delete this catering section? All packages in this section will become unassigned.')) return;
+
+    try {
+      const res = await fetch(`/api/admin/catering-sections/${id}`, { method: 'DELETE' });
+      if (!res.ok) throw new Error('Failed to delete catering section');
+      await fetchCateringSections();
+      await fetchCateringPackages();
+    } catch (err) {
+      console.error('Failed to delete catering section', err);
+      alert('Failed to delete catering section');
+    }
+  };
+
   const handleAddPackage = () => {
     const newPackage: CateringPackage = {
       id: '',
+      cateringSectionId: selectedCateringSection,
       name: '',
       description: '',
       pricePerGuest: 0,
@@ -343,11 +419,11 @@ export default function MenuEditorPage() {
                 </button>
               ) : (
                 <button
-                  onClick={handleAddPackage}
-                  className="inline-flex items-center px-4 py-2 border border-transparent rounded-md shadow-sm text-sm font-medium text-white bg-blue-600 hover:bg-blue-700"
+                  onClick={handleAddCateringSection}
+                  className="inline-flex items-center px-4 py-2 border border-transparent rounded-md shadow-sm text-sm font-medium text-white bg-orange-600 hover:bg-orange-700"
                 >
                   <Plus className="h-4 w-4 mr-2" />
-                  Add Package
+                  Add Section
                 </button>
               )}
             </div>
@@ -492,57 +568,128 @@ export default function MenuEditorPage() {
             </div>
           ) : (
             /* Catering Packages View */
-            <div className="bg-white rounded-lg shadow p-6">
-              <div className="flex justify-between items-center mb-4">
-                <h2 className="text-lg font-semibold text-gray-900">Catering Packages</h2>
-                <button
-                  onClick={handleAddPackage}
-                  className="inline-flex items-center px-4 py-2 border border-transparent rounded-md shadow-sm text-sm font-medium text-white bg-blue-600 hover:bg-blue-700"
-                >
-                  <Plus className="h-4 w-4 mr-2" />
-                  Add Catering Package
-                </button>
-              </div>
-              {loading ? (
-                <div className="text-center py-8 text-gray-500">Loading...</div>
-              ) : cateringPackages.length === 0 ? (
-                <div className="text-center py-8 text-gray-500">No catering packages yet. Add your first package!</div>
-              ) : (
-                <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
-                  {cateringPackages.sort((a, b) => a.displayOrder - b.displayOrder).map((pkg) => (
-                    <div key={pkg.id} className="border border-gray-200 rounded-lg overflow-hidden hover:shadow-lg transition-shadow">
-                      {pkg.image && (
-                        <img src={pkg.image} alt={pkg.name} className="w-full h-48 object-cover" />
-                      )}
-                      <div className="p-4">
-                        {pkg.badge && (
-                          <span className="inline-block px-2 py-1 text-xs font-semibold text-blue-600 bg-blue-100 rounded-full mb-2">
-                            {pkg.badge}
-                          </span>
-                        )}
-                        <h3 className="font-semibold text-gray-900 text-lg">{pkg.name}</h3>
-                        <p className="text-sm text-gray-600 mt-1 line-clamp-2">{pkg.description}</p>
-                        <p className="text-xl font-bold text-blue-600 mt-2">${pkg.pricePerGuest.toFixed(2)} / guest</p>
-                        <div className="flex gap-2 mt-4">
-                          <button
-                            onClick={() => setEditingPackage(pkg)}
-                            className="flex-1 inline-flex items-center justify-center px-3 py-2 border border-gray-300 rounded-md text-sm font-medium text-gray-700 bg-white hover:bg-gray-50"
-                          >
-                            <Edit2 className="h-4 w-4 mr-1" />
-                            Edit
-                          </button>
-                          <button
-                            onClick={() => handleDeletePackage(pkg.id)}
-                            className="inline-flex items-center justify-center px-3 py-2 border border-transparent rounded-md text-sm font-medium text-white bg-red-600 hover:bg-red-700"
-                          >
-                            <Trash2 className="h-4 w-4" />
-                          </button>
+            <div className="grid grid-cols-1 lg:grid-cols-4 gap-6">
+              {/* Catering Sections List */}
+              <div className="lg:col-span-1">
+                <div className="bg-white rounded-lg shadow p-4">
+                  <h2 className="text-lg font-semibold text-gray-900 mb-4">Catering Sections</h2>
+                  <div className="space-y-2">
+                    {cateringSections.map((section) => (
+                      <div
+                        key={section.id}
+                        className={`p-3 rounded-lg cursor-pointer transition-colors ${
+                          selectedCateringSection === section.id
+                            ? 'bg-orange-50 border-2 border-orange-500'
+                            : 'bg-gray-50 border-2 border-transparent hover:bg-gray-100'
+                        }`}
+                        onClick={() => setSelectedCateringSection(section.id)}
+                      >
+                        <div className="flex items-center justify-between">
+                          <div className="flex-1">
+                            <span className="font-medium text-gray-900">{section.name}</span>
+                            {section._count && section._count.packages > 0 && (
+                              <span className="ml-2 text-xs text-gray-500">({section._count.packages})</span>
+                            )}
+                          </div>
+                          <div className="flex gap-1">
+                            <button
+                              onClick={(e) => {
+                                e.stopPropagation();
+                                setEditingCateringSection(section);
+                              }}
+                              className="text-gray-400 hover:text-orange-600"
+                            >
+                              <Edit2 className="h-4 w-4" />
+                            </button>
+                            <button
+                              onClick={(e) => {
+                                e.stopPropagation();
+                                handleDeleteCateringSection(section.id);
+                              }}
+                              className="text-gray-400 hover:text-red-600"
+                            >
+                              <Trash2 className="h-4 w-4" />
+                            </button>
+                          </div>
                         </div>
                       </div>
-                    </div>
-                  ))}
+                    ))}
+                  </div>
                 </div>
-              )}
+              </div>
+
+              {/* Catering Packages List */}
+              <div className="lg:col-span-3">
+                <div className="bg-white rounded-lg shadow p-6">
+                  <div className="flex justify-between items-center mb-4">
+                    <h2 className="text-lg font-semibold text-gray-900">
+                      {selectedCateringSection ? cateringSections.find(s => s.id === selectedCateringSection)?.name || 'Packages' : 'Select a section'}
+                    </h2>
+                    {selectedCateringSection && (
+                      <button
+                        onClick={handleAddPackage}
+                        className="inline-flex items-center px-4 py-2 border border-transparent rounded-md shadow-sm text-sm font-medium text-white bg-orange-600 hover:bg-orange-700"
+                      >
+                        <Plus className="h-4 w-4 mr-2" />
+                        Add Package
+                      </button>
+                    )}
+                  </div>
+
+                  {loading ? (
+                    <div className="text-center py-8 text-gray-500">Loading...</div>
+                  ) : !selectedCateringSection ? (
+                    <div className="text-center py-8 text-gray-500">Select a section to view packages</div>
+                  ) : cateringPackages.filter(pkg => pkg.cateringSectionId === selectedCateringSection).length === 0 ? (
+                    <div className="text-center py-8 text-gray-500">No packages in this section</div>
+                  ) : (
+                    <div className="space-y-3">
+                      {cateringPackages
+                        .filter(pkg => pkg.cateringSectionId === selectedCateringSection)
+                        .sort((a, b) => a.displayOrder - b.displayOrder)
+                        .map((pkg) => (
+                          <div
+                            key={pkg.id}
+                            className="flex items-center gap-4 p-4 border-2 border-gray-200 rounded-lg hover:border-orange-300 hover:bg-orange-50/30 transition-all"
+                          >
+                            {pkg.image && (
+                              <img src={pkg.image} alt={pkg.name} className="h-16 w-16 rounded-lg object-cover flex-shrink-0" />
+                            )}
+                            <div className="flex-1 min-w-0">
+                              <div className="flex items-center gap-2">
+                                {pkg.badge && (
+                                  <span className="inline-block px-2 py-0.5 text-xs font-semibold text-orange-700 bg-orange-100 rounded-full">
+                                    {pkg.badge}
+                                  </span>
+                                )}
+                                <h3 className="font-semibold text-gray-900 text-lg truncate">{pkg.name}</h3>
+                              </div>
+                              <p className="text-sm text-gray-600 mt-1 line-clamp-1">{pkg.description}</p>
+                              <p className="text-sm font-bold text-orange-600 mt-1">
+                                {pkg.price ? `$${pkg.price.toFixed(0)}` : `$${pkg.pricePerGuest.toFixed(0)}/guest`}
+                              </p>
+                            </div>
+                            <div className="flex gap-2 flex-shrink-0">
+                              <button
+                                onClick={() => setEditingPackage(pkg)}
+                                className="inline-flex items-center px-3 py-2 border border-gray-300 rounded-md text-sm font-medium text-gray-700 bg-white hover:bg-gray-50"
+                              >
+                                <Edit2 className="h-4 w-4 mr-1" />
+                                Edit
+                              </button>
+                              <button
+                                onClick={() => handleDeletePackage(pkg.id)}
+                                className="inline-flex items-center px-3 py-2 border border-transparent rounded-md text-sm font-medium text-white bg-red-600 hover:bg-red-700"
+                              >
+                                <Trash2 className="h-4 w-4" />
+                              </button>
+                            </div>
+                          </div>
+                        ))}
+                    </div>
+                  )}
+                </div>
+              </div>
             </div>
           )}
         </div>
@@ -587,6 +734,55 @@ export default function MenuEditorPage() {
                   <button
                     type="button"
                     onClick={() => setEditingSection(null)}
+                    className="flex-1 px-4 py-2 border border-gray-300 rounded-md shadow-sm text-sm font-medium text-gray-700 bg-white hover:bg-gray-50"
+                  >
+                    Cancel
+                  </button>
+                </div>
+              </form>
+            </div>
+          </div>
+        )}
+
+        {/* Edit Catering Section Modal */}
+        {editingCateringSection && (
+          <div className="fixed inset-0 bg-gray-500 bg-opacity-75 flex items-center justify-center z-50">
+            <div className="bg-white rounded-lg p-6 max-w-md w-full">
+              <h2 className="text-lg font-semibold mb-4">
+                {editingCateringSection.id ? 'Edit Catering Section' : 'Add Catering Section'}
+              </h2>
+              <form onSubmit={handleSaveCateringSection} className="space-y-4">
+                <div>
+                  <label className="block text-sm font-medium text-gray-700">Section Name</label>
+                  <input
+                    type="text"
+                    value={editingCateringSection.name}
+                    onChange={(e) => setEditingCateringSection({ ...editingCateringSection, name: e.target.value })}
+                    className="mt-1 block w-full border-gray-300 rounded-md shadow-sm focus:ring-orange-500 focus:border-orange-500"
+                    placeholder="e.g., Popular Catering Options, Holiday Bundles"
+                    required
+                  />
+                </div>
+                <div>
+                  <label className="block text-sm font-medium text-gray-700">Description (optional)</label>
+                  <textarea
+                    value={editingCateringSection.description || ''}
+                    onChange={(e) => setEditingCateringSection({ ...editingCateringSection, description: e.target.value || null })}
+                    className="mt-1 block w-full border-gray-300 rounded-md shadow-sm focus:ring-orange-500 focus:border-orange-500"
+                    rows={3}
+                    placeholder="Brief description of this section"
+                  />
+                </div>
+                <div className="flex gap-2">
+                  <button
+                    type="submit"
+                    className="flex-1 px-4 py-2 border border-transparent rounded-md shadow-sm text-sm font-medium text-white bg-orange-600 hover:bg-orange-700"
+                  >
+                    Save
+                  </button>
+                  <button
+                    type="button"
+                    onClick={() => setEditingCateringSection(null)}
                     className="flex-1 px-4 py-2 border border-gray-300 rounded-md shadow-sm text-sm font-medium text-gray-700 bg-white hover:bg-gray-50"
                   >
                     Cancel
@@ -897,11 +1093,24 @@ export default function MenuEditorPage() {
                     />
                   </div>
                   <div>
+                    <label className="block text-sm font-medium text-gray-700">Section</label>
+                    <select
+                      value={editingPackage.cateringSectionId || ''}
+                      onChange={(e) => setEditingPackage({ ...editingPackage, cateringSectionId: e.target.value || null })}
+                      className="mt-1 block w-full border-gray-300 rounded-md shadow-sm focus:ring-orange-500 focus:border-orange-500"
+                    >
+                      <option value="">No Section (Unassigned)</option>
+                      {cateringSections.map(section => (
+                        <option key={section.id} value={section.id}>{section.name}</option>
+                      ))}
+                    </select>
+                  </div>
+                  <div>
                     <label className="block text-sm font-medium text-gray-700">Category</label>
                     <select
                       value={editingPackage.category}
                       onChange={(e) => setEditingPackage({ ...editingPackage, category: e.target.value })}
-                      className="mt-1 block w-full border-gray-300 rounded-md shadow-sm focus:ring-blue-500 focus:border-blue-500"
+                      className="mt-1 block w-full border-gray-300 rounded-md shadow-sm focus:ring-orange-500 focus:border-orange-500"
                       required
                     >
                       <option value="popular">Popular Catering Options</option>

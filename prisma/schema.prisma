@@ -42,23 +42,38 @@ model MenuItem {
 }
 
 model CateringPackage {
-  id                      String        @id @default(uuid())
+  id                      String               @id @default(uuid())
   tenantId                String
+  cateringSectionId       String?
   name                    String
   description             String
   pricePerGuest           Float
   price                   Float?
-  category                String        @default("popular")
+  category                String               @default("popular")
   image                   String?
   gallery                 Json?
   badge                   String?
-  customizationRemovals   String[]      @default([])
+  customizationRemovals   String[]             @default([])
   customizationAddons     Json?
-  available               Boolean       @default(true)
-  displayOrder            Int           @default(0)
-  createdAt               DateTime      @default(now())
-  updatedAt               DateTime      @updatedAt
-  tenant                  Tenant        @relation(fields: [tenantId], references: [id], onDelete: Cascade)
+  available               Boolean              @default(true)
+  displayOrder            Int                  @default(0)
+  createdAt               DateTime             @default(now())
+  updatedAt               DateTime             @updatedAt
+  tenant                  Tenant               @relation(fields: [tenantId], references: [id], onDelete: Cascade)
+  section                 CateringSection?     @relation(fields: [cateringSectionId], references: [id], onDelete: SetNull)
+}
+
+model CateringSection {
+  id               String             @id @default(uuid())
+  tenantId         String
+  name             String
+  description      String?
+  position         Int                @default(0)
+  imageUrl         String?
+  createdAt        DateTime           @default(now())
+  updatedAt        DateTime           @updatedAt
+  tenant           Tenant             @relation(fields: [tenantId], references: [id], onDelete: Cascade)
+  packages         CateringPackage[]
 }
 
 model Order {
@@ -151,14 +166,15 @@ model Tenant {
   settings         TenantSettings?
   integrations     TenantIntegration?
   customers        Customer[]
-  customerSessions CustomerSession[]
-  menuSections     MenuSection[]
-  menuItems        MenuItem[]
-  cateringPackages CateringPackage[]
-  orders           Order[]
-  orderItems       OrderItem[]
-  integrationLogs  IntegrationLog[]
-  paymentSessions  PaymentSession[]
+  customerSessions   CustomerSession[]
+  menuSections       MenuSection[]
+  menuItems          MenuItem[]
+  cateringSections   CateringSection[]
+  cateringPackages   CateringPackage[]
+  orders             Order[]
+  orderItems         OrderItem[]
+  integrationLogs    IntegrationLog[]
+  paymentSessions    PaymentSession[]
 
   @@index([status])
 }
