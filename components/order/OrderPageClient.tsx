@@ -191,7 +191,8 @@ export default function OrderPageClient({
   const { addToCart, items: cartItems } = useCart();
   const cartItemCount = useMemo(() => cartItems.reduce((sum, item) => sum + item.quantity, 0), [cartItems]);
 
-  const navSections = useMemo(() => sections.filter((section) => section.items.length > 0), [sections]);
+  const safeSections = useMemo(() => Array.isArray(sections) ? sections : [], [sections]);
+  const navSections = useMemo(() => safeSections.filter((section) => section.items.length > 0), [safeSections]);
   const [activeLayout, setActiveLayout] = useState<LayoutView>(() => {
     const paramView = searchParams.get('view') as LayoutView | null;
     const storedView =
