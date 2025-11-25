@@ -11,7 +11,7 @@ export function getStripeClient() {
   }
 
   cachedStripe = new Stripe(stripeSecret, {
-    apiVersion: '2023-10-16',
+    apiVersion: '2022-11-15',
   });
 
   return cachedStripe;
