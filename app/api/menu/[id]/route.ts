@@ -64,6 +64,8 @@ export async function PATCH(req: Request, { params }: { params: Promise<{ id: st
       isFeatured: body.isFeatured !== undefined ? Boolean(body.isFeatured) : (existing as any).isFeatured ?? false,
       tags: Array.isArray(body.tags) ? body.tags : existing.tags,
       menuSectionId: body.menuSectionId !== undefined ? body.menuSectionId : existing.menuSectionId,
+      customizationRemovals: Array.isArray(body.customizationRemovals) ? body.customizationRemovals : existing.customizationRemovals,
+      customizationAddons: body.customizationAddons !== undefined ? body.customizationAddons : (existing as any).customizationAddons,
     }
 
     const updated = await prisma.menuItem.update({

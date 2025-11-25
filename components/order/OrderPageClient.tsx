@@ -13,6 +13,12 @@ import CartLauncher from '../CartLauncher';
 import RewardsModal from './RewardsModal';
 import MenuSectionGrid from './MenuSectionGrid';
 
+interface CustomizationOption {
+  id: string;
+  label: string;
+  price: number;
+}
+
 export interface OrderMenuItem {
   id: string;
   name: string;
@@ -26,6 +32,8 @@ export interface OrderMenuItem {
   displayImage?: string;
   displayGallery?: string[];
   emoji?: string;
+  customizationRemovals?: string[];
+  customizationAddons?: CustomizationOption[];
 }
 
 export interface OrderMenuSection {
@@ -53,12 +61,6 @@ interface HighlightCard {
   badge?: string;
   image: string;
   category: string;
-}
-
-interface CustomizationOption {
-  id: string;
-  label: string;
-  price: number;
 }
 
 interface CustomizationConfig {
@@ -374,6 +376,15 @@ export default function OrderPageClient({ sections, featuredItems = [], tenantSl
 
   const findCustomizationConfig = useCallback(
     (item: OrderMenuItem, sectionType: string): CustomizationConfig => {
+      // If item has database-defined customization, use it
+      if (item.customizationRemovals || item.customizationAddons) {
+        return {
+          removals: item.customizationRemovals || [],
+          addons: item.customizationAddons || [],
+        };
+      }
+
+      // Otherwise, fall back to hardcoded library
       const categoryKey = item.category?.toLowerCase?.() || '';
       const sectionKey = sectionType.toLowerCase();
       const sources: CustomizationConfig[] = [];

@@ -32,7 +32,8 @@
       "Bash(ssh root@77.243.85.8 \"cd /var/www/alessa-ordering && timeout 180 tail -f .next/trace 2>/dev/null || npm run build 2>&1 | tail -50\")",
       "Bash(ssh root@77.243.85.8:*)",
       "Bash(npx prisma db push:*)",
-      "Bash(git reset:*)"
+      "Bash(git reset:*)",
+      "Bash(npx prisma:*)"
     ],
     "deny": [],
     "ask": []
