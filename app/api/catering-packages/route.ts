@@ -18,7 +18,16 @@ export async function GET() {
       },
     });
 
-    return NextResponse.json({ sections });
+    // Fetch gallery images from settings
+    const settings = await prisma.tenantSettings.findUnique({
+      where: { tenantId: tenant.id },
+      select: { cateringGallery: true },
+    });
+
+    return NextResponse.json({
+      sections,
+      gallery: settings?.cateringGallery || [],
+    });
   } catch (err) {
     console.error('Failed to fetch catering packages', err);
     return NextResponse.json({ error: 'Failed to fetch catering packages' }, { status: 500 });

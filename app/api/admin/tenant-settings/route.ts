@@ -64,6 +64,7 @@ export async function GET() {
           accessibilityDefaults: tenant.settings.accessibilityDefaults,
           isOpen: tenant.settings.isOpen ?? true,
           branding: tenant.settings.branding ?? null,
+          cateringGallery: tenant.settings.cateringGallery ?? [],
         }
       : null,
     integrations: tenant.integrations
@@ -154,6 +155,10 @@ export async function PUT(req: Request) {
 
   if (body.accessibilityDefaults !== undefined) {
     settingsData.accessibilityDefaults = body.accessibilityDefaults || null;
+  }
+
+  if (body.cateringGallery !== undefined) {
+    settingsData.cateringGallery = Array.isArray(body.cateringGallery) ? body.cateringGallery : [];
   }
 
   if (body.branding !== undefined) {
@@ -329,6 +334,7 @@ export async function PUT(req: Request) {
           upsellBundles: updatedTenant.settings.upsellBundles,
           accessibilityDefaults: updatedTenant.settings.accessibilityDefaults,
           branding: updatedTenant.settings.branding ?? null,
+          cateringGallery: updatedTenant.settings.cateringGallery ?? [],
         }
       : null,
     integrations: updatedTenant.integrations
@@ -350,3 +356,5 @@ export async function PUT(req: Request) {
       : null,
   });
 }
+
+export const PATCH = PUT;

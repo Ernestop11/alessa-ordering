@@ -198,6 +198,7 @@ model TenantSettings {
   accessibilityDefaults  Json?
   branding               Json?
   cateringTabConfig      Json?
+  cateringGallery        String[] @default([])
   isOpen                 Boolean? @default(true)
   createdAt              DateTime @default(now())
   updatedAt              DateTime @updatedAt

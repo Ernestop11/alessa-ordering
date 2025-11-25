@@ -72,12 +72,14 @@ export default function MenuEditorPage() {
   const [editingPackage, setEditingPackage] = useState<CateringPackage | null>(null);
   const [loading, setLoading] = useState(true);
   const [draggedItem, setDraggedItem] = useState<string | null>(null);
+  const [cateringGallery, setCateringGallery] = useState<string[]>([]);
 
   useEffect(() => {
     fetchSections();
     fetchItems();
     fetchCateringSections();
     fetchCateringPackages();
+    fetchCateringGallery();
   }, []);
 
   const fetchSections = async () => {
@@ -284,6 +286,59 @@ export default function MenuEditorPage() {
     } catch (err) {
       console.error('Failed to delete catering section', err);
       alert('Failed to delete catering section');
+    }
+  };
+
+  const fetchCateringGallery = async () => {
+    try {
+      const res = await fetch('/api/admin/tenant-settings');
+      const data = await res.json();
+      setCateringGallery(data.cateringGallery || []);
+    } catch (err) {
+      console.error('Failed to fetch catering gallery', err);
+    }
+  };
+
+  const handleAddGalleryImage = async (e: React.ChangeEvent<HTMLInputElement>) => {
+    const file = e.target.files?.[0];
+    if (!file) return;
+
+    const formData = new FormData();
+    formData.append('file', file);
+
+    try {
+      const res = await fetch('/api/admin/assets/upload', {
+        method: 'POST',
+        body: formData,
+      });
+      const data = await res.json();
+      if (data.url) {
+        const newGallery = [...cateringGallery, data.url];
+        await saveCateringGallery(newGallery);
+      }
+    } catch (err) {
+      console.error('Failed to upload gallery image', err);
+      alert('Failed to upload image');
+    }
+  };
+
+  const handleRemoveGalleryImage = async (url: string) => {
+    const newGallery = cateringGallery.filter(img => img !== url);
+    await saveCateringGallery(newGallery);
+  };
+
+  const saveCateringGallery = async (gallery: string[]) => {
+    try {
+      const res = await fetch('/api/admin/tenant-settings', {
+        method: 'PATCH',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ cateringGallery: gallery }),
+      });
+      if (!res.ok) throw new Error('Failed to save gallery');
+      setCateringGallery(gallery);
+    } catch (err) {
+      console.error('Failed to save gallery', err);
+      alert('Failed to save gallery');
     }
   };
 
@@ -569,9 +624,50 @@ export default function MenuEditorPage() {
             </div>
           ) : (
             /* Catering Packages View */
-            <div className="grid grid-cols-1 lg:grid-cols-4 gap-6">
-              {/* Catering Sections List */}
-              <div className="lg:col-span-1">
+            <div className="space-y-6">
+              {/* Catering Gallery Manager */}
+              <div className="bg-white rounded-lg shadow p-6">
+                <h2 className="text-lg font-semibold text-gray-900 mb-4">Catering Modal Gallery</h2>
+                <p className="text-sm text-gray-600 mb-4">These images will rotate at the top of the catering modal. Recommended: 1200x600px landscape images.</p>
+
+                <div className="grid grid-cols-2 md:grid-cols-4 gap-4 mb-4">
+                  {cateringGallery.map((url, index) => (
+                    <div key={index} className="relative group">
+                      <img
+                        src={url}
+                        alt={`Gallery ${index + 1}`}
+                        className="w-full h-32 object-cover rounded-lg border border-gray-200"
+                      />
+                      <button
+                        onClick={() => handleRemoveGalleryImage(url)}
+                        className="absolute top-2 right-2 bg-red-600 text-white rounded-full p-1.5 opacity-0 group-hover:opacity-100 transition-opacity"
+                      >
+                        <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                          <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M6 18L18 6M6 6l12 12" />
+                        </svg>
+                      </button>
+                    </div>
+                  ))}
+
+                  {/* Add Image Button */}
+                  <label className="flex flex-col items-center justify-center w-full h-32 border-2 border-dashed border-gray-300 rounded-lg cursor-pointer hover:border-orange-400 hover:bg-orange-50 transition-colors">
+                    <svg className="w-8 h-8 text-gray-400" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                      <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 4v16m8-8H4" />
+                    </svg>
+                    <span className="mt-2 text-sm text-gray-500">Add Image</span>
+                    <input
+                      type="file"
+                      accept="image/*"
+                      onChange={handleAddGalleryImage}
+                      className="hidden"
+                    />
+                  </label>
+                </div>
+              </div>
+
+              <div className="grid grid-cols-1 lg:grid-cols-4 gap-6">
+                {/* Catering Sections List */}
+                <div className="lg:col-span-1">
                 <div className="bg-white rounded-lg shadow p-4">
                   <h2 className="text-lg font-semibold text-gray-900 mb-4">Catering Sections</h2>
                   <div className="space-y-2">
@@ -691,6 +787,7 @@ export default function MenuEditorPage() {
                   )}
                 </div>
               </div>
+            </div>
             </div>
           )}
         </div>
