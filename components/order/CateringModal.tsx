@@ -1,6 +1,6 @@
 "use client";
 
-import { useId } from 'react';
+import { useId, useEffect, useState } from 'react';
 import { ChefHat, PhoneCall } from 'lucide-react';
 import { useTenantTheme } from '../TenantThemeProvider';
 
@@ -9,30 +9,29 @@ interface CateringModalProps {
   onClose: () => void;
 }
 
-const PACKAGES = [
-  {
-    name: 'Taquiza Experience',
-    price: '$22 / guest',
-    details: 'Hand-pressed tortillas, four proteins, six toppings, aguas frescas.',
-    badge: 'Most Popular',
-  },
-  {
-    name: 'Birria & Consommé Bar',
-    price: '$28 / guest',
-    details: 'Slow-braised birria, crispy quesabirrias, consommé shooters, pickled garnish bar.',
-    badge: 'Signature',
-  },
-  {
-    name: 'Pan Dulce + Café',
-    price: '$18 / guest',
-    details: 'Nixtamal waffles, churro bites, seasonal pan dulce, café de olla service.',
-    badge: 'Morning Events',
-  },
-];
+interface CateringPackage {
+  id: string;
+  name: string;
+  description: string;
+  pricePerGuest: number;
+  badge: string | null;
+  available: boolean;
+}
 
 export function CateringModal({ open, onClose }: CateringModalProps) {
   const formId = useId();
   const tenant = useTenantTheme();
+  const [packages, setPackages] = useState<CateringPackage[]>([]);
+
+  useEffect(() => {
+    if (open) {
+      fetch('/api/catering-packages')
+        .then((res) => res.json())
+        .then((data) => setPackages(data))
+        .catch((err) => console.error('Failed to fetch catering packages', err));
+    }
+  }, [open]);
+
   if (!open) return null;
 
   return (
@@ -49,12 +48,12 @@ export function CateringModal({ open, onClose }: CateringModalProps) {
         </div>
 
         <div className="grid gap-4 border-b border-[#ff0000]/15 p-6 sm:grid-cols-3">
-          {PACKAGES.map((pkg) => (
-            <div key={pkg.name} className="rounded-2xl border border-[#ff0000]/50 bg-[#fff6f6] p-6 text-center">
-              <p className="text-[11px] uppercase tracking-[0.4em] text-[#cc0000]">{pkg.badge}</p>
+          {packages.map((pkg) => (
+            <div key={pkg.id} className="rounded-2xl border border-[#ff0000]/50 bg-[#fff6f6] p-6 text-center">
+              {pkg.badge && <p className="text-[11px] uppercase tracking-[0.4em] text-[#cc0000]">{pkg.badge}</p>}
               <h3 className="text-lg font-semibold text-[#1f0606]">{pkg.name}</h3>
-              <p className="text-sm text-[#5c1a1a]">{pkg.details}</p>
-              <p className="mt-3 text-2xl font-black text-[#ff0000]">{pkg.price}</p>
+              <p className="text-sm text-[#5c1a1a]">{pkg.description}</p>
+              <p className="mt-3 text-2xl font-black text-[#ff0000]">${pkg.pricePerGuest} / guest</p>
             </div>
           ))}
         </div>
@@ -97,8 +96,8 @@ export function CateringModal({ open, onClose }: CateringModalProps) {
           />
           <select className="rounded-2xl border border-white/10 bg-white/5 px-4 py-3 text-sm outline-none focus:border-white/40">
             <option>Package interest</option>
-            {PACKAGES.map((pkg) => (
-              <option key={pkg.name}>{pkg.name}</option>
+            {packages.map((pkg) => (
+              <option key={pkg.id}>{pkg.name}</option>
             ))}
           </select>
           <textarea

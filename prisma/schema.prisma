@@ -41,6 +41,20 @@ model MenuItem {
   orders                  OrderItem[]
 }
 
+model CateringPackage {
+  id                      String        @id @default(uuid())
+  tenantId                String
+  name                    String
+  description             String
+  pricePerGuest           Float
+  badge                   String?
+  available               Boolean       @default(true)
+  displayOrder            Int           @default(0)
+  createdAt               DateTime      @default(now())
+  updatedAt               DateTime      @updatedAt
+  tenant                  Tenant        @relation(fields: [tenantId], references: [id], onDelete: Cascade)
+}
+
 model Order {
   id               String        @id @default(uuid())
   tenantId         String
@@ -134,6 +148,7 @@ model Tenant {
   customerSessions CustomerSession[]
   menuSections     MenuSection[]
   menuItems        MenuItem[]
+  cateringPackages CateringPackage[]
   orders           Order[]
   orderItems       OrderItem[]
   integrationLogs  IntegrationLog[]
