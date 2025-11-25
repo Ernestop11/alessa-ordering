@@ -2078,6 +2078,10 @@ export default function OrderPageClient({ sections, featuredItems = [], tenantSl
                 <div className="mt-2 grid gap-3 sm:grid-cols-2">
                   {customModal.config.addons.map((addon) => {
                     const active = customAddons.includes(addon.id);
+                    // Format the label with price
+                    const displayLabel = addon.price > 0
+                      ? `${addon.label} (+$${addon.price.toFixed(2)})`
+                      : addon.label;
                     return (
                       <button
                         key={addon.id}
@@ -2086,7 +2090,7 @@ export default function OrderPageClient({ sections, featuredItems = [], tenantSl
                           active ? 'border-amber-400 bg-amber-500/20 text-white' : 'border-white/20 text-white/70 hover:border-white/40 hover:text-white'
                         }`}
                       >
-                        <span className="text-left">{addon.label}</span>
+                        <span className="text-left">{displayLabel}</span>
                         {active && <span className="text-amber-200">✓</span>}
                       </button>
                     );
