@@ -47,9 +47,13 @@ model CateringPackage {
   name                    String
   description             String
   pricePerGuest           Float
+  price                   Float?
+  category                String        @default("popular")
   image                   String?
   gallery                 Json?
   badge                   String?
+  customizationRemovals   String[]      @default([])
+  customizationAddons     Json?
   available               Boolean       @default(true)
   displayOrder            Int           @default(0)
   createdAt               DateTime      @default(now())

@@ -37,9 +37,13 @@ interface CateringPackage {
   name: string;
   description: string;
   pricePerGuest: number;
+  price?: number | null;
+  category: string;
   image: string | null;
   gallery?: string[] | null;
   badge: string | null;
+  customizationRemovals?: string[];
+  customizationAddons?: CustomizationOption[];
   available: boolean;
   displayOrder: number;
 }
@@ -213,9 +217,13 @@ export default function MenuEditorPage() {
       name: '',
       description: '',
       pricePerGuest: 0,
+      price: null,
+      category: 'popular',
       image: null,
       gallery: [],
       badge: null,
+      customizationRemovals: [],
+      customizationAddons: [],
       available: true,
       displayOrder: cateringPackages.length,
     };
@@ -888,6 +896,19 @@ export default function MenuEditorPage() {
                       required
                     />
                   </div>
+                  <div>
+                    <label className="block text-sm font-medium text-gray-700">Category</label>
+                    <select
+                      value={editingPackage.category}
+                      onChange={(e) => setEditingPackage({ ...editingPackage, category: e.target.value })}
+                      className="mt-1 block w-full border-gray-300 rounded-md shadow-sm focus:ring-blue-500 focus:border-blue-500"
+                      required
+                    >
+                      <option value="popular">Popular Catering Options</option>
+                      <option value="holiday">Holiday & Event Bundles</option>
+                      <option value="other">Other</option>
+                    </select>
+                  </div>
                   <div className="grid grid-cols-2 gap-4">
                     <div>
                       <label className="block text-sm font-medium text-gray-700">Price per Guest</label>
@@ -897,19 +918,29 @@ export default function MenuEditorPage() {
                         value={editingPackage.pricePerGuest}
                         onChange={(e) => setEditingPackage({ ...editingPackage, pricePerGuest: parseFloat(e.target.value) || 0 })}
                         className="mt-1 block w-full border-gray-300 rounded-md shadow-sm focus:ring-blue-500 focus:border-blue-500"
-                        required
                       />
                     </div>
                     <div>
-                      <label className="block text-sm font-medium text-gray-700">Badge (optional)</label>
+                      <label className="block text-sm font-medium text-gray-700">Flat Price (optional)</label>
                       <input
-                        type="text"
-                        value={editingPackage.badge || ''}
-                        onChange={(e) => setEditingPackage({ ...editingPackage, badge: e.target.value || null })}
+                        type="number"
+                        step="0.01"
+                        value={editingPackage.price || ''}
+                        onChange={(e) => setEditingPackage({ ...editingPackage, price: e.target.value ? parseFloat(e.target.value) : null })}
                         className="mt-1 block w-full border-gray-300 rounded-md shadow-sm focus:ring-blue-500 focus:border-blue-500"
-                        placeholder="e.g., Popular, Best Value"
+                        placeholder="Leave empty for per-guest pricing"
                       />
                     </div>
+                  </div>
+                  <div>
+                    <label className="block text-sm font-medium text-gray-700">Badge (optional)</label>
+                    <input
+                      type="text"
+                      value={editingPackage.badge || ''}
+                      onChange={(e) => setEditingPackage({ ...editingPackage, badge: e.target.value || null })}
+                      className="mt-1 block w-full border-gray-300 rounded-md shadow-sm focus:ring-blue-500 focus:border-blue-500"
+                      placeholder="e.g., Popular, Best Value"
+                    />
                   </div>
                   <div>
                     <label className="block text-sm font-medium text-gray-700">Image</label>
@@ -1025,6 +1056,106 @@ export default function MenuEditorPage() {
                           Upload Image to Gallery
                         </label>
                       </div>
+                    </div>
+                  </div>
+
+                  {/* Customization: Removals */}
+                  <div>
+                    <label className="block text-sm font-medium text-gray-700 mb-2">Customization Options - Removals</label>
+                    <div className="space-y-2">
+                      {(editingPackage.customizationRemovals || []).map((removal, index) => (
+                        <div key={index} className="flex gap-2">
+                          <input
+                            type="text"
+                            value={removal}
+                            onChange={(e) => {
+                              const newRemovals = [...(editingPackage.customizationRemovals || [])];
+                              newRemovals[index] = e.target.value;
+                              setEditingPackage({ ...editingPackage, customizationRemovals: newRemovals });
+                            }}
+                            className="flex-1 border-gray-300 rounded-md shadow-sm focus:ring-blue-500 focus:border-blue-500 text-sm"
+                            placeholder="e.g., Onions, Cilantro, Spicy Salsa"
+                          />
+                          <button
+                            type="button"
+                            onClick={() => {
+                              const newRemovals = (editingPackage.customizationRemovals || []).filter((_, i) => i !== index);
+                              setEditingPackage({ ...editingPackage, customizationRemovals: newRemovals });
+                            }}
+                            className="px-3 py-1 text-sm text-red-600 hover:text-red-800"
+                          >
+                            Remove
+                          </button>
+                        </div>
+                      ))}
+                      <button
+                        type="button"
+                        onClick={() => {
+                          setEditingPackage({
+                            ...editingPackage,
+                            customizationRemovals: [...(editingPackage.customizationRemovals || []), ''],
+                          });
+                        }}
+                        className="text-sm text-blue-600 hover:text-blue-800"
+                      >
+                        + Add Removal Option
+                      </button>
+                    </div>
+                  </div>
+
+                  {/* Customization: Addons */}
+                  <div>
+                    <label className="block text-sm font-medium text-gray-700 mb-2">Customization Options - Paid Add-ons</label>
+                    <div className="space-y-2">
+                      {(editingPackage.customizationAddons || []).map((addon, index) => (
+                        <div key={index} className="flex gap-2">
+                          <input
+                            type="text"
+                            value={addon.label}
+                            onChange={(e) => {
+                              const newAddons = [...(editingPackage.customizationAddons || [])];
+                              newAddons[index] = { ...newAddons[index], label: e.target.value };
+                              setEditingPackage({ ...editingPackage, customizationAddons: newAddons });
+                            }}
+                            className="flex-1 border-gray-300 rounded-md shadow-sm focus:ring-blue-500 focus:border-blue-500 text-sm"
+                            placeholder="e.g., Add Guacamole"
+                          />
+                          <input
+                            type="number"
+                            step="0.01"
+                            value={addon.price}
+                            onChange={(e) => {
+                              const newAddons = [...(editingPackage.customizationAddons || [])];
+                              newAddons[index] = { ...newAddons[index], price: parseFloat(e.target.value) || 0 };
+                              setEditingPackage({ ...editingPackage, customizationAddons: newAddons });
+                            }}
+                            className="w-24 border-gray-300 rounded-md shadow-sm focus:ring-blue-500 focus:border-blue-500 text-sm"
+                            placeholder="0.00"
+                          />
+                          <button
+                            type="button"
+                            onClick={() => {
+                              const newAddons = (editingPackage.customizationAddons || []).filter((_, i) => i !== index);
+                              setEditingPackage({ ...editingPackage, customizationAddons: newAddons });
+                            }}
+                            className="px-3 py-1 text-sm text-red-600 hover:text-red-800"
+                          >
+                            Remove
+                          </button>
+                        </div>
+                      ))}
+                      <button
+                        type="button"
+                        onClick={() => {
+                          setEditingPackage({
+                            ...editingPackage,
+                            customizationAddons: [...(editingPackage.customizationAddons || []), { id: `addon_${Date.now()}`, label: '', price: 0 }],
+                          });
+                        }}
+                        className="text-sm text-blue-600 hover:text-blue-800"
+                      >
+                        + Add Paid Add-on
+                      </button>
                     </div>
                   </div>
 

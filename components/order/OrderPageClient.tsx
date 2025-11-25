@@ -51,6 +51,22 @@ interface CateringTabConfig {
   description?: string;
 }
 
+interface CateringPackage {
+  id: string;
+  name: string;
+  description: string;
+  pricePerGuest: number;
+  price?: number | null;
+  category: string;
+  image: string | null;
+  gallery?: string[] | null;
+  badge: string | null;
+  customizationRemovals?: string[];
+  customizationAddons?: CustomizationOption[];
+  available: boolean;
+  displayOrder: number;
+}
+
 interface OrderPageClientProps {
   sections: OrderMenuSection[];
   featuredItems?: OrderMenuItem[];
@@ -721,6 +737,27 @@ export default function OrderPageClient({
   const [cateringGuestCount, setCateringGuestCount] = useState('');
   const [cateringMessage, setCateringMessage] = useState('');
   const [cateringGalleryIndex, setCateringGalleryIndex] = useState(0);
+  const [cateringPackages, setCateringPackages] = useState<CateringPackage[]>([]);
+
+  // Fetch catering packages
+  useEffect(() => {
+    const fetchCateringPackages = async () => {
+      try {
+        const res = await fetch('/api/catering-packages');
+        if (res.ok) {
+          const data = await res.json();
+          setCateringPackages(data || []);
+        }
+      } catch (err) {
+        console.error('Failed to fetch catering packages', err);
+      }
+    };
+    fetchCateringPackages();
+  }, []);
+
+  // Group packages by category
+  const popularPackages = useMemo(() => cateringPackages.filter(pkg => pkg.category === 'popular'), [cateringPackages]);
+  const holidayPackages = useMemo(() => cateringPackages.filter(pkg => pkg.category === 'holiday'), [cateringPackages]);
 
   // Sample Puebla Mexico themed media - can be replaced with actual tenant media
   const heroMedia = useMemo(() => {
@@ -1487,10 +1524,63 @@ export default function OrderPageClient({
               </div>
             </div>
 
-            {/* Menu Highlights - Clickable Catering Options */}
-            <div className="mb-8 space-y-4 rounded-2xl border-2 border-amber-500/20 bg-gradient-to-br from-amber-400/10 to-orange-500/10 p-6">
-              <h4 className="text-xl font-bold text-amber-100">Popular Catering Options</h4>
-              <div className="grid gap-3 sm:grid-cols-2">
+            {/* Menu Highlights - Clickable Catering Options (Database-driven) */}
+            {popularPackages.length > 0 && (
+              <div className="mb-8 space-y-4 rounded-2xl border-2 border-amber-500/20 bg-gradient-to-br from-amber-400/10 to-orange-500/10 p-6">
+                <h4 className="text-xl font-bold text-amber-100">Popular Catering Options</h4>
+                <div className="grid gap-3 sm:grid-cols-2">
+                  {popularPackages.map((pkg) => {
+                    const displayImage = pkg.image || cycleFallbackImage(40);
+                    const displayGallery = pkg.gallery && pkg.gallery.length > 0 ? pkg.gallery : [displayImage];
+                    const priceText = pkg.price
+                      ? `$${pkg.price.toFixed(0)}`
+                      : `From $${pkg.pricePerGuest.toFixed(0)}/person`;
+
+                    return (
+                      <button
+                        key={pkg.id}
+                        onClick={() => {
+                          setShowCateringPanel(false);
+                          setCustomModal({
+                            item: {
+                              id: pkg.id,
+                              name: pkg.name,
+                              description: pkg.description,
+                              price: pkg.price || pkg.pricePerGuest,
+                              category: 'catering',
+                              available: pkg.available,
+                              displayImage,
+                              sectionType: 'CATERING',
+                              displayGallery,
+                            },
+                            config: {
+                              removals: pkg.customizationRemovals || [],
+                              addons: pkg.customizationAddons || [],
+                            },
+                          });
+                        }}
+                        className="rounded-xl border border-amber-400/30 bg-black/30 p-4 text-left transition hover:border-amber-400 hover:bg-black/40"
+                      >
+                        {pkg.badge && (
+                          <div className="mb-2 inline-block rounded-full bg-amber-400/20 px-2 py-1 text-xs font-bold text-amber-300">
+                            {pkg.badge}
+                          </div>
+                        )}
+                        <h5 className="font-bold text-amber-200">{pkg.name}</h5>
+                        <p className="mt-1 text-sm text-white/70 line-clamp-2">{pkg.description}</p>
+                        <p className="mt-2 text-xs text-amber-300">{priceText} · Click to customize</p>
+                      </button>
+                    );
+                  })}
+                </div>
+              </div>
+            )}
+
+            {/* Fallback: Original hardcoded Popular Catering Options (shown only if no database packages) */}
+            {popularPackages.length === 0 && (
+              <div className="mb-8 space-y-4 rounded-2xl border-2 border-amber-500/20 bg-gradient-to-br from-amber-400/10 to-orange-500/10 p-6">
+                <h4 className="text-xl font-bold text-amber-100">Popular Catering Options</h4>
+                <div className="grid gap-3 sm:grid-cols-2">
                 <button
                   onClick={() => {
                     setShowCateringPanel(false);
@@ -1617,8 +1707,71 @@ export default function OrderPageClient({
                 </button>
               </div>
             </div>
+            )}
 
-            {/* Upsell Bundles - Holiday & Event Packages */}
+            {/* Upsell Bundles - Holiday & Event Packages (Database-driven) */}
+            {holidayPackages.length > 0 && (
+              <div className="mb-8 space-y-4 rounded-2xl border-2 border-red-600/20 bg-gradient-to-br from-red-600/10 to-orange-500/10 p-6">
+                <h4 className="text-xl font-bold text-red-200">🎉 Holiday & Event Bundles</h4>
+                <p className="text-sm text-white/70">Pre-packaged bundles perfect for celebrations</p>
+                <div className="grid gap-4 sm:grid-cols-2">
+                  {holidayPackages.map((pkg) => {
+                    const displayImage = pkg.image || cycleFallbackImage(50);
+                    const displayGallery = pkg.gallery && pkg.gallery.length > 0 ? pkg.gallery : [displayImage];
+                    const priceText = pkg.price
+                      ? `$${pkg.price.toFixed(0)}`
+                      : `From $${pkg.pricePerGuest.toFixed(0)}/person`;
+
+                    return (
+                      <button
+                        key={pkg.id}
+                        onClick={() => {
+                          setShowCateringPanel(false);
+                          setCustomModal({
+                            item: {
+                              id: pkg.id,
+                              name: pkg.name,
+                              description: pkg.description,
+                              price: pkg.price || pkg.pricePerGuest,
+                              category: 'catering',
+                              available: pkg.available,
+                              displayImage,
+                              sectionType: 'CATERING',
+                              displayGallery,
+                            },
+                            config: {
+                              removals: pkg.customizationRemovals || [],
+                              addons: pkg.customizationAddons || [],
+                            },
+                          });
+                        }}
+                        className="group relative overflow-hidden rounded-xl border border-red-500/30 bg-black/40 p-5 text-left transition hover:border-red-500 hover:bg-black/50"
+                      >
+                        {pkg.badge && (
+                          <div className="absolute right-3 top-3 rounded-full bg-red-600/80 px-3 py-1 text-xs font-bold text-white">
+                            {pkg.badge}
+                          </div>
+                        )}
+                        <h5 className="text-lg font-bold text-red-300">{pkg.name}</h5>
+                        <p className="mt-2 text-sm text-white/70 line-clamp-2">{pkg.description}</p>
+                        <div className="mt-4 flex items-center justify-between">
+                          <span className="text-2xl font-black text-red-400">{priceText}</span>
+                          <span className="rounded-full bg-red-600 px-4 py-2 text-xs font-semibold text-white transition group-hover:scale-105">
+                            <svg className="inline h-4 w-4 mr-1" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2}>
+                              <path strokeLinecap="round" strokeLinejoin="round" d="M3 3h2l.4 2M7 13h10l4-8H5.4M7 13L5.4 5M7 13l-2.293 2.293c-.63.63-.184 1.707.707 1.707H17m0 0a2 2 0 100 4 2 2 0 000-4zm-8 2a2 2 0 11-4 0 2 2 0 014 0z" />
+                            </svg>
+                            Add →
+                          </span>
+                        </div>
+                      </button>
+                    );
+                  })}
+                </div>
+              </div>
+            )}
+
+            {/* Fallback: Original hardcoded Holiday & Event Bundles (shown only if no database packages) */}
+            {holidayPackages.length === 0 && (
             <div className="mb-8 space-y-4 rounded-2xl border-2 border-red-600/20 bg-gradient-to-br from-red-600/10 to-orange-500/10 p-6">
               <h4 className="text-xl font-bold text-red-200">🎉 Holiday & Event Bundles</h4>
               <p className="text-sm text-white/70">Pre-packaged bundles perfect for celebrations</p>
@@ -1794,6 +1947,7 @@ export default function OrderPageClient({
                 </button>
               </div>
             </div>
+            )}
 
             {/* Quick Inquiry Form */}
             <form onSubmit={handleCateringSubmit} className="space-y-4 rounded-2xl border-2 border-white/20 bg-white/5 p-6">

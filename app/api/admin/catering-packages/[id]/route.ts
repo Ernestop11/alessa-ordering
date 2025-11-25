@@ -35,9 +35,13 @@ export async function PATCH(
     name: body.name ?? existing.name,
     description: body.description ?? existing.description,
     pricePerGuest: body.pricePerGuest !== undefined ? parseFloat(String(body.pricePerGuest)) : existing.pricePerGuest,
+    price: body.price !== undefined ? (body.price !== null ? parseFloat(String(body.price)) : null) : existing.price,
+    category: body.category ?? existing.category,
     image: body.image !== undefined ? body.image : existing.image,
     gallery: body.gallery !== undefined ? body.gallery : existing.gallery,
     badge: body.badge !== undefined ? body.badge : existing.badge,
+    customizationRemovals: body.customizationRemovals !== undefined ? body.customizationRemovals : existing.customizationRemovals,
+    customizationAddons: body.customizationAddons !== undefined ? body.customizationAddons : existing.customizationAddons,
     available: body.available !== undefined ? Boolean(body.available) : existing.available,
     displayOrder: body.displayOrder !== undefined ? Number(body.displayOrder) : existing.displayOrder,
   };

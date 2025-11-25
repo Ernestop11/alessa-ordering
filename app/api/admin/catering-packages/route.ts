@@ -42,9 +42,13 @@ export async function POST(req: Request) {
     name: body.name || '',
     description: body.description || '',
     pricePerGuest: parseFloat(String(body.pricePerGuest || 0)),
+    price: body.price !== undefined && body.price !== null ? parseFloat(String(body.price)) : null,
+    category: body.category || 'popular',
     image: body.image || null,
     gallery: body.gallery || null,
     badge: body.badge || null,
+    customizationRemovals: body.customizationRemovals || [],
+    customizationAddons: body.customizationAddons || null,
     available: body.available === undefined ? true : Boolean(body.available),
     displayOrder: body.displayOrder !== undefined ? Number(body.displayOrder) : 0,
   };
