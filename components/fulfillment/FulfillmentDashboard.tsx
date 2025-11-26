@@ -6,6 +6,7 @@ import NewOrderAlerts, { type AlertSettings } from './NewOrderAlerts';
 import { useOrderFeed } from './useOrderFeed';
 import type { FulfillmentOrder } from './types';
 import CateringInquiriesTab from './CateringInquiriesTab';
+import PrinterSettings from './PrinterSettings';
 
 interface Props {
   initialOrders: FulfillmentOrder[];
@@ -41,46 +42,103 @@ function useAudioNotification() {
   const unlockedRef = useRef(false);
 
   useEffect(() => {
-    const unlock = () => {
-      if (!audioRef.current) {
-        try {
+    // Initialize audio context immediately
+    const initAudio = () => {
+      try {
+        if (!audioRef.current) {
           audioRef.current = new AudioContext();
-        } catch {
-          return;
         }
+        if (audioRef.current.state === 'suspended') {
+          audioRef.current.resume().catch(console.error);
+        }
+        unlockedRef.current = true;
+      } catch (err) {
+        console.error('[Audio] Failed to initialize:', err);
       }
-      if (audioRef.current.state === 'suspended') {
-        void audioRef.current.resume();
-      }
-      unlockedRef.current = true;
-      window.removeEventListener('click', unlock);
-      window.removeEventListener('keydown', unlock);
     };
 
-    window.addEventListener('click', unlock);
-    window.addEventListener('keydown', unlock);
+    // Try to initialize immediately
+    initAudio();
+
+    // Also unlock on user interaction (required for autoplay)
+    const unlock = () => {
+      initAudio();
+      window.removeEventListener('click', unlock);
+      window.removeEventListener('keydown', unlock);
+      window.removeEventListener('touchstart', unlock);
+    };
+
+    window.addEventListener('click', unlock, { once: true });
+    window.addEventListener('keydown', unlock, { once: true });
+    window.addEventListener('touchstart', unlock, { once: true });
 
     return () => {
       window.removeEventListener('click', unlock);
       window.removeEventListener('keydown', unlock);
+      window.removeEventListener('touchstart', unlock);
     };
   }, []);
 
   const play = () => {
-    if (!unlockedRef.current) return;
-    if (!audioRef.current) return;
-    const ctx = audioRef.current;
-    const oscillator = ctx.createOscillator();
-    const gainNode = ctx.createGain();
-    oscillator.type = 'triangle';
-    oscillator.frequency.setValueAtTime(880, ctx.currentTime);
-    gainNode.gain.setValueAtTime(0.0001, ctx.currentTime);
-    gainNode.gain.exponentialRampToValueAtTime(0.2, ctx.currentTime + 0.01);
-    gainNode.gain.exponentialRampToValueAtTime(0.0001, ctx.currentTime + 0.4);
-    oscillator.connect(gainNode);
-    gainNode.connect(ctx.destination);
-    oscillator.start(ctx.currentTime);
-    oscillator.stop(ctx.currentTime + 0.5);
+    console.log('[Audio] Attempting to play notification...', { 
+      unlocked: unlockedRef.current, 
+      hasContext: !!audioRef.current,
+      state: audioRef.current?.state 
+    });
+
+    if (!audioRef.current) {
+      console.warn('[Audio] No audio context, creating one...');
+      try {
+        audioRef.current = new AudioContext();
+      } catch (err) {
+        console.error('[Audio] Failed to create context:', err);
+        return;
+      }
+    }
+
+    // Ensure context is running
+    if (audioRef.current.state === 'suspended') {
+      audioRef.current.resume().then(() => {
+        console.log('[Audio] Context resumed, playing sound...');
+        playSound();
+      }).catch((err) => {
+        console.error('[Audio] Failed to resume context:', err);
+      });
+    } else {
+      playSound();
+    }
+
+    function playSound() {
+      const ctx = audioRef.current!;
+      const now = ctx.currentTime;
+      
+      console.log('[Audio] Playing EXTREME kitchen alarm...');
+      
+      // EXTREMELY LOUD SIREN-LIKE ALARM - alternating high-low frequencies
+      // Pattern: HIGH-LOW-HIGH (siren effect for maximum attention)
+      const frequencies = [1400, 800, 1400]; // Very high to low to high
+      const duration = 0.3; // Longer beeps for more impact
+      
+      frequencies.forEach((freq, i) => {
+        const oscillator = ctx.createOscillator();
+        const gainNode = ctx.createGain();
+        
+        // Square wave for harsh, piercing alarm sound
+        oscillator.type = 'square';
+        oscillator.frequency.setValueAtTime(freq, now + i * 0.3);
+        
+        // MAXIMUM VOLUME - full power
+        gainNode.gain.setValueAtTime(0.0001, now + i * 0.3);
+        gainNode.gain.exponentialRampToValueAtTime(1.0, now + i * 0.3 + 0.01); // Full volume
+        gainNode.gain.setValueAtTime(1.0, now + i * 0.3 + duration - 0.05); // Hold at max
+        gainNode.gain.exponentialRampToValueAtTime(0.0001, now + i * 0.3 + duration);
+        
+        oscillator.connect(gainNode);
+        gainNode.connect(ctx.destination);
+        oscillator.start(now + i * 0.3);
+        oscillator.stop(now + i * 0.3 + duration);
+      });
+    }
   };
 
   return play;
@@ -88,8 +146,10 @@ function useAudioNotification() {
 
 export default function FulfillmentDashboard({ initialOrders, feedUrl, scope }: Props) {
   const [error, setError] = useState<string | null>(null);
-  const [activeTab, setActiveTab] = useState<'orders' | 'inquiries'>('orders');
+  const [activeTab, setActiveTab] = useState<'orders' | 'inquiries' | 'settings'>('orders');
   const [busyOrderId, setBusyOrderId] = useState<string | null>(null);
+  const [printerConfig, setPrinterConfig] = useState<any>(null);
+  const [autoPrintEnabled, setAutoPrintEnabled] = useState(false);
   const [notificationBanner, setNotificationBanner] = useState<string | null>(null);
   const [notificationError, setNotificationError] = useState<string | null>(null);
   const [notificationsSupported, setNotificationsSupported] = useState(false);
@@ -99,9 +159,12 @@ export default function FulfillmentDashboard({ initialOrders, feedUrl, scope }: 
   const [isInstallable, setIsInstallable] = useState(false);
   const [alertSettings, setAlertSettings] = useState<AlertSettings>({
     enabled: true,
-    volume: 0.7,
-    soundType: 'chime',
+    volume: 1.0, // Maximum volume for kitchen
+    soundType: 'chime', // Now uses loud triple beep
     flashingEnabled: true,
+    modalAlertEnabled: true, // Enable full-screen modal by default
+    modalFlashStyle: 'strobe', // Strobe flash style for maximum attention
+    modalAutoDismiss: false, // Don't auto-dismiss - require acknowledgment
   });
   const playNotification = useAudioNotification();
 
@@ -130,12 +193,11 @@ export default function FulfillmentDashboard({ initialOrders, feedUrl, scope }: 
   const lastNotifiedIdRef = useRef<string | null>(null);
   const isClient = typeof window !== 'undefined';
 
+  // Note: Alarm is now handled by NewOrderAlerts component automatically
+  // This hook is kept for backwards compatibility but won't play duplicate sounds
   useEffect(() => {
-    if (newOrderCount > lastCountRef.current) {
-      playNotification();
-    }
     lastCountRef.current = newOrderCount;
-  }, [newOrderCount, playNotification]);
+  }, [newOrderCount]);
 
   useEffect(() => {
     if (!isClient) return;
@@ -190,6 +252,46 @@ export default function FulfillmentDashboard({ initialOrders, feedUrl, scope }: 
       // ignore badge errors
     }
   }, [isClient, newOrderCount]);
+
+  // Load printer config on mount
+  useEffect(() => {
+    async function loadPrinterConfig() {
+      try {
+        const [configRes, settingsRes] = await Promise.all([
+          fetch('/api/admin/fulfillment/printer'),
+          fetch('/api/admin/tenant-settings'),
+        ]);
+
+        if (configRes.ok) {
+          const configData = await configRes.json();
+          setPrinterConfig(configData.config);
+        }
+
+        if (settingsRes.ok) {
+          const settingsData = await settingsRes.json();
+          setAutoPrintEnabled(settingsData.integrations?.autoPrintOrders || false);
+        }
+      } catch (err) {
+        console.error('Failed to load printer config:', err);
+      }
+    }
+
+    loadPrinterConfig();
+  }, []);
+
+  // Auto-print when new orders arrive
+  useEffect(() => {
+    if (!lastCreatedOrder) return;
+    if (lastNotifiedIdRef.current === lastCreatedOrder.id) return;
+    if (!autoPrintEnabled || !printerConfig || printerConfig.type === 'none') return;
+
+    lastNotifiedIdRef.current = lastCreatedOrder.id;
+
+    // Trigger auto-print in background (don't wait for it)
+    handleAutoPrint(lastCreatedOrder).catch((err) => {
+      console.error('[Auto-Print] Failed to print order:', err);
+    });
+  }, [lastCreatedOrder, autoPrintEnabled, printerConfig]);
 
   useEffect(() => {
     if (!lastCreatedOrder) return;
@@ -285,6 +387,43 @@ export default function FulfillmentDashboard({ initialOrders, feedUrl, scope }: 
       setError(err.message || 'Failed to process refund');
     } finally {
       setBusyOrderId(null);
+    }
+  };
+
+  const sendToBluetoothPrinterClient = async (deviceId: string, receiptData: string): Promise<void> => {
+    if (!('bluetooth' in navigator)) {
+      throw new Error('Web Bluetooth not supported');
+    }
+
+    const navigatorBluetooth = (navigator as any).bluetooth;
+
+    try {
+      const device = await navigatorBluetooth.requestDevice({
+        acceptAllDevices: true,
+        optionalServices: [
+          '00001101-0000-1000-8000-00805f9b34fb', // SPP
+          'e7810a71-73ae-499d-8c15-faa9aef0c3f2', // Brother
+        ],
+      });
+
+      if (!device?.gatt) throw new Error('Failed to connect');
+
+      const server = await device.gatt.connect();
+      const service = await server.getPrimaryService('00001101-0000-1000-8000-00805f9b34fb');
+      const characteristic = await service.getCharacteristic('00002a3d-0000-1000-8000-00805f9b34fb');
+
+      const encoder = new TextEncoder();
+      const data = encoder.encode(receiptData);
+
+      // Write in chunks
+      const chunkSize = 20;
+      for (let i = 0; i < data.length; i += chunkSize) {
+        await characteristic.writeValue(data.slice(i, i + chunkSize));
+      }
+
+      await device.gatt.disconnect();
+    } catch (error: any) {
+      throw new Error(error.message || 'Bluetooth print failed');
     }
   };
 
@@ -483,6 +622,16 @@ export default function FulfillmentDashboard({ initialOrders, feedUrl, scope }: 
           >
             Catering Inquiries
           </button>
+          <button
+            onClick={() => setActiveTab('settings')}
+            className={`px-4 py-2 text-sm font-medium ${
+              activeTab === 'settings'
+                ? 'border-b-2 border-blue-600 text-blue-600'
+                : 'text-gray-600 hover:text-gray-900'
+            }`}
+          >
+            Settings
+          </button>
         </div>
       </header>
 
@@ -517,8 +666,10 @@ export default function FulfillmentDashboard({ initialOrders, feedUrl, scope }: 
             Showing {orders.length} orders · {newOrders.length} waiting acceptance.
           </footer>
         </>
-      ) : (
+      ) : activeTab === 'inquiries' ? (
         <CateringInquiriesTab />
+      ) : (
+        <PrinterSettings />
       )}
     </div>
   );

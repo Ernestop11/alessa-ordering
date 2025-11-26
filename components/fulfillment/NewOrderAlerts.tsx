@@ -10,6 +10,10 @@ export interface AlertSettings {
   customSoundUrl?: string;
   flashingEnabled: boolean;
   muteUntil?: number; // timestamp
+  // Modal alert settings
+  modalAlertEnabled?: boolean; // Enable/disable full-screen modal
+  modalFlashStyle?: 'strobe' | 'pulse' | 'rainbow' | 'solid'; // Flash style
+  modalAutoDismiss?: boolean; // Auto-dismiss after timeout (optional)
 }
 
 interface Props {
@@ -119,11 +123,16 @@ export default function NewOrderAlerts({
   const [showSettings, setShowSettings] = useState(false);
   const [isPlaying, setIsPlaying] = useState(false);
   const [audioUnlocked, setAudioUnlocked] = useState(false); // Track unlock state for UI
+  const [showModal, setShowModal] = useState(false);
+  const [flashingColor, setFlashingColor] = useState(0); // For cycling colors in strobe mode
   const audioContextRef = useRef<AudioContext | null>(null);
   const customAudioRef = useRef<HTMLAudioElement | null>(null);
   const lastAlertedOrderIdRef = useRef<string | null>(null);
   const intervalRef = useRef<number | null>(null);
   const audioUnlockedRef = useRef(false); // Track if audio is unlocked
+  const modalFlashIntervalRef = useRef<number | null>(null);
+  const modalAutoDismissTimeoutRef = useRef<number | null>(null);
+  const lastModalOrderIdRef = useRef<string | null>(null);
 
   // Initialize audio context and unlock it aggressively - ESPECIALLY for PWA
   useEffect(() => {
@@ -423,6 +432,87 @@ export default function NewOrderAlerts({
   };
 
   const isMuted = settings.muteUntil && Date.now() < settings.muteUntil;
+  
+  // Modal alert settings with defaults
+  const modalAlertEnabled = settings.modalAlertEnabled !== undefined ? settings.modalAlertEnabled : true;
+  const modalFlashStyle = settings.modalFlashStyle || 'strobe';
+  const modalAutoDismiss = settings.modalAutoDismiss !== undefined ? settings.modalAutoDismiss : false;
+
+  // Handle full-screen modal with flashing effects
+  useEffect(() => {
+    if (!modalAlertEnabled || unacknowledgedOrders.length === 0) {
+      setShowModal(false);
+      if (modalFlashIntervalRef.current) {
+        clearInterval(modalFlashIntervalRef.current);
+        modalFlashIntervalRef.current = null;
+      }
+      if (modalAutoDismissTimeoutRef.current) {
+        clearTimeout(modalAutoDismissTimeoutRef.current);
+        modalAutoDismissTimeoutRef.current = null;
+      }
+      return;
+    }
+
+    // Show modal for new orders
+    const newestOrder = unacknowledgedOrders[0];
+    const isNewOrder = newestOrder.id !== lastModalOrderIdRef.current;
+    
+    if (isNewOrder) {
+      lastModalOrderIdRef.current = newestOrder.id;
+      setShowModal(true);
+      setFlashingColor(0);
+      
+      // Start flashing effect based on style
+      if (modalFlashStyle === 'strobe' || modalFlashStyle === 'rainbow') {
+        modalFlashIntervalRef.current = window.setInterval(() => {
+          setFlashingColor(prev => (prev + 1) % 4); // Cycle through 4 colors
+        }, 200); // Flash every 200ms for strobe effect
+      }
+      
+      // Auto-dismiss after 30 seconds if enabled
+      if (modalAutoDismiss) {
+        modalAutoDismissTimeoutRef.current = window.setTimeout(() => {
+          setShowModal(false);
+          if (modalFlashIntervalRef.current) {
+            clearInterval(modalFlashIntervalRef.current);
+            modalFlashIntervalRef.current = null;
+          }
+        }, 30000); // 30 seconds
+      }
+    }
+
+    return () => {
+      if (modalFlashIntervalRef.current) {
+        clearInterval(modalFlashIntervalRef.current);
+        modalFlashIntervalRef.current = null;
+      }
+      if (modalAutoDismissTimeoutRef.current) {
+        clearTimeout(modalAutoDismissTimeoutRef.current);
+        modalAutoDismissTimeoutRef.current = null;
+      }
+    };
+  }, [unacknowledgedOrders, modalAlertEnabled, modalFlashStyle, modalAutoDismiss]);
+
+  // Format currency helper
+  const formatCurrency = (value: number | null | undefined) => {
+    if (!value || Number.isNaN(value)) return '$0.00';
+    return new Intl.NumberFormat(undefined, { style: 'currency', currency: 'USD' }).format(value);
+  };
+
+  // Get flashing background color
+  const getFlashColor = () => {
+    if (modalFlashStyle === 'solid') return 'bg-red-600';
+    if (modalFlashStyle === 'pulse') return 'bg-red-500';
+    
+    // Strobe and rainbow cycle through colors
+    const colors = [
+      'bg-red-600',
+      'bg-orange-500',
+      'bg-yellow-400',
+      'bg-red-500',
+    ];
+    return colors[flashingColor % colors.length];
+  };
 
   // Render unlock button if audio is not unlocked
   const renderUnlockButton = () => {
@@ -468,8 +558,137 @@ export default function NewOrderAlerts({
     );
   };
 
+  // Render full-screen flashing modal
+  const renderModal = () => {
+    if (!showModal || !modalAlertEnabled || unacknowledgedOrders.length === 0) return null;
+
+    return (
+      <>
+        {/* CSS animations for flashing effects */}
+        <style jsx global>{`
+          @keyframes strobe {
+            0%, 100% { opacity: 1; background-color: #dc2626; }
+            25% { opacity: 1; background-color: #f97316; }
+            50% { opacity: 1; background-color: #facc15; }
+            75% { opacity: 1; background-color: #ef4444; }
+          }
+          
+          @keyframes pulse {
+            0%, 100% { opacity: 1; transform: scale(1); }
+            50% { opacity: 0.7; transform: scale(1.02); }
+          }
+          
+          @keyframes rainbow {
+            0% { background-color: #dc2626; }
+            25% { background-color: #f97316; }
+            50% { background-color: #facc15; }
+            75% { background-color: #3b82f6; }
+            100% { background-color: #dc2626; }
+          }
+          
+          .strobe-bg {
+            animation: strobe 0.4s infinite;
+          }
+          
+          .pulse-bg {
+            animation: pulse 1s infinite;
+          }
+          
+          .rainbow-bg {
+            animation: rainbow 1s infinite;
+          }
+        `}</style>
+
+        {/* Full-screen modal overlay */}
+        <div 
+          className={`fixed inset-0 z-[9999] flex items-center justify-center ${
+            modalFlashStyle === 'strobe' ? 'strobe-bg' :
+            modalFlashStyle === 'pulse' ? 'pulse-bg bg-red-500' :
+            modalFlashStyle === 'rainbow' ? 'rainbow-bg' :
+            getFlashColor()
+          }`}
+          style={{
+            transition: modalFlashStyle === 'strobe' || modalFlashStyle === 'rainbow' 
+              ? 'none' 
+              : 'background-color 0.2s ease'
+          }}
+        >
+          {/* Modal content */}
+          <div className="relative z-10 bg-white rounded-3xl shadow-2xl p-8 max-w-3xl w-full mx-4 transform scale-105 animate-bounce">
+            <div className="text-center space-y-6">
+              {/* Large order count */}
+              <div className="text-9xl font-black text-red-600 animate-pulse">
+                {unacknowledgedOrders.length}
+              </div>
+              
+              {/* Title */}
+              <h2 className="text-5xl font-black text-gray-900 uppercase tracking-wider">
+                New Order{unacknowledgedOrders.length > 1 ? 'S' : ''}!
+              </h2>
+              
+              {/* Order details */}
+              <div className="space-y-3 max-h-64 overflow-y-auto">
+                {unacknowledgedOrders.slice(0, 5).map((order, index) => (
+                  <div 
+                    key={order.id} 
+                    className="bg-gray-50 rounded-xl p-5 border-2 border-gray-200 animate-fade-in"
+                    style={{ animationDelay: `${index * 0.1}s` }}
+                  >
+                    <p className="text-2xl font-bold text-gray-900">
+                      {order.customerName || 'Guest'}
+                    </p>
+                    <p className="text-xl text-gray-600 mt-1">
+                      {formatCurrency(order.totalAmount)} · {order.items.length} item{order.items.length > 1 ? 's' : ''}
+                    </p>
+                    {order.fulfillmentMethod === 'delivery' && (
+                      <p className="text-sm text-blue-600 mt-1 font-semibold">
+                        🚗 Delivery Order
+                      </p>
+                    )}
+                  </div>
+                ))}
+                {unacknowledgedOrders.length > 5 && (
+                  <p className="text-2xl text-gray-700 font-semibold">
+                    +{unacknowledgedOrders.length - 5} more order{unacknowledgedOrders.length - 5 > 1 ? 's' : ''}
+                  </p>
+                )}
+              </div>
+              
+              {/* Acknowledge button */}
+              <button
+                onClick={() => {
+                  unacknowledgedOrders.forEach(order => onAcknowledge(order.id));
+                  setShowModal(false);
+                  if (modalFlashIntervalRef.current) {
+                    clearInterval(modalFlashIntervalRef.current);
+                    modalFlashIntervalRef.current = null;
+                  }
+                  if (modalAutoDismissTimeoutRef.current) {
+                    clearTimeout(modalAutoDismissTimeoutRef.current);
+                    modalAutoDismissTimeoutRef.current = null;
+                  }
+                }}
+                className="w-full bg-green-600 hover:bg-green-700 text-white text-4xl font-black py-6 rounded-xl shadow-2xl transform hover:scale-105 transition-all active:scale-95"
+                style={{ minHeight: '80px' }}
+              >
+                ✓ ACKNOWLEDGE ALL
+              </button>
+              
+              {modalAutoDismiss && (
+                <p className="text-sm text-white/80 font-medium">
+                  Auto-dismissing in 30 seconds...
+                </p>
+              )}
+            </div>
+          </div>
+        </div>
+      </>
+    );
+  };
+
   return (
     <>
+      {renderModal()}
       {renderUnlockButton()}
       {/* Persistent Notification Banner */}
       {unacknowledgedOrders.length > 0 && (
@@ -532,7 +751,7 @@ export default function NewOrderAlerts({
               {/* Settings Panel */}
               {showSettings && (
                 <div className="mt-4 pt-4 border-t border-white/20">
-                  <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-4">
+                  <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-5 gap-4">
                     {/* Volume Control */}
                     <div>
                       <label className="block text-xs font-medium mb-2">
@@ -611,10 +830,64 @@ export default function NewOrderAlerts({
                     </div>
                   </div>
 
+                  {/* Modal Alert Settings */}
+                  <div className="mt-4 pt-4 border-t border-white/20">
+                    <h4 className="text-xs font-semibold mb-3 uppercase tracking-wide">Full-Screen Modal Alert</h4>
+                    <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
+                      {/* Enable Modal */}
+                      <label className="flex items-center gap-2 text-sm cursor-pointer">
+                        <input
+                          type="checkbox"
+                          checked={modalAlertEnabled}
+                          onChange={(e) => onSettingsChange({
+                            ...settings,
+                            modalAlertEnabled: e.target.checked,
+                          })}
+                          className="rounded"
+                        />
+                        <span>Enable Full-Screen Modal</span>
+                      </label>
+
+                      {/* Flash Style */}
+                      <div>
+                        <label className="block text-xs font-medium mb-2">Flash Style</label>
+                        <select
+                          value={modalFlashStyle}
+                          onChange={(e) => onSettingsChange({
+                            ...settings,
+                            modalFlashStyle: e.target.value as 'strobe' | 'pulse' | 'rainbow' | 'solid',
+                          })}
+                          className="w-full bg-white/20 border border-white/30 rounded px-2 py-1 text-sm"
+                          disabled={!modalAlertEnabled}
+                        >
+                          <option value="strobe">Strobe (Rapid Flash)</option>
+                          <option value="pulse">Pulse (Fade In/Out)</option>
+                          <option value="rainbow">Rainbow (Color Cycle)</option>
+                          <option value="solid">Solid (Bright Red)</option>
+                        </select>
+                      </div>
+
+                      {/* Auto-Dismiss */}
+                      <label className="flex items-center gap-2 text-sm cursor-pointer">
+                        <input
+                          type="checkbox"
+                          checked={modalAutoDismiss}
+                          onChange={(e) => onSettingsChange({
+                            ...settings,
+                            modalAutoDismiss: e.target.checked,
+                          })}
+                          className="rounded"
+                          disabled={!modalAlertEnabled}
+                        />
+                        <span>Auto-Dismiss (30s)</span>
+                      </label>
+                    </div>
+                  </div>
+
                   <div className="mt-3 text-xs opacity-75">
                     <p>
-                      <strong>Accessibility Note:</strong> Sounds will repeat every 10 seconds until acknowledged.
-                      You can mute alerts for 1 hour or adjust volume to 0 to disable sound completely.
+                      <strong>Accessibility Note:</strong> Sounds will repeat every 2.5 seconds until acknowledged.
+                      Full-screen modal provides visual alert that cannot be missed. You can mute alerts for 1 hour or adjust volume to 0 to disable sound completely.
                     </p>
                   </div>
                 </div>
