@@ -23,67 +23,90 @@ interface Props {
 const SOUND_PATTERNS = {
   chime: (ctx: AudioContext, volume: number) => {
     const now = ctx.currentTime;
-
-    // Create a pleasant chime sound (two notes)
-    for (let i = 0; i < 2; i++) {
-      const osc = ctx.createOscillator();
-      const gain = ctx.createGain();
-
-      osc.type = 'sine';
-      osc.frequency.setValueAtTime(880 * (i === 0 ? 1 : 1.5), now + i * 0.15);
-
-      gain.gain.setValueAtTime(0.0001, now + i * 0.15);
-      gain.gain.exponentialRampToValueAtTime(volume * 0.3, now + i * 0.15 + 0.01);
-      gain.gain.exponentialRampToValueAtTime(0.0001, now + i * 0.15 + 0.4);
-
-      osc.connect(gain);
-      gain.connect(ctx.destination);
-      osc.start(now + i * 0.15);
-      osc.stop(now + i * 0.15 + 0.5);
+    
+    // EXTREMELY LOUD KITCHEN ALARM - Layered siren pattern
+    // Layer multiple oscillators simultaneously for maximum volume
+    const duration = 0.4; // Longer beeps for more impact
+    
+    // Pattern: HIGH-LOW-HIGH (siren effect) - play 2 cycles rapidly
+    const frequencies = [1600, 900, 1600]; // Higher frequencies for piercing sound
+    
+    // Play pattern twice rapidly for immediate attention
+    for (let cycle = 0; cycle < 2; cycle++) {
+      frequencies.forEach((freq, i) => {
+        // Layer 3 oscillators per frequency (layered for volume boost)
+        for (let layer = 0; layer < 3; layer++) {
+          const osc = ctx.createOscillator();
+          const gain = ctx.createGain();
+          
+          // Square wave for harsh, piercing alarm sound
+          osc.type = 'square';
+          // Slight frequency variation per layer for richer, louder sound
+          osc.frequency.setValueAtTime(freq + (layer * 40), now + cycle * 0.9 + i * 0.3);
+          
+          // MAXIMUM VOLUME - layered oscillators amplify the sound significantly
+          gain.gain.setValueAtTime(0.0001, now + cycle * 0.9 + i * 0.3);
+          gain.gain.exponentialRampToValueAtTime(volume * 1.0, now + cycle * 0.9 + i * 0.3 + 0.01);
+          gain.gain.setValueAtTime(volume * 1.0, now + cycle * 0.9 + i * 0.3 + duration - 0.05);
+          gain.gain.exponentialRampToValueAtTime(0.0001, now + cycle * 0.9 + i * 0.3 + duration);
+          
+          osc.connect(gain);
+          gain.connect(ctx.destination);
+          osc.start(now + cycle * 0.9 + i * 0.3);
+          osc.stop(now + cycle * 0.9 + i * 0.3 + duration);
+        }
+      });
     }
   },
 
   bell: (ctx: AudioContext, volume: number) => {
     const now = ctx.currentTime;
-
-    // Bell sound (multiple harmonics)
-    [440, 880, 1320, 1760].forEach((freq, i) => {
+    
+    // LOUD ALARM BELL - Multiple frequencies for attention
+    // Creates a harsh, urgent buzzer sound
+    const frequencies = [800, 1200, 1600]; // Lower, mid, high for urgency
+    
+    frequencies.forEach((freq, i) => {
       const osc = ctx.createOscillator();
       const gain = ctx.createGain();
-
-      osc.type = 'triangle';
+      
+      osc.type = 'square'; // Square wave = harsh alarm sound
       osc.frequency.setValueAtTime(freq, now);
-
-      const vol = volume * (1 - i * 0.15);
+      
+      const vol = volume * (0.7 - i * 0.15); // Slightly different volumes per frequency
       gain.gain.setValueAtTime(0.0001, now);
-      gain.gain.exponentialRampToValueAtTime(vol * 0.2, now + 0.01);
-      gain.gain.exponentialRampToValueAtTime(0.0001, now + 1.0);
-
+      gain.gain.exponentialRampToValueAtTime(vol * 0.8, now + 0.01);
+      gain.gain.setValueAtTime(vol * 0.8, now + 0.3); // Hold loud
+      gain.gain.exponentialRampToValueAtTime(0.0001, now + 0.35);
+      
       osc.connect(gain);
       gain.connect(ctx.destination);
       osc.start(now);
-      osc.stop(now + 1.2);
+      osc.stop(now + 0.4);
     });
   },
 
   ding: (ctx: AudioContext, volume: number) => {
     const now = ctx.currentTime;
-
-    // Simple ding sound
-    const osc = ctx.createOscillator();
-    const gain = ctx.createGain();
-
-    osc.type = 'sine';
-    osc.frequency.setValueAtTime(1200, now);
-
-    gain.gain.setValueAtTime(0.0001, now);
-    gain.gain.exponentialRampToValueAtTime(volume * 0.4, now + 0.01);
-    gain.gain.exponentialRampToValueAtTime(0.0001, now + 0.3);
-
-    osc.connect(gain);
-    gain.connect(ctx.destination);
-    osc.start(now);
-    osc.stop(now + 0.4);
+    
+    // LOUD ALERT - Double beep
+    for (let i = 0; i < 2; i++) {
+      const osc = ctx.createOscillator();
+      const gain = ctx.createGain();
+      
+      osc.type = 'square';
+      osc.frequency.setValueAtTime(1400, now + i * 0.2); // Very high pitch
+      
+      gain.gain.setValueAtTime(0.0001, now + i * 0.2);
+      gain.gain.exponentialRampToValueAtTime(volume * 0.85, now + i * 0.2 + 0.01);
+      gain.gain.setValueAtTime(volume * 0.85, now + i * 0.2 + 0.15);
+      gain.gain.exponentialRampToValueAtTime(0.0001, now + i * 0.2 + 0.16);
+      
+      osc.connect(gain);
+      gain.connect(ctx.destination);
+      osc.start(now + i * 0.2);
+      osc.stop(now + i * 0.2 + 0.18);
+    }
   },
 };
 
@@ -95,107 +118,262 @@ export default function NewOrderAlerts({
 }: Props) {
   const [showSettings, setShowSettings] = useState(false);
   const [isPlaying, setIsPlaying] = useState(false);
+  const [audioUnlocked, setAudioUnlocked] = useState(false); // Track unlock state for UI
   const audioContextRef = useRef<AudioContext | null>(null);
   const customAudioRef = useRef<HTMLAudioElement | null>(null);
   const lastAlertedOrderIdRef = useRef<string | null>(null);
   const intervalRef = useRef<number | null>(null);
+  const audioUnlockedRef = useRef(false); // Track if audio is unlocked
 
-  // Initialize audio context
+  // Initialize audio context and unlock it aggressively - ESPECIALLY for PWA
   useEffect(() => {
-    const initAudio = () => {
-      if (!audioContextRef.current) {
-        try {
+    const unlockAudio = async () => {
+      try {
+        if (!audioContextRef.current) {
           audioContextRef.current = new (window.AudioContext || (window as any).webkitAudioContext)();
-        } catch (e) {
-          console.error('Failed to create AudioContext:', e);
+          console.log('[Alarm] AudioContext created, state:', audioContextRef.current.state);
         }
-      }
 
-      if (audioContextRef.current?.state === 'suspended') {
-        void audioContextRef.current.resume();
+        // Always try to resume - this unlocks audio for autoplay
+        if (audioContextRef.current.state === 'suspended') {
+          await audioContextRef.current.resume();
+          console.log('[Alarm] AudioContext resumed, state:', audioContextRef.current.state);
+        }
+        
+        // Play a silent sound to unlock audio context
+        // This is a common technique to bypass autoplay restrictions
+        if (!audioUnlockedRef.current && audioContextRef.current.state === 'running') {
+          const oscillator = audioContextRef.current.createOscillator();
+          const gainNode = audioContextRef.current.createGain();
+          gainNode.gain.setValueAtTime(0.001, audioContextRef.current.currentTime); // Silent
+          oscillator.connect(gainNode);
+          gainNode.connect(audioContextRef.current.destination);
+          oscillator.start();
+          oscillator.stop(audioContextRef.current.currentTime + 0.01);
+          audioUnlockedRef.current = true;
+          setAudioUnlocked(true);
+          console.log('[Alarm] Audio unlocked for autoplay!');
+        } else if (audioContextRef.current.state === 'running') {
+          audioUnlockedRef.current = true;
+          setAudioUnlocked(true);
+        }
+      } catch (e) {
+        console.error('[Alarm] Failed to unlock audio:', e);
+        setAudioUnlocked(false);
       }
     };
 
-    window.addEventListener('click', initAudio, { once: true });
-    window.addEventListener('keydown', initAudio, { once: true });
+    // Try to unlock immediately
+    unlockAudio();
+
+    // ALSO unlock immediately if we're in PWA mode (standalone display)
+    const isPWA = window.matchMedia('(display-mode: standalone)').matches || 
+                  (window.navigator as any).standalone === true;
+    
+    if (isPWA) {
+      console.log('[Alarm] PWA detected - aggressively unlocking audio');
+      // Multiple unlock attempts for PWA
+      setTimeout(unlockAudio, 100);
+      setTimeout(unlockAudio, 500);
+      setTimeout(unlockAudio, 1000);
+    }
+
+    // Also unlock on ANY user interaction
+    const handleInteraction = () => {
+      unlockAudio();
+    };
+
+    // Listen to multiple interaction types
+    const events = ['click', 'touchstart', 'keydown', 'mousedown', 'pointerdown', 'touchend'];
+    events.forEach(event => {
+      window.addEventListener(event, handleInteraction, { once: false, passive: true });
+    });
 
     return () => {
-      window.removeEventListener('click', initAudio);
-      window.removeEventListener('keydown', initAudio);
+      events.forEach(event => {
+        window.removeEventListener(event, handleInteraction);
+      });
     };
   }, []);
 
   // Play alert sound
   const playAlertSound = useCallback(() => {
-    if (!settings.enabled) return;
-
-    // Check if muted
-    if (settings.muteUntil && Date.now() < settings.muteUntil) {
+    if (!settings.enabled) {
+      console.log('[Alarm] Sound disabled in settings');
       return;
     }
 
-    if (settings.volume === 0) return;
+    // Check if muted
+    if (settings.muteUntil && Date.now() < settings.muteUntil) {
+      console.log('[Alarm] Muted until', new Date(settings.muteUntil));
+      return;
+    }
+
+    if (settings.volume === 0) {
+      console.log('[Alarm] Volume is 0');
+      return;
+    }
+
+    console.log('[Alarm] Playing alert sound...', { soundType: settings.soundType, volume: settings.volume });
 
     setIsPlaying(true);
 
-    if (settings.soundType === 'custom' && settings.customSoundUrl) {
-      // Play custom sound
-      if (!customAudioRef.current) {
-        customAudioRef.current = new Audio(settings.customSoundUrl);
+    // Ensure audio context is ready and unlocked
+    const ensureAudioReady = async () => {
+      try {
+        if (!audioContextRef.current) {
+          audioContextRef.current = new (window.AudioContext || (window as any).webkitAudioContext)();
+          console.log('[Alarm] AudioContext created during play, state:', audioContextRef.current.state);
+        }
+
+        // Always resume if suspended (required for autoplay)
+        if (audioContextRef.current.state === 'suspended') {
+          console.log('[Alarm] AudioContext suspended, attempting to resume...');
+          await audioContextRef.current.resume();
+          console.log('[Alarm] AudioContext resumed successfully, state:', audioContextRef.current.state);
+          audioUnlockedRef.current = true;
+        }
+
+        // If still suspended, try to unlock by playing silent sound
+        if (audioContextRef.current.state === 'suspended' && !audioUnlockedRef.current) {
+          console.log('[Alarm] Attempting to unlock with silent sound...');
+          const osc = audioContextRef.current.createOscillator();
+          const gain = audioContextRef.current.createGain();
+          gain.gain.setValueAtTime(0.001, audioContextRef.current.currentTime);
+          osc.connect(gain);
+          gain.connect(audioContextRef.current.destination);
+          osc.start();
+          osc.stop(audioContextRef.current.currentTime + 0.01);
+          await audioContextRef.current.resume();
+          audioUnlockedRef.current = true;
+        }
+
+        // Now play the actual sound
+        if (audioContextRef.current.state === 'running') {
+          playSoundNow();
+        } else {
+          console.error('[Alarm] AudioContext not running, state:', audioContextRef.current.state);
+          setIsPlaying(false);
+        }
+      } catch (err) {
+        console.error('[Alarm] Failed to ensure audio ready:', err);
+        setIsPlaying(false);
       }
-      customAudioRef.current.volume = settings.volume;
-      customAudioRef.current.play().catch(console.error);
+    };
 
-      setTimeout(() => setIsPlaying(false), 1000);
-    } else {
-      // Play built-in sound
-      if (!audioContextRef.current) return;
+    ensureAudioReady();
 
-      if (settings.soundType !== 'custom') {
-        const pattern = SOUND_PATTERNS[settings.soundType];
-        pattern(audioContextRef.current, settings.volume);
+    function playSoundNow() {
+      if (settings.soundType === 'custom' && settings.customSoundUrl) {
+        // Play custom sound
+        if (!customAudioRef.current) {
+          customAudioRef.current = new Audio(settings.customSoundUrl);
+        }
+        customAudioRef.current.volume = settings.volume;
+        customAudioRef.current.play().catch((err) => {
+          console.error('[Alarm] Failed to play custom sound:', err);
+        });
+
+        setTimeout(() => setIsPlaying(false), 1000);
+      } else {
+        // Play built-in sound
+        if (!audioContextRef.current) {
+          console.error('[Alarm] AudioContext not available');
+          setIsPlaying(false);
+          return;
+        }
+
+        try {
+          // Exclude 'custom' from type since it's handled above
+          const soundType = settings.soundType === 'custom' ? 'chime' : settings.soundType;
+          const pattern = SOUND_PATTERNS[soundType];
+          if (pattern) {
+            pattern(audioContextRef.current, settings.volume);
+            console.log('[Alarm] Sound pattern played:', soundType);
+          } else {
+            console.error('[Alarm] Unknown sound type:', soundType);
+          }
+          setTimeout(() => setIsPlaying(false), 1200); // Longer timeout for layered sound
+        } catch (err) {
+          console.error('[Alarm] Failed to play sound pattern:', err);
+          setIsPlaying(false);
+        }
       }
-
-      setTimeout(() => setIsPlaying(false), 500);
     }
   }, [settings]);
 
-  // Monitor for new orders
+  // Monitor for new orders - AUTO-TRIGGER IMMEDIATELY
   useEffect(() => {
+    // Clear interval if no unacknowledged orders
     if (unacknowledgedOrders.length === 0) {
       lastAlertedOrderIdRef.current = null;
       if (intervalRef.current) {
         clearInterval(intervalRef.current);
         intervalRef.current = null;
       }
+      setIsPlaying(false);
       return;
     }
 
     // Get the newest unacknowledged order
     const newestOrder = unacknowledgedOrders[0];
+    
+    // ALWAYS start alarm if there are unacknowledged orders
+    // Don't wait for new order ID - trigger immediately if interval not running!
+    const isNewOrder = newestOrder.id !== lastAlertedOrderIdRef.current;
+    const needsIntervalStart = !intervalRef.current || isNewOrder;
 
-    // If this is a new order we haven't alerted for, play sound
-    if (newestOrder.id !== lastAlertedOrderIdRef.current) {
-      lastAlertedOrderIdRef.current = newestOrder.id;
-      playAlertSound();
-
-      // Start repeating alert every 10 seconds if still unacknowledged
+    if (needsIntervalStart) {
+      // Mark this order as alerted
+      if (isNewOrder) {
+        lastAlertedOrderIdRef.current = newestOrder.id;
+      }
+      
+      // Ensure audio is unlocked before playing
+      const unlockAndPlay = async () => {
+        try {
+          if (!audioContextRef.current) {
+            audioContextRef.current = new (window.AudioContext || (window as any).webkitAudioContext)();
+          }
+          if (audioContextRef.current.state === 'suspended') {
+            await audioContextRef.current.resume();
+            audioUnlockedRef.current = true;
+            console.log('[Alarm] Audio unlocked before first play');
+          }
+        } catch (e) {
+          console.error('[Alarm] Failed to unlock before play:', e);
+        }
+        
+        // Play immediately after unlocking
+        console.log('[Alarm] Triggering alarm for unacknowledged orders:', unacknowledgedOrders.length);
+        playAlertSound();
+      };
+      
+      unlockAndPlay();
+      
+      // Clear existing interval
       if (intervalRef.current) {
         clearInterval(intervalRef.current);
       }
 
+      // Start continuous alarm - repeat every 2.5 seconds
       intervalRef.current = window.setInterval(() => {
+        // Check again if there are still unacknowledged orders
         if (unacknowledgedOrders.length > 0) {
+          console.log('[Alarm] Continuous alarm trigger - unacknowledged:', unacknowledgedOrders.length);
           playAlertSound();
+        } else {
+          // Clean up if all acknowledged
+          if (intervalRef.current) {
+            clearInterval(intervalRef.current);
+            intervalRef.current = null;
+          }
         }
-      }, 10000); // Repeat every 10 seconds
+      }, 2500); // Every 2.5 seconds - CONTINUOUS until acknowledged
     }
 
     return () => {
-      if (intervalRef.current) {
-        clearInterval(intervalRef.current);
-        intervalRef.current = null;
-      }
+      // Don't clear interval here - only clear when orders are acknowledged
     };
   }, [unacknowledgedOrders, playAlertSound]);
 
@@ -246,8 +424,53 @@ export default function NewOrderAlerts({
 
   const isMuted = settings.muteUntil && Date.now() < settings.muteUntil;
 
+  // Render unlock button if audio is not unlocked
+  const renderUnlockButton = () => {
+    if (audioUnlocked) return null;
+    
+    return (
+      <div className="fixed bottom-4 left-4 z-50 bg-yellow-500 text-white px-4 py-3 rounded-lg shadow-lg max-w-sm">
+        <p className="text-sm font-medium mb-2">⚠️ Audio Locked</p>
+        <p className="text-xs mb-3">Tap to unlock alarm sounds</p>
+        <button
+          onClick={async () => {
+            try {
+              if (!audioContextRef.current) {
+                audioContextRef.current = new (window.AudioContext || (window as any).webkitAudioContext)();
+              }
+              if (audioContextRef.current.state === 'suspended') {
+                await audioContextRef.current.resume();
+              }
+              // Play a test sound
+              const osc = audioContextRef.current.createOscillator();
+              const gain = audioContextRef.current.createGain();
+              gain.gain.setValueAtTime(0.001, audioContextRef.current.currentTime);
+              osc.connect(gain);
+              gain.connect(audioContextRef.current.destination);
+              osc.start();
+              osc.stop(audioContextRef.current.currentTime + 0.01);
+              audioUnlockedRef.current = true;
+              setAudioUnlocked(true);
+              console.log('[Alarm] Audio manually unlocked!');
+              
+              // Play a quick test sound to confirm
+              setTimeout(() => playAlertSound(), 100);
+            } catch (e) {
+              console.error('[Alarm] Failed to unlock:', e);
+              alert('Failed to unlock audio. Please check browser settings.');
+            }
+          }}
+          className="w-full bg-white text-yellow-600 px-3 py-2 rounded font-medium text-sm hover:bg-gray-100 transition-colors"
+        >
+          Unlock Audio
+        </button>
+      </div>
+    );
+  };
+
   return (
     <>
+      {renderUnlockButton()}
       {/* Persistent Notification Banner */}
       {unacknowledgedOrders.length > 0 && (
         <div
@@ -333,9 +556,9 @@ export default function NewOrderAlerts({
                         onChange={(e) => handleSoundTypeChange(e.target.value as AlertSettings['soundType'])}
                         className="w-full bg-white/20 border border-white/30 rounded px-2 py-1 text-sm"
                       >
-                        <option value="chime">Chime (Default)</option>
-                        <option value="bell">Bell</option>
-                        <option value="ding">Ding</option>
+                        <option value="chime">Kitchen Alarm (Triple Beep) - Default</option>
+                        <option value="bell">Loud Alarm Bell</option>
+                        <option value="ding">Alert Beep (Double)</option>
                         <option value="custom">Custom Sound</option>
                       </select>
                     </div>

@@ -85,24 +85,35 @@ export function useOrderFeed({ feedUrl, initialOrders }: Options) {
       }
     };
 
-    // Polling fallback every 5 seconds
+    // AGGRESSIVE POLLING FALLBACK - Every 2 seconds for faster order detection
+    // This ensures orders appear quickly even if EventSource fails on iPad PWA
     const pollInterval = setInterval(async () => {
       if (closed) return;
       try {
-        const response = await fetch(feedUrl.replace('/stream', ''));
+        const response = await fetch(feedUrl.replace('/stream', '') + '?t=' + Date.now()); // Cache bust
         if (response.ok) {
           const data = await response.json();
           if (Array.isArray(data)) {
             setOrders((prev) => {
               const previousIds = new Set(prev.map(o => o.id));
+              const currentOrderIds = new Set(data.map((o: FulfillmentOrder) => o.id));
+              
+              // Find truly new orders (not in previous list)
               const newOrders = data.filter((o: FulfillmentOrder) => !previousIds.has(o.id));
               
               if (newOrders.length > 0) {
+                console.log(`[OrderFeed] ${newOrders.length} new order(s) detected via polling`);
                 newOrders.forEach((order: FulfillmentOrder) => {
                   newOrderIdsRef.current.add(order.id);
                   setLastCreatedOrder(order);
                 });
                 forceTick((tick) => tick + 1);
+              }
+              
+              // Remove orders that are no longer in the feed (optional cleanup)
+              const removedOrders = prev.filter(o => !currentOrderIds.has(o.id));
+              if (removedOrders.length > 0) {
+                removedOrders.forEach(o => newOrderIdsRef.current.delete(o.id));
               }
               
               return sortOrders(data);
@@ -114,7 +125,7 @@ export function useOrderFeed({ feedUrl, initialOrders }: Options) {
         console.error('[Polling] Failed to fetch orders', err);
         setConnected(false);
       }
-    }, 5000);
+    }, 2000); // Changed from 5000 to 2000 (2 seconds) for faster detection
 
     return () => {
       closed = true;
