@@ -35,7 +35,10 @@
       "Bash(git reset:*)",
       "Bash(npx prisma:*)",
       "Bash(node scripts/migrate-catering-sections.mjs:*)",
-      "Bash(node:*)"
+      "Bash(node:*)",
+      "Bash(npx eslint:*)",
+      "Bash(python3:*)",
+      "Bash(npm view:*)"
     ],
     "deny": [],
     "ask": []

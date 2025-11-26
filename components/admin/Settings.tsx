@@ -1539,38 +1539,8 @@ export default function Settings() {
           </p>
 
           {/* Stripe Connect */}
-          <div className="mb-6 rounded-lg border-2 border-gray-200 bg-white p-6">
-            <div className="flex items-start justify-between">
-              <div className="flex items-center gap-4">
-                <div className="flex h-12 w-12 items-center justify-center rounded-lg bg-indigo-100">
-                  <span className="text-2xl">💳</span>
-                </div>
-                <div>
-                  <h4 className="text-sm font-semibold text-gray-900">Stripe Payment Processing</h4>
-                  <p className="text-xs text-gray-500 mt-1">
-                    Accept payments and process refunds through Stripe Connect
-                  </p>
-                  {form.stripeAccountId && (
-                    <p className="text-xs text-green-600 mt-1 font-medium">✓ Connected</p>
-                  )}
-                </div>
-              </div>
-              {!form.stripeAccountId ? (
-                <a
-                  href="/admin/stripe-connect/complete"
-                  className="inline-flex items-center rounded-md border border-transparent bg-indigo-600 px-4 py-2 text-sm font-medium text-white shadow-sm hover:bg-indigo-700 focus:outline-none focus:ring-2 focus:ring-indigo-500 focus:ring-offset-2"
-                >
-                  Connect Stripe
-                </a>
-              ) : (
-                <button
-                  type="button"
-                  className="inline-flex items-center rounded-md border border-gray-300 bg-white px-4 py-2 text-sm font-medium text-gray-700 shadow-sm hover:bg-gray-50"
-                >
-                  Manage Account
-                </button>
-              )}
-            </div>
+          <div className="mb-6">
+            <StripeConnectButton />
           </div>
 
           {/* DoorDash Integration */}

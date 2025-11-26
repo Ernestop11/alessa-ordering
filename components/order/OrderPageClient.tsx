@@ -749,20 +749,36 @@ export default function OrderPageClient({
   const [cateringGalleryIndex, setCateringGalleryIndex] = useState(0);
   const [cateringPackages, setCateringPackages] = useState<CateringPackage[]>([]);
 
-  // Fetch catering packages
+  // Fetch catering packages with cache-busting
   useEffect(() => {
     const fetchCateringPackages = async () => {
       try {
-        const res = await fetch('/api/catering-packages');
+        // Add cache-busting timestamp to prevent browser caching
+        const timestamp = Date.now();
+        const res = await fetch(`/api/catering-packages?t=${timestamp}`, {
+          cache: 'no-store',
+          headers: {
+            'Cache-Control': 'no-cache',
+            'Pragma': 'no-cache',
+          },
+        });
         if (res.ok) {
           const data = await res.json();
-          setCateringPackages(data || []);
+          setCateringPackages(Array.isArray(data) ? data : []);
+        } else {
+          console.error('Failed to fetch catering packages:', res.status, res.statusText);
+          setCateringPackages([]);
         }
       } catch (err) {
         console.error('Failed to fetch catering packages', err);
+        setCateringPackages([]);
       }
     };
     fetchCateringPackages();
+    
+    // Set up interval to refresh catering packages every 30 seconds
+    const interval = setInterval(fetchCateringPackages, 30000);
+    return () => clearInterval(interval);
   }, []);
 
   // Group packages by category
@@ -812,13 +828,25 @@ export default function OrderPageClient({
   useEffect(() => {
     const fetchGallery = async () => {
       try {
-        const res = await fetch('/api/catering-packages/gallery');
+        // Add cache-busting timestamp
+        const timestamp = Date.now();
+        const res = await fetch(`/api/catering-packages/gallery?t=${timestamp}`, {
+          cache: 'no-store',
+          headers: {
+            'Cache-Control': 'no-cache',
+            'Pragma': 'no-cache',
+          },
+        });
         if (res.ok) {
           const data = await res.json();
-          setCateringGalleryImages(data.gallery || []);
+          setCateringGalleryImages(Array.isArray(data.gallery) ? data.gallery : []);
+        } else {
+          console.error('Failed to fetch catering gallery:', res.status, res.statusText);
+          setCateringGalleryImages([]);
         }
       } catch (err) {
         console.error('Failed to fetch catering gallery:', err);
+        setCateringGalleryImages([]);
       }
     };
     fetchGallery();

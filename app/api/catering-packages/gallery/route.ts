@@ -10,10 +10,17 @@ export async function GET() {
       select: { cateringGallery: true },
     });
 
-    return NextResponse.json({ gallery: settings?.cateringGallery || [] });
+    const response = NextResponse.json({ gallery: settings?.cateringGallery || [] });
+    // Prevent caching to ensure fresh data
+    response.headers.set('Cache-Control', 'no-store, no-cache, must-revalidate, proxy-revalidate');
+    response.headers.set('Pragma', 'no-cache');
+    response.headers.set('Expires', '0');
+    return response;
   } catch (err) {
     console.error('[catering-gallery] GET error:', err);
-    return NextResponse.json({ error: 'Failed to fetch gallery' }, { status: 500 });
+    const errorResponse = NextResponse.json({ error: 'Failed to fetch gallery' }, { status: 500 });
+    errorResponse.headers.set('Cache-Control', 'no-store, no-cache, must-revalidate');
+    return errorResponse;
   }
 }
 

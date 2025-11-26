@@ -50,6 +50,7 @@ export default function Cart() {
   const [clientSecret, setClientSecret] = useState<string | null>(null);
   const [paymentIntentId, setPaymentIntentId] = useState<string | null>(null);
   const [paymentSessionId, setPaymentSessionId] = useState<string | null>(null);
+  const [stripeAccount, setStripeAccount] = useState<string | undefined>(undefined);
   const [checkoutStep, setCheckoutStep] = useState<"details" | "payment">("details");
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState<string | null>(null);
@@ -414,6 +415,7 @@ export default function Cart() {
       setClientSecret(data.clientSecret);
       setPaymentIntentId(data.paymentIntentId ?? null);
       setPaymentSessionId(data.paymentSessionId ?? null);
+      setStripeAccount(data.stripeAccount || undefined);
       setCheckoutStep("payment");
     } catch (err) {
       setError(err instanceof Error ? err.message : "Failed to initiate checkout.");
@@ -426,6 +428,7 @@ export default function Cart() {
     setClientSecret(null);
     setPaymentIntentId(null);
     setPaymentSessionId(null);
+    setStripeAccount(undefined);
     setCheckoutStep("details");
   };
 
@@ -850,7 +853,7 @@ export default function Cart() {
               
               {/* Payment Form - ALWAYS visible */}
               <div className="relative">
-                <StripeCheckoutWrapper clientSecret={clientSecret} successPath="/order/success" totalAmount={totalAmount} />
+                <StripeCheckoutWrapper clientSecret={clientSecret} successPath="/order/success" totalAmount={totalAmount} stripeAccount={stripeAccount} />
               </div>
               
               <button

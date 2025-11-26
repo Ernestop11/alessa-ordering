@@ -37,12 +37,25 @@ export async function POST(req: Request) {
       return NextResponse.json({ error: "Missing amount" }, { status: 400 });
     }
 
-    const accountId = tenant.integrations?.stripeAccountId;
-    // Allow direct integration if no Stripe Connect account configured
-    const useDirectIntegration = !accountId;
+    let accountId = tenant.integrations?.stripeAccountId;
+    const isConnectAccount = accountId && tenant.integrations?.stripeChargesEnabled;
 
-    if (!accountId) {
-      console.log("[stripe] Using direct Stripe integration (test mode)");
+    console.log("[stripe] Payment Intent Creation:", {
+      tenantSlug: tenant.slug,
+      accountId: accountId || "null (direct integration)",
+      mode: isConnectAccount ? "Stripe Connect" : "Direct Integration",
+      chargesEnabled: tenant.integrations?.stripeChargesEnabled || false,
+      onboardingComplete: tenant.integrations?.stripeOnboardingComplete || false,
+      secretKeyPrefix: process.env.STRIPE_SECRET_KEY?.substring(0, 12) || "not set",
+      publishableKeyPrefix: process.env.NEXT_PUBLIC_STRIPE_PUBLISHABLE_KEY?.substring(0, 12) || "not set",
+    });
+
+    // Only use Stripe Connect if account is fully onboarded and charges enabled
+    if (!isConnectAccount) {
+      accountId = undefined; // Use platform account as fallback
+      console.log("[stripe] Using direct Stripe integration (platform account) - Stripe Connect not fully configured");
+    } else {
+      console.log("[stripe] Using Stripe Connect account:", accountId);
     }
 
     const platformPercentFee = tenant.integrations?.platformPercentFee ?? 0;
@@ -131,6 +144,7 @@ export async function POST(req: Request) {
       clientSecret: paymentIntent.client_secret,
       paymentIntentId: paymentIntent.id,
       paymentSessionId: paymentSession.id,
+      stripeAccount: accountId || undefined, // Include account ID if using Stripe Connect
     });
   } catch (error: any) {
     console.error("[stripe] Error creating payment intent", error);

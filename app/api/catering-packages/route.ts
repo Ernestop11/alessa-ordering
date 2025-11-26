@@ -50,7 +50,17 @@ export async function GET() {
       where: { tenantId: tenant.id },
     });
 
-    const cateringOptions = (settings?.upsellBundles as any)?.catering || [];
+    // Debug logging
+    console.log('[catering-packages] Tenant:', tenant.slug);
+    console.log('[catering-packages] Settings exists:', !!settings);
+    console.log('[catering-packages] upsellBundles:', settings?.upsellBundles);
+
+    const upsellBundles = settings?.upsellBundles as any;
+    const cateringOptions = Array.isArray(upsellBundles?.catering) 
+      ? upsellBundles.catering 
+      : (upsellBundles?.catering ? [upsellBundles.catering] : []);
+    
+    console.log('[catering-packages] Catering options found:', cateringOptions.length);
 
     // Map CateringOption (admin format) to CateringPackage (frontend format)
     const packages: CateringPackage[] = cateringOptions.map((option: CateringOption, index: number) => ({
@@ -78,9 +88,16 @@ export async function GET() {
       return a.displayOrder - b.displayOrder;
     });
 
-    return NextResponse.json(packages);
+    const response = NextResponse.json(packages);
+    // Prevent caching to ensure fresh data
+    response.headers.set('Cache-Control', 'no-store, no-cache, must-revalidate, proxy-revalidate');
+    response.headers.set('Pragma', 'no-cache');
+    response.headers.set('Expires', '0');
+    return response;
   } catch (err) {
     console.error('[catering-packages] GET error:', err);
-    return NextResponse.json({ error: 'Failed to fetch catering packages' }, { status: 500 });
+    const errorResponse = NextResponse.json({ error: 'Failed to fetch catering packages' }, { status: 500 });
+    errorResponse.headers.set('Cache-Control', 'no-store, no-cache, must-revalidate');
+    return errorResponse;
   }
 }

@@ -2,6 +2,8 @@ import prisma from '@/lib/prisma';
 import { requireTenant } from '@/lib/tenant';
 import OrderPageClient, { type OrderMenuSection, type OrderMenuItem } from '../../components/order/OrderPageClient';
 import type { Metadata } from 'next';
+import { Suspense } from 'react';
+import OrderPageWrapper from '../../components/order/OrderPageWrapper';
 
 // Force dynamic rendering to ensure tenant data is always fresh
 export const dynamic = 'force-dynamic'
@@ -174,11 +176,20 @@ export default async function OrderPage() {
   const cateringTabConfig = await getCateringTabConfig(tenant.id);
 
   return (
-    <OrderPageClient
-      sections={sections}
-      featuredItems={featuredItems}
-      tenantSlug={tenant.slug}
-      cateringTabConfig={cateringTabConfig}
-    />
+    <Suspense fallback={
+      <div className="min-h-screen flex items-center justify-center bg-gradient-to-br from-red-900 via-red-800 to-orange-900">
+        <div className="text-center">
+          <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-white mx-auto mb-4"></div>
+          <p className="text-white text-lg">Loading menu...</p>
+        </div>
+      </div>
+    }>
+      <OrderPageWrapper
+        sections={sections}
+        featuredItems={featuredItems}
+        tenantSlug={tenant.slug}
+        cateringTabConfig={cateringTabConfig}
+      />
+    </Suspense>
   );
 }

@@ -145,3 +145,4 @@ npm run dev
 - Remove `/page.tsx` at root level (it's conflicting)
 - All pages should be in `/app/` directory for App Router
 
+

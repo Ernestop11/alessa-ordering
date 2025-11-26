@@ -41,8 +41,13 @@ self.addEventListener('fetch', (event) => {
     return;
   }
 
-  // Skip API requests (always use network)
+  // Skip API requests (always use network) - CRITICAL for real-time updates
   if (event.request.url.includes('/api/')) {
+    return;
+  }
+
+  // Skip EventSource/Server-Sent Events (always use network)
+  if (event.request.headers.get('Accept')?.includes('text/event-stream')) {
     return;
   }
 

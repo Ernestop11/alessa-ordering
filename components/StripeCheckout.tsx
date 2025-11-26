@@ -213,11 +213,20 @@ interface StripeCheckoutWrapperProps {
   clientSecret: string;
   successPath?: string;
   totalAmount?: number;
+  stripeAccount?: string; // Stripe Connect account ID
 }
 
-export function StripeCheckoutWrapper({ clientSecret, successPath, totalAmount }: StripeCheckoutWrapperProps) {
+export function StripeCheckoutWrapper({ clientSecret, successPath, totalAmount, stripeAccount }: StripeCheckoutWrapperProps) {
   if (!clientSecret) return null;
-  const options = { clientSecret };
+  
+  // For Stripe Connect, pass the account ID to Elements
+  // This ensures the client_secret is validated against the correct account
+  const options: { clientSecret: string; stripeAccount?: string } = { clientSecret };
+  if (stripeAccount) {
+    options.stripeAccount = stripeAccount;
+    console.log('[Stripe] Using Stripe Connect account:', stripeAccount);
+  }
+  
   return (
     <Elements stripe={stripePromise} options={options}>
       <StripeCheckout clientSecret={clientSecret} successPath={successPath} totalAmount={totalAmount} />

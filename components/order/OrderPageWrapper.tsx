@@ -1,0 +1,27 @@
+"use client";
+
+import { Suspense } from 'react';
+import OrderPageClient, { type OrderMenuSection, type OrderMenuItem } from './OrderPageClient';
+
+interface OrderPageWrapperProps {
+  sections: OrderMenuSection[];
+  featuredItems?: OrderMenuItem[];
+  tenantSlug: string;
+  cateringTabConfig?: any;
+}
+
+export default function OrderPageWrapper(props: OrderPageWrapperProps) {
+  return (
+    <Suspense fallback={
+      <div className="min-h-screen flex items-center justify-center bg-gradient-to-br from-red-900 via-red-800 to-orange-900">
+        <div className="text-center">
+          <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-white mx-auto mb-4"></div>
+          <p className="text-white text-lg">Loading menu...</p>
+        </div>
+      </div>
+    }>
+      <OrderPageClient {...props} />
+    </Suspense>
+  );
+}
+
