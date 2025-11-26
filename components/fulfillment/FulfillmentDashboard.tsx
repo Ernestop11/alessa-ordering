@@ -288,7 +288,7 @@ export default function FulfillmentDashboard({ initialOrders, feedUrl, scope }: 
     lastNotifiedIdRef.current = lastCreatedOrder.id;
 
     // Trigger auto-print in background (don't wait for it)
-    handleAutoPrint(lastCreatedOrder).catch((err) => {
+    handlePrint(lastCreatedOrder).catch((err) => {
       console.error('[Auto-Print] Failed to print order:', err);
     });
   }, [lastCreatedOrder, autoPrintEnabled, printerConfig]);
