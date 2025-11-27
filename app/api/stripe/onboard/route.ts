@@ -7,7 +7,7 @@ function getStripeClient() {
     throw new Error('STRIPE_SECRET_KEY is not set.');
   }
   return new Stripe(stripeSecret, {
-    apiVersion: '2022-11-15',
+    apiVersion: '2024-10-28.acacia' as any,
   });
 }
 import prisma from '@/lib/prisma';
