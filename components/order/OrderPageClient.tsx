@@ -810,7 +810,8 @@ export default function OrderPageClient({
       console.log('[OrderPageClient] 📦 Popular packages:', popular.map(p => ({ name: p.name, category: p.category })));
     } else if (cateringPackages.length > 0) {
       console.log('[OrderPageClient] ⚠️ WARNING: Packages received but NONE have category="popular"!');
-      console.log('[OrderPageClient] 🔍 All categories found:', [...new Set(cateringPackages.map(p => p?.category || 'null'))]);
+      const categories = Array.from(new Set(cateringPackages.map(p => p?.category || 'null')));
+      console.log('[OrderPageClient] 🔍 All categories found:', categories);
     }
     return popular;
   }, [cateringPackages]);
