@@ -3,11 +3,28 @@
 import { Suspense } from 'react';
 import OrderPageClient, { type OrderMenuSection, type OrderMenuItem } from './OrderPageClient';
 
+interface CateringPackage {
+  id: string;
+  name: string;
+  description: string;
+  pricePerGuest: number;
+  price?: number | null;
+  category: string;
+  image: string | null;
+  gallery?: string[] | null;
+  badge: string | null;
+  customizationRemovals?: string[];
+  customizationAddons?: { id: string; label: string; price: number }[];
+  available: boolean;
+  displayOrder: number;
+}
+
 interface OrderPageWrapperProps {
   sections: OrderMenuSection[];
   featuredItems?: OrderMenuItem[];
   tenantSlug: string;
   cateringTabConfig?: any;
+  cateringPackages?: CateringPackage[];
 }
 
 export default function OrderPageWrapper(props: OrderPageWrapperProps) {
@@ -24,4 +41,5 @@ export default function OrderPageWrapper(props: OrderPageWrapperProps) {
     </Suspense>
   );
 }
+
 

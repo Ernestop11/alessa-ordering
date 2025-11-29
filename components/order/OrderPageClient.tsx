@@ -72,6 +72,7 @@ interface OrderPageClientProps {
   featuredItems?: OrderMenuItem[];
   tenantSlug: string;
   cateringTabConfig?: CateringTabConfig;
+  cateringPackages?: CateringPackage[];
 }
 
 type LayoutView = 'grid' | 'list' | 'cards';
@@ -182,7 +183,8 @@ export default function OrderPageClient({
   sections,
   featuredItems = [],
   tenantSlug,
-  cateringTabConfig = { enabled: true, label: 'Catering', icon: 'ChefHat', description: 'Full-service events, delivered' }
+  cateringTabConfig = { enabled: true, label: 'Catering', icon: 'ChefHat', description: 'Full-service events, delivered' },
+  cateringPackages: initialCateringPackages = []
 }: OrderPageClientProps) {
   const searchParams = useSearchParams();
   const router = useRouter();
@@ -747,13 +749,13 @@ export default function OrderPageClient({
   const [cateringGuestCount, setCateringGuestCount] = useState('');
   const [cateringMessage, setCateringMessage] = useState('');
   const [cateringGalleryIndex, setCateringGalleryIndex] = useState(0);
-  const [cateringPackages, setCateringPackages] = useState<CateringPackage[]>([]);
+  // Use server-side data as initial state, with client-side refresh for real-time updates
+  const [cateringPackages, setCateringPackages] = useState<CateringPackage[]>(initialCateringPackages);
 
-  // Fetch catering packages with cache-busting
+  // Refresh catering packages periodically for real-time updates (optional)
   useEffect(() => {
     const fetchCateringPackages = async () => {
       try {
-        // Add cache-busting timestamp to prevent browser caching
         const timestamp = Date.now();
         const res = await fetch(`/api/catering-packages?t=${timestamp}`, {
           cache: 'no-store',
@@ -765,30 +767,58 @@ export default function OrderPageClient({
         if (res.ok) {
           const data = await res.json();
           setCateringPackages(Array.isArray(data) ? data : []);
-        } else {
-          console.error('Failed to fetch catering packages:', res.status, res.statusText);
-          setCateringPackages([]);
         }
       } catch (err) {
-        console.error('Failed to fetch catering packages', err);
-        setCateringPackages([]);
+        console.error('Failed to refresh catering packages', err);
       }
     };
-    fetchCateringPackages();
     
-    // Set up interval to refresh catering packages every 30 seconds
+    // Refresh every 30 seconds for real-time updates
     const interval = setInterval(fetchCateringPackages, 30000);
     return () => clearInterval(interval);
   }, []);
 
   // Group packages by category
   const popularPackages = useMemo(() => {
-    if (!Array.isArray(cateringPackages)) return [];
-    return cateringPackages.filter(pkg => pkg && pkg.category === 'popular');
+    if (!Array.isArray(cateringPackages)) {
+      console.log('[OrderPageClient] ⚠️ popularPackages: cateringPackages is not an array');
+      return [];
+    }
+    console.log('[OrderPageClient] 📋 All cateringPackages received:', cateringPackages.length, 'total');
+    if (cateringPackages.length > 0) {
+      console.log('[OrderPageClient] 📦 Package details:', cateringPackages.map(p => ({ 
+        name: p?.name, 
+        category: p?.category, 
+        available: p?.available,
+        id: p?.id
+      })));
+    } else {
+      console.log('[OrderPageClient] ⚠️ WARNING: No packages received from API! Check server logs.');
+    }
+    const popular = cateringPackages.filter(pkg => {
+      if (!pkg) return false;
+      // Accept 'popular' category or default to popular if category is missing/empty
+      const category = (pkg.category && pkg.category.trim()) || 'popular';
+      const matches = category === 'popular';
+      if (!matches) {
+        console.log('[OrderPageClient] 🔍 Package filtered out:', pkg.name, 'category:', pkg.category, 'expected: popular');
+      }
+      return matches;
+    });
+    console.log('[OrderPageClient] ✅ popularPackages after filter:', popular.length, 'packages');
+    if (popular.length > 0) {
+      console.log('[OrderPageClient] 📦 Popular packages:', popular.map(p => ({ name: p.name, category: p.category })));
+    } else if (cateringPackages.length > 0) {
+      console.log('[OrderPageClient] ⚠️ WARNING: Packages received but NONE have category="popular"!');
+      console.log('[OrderPageClient] 🔍 All categories found:', [...new Set(cateringPackages.map(p => p?.category || 'null'))]);
+    }
+    return popular;
   }, [cateringPackages]);
   const holidayPackages = useMemo(() => {
     if (!Array.isArray(cateringPackages)) return [];
-    return cateringPackages.filter(pkg => pkg && pkg.category === 'holiday');
+    const holiday = cateringPackages.filter(pkg => pkg && pkg.category === 'holiday');
+    console.log('[OrderPageClient] holidayPackages:', holiday.length, 'packages');
+    return holiday;
   }, [cateringPackages]);
 
   // Sample Puebla Mexico themed media - can be replaced with actual tenant media

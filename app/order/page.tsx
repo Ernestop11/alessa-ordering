@@ -169,11 +169,82 @@ async function getCateringTabConfig(tenantId: string) {
   };
 }
 
+async function getCateringPackages(tenantId: string) {
+  const packages = await prisma.cateringPackage.findMany({
+    where: {
+      tenantId,
+      available: true,
+    },
+    orderBy: [
+      { displayOrder: 'asc' },
+      { createdAt: 'asc' },
+    ],
+  });
+
+  return packages.map((pkg) => {
+    // Handle gallery - it's stored as JSON in the database
+    let gallery: string[] | null = null;
+    if (pkg.gallery) {
+      if (Array.isArray(pkg.gallery)) {
+        gallery = pkg.gallery.filter((url): url is string => typeof url === 'string' && url.length > 0);
+      } else if (typeof pkg.gallery === 'string') {
+        try {
+          const parsed = JSON.parse(pkg.gallery);
+          if (Array.isArray(parsed)) {
+            gallery = parsed.filter((url): url is string => typeof url === 'string' && url.length > 0);
+          }
+        } catch {
+          gallery = [pkg.gallery];
+        }
+      }
+    }
+
+    // Handle customizationAddons
+    let customizationAddons: { id: string; label: string; price: number }[] | undefined = undefined;
+    if (pkg.customizationAddons) {
+      if (Array.isArray(pkg.customizationAddons)) {
+        customizationAddons = pkg.customizationAddons.filter((addon): addon is { id: string; label: string; price: number } => {
+          return typeof addon === 'object' && addon !== null && 'label' in addon && 'price' in addon;
+        }) as { id: string; label: string; price: number }[];
+      } else if (typeof pkg.customizationAddons === 'string') {
+        try {
+          const parsed = JSON.parse(pkg.customizationAddons);
+          if (Array.isArray(parsed)) {
+            customizationAddons = parsed;
+          }
+        } catch {
+          // If parsing fails, leave as undefined
+        }
+      }
+    }
+
+    // Ensure category is set - default to 'popular' if null/empty
+    const category = (pkg.category && pkg.category.trim() !== '') ? pkg.category : 'popular';
+
+    return {
+      id: pkg.id,
+      name: pkg.name,
+      description: pkg.description,
+      pricePerGuest: pkg.pricePerGuest,
+      price: pkg.price,
+      category: category,
+      image: pkg.image,
+      gallery: gallery && gallery.length > 0 ? gallery : null,
+      badge: pkg.badge,
+      customizationRemovals: pkg.customizationRemovals || [],
+      customizationAddons: customizationAddons,
+      available: pkg.available,
+      displayOrder: pkg.displayOrder,
+    };
+  });
+}
+
 export default async function OrderPage() {
   const tenant = await requireTenant();
   const sections = await getMenuSections(tenant.id);
   const featuredItems = await getFeaturedItems(tenant.id);
   const cateringTabConfig = await getCateringTabConfig(tenant.id);
+  const cateringPackages = await getCateringPackages(tenant.id);
 
   return (
     <Suspense fallback={
@@ -189,6 +260,7 @@ export default async function OrderPage() {
         featuredItems={featuredItems}
         tenantSlug={tenant.slug}
         cateringTabConfig={cateringTabConfig}
+        cateringPackages={cateringPackages}
       />
     </Suspense>
   );
