@@ -778,6 +778,30 @@ export default function OrderPageClient({
     return () => clearInterval(interval);
   }, []);
 
+  // Refresh server components when page becomes visible or gets focus
+  // This ensures fresh data when user returns to the page or refreshes normally
+  useEffect(() => {
+    // Refresh server components when page becomes visible (user returns to tab)
+    const handleVisibilityChange = () => {
+      if (document.visibilityState === 'visible') {
+        router.refresh(); // Refresh server components to get latest data from database
+      }
+    };
+
+    // Refresh on page focus (user clicks back into the window)
+    const handleFocus = () => {
+      router.refresh();
+    };
+
+    document.addEventListener('visibilitychange', handleVisibilityChange);
+    window.addEventListener('focus', handleFocus);
+
+    return () => {
+      document.removeEventListener('visibilitychange', handleVisibilityChange);
+      window.removeEventListener('focus', handleFocus);
+    };
+  }, [router]);
+
   // Group packages by category
   const popularPackages = useMemo(() => {
     if (!Array.isArray(cateringPackages)) {

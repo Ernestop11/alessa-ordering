@@ -3,6 +3,7 @@ import { getServerSession } from 'next-auth';
 import { authOptions } from '@/lib/auth/options';
 import prisma from '@/lib/prisma';
 import { requireTenant } from '@/lib/tenant';
+import { revalidatePath } from 'next/cache';
 
 function unauthorized() {
   return new NextResponse(JSON.stringify({ error: 'Unauthorized' }), {
@@ -24,7 +25,12 @@ export async function GET() {
     orderBy: { displayOrder: 'asc' },
   });
 
-  return NextResponse.json(packages);
+  const response = NextResponse.json(packages);
+  // Prevent caching to ensure fresh data
+  response.headers.set('Cache-Control', 'no-store, no-cache, must-revalidate, proxy-revalidate');
+  response.headers.set('Pragma', 'no-cache');
+  response.headers.set('Expires', '0');
+  return response;
 }
 
 export async function POST(req: Request) {
@@ -55,5 +61,6 @@ export async function POST(req: Request) {
   };
 
   const created = await prisma.cateringPackage.create({ data });
+  revalidatePath('/order'); // Invalidate cache so frontend shows updated packages
   return NextResponse.json(created, { status: 201 });
 }
