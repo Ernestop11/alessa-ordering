@@ -34,6 +34,7 @@ export default function Cart() {
     updateQuantity,
     clearCart,
   } = useCart();
+  const searchParams = useSearchParams();
 
   const [customerName, setCustomerName] = useState("");
   const [customerEmail, setCustomerEmail] = useState("");
@@ -58,6 +59,13 @@ export default function Cart() {
   const [taxQuoteLoading, setTaxQuoteLoading] = useState(false);
   const [taxQuoteError, setTaxQuoteError] = useState<string | null>(null);
   const [becomeMember, setBecomeMember] = useState(false);
+
+  // Check if user came from "Join Rewards" button
+  useEffect(() => {
+    if (searchParams?.get('joinRewards') === 'true') {
+      setBecomeMember(true);
+    }
+  }, [searchParams]);
   
   // Get tenant theme colors
   const primaryColor = tenant.primaryColor || "#dc2626";
@@ -324,6 +332,7 @@ export default function Cart() {
     tenant.country,
     tenant.postalCode,
     tenant.state,
+    becomeMember,
   ]);
 
   const fetchDeliveryQuote = async () => {

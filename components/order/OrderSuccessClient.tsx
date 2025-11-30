@@ -1,15 +1,25 @@
 "use client";
 
-import { useEffect } from "react";
+import { useEffect, useState } from "react";
 import Link from "next/link";
+import { useSearchParams } from "next/navigation";
 import { useCart } from "@/lib/store/cart";
 
 export default function OrderSuccessClient() {
   const clearCart = useCart((state) => state.clearCart);
+  const searchParams = useSearchParams();
+  const [enrolled, setEnrolled] = useState(false);
 
   useEffect(() => {
     clearCart();
-  }, [clearCart]);
+    
+    // Check if we need to enroll in rewards (from checkout metadata)
+    const shouldEnroll = searchParams?.get('enrollRewards') === 'true';
+    if (shouldEnroll) {
+      // Enrollment is handled server-side in order creation, but we can show a message
+      setEnrolled(true);
+    }
+  }, [clearCart, searchParams]);
 
   // Use default colors - simple and works without tenant context
   const primaryColor = "#dc2626";

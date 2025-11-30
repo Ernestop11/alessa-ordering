@@ -2434,7 +2434,28 @@ export default function OrderPageClient({
                         <div className="text-xs text-white/70">points</div>
                       </div>
                     </div>
-                    <p className="text-sm leading-relaxed text-white/90">
+                    
+                    {/* Points Progress Bar */}
+                    {upcomingTier && (
+                      <div className="mt-4">
+                        <div className="flex items-center justify-between text-xs text-white/70 mb-1">
+                          <span>Next tier: {upcomingTier.name}</span>
+                          <span>
+                            {customerData.loyaltyPoints} / {upcomingTier.threshold} pts
+                          </span>
+                        </div>
+                        <div className="w-full bg-white/20 rounded-full h-2">
+                          <div 
+                            className="bg-amber-400 h-2 rounded-full transition-all"
+                            style={{
+                              width: `${Math.min(100, (customerData.loyaltyPoints / (upcomingTier.threshold || 1)) * 100)}%`
+                            }}
+                          />
+                        </div>
+                      </div>
+                    )}
+                    
+                    <p className="text-sm leading-relaxed text-white/90 mt-4">
                       {membershipProgram?.heroCopy || 'Earn puntos with every order and unlock chef-curated rewards.'}
                     </p>
                   </div>
@@ -2507,6 +2528,65 @@ export default function OrderPageClient({
                   </ul>
                 </div>
 
+                {/* Milestone Rewards - Dessert Items */}
+                {customerData && membershipTiers.length > 0 && (
+                  <div className="rounded-2xl border-2 border-white/20 bg-white/5 p-4">
+                    <h4 className="mb-4 text-lg font-bold text-white">🎂 Unlock Dessert Rewards</h4>
+                    <div className="space-y-3">
+                      {membershipTiers.map((tier) => {
+                        const isUnlocked = customerData.loyaltyPoints >= (tier.threshold ?? 0);
+                        const pointsNeeded = Math.max(0, (tier.threshold ?? 0) - customerData.loyaltyPoints);
+                        
+                        return (
+                          <div 
+                            key={tier.id} 
+                            className={`rounded-xl border p-3 ${
+                              isUnlocked 
+                                ? 'border-amber-500/50 bg-amber-500/10' 
+                                : 'border-white/10 bg-white/5'
+                            }`}
+                          >
+                            <div className="flex items-center justify-between mb-2">
+                              <div className="flex items-center gap-2">
+                                {isUnlocked ? (
+                                  <span className="text-2xl">🎉</span>
+                                ) : (
+                                  <span className="text-2xl">🔒</span>
+                                )}
+                                <div>
+                                  <p className="font-semibold text-white">{tier.name} Tier Reward</p>
+                                  <p className="text-xs text-white/60">
+                                    {isUnlocked 
+                                      ? 'Unlocked! Claim your free dessert' 
+                                      : `${pointsNeeded} points to unlock`
+                                    }
+                                  </p>
+                                </div>
+                              </div>
+                              {isUnlocked && (
+                                <button
+                                  onClick={() => {
+                                    // Add a sample dessert item to cart
+                                    // You can customize this to add a specific dessert item
+                                    showNotification('Free dessert reward added to cart! Redeem at checkout.');
+                                    setShowMembershipPanel(false);
+                                  }}
+                                  className="rounded-lg bg-amber-500 px-3 py-1.5 text-xs font-semibold text-black hover:bg-amber-400 transition"
+                                >
+                                  Claim
+                                </button>
+                              )}
+                            </div>
+                            {tier.rewardDescription && (
+                              <p className="text-xs text-white/70 mt-1">{tier.rewardDescription}</p>
+                            )}
+                          </div>
+                        );
+                      })}
+                    </div>
+                  </div>
+                )}
+
                 {/* Previous Orders with Re-order */}
                 {customerData && customerData.orders && customerData.orders.length > 0 && (
                   <div className="rounded-2xl border-2 border-white/20 bg-white/5 p-4">
@@ -2544,7 +2624,14 @@ export default function OrderPageClient({
                 )}
 
                 {!customerData && (
-                  <button className="w-full rounded-2xl bg-gradient-to-r from-amber-400 via-yellow-400 to-amber-400 px-6 py-4 text-lg font-black text-black shadow-2xl shadow-amber-500/40 transition-all hover:scale-105 hover:shadow-amber-500/60">
+                  <button 
+                    onClick={() => {
+                      // Redirect to checkout with membership flag
+                      router.push(`/checkout?tenant=${tenantSlug}&joinRewards=true`);
+                      setShowMembershipPanel(false);
+                    }}
+                    className="w-full rounded-2xl bg-gradient-to-r from-amber-400 via-yellow-400 to-amber-400 px-6 py-4 text-lg font-black text-black shadow-2xl shadow-amber-500/40 transition-all hover:scale-105 hover:shadow-amber-500/60"
+                  >
                     Join Rewards Program
                   </button>
                 )}

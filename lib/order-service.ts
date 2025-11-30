@@ -149,15 +149,34 @@ export async function createOrderFromPayload({
         },
       });
     } else {
+      // Check if customer wants to join rewards program
+      const joinRewards = payload.metadata?.becomeMember === true;
+      
       const createdCustomer = await prisma.customer.create({
         data: {
           tenantId: tenant.id,
           name: customerName || null,
           email: customerEmail || null,
           phone: customerPhone || null,
+          loyaltyPoints: joinRewards ? 0 : undefined, // Initialize points if joining
+          membershipTier: joinRewards ? 'Bronze' : null, // Set initial tier
         },
       });
       customerId = createdCustomer.id;
+      
+      // If they're joining rewards, create a customer session
+      if (joinRewards && (customerEmail || customerPhone)) {
+        const sessionToken = crypto.randomUUID();
+        await prisma.customerSession.create({
+          data: {
+            tenantId: tenant.id,
+            customerId: createdCustomer.id,
+            token: sessionToken,
+            expiresAt: new Date(Date.now() + 90 * 24 * 60 * 60 * 1000), // 90 days
+          },
+        });
+        // Note: Cookie setting would be handled by the API route that calls this function
+      }
     }
   }
 
