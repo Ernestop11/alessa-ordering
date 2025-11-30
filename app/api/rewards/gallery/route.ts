@@ -7,10 +7,9 @@ export async function GET() {
     const tenant = await requireTenant();
     const settings = await prisma.tenantSettings.findUnique({
       where: { tenantId: tenant.id },
-      select: { rewardsGallery: true },
     });
 
-    const response = NextResponse.json({ gallery: (settings?.rewardsGallery as string[]) || [] });
+    const response = NextResponse.json({ gallery: ((settings as any)?.rewardsGallery as string[]) || [] });
     // Prevent caching to ensure fresh data
     response.headers.set('Cache-Control', 'no-store, no-cache, must-revalidate, proxy-revalidate');
     response.headers.set('Pragma', 'no-cache');
