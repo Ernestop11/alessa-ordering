@@ -11,6 +11,7 @@ import { useTenantTheme } from '../TenantThemeProvider';
 import FeaturedCarousel from './FeaturedCarousel';
 import CartLauncher from '../CartLauncher';
 import RewardsModal from './RewardsModal';
+import JoinRewardsModal from './JoinRewardsModal';
 import MenuSectionGrid from './MenuSectionGrid';
 
 interface CustomizationOption {
@@ -803,6 +804,7 @@ export default function OrderPageClient({
 
   const [isHeroTransitioning, setIsHeroTransitioning] = useState(false);
   const [showMembershipPanel, setShowMembershipPanel] = useState(false);
+  const [showJoinModal, setShowJoinModal] = useState(false);
   const [showCateringPanel, setShowCateringPanel] = useState(false);
   const [cateringName, setCateringName] = useState('');
   const [cateringEmail, setCateringEmail] = useState('');
@@ -1001,7 +1003,7 @@ export default function OrderPageClient({
   }, [rewardsGalleryImages]);
 
   // Handle re-order
-  const handleReorder = useCallback((order: CustomerRewardsData['orders'][0]) => {
+  const handleReorder = useCallback(async (order: CustomerRewardsData['orders'][0]) => {
     if (!order.items || order.items.length === 0) {
       showNotification('This order has no items to reorder');
       return;
@@ -1022,9 +1024,18 @@ export default function OrderPageClient({
       }
     });
 
-    showNotification(`Added ${order.items.length} item(s) from previous order to cart!`);
+    showNotification(`Added ${order.items.length} item(s) to cart!`);
     setShowMembershipPanel(false);
-  }, [addToCart, showNotification]);
+    
+    // If member has stored payment, open quick checkout
+    if (customerData) {
+      // Small delay to ensure cart is updated
+      setTimeout(() => {
+        const cartButton = document.querySelector('[data-cart-launcher]') as HTMLElement;
+        cartButton?.click();
+      }, 300);
+    }
+  }, [addToCart, showNotification, customerData]);
 
   // Sample Puebla Mexico themed media - can be replaced with actual tenant media
   const heroMedia = useMemo(() => {
@@ -1558,14 +1569,26 @@ export default function OrderPageClient({
             )}
 
             <div className="flex flex-wrap items-center gap-2">
-              <button
-                type="button"
-                onClick={() => setShowMembershipPanel(true)}
-                className="inline-flex items-center gap-2 rounded-full border border-[#ff0000]/60 bg-[#ff0000]/15 px-4 py-2 text-xs font-semibold uppercase tracking-wide text-[#ff0000] transition hover:bg-[#ff0000]/30"
-              >
-                <span>🎁</span>
-                Rewards
-              </button>
+                <button
+                  type="button"
+                  onClick={() => {
+                    if (customerData) {
+                      setShowMembershipPanel(true);
+                    } else {
+                      setShowJoinModal(true);
+                    }
+                  }}
+                  className="group relative inline-flex items-center gap-2 rounded-full border-2 border-amber-400/60 bg-gradient-to-r from-amber-400/20 via-yellow-400/20 to-amber-400/20 px-5 py-2.5 text-sm font-black uppercase tracking-wide text-amber-700 transition-all hover:scale-105 hover:border-amber-400 hover:shadow-lg hover:shadow-amber-400/40"
+                >
+                  <span className="text-xl animate-bounce">🎁</span>
+                  <span>Rewards</span>
+                  {!customerData && (
+                    <span className="absolute -top-1 -right-1 flex h-3 w-3">
+                      <span className="absolute inline-flex h-full w-full animate-ping rounded-full bg-amber-400 opacity-75"></span>
+                      <span className="relative inline-flex h-3 w-3 rounded-full bg-amber-500"></span>
+                    </span>
+                  )}
+                </button>
             </div>
             
             {/* View Toggles: Grid | List | Showcase */}
@@ -2590,10 +2613,13 @@ export default function OrderPageClient({
                 {/* Previous Orders with Re-order */}
                 {customerData && customerData.orders && customerData.orders.length > 0 && (
                   <div className="rounded-2xl border-2 border-white/20 bg-white/5 p-4">
-                    <h4 className="mb-4 text-lg font-bold text-white">Previous Orders</h4>
+                    <h4 className="mb-4 text-lg font-bold text-white flex items-center gap-2">
+                      <span className="text-xl">🔄</span>
+                      Previous Orders
+                    </h4>
                     <div className="space-y-3 max-h-96 overflow-y-auto">
                       {customerData.orders.map((order) => (
-                        <div key={order.id} className="rounded-xl border border-white/10 bg-white/5 p-3">
+                        <div key={order.id} className="rounded-xl border border-white/10 bg-white/5 p-3 hover:bg-white/10 transition">
                           <div className="flex items-center justify-between mb-2">
                             <div>
                               <p className="text-sm font-semibold text-white">
@@ -2613,9 +2639,9 @@ export default function OrderPageClient({
                           </div>
                           <button
                             onClick={() => handleReorder(order)}
-                            className="w-full mt-2 rounded-lg bg-amber-500/20 border border-amber-500/40 px-3 py-2 text-sm font-semibold text-amber-300 transition hover:bg-amber-500/30"
+                            className="w-full mt-2 rounded-lg bg-gradient-to-r from-amber-500 to-yellow-500 px-4 py-2.5 text-sm font-bold text-black transition hover:scale-105 hover:shadow-lg hover:shadow-amber-500/40"
                           >
-                            Re-order
+                            ⚡ One-Click Re-Order
                           </button>
                         </div>
                       ))}
@@ -2626,9 +2652,8 @@ export default function OrderPageClient({
                 {!customerData && (
                   <button 
                     onClick={() => {
-                      // Redirect to checkout with membership flag
-                      router.push(`/checkout?tenant=${tenantSlug}&joinRewards=true`);
                       setShowMembershipPanel(false);
+                      setShowJoinModal(true);
                     }}
                     className="w-full rounded-2xl bg-gradient-to-r from-amber-400 via-yellow-400 to-amber-400 px-6 py-4 text-lg font-black text-black shadow-2xl shadow-amber-500/40 transition-all hover:scale-105 hover:shadow-amber-500/60"
                   >
