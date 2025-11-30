@@ -317,7 +317,9 @@ export default function MenuEditorPage() {
         },
       });
       const data = await res.json();
-      setCateringGallery(data.cateringGallery || []);
+      // Fix: cateringGallery is inside data.settings, not data directly
+      setCateringGallery(data.settings?.cateringGallery || []);
+      console.log('Fetched catering gallery:', data.settings?.cateringGallery || []);
     } catch (err) {
       console.error('Failed to fetch catering gallery', err);
     }
