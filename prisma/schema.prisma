@@ -217,6 +217,8 @@ model TenantSettings {
   operatingHours         Json?
   membershipProgram      Json?
   upsellBundles          Json?
+  rewards                Json?     // Array of Reward objects
+  emailOffers            Json?     // Array of EmailOffer objects
   accessibilityDefaults  Json?
   branding               Json?
   cateringTabConfig      Json?

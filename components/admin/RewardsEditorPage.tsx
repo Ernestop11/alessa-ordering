@@ -2,9 +2,11 @@
 
 import { useEffect, useState } from 'react';
 import Link from 'next/link';
-import { ArrowLeft, Plus, Edit2, Trash2, Star, Users } from 'lucide-react';
+import { ArrowLeft, Plus, Edit2, Trash2, Star, Users, Gift, Mail } from 'lucide-react';
 import DashboardLayout from './DashboardLayout';
 import RewardsMembersList from './RewardsMembersList';
+import RewardsManager from './RewardsManager';
+import EmailOffersManager from './EmailOffersManager';
 
 interface MembershipTierForm {
   id: string;
@@ -43,7 +45,7 @@ export default function RewardsEditorPage() {
   const [loading, setLoading] = useState(true);
   const [saving, setSaving] = useState(false);
   const [uploadingGallery, setUploadingGallery] = useState(false);
-  const [activeTab, setActiveTab] = useState<'program' | 'members'>('program');
+  const [activeTab, setActiveTab] = useState<'program' | 'members' | 'rewards' | 'emails'>('program');
 
   useEffect(() => {
     fetchRewardsData();
@@ -342,6 +344,28 @@ export default function RewardsEditorPage() {
                   <Users className="w-4 h-4" />
                   Members List
                 </button>
+                <button
+                  onClick={() => setActiveTab('rewards')}
+                  className={`${
+                    activeTab === 'rewards'
+                      ? 'border-orange-500 text-orange-600'
+                      : 'border-transparent text-gray-500 hover:text-gray-700 hover:border-gray-300'
+                  } whitespace-nowrap py-4 px-1 border-b-2 font-medium text-sm flex items-center gap-2`}
+                >
+                  <Gift className="w-4 h-4" />
+                  Rewards & Offers
+                </button>
+                <button
+                  onClick={() => setActiveTab('emails')}
+                  className={`${
+                    activeTab === 'emails'
+                      ? 'border-orange-500 text-orange-600'
+                      : 'border-transparent text-gray-500 hover:text-gray-700 hover:border-gray-300'
+                  } whitespace-nowrap py-4 px-1 border-b-2 font-medium text-sm flex items-center gap-2`}
+                >
+                  <Mail className="w-4 h-4" />
+                  Email Campaigns
+                </button>
               </nav>
             </div>
           </div>
@@ -624,9 +648,17 @@ export default function RewardsEditorPage() {
               </div>
             </div>
           </div>
-          ) : (
+          ) : activeTab === 'members' ? (
             <div className="bg-white rounded-lg shadow p-6">
               <RewardsMembersList />
+            </div>
+          ) : activeTab === 'rewards' ? (
+            <div className="bg-white rounded-lg shadow p-6">
+              <RewardsManager />
+            </div>
+          ) : (
+            <div className="bg-white rounded-lg shadow p-6">
+              <EmailOffersManager />
             </div>
           )}
         </div>

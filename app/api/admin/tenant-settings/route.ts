@@ -66,6 +66,8 @@ export async function GET() {
           branding: tenant.settings.branding ?? null,
           cateringGallery: tenant.settings.cateringGallery ?? [],
           rewardsGallery: (tenant.settings as any).rewardsGallery ?? [],
+          rewards: (tenant.settings as any).rewards ?? [],
+          emailOffers: (tenant.settings as any).emailOffers ?? [],
         }
       : null,
     integrations: tenant.integrations
@@ -164,6 +166,14 @@ export async function PUT(req: Request) {
 
   if (body.rewardsGallery !== undefined) {
     settingsData.rewardsGallery = Array.isArray(body.rewardsGallery) ? body.rewardsGallery : [];
+  }
+
+  if (body.rewards !== undefined) {
+    settingsData.rewards = Array.isArray(body.rewards) ? body.rewards : [];
+  }
+
+  if (body.emailOffers !== undefined) {
+    settingsData.emailOffers = Array.isArray(body.emailOffers) ? body.emailOffers : [];
   }
 
   if (body.branding !== undefined) {
