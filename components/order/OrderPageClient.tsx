@@ -780,9 +780,6 @@ export default function OrderPageClient({
 
   const [isHeroTransitioning, setIsHeroTransitioning] = useState(false);
   const [showMembershipPanel, setShowMembershipPanel] = useState(false);
-  const [rewardsGalleryIndex, setRewardsGalleryIndex] = useState(0);
-  const [rewardsGalleryImages, setRewardsGalleryImages] = useState<string[]>(rewardsData?.rewardsGallery || []);
-  const [customerData, setCustomerData] = useState<CustomerRewardsData | null>(customerRewardsData || null);
   const [showCateringPanel, setShowCateringPanel] = useState(false);
   const [cateringName, setCateringName] = useState('');
   const [cateringEmail, setCateringEmail] = useState('');
