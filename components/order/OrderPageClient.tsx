@@ -1902,11 +1902,12 @@ export default function OrderPageClient({
               </div>
             )}
 
-            {/* Holiday Packages from Editor - no hardcoded fallback */}
-            <div className="mb-8 space-y-4 rounded-2xl border-2 border-red-600/20 bg-gradient-to-br from-red-600/10 to-orange-500/10 p-6">
-              <h4 className="text-xl font-bold text-red-200">🎉 Holiday & Event Bundles</h4>
-              <p className="text-sm text-white/70">Pre-packaged bundles perfect for celebrations</p>
-              <div className="grid gap-4 sm:grid-cols-2">
+            {/* Holiday Packages Fallback - only show if no database packages */}
+            {holidayPackages.length === 0 && (
+              <div className="mb-8 space-y-4 rounded-2xl border-2 border-red-600/20 bg-gradient-to-br from-red-600/10 to-orange-500/10 p-6">
+                <h4 className="text-xl font-bold text-red-200">🎉 Holiday & Event Bundles</h4>
+                <p className="text-sm text-white/70">Pre-packaged bundles perfect for celebrations</p>
+                <div className="grid gap-4 sm:grid-cols-2">
                 <button
                   onClick={() => {
                     setShowCateringPanel(false);
@@ -2078,6 +2079,7 @@ export default function OrderPageClient({
                 </button>
               </div>
             </div>
+            )}
 
             {/* Quick Inquiry Form */}
             <form onSubmit={handleCateringSubmit} className="space-y-4 rounded-2xl border-2 border-white/20 bg-white/5 p-6">
