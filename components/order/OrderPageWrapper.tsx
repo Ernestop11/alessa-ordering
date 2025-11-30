@@ -19,12 +19,48 @@ interface CateringPackage {
   displayOrder: number;
 }
 
+interface RewardsData {
+  membershipProgram: any;
+  rewardsGallery: string[];
+}
+
+interface CustomerRewardsData {
+  id: string;
+  name: string | null;
+  email: string | null;
+  phone: string | null;
+  loyaltyPoints: number;
+  membershipTier: string | null;
+  orders: Array<{
+    id: string;
+    createdAt: string;
+    totalAmount: number;
+    status: string;
+    fulfillmentMethod: string;
+    items: Array<{
+      id: string;
+      quantity: number;
+      price: number;
+      menuItem: {
+        id: string;
+        name: string;
+        description: string;
+        price: number;
+        image: string | null;
+        available: boolean;
+      } | null;
+    }>;
+  }>;
+}
+
 interface OrderPageWrapperProps {
   sections: OrderMenuSection[];
   featuredItems?: OrderMenuItem[];
   tenantSlug: string;
   cateringTabConfig?: any;
   cateringPackages?: CateringPackage[];
+  rewardsData?: RewardsData;
+  customerRewardsData?: CustomerRewardsData | null;
 }
 
 export default function OrderPageWrapper(props: OrderPageWrapperProps) {

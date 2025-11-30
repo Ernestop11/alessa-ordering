@@ -103,7 +103,7 @@ export default function RewardsEditorPage() {
         }),
       });
       if (!res.ok) throw new Error('Failed to save rewards');
-      alert('Rewards program saved successfully!');
+      alert('Rewards program saved successfully! Changes will appear on the frontend after refresh.');
       await fetchRewardsData(); // Refresh to ensure sync
     } catch (err) {
       console.error('Failed to save rewards', err);

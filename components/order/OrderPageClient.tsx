@@ -67,12 +67,48 @@ interface CateringPackage {
   displayOrder: number;
 }
 
+interface RewardsData {
+  membershipProgram: any;
+  rewardsGallery: string[];
+}
+
+interface CustomerRewardsData {
+  id: string;
+  name: string | null;
+  email: string | null;
+  phone: string | null;
+  loyaltyPoints: number;
+  membershipTier: string | null;
+  orders: Array<{
+    id: string;
+    createdAt: string;
+    totalAmount: number;
+    status: string;
+    fulfillmentMethod: string;
+    items: Array<{
+      id: string;
+      quantity: number;
+      price: number;
+      menuItem: {
+        id: string;
+        name: string;
+        description: string;
+        price: number;
+        image: string | null;
+        available: boolean;
+      } | null;
+    }>;
+  }>;
+}
+
 interface OrderPageClientProps {
   sections: OrderMenuSection[];
   featuredItems?: OrderMenuItem[];
   tenantSlug: string;
   cateringTabConfig?: CateringTabConfig;
   cateringPackages?: CateringPackage[];
+  rewardsData?: RewardsData;
+  customerRewardsData?: CustomerRewardsData | null;
 }
 
 type LayoutView = 'grid' | 'list' | 'cards';
@@ -184,7 +220,9 @@ export default function OrderPageClient({
   featuredItems = [],
   tenantSlug,
   cateringTabConfig = { enabled: true, label: 'Catering', icon: 'ChefHat', description: 'Full-service events, delivered' },
-  cateringPackages: initialCateringPackages = []
+  cateringPackages: initialCateringPackages = [],
+  rewardsData,
+  customerRewardsData
 }: OrderPageClientProps) {
   const searchParams = useSearchParams();
   const router = useRouter();
@@ -366,7 +404,8 @@ export default function OrderPageClient({
     });
   }, [sections]);
 
-  const membershipProgram = tenant.membershipProgram;
+  // Use server-side rewards data if available, otherwise fall back to tenant data
+  const membershipProgram = rewardsData?.membershipProgram || tenant.membershipProgram;
   const membershipTiers = useMemo(() => {
     if (!membershipProgram || !Array.isArray(membershipProgram.tiers)) return [];
 
@@ -741,6 +780,9 @@ export default function OrderPageClient({
 
   const [isHeroTransitioning, setIsHeroTransitioning] = useState(false);
   const [showMembershipPanel, setShowMembershipPanel] = useState(false);
+  const [rewardsGalleryIndex, setRewardsGalleryIndex] = useState(0);
+  const [rewardsGalleryImages, setRewardsGalleryImages] = useState<string[]>(rewardsData?.rewardsGallery || []);
+  const [customerData, setCustomerData] = useState<CustomerRewardsData | null>(customerRewardsData || null);
   const [showCateringPanel, setShowCateringPanel] = useState(false);
   const [cateringName, setCateringName] = useState('');
   const [cateringEmail, setCateringEmail] = useState('');
@@ -751,6 +793,9 @@ export default function OrderPageClient({
   const [cateringGalleryIndex, setCateringGalleryIndex] = useState(0);
   // Use server-side data as initial state, with client-side refresh for real-time updates
   const [cateringPackages, setCateringPackages] = useState<CateringPackage[]>(initialCateringPackages);
+  const [rewardsGalleryIndex, setRewardsGalleryIndex] = useState(0);
+  const [rewardsGalleryImages, setRewardsGalleryImages] = useState<string[]>(rewardsData?.rewardsGallery || []);
+  const [customerData, setCustomerData] = useState<CustomerRewardsData | null>(customerRewardsData || null);
 
   // Refresh catering packages periodically for real-time updates (optional)
   useEffect(() => {
@@ -872,6 +917,94 @@ export default function OrderPageClient({
     console.log('[OrderPageClient] holidayPackages:', holiday.length, 'packages');
     return holiday;
   }, [cateringPackages]);
+
+  // Rewards gallery - use server-side data, with client-side refresh for real-time updates
+  useEffect(() => {
+    const fetchRewardsGallery = async () => {
+      try {
+        const timestamp = Date.now();
+        const res = await fetch(`/api/rewards/gallery?t=${timestamp}`, {
+          cache: 'no-store',
+          headers: {
+            'Cache-Control': 'no-cache',
+            'Pragma': 'no-cache',
+          },
+        });
+        if (res.ok) {
+          const data = await res.json();
+          setRewardsGalleryImages(Array.isArray(data.gallery) ? data.gallery : []);
+        }
+      } catch (err) {
+        console.error('Failed to refresh rewards gallery', err);
+      }
+    };
+    
+    // Refresh every 30 seconds for real-time updates
+    const interval = setInterval(fetchRewardsGallery, 30000);
+    return () => clearInterval(interval);
+  }, []);
+
+  // Refresh customer data periodically
+  useEffect(() => {
+    const fetchCustomerData = async () => {
+      try {
+        const timestamp = Date.now();
+        const res = await fetch(`/api/rewards/customer?t=${timestamp}`, {
+          cache: 'no-store',
+          headers: {
+            'Cache-Control': 'no-cache',
+            'Pragma': 'no-cache',
+          },
+        });
+        if (res.ok) {
+          const data = await res.json();
+          setCustomerData(data || null);
+        }
+      } catch (err) {
+        console.error('Failed to refresh customer data', err);
+      }
+    };
+    
+    // Refresh every 30 seconds for real-time updates
+    const interval = setInterval(fetchCustomerData, 30000);
+    return () => clearInterval(interval);
+  }, []);
+
+  const rewardsGallery = useMemo(() => {
+    if (rewardsGalleryImages.length > 0) return rewardsGalleryImages;
+    // Fallback to default images if no gallery
+    return [
+      cycleFallbackImage(50),
+      cycleFallbackImage(51),
+      cycleFallbackImage(52),
+    ];
+  }, [rewardsGalleryImages]);
+
+  // Handle re-order
+  const handleReorder = useCallback((order: CustomerRewardsData['orders'][0]) => {
+    if (!order.items || order.items.length === 0) {
+      showNotification('This order has no items to reorder', 'error');
+      return;
+    }
+
+    // Add all items from the order to cart
+    order.items.forEach((item) => {
+      if (item.menuItem && item.menuItem.available) {
+        for (let i = 0; i < item.quantity; i++) {
+          addToCart({
+            id: item.menuItem.id,
+            name: item.menuItem.name,
+            price: item.menuItem.price,
+            quantity: 1,
+            image: item.menuItem.image || '',
+          });
+        }
+      }
+    });
+
+    showNotification(`Added ${order.items.length} item(s) from previous order to cart!`);
+    setShowMembershipPanel(false);
+  }, [addToCart, showNotification]);
 
   // Sample Puebla Mexico themed media - can be replaced with actual tenant media
   const heroMedia = useMemo(() => {
@@ -2212,26 +2345,104 @@ export default function OrderPageClient({
             
             {membershipEnabled ? (
               <div className="space-y-6">
-                <div className="relative overflow-hidden rounded-3xl border-2 border-amber-500/30 bg-gradient-to-br from-amber-400/20 to-yellow-400/20 p-6">
-                  <Image src={membershipImage} alt="Membership" fill className="object-cover opacity-20" sizes="400px" />
-                  <div className="relative space-y-4">
-                    <div className="flex items-center justify-between">
+                {/* Rewards Gallery Carousel */}
+                {rewardsGallery.length > 0 && (
+                  <div className="relative mb-6 overflow-hidden rounded-3xl border-2 border-amber-500/30">
+                    <div className="relative h-48 w-full">
+                      <Image
+                        src={rewardsGallery[rewardsGalleryIndex]}
+                        alt="Rewards"
+                        fill
+                        className="object-cover"
+                        sizes="(max-width: 768px) 100vw, 384px"
+                      />
+                      <div className="absolute inset-0 bg-gradient-to-t from-black/80 via-black/20 to-transparent" />
+                      <div className="absolute bottom-4 left-4 right-4">
+                        <p className="text-sm font-semibold uppercase tracking-wide text-amber-300">Rewards Program</p>
+                        <h3 className="text-xl font-black text-white">Unlock Exclusive Benefits</h3>
+                      </div>
+                    </div>
+                    {rewardsGallery.length > 1 && (
+                      <>
+                        <div className="absolute bottom-4 right-4 flex gap-2">
+                          <button
+                            onClick={() => setRewardsGalleryIndex((prev) => (prev - 1 + rewardsGallery.length) % rewardsGallery.length)}
+                            className="rounded-full bg-black/60 p-2 text-white backdrop-blur-sm transition hover:bg-black/80"
+                          >
+                            ←
+                          </button>
+                          <button
+                            onClick={() => setRewardsGalleryIndex((prev) => (prev + 1) % rewardsGallery.length)}
+                            className="rounded-full bg-black/60 p-2 text-white backdrop-blur-sm transition hover:bg-black/80"
+                          >
+                            →
+                          </button>
+                        </div>
+                        <div className="absolute bottom-4 left-1/2 flex -translate-x-1/2 gap-2">
+                          {rewardsGallery.map((_, index) => (
+                            <button
+                              key={index}
+                              onClick={() => setRewardsGalleryIndex(index)}
+                              className={`h-2 rounded-full transition-all ${
+                                index === rewardsGalleryIndex ? 'w-8 bg-amber-400' : 'w-2 bg-white/40'
+                              }`}
+                              aria-label={`Go to image ${index + 1}`}
+                            />
+                          ))}
+                        </div>
+                      </>
+                    )}
+                  </div>
+                )}
+
+                {/* Customer Points Display (if logged in) */}
+                {customerData && (
+                  <div className="rounded-2xl border-2 border-amber-500/30 bg-gradient-to-br from-amber-400/20 to-yellow-400/20 p-6">
+                    <div className="flex items-center justify-between mb-4">
                       <div>
-                        <p className="text-xs uppercase tracking-[0.4em] text-amber-300">{featuredTier?.name || 'Rewards'}</p>
-                        <h3 className="text-2xl font-black text-white">{membershipProgram?.featuredMemberName || 'Rewards Member'}</h3>
+                        <p className="text-xs uppercase tracking-[0.4em] text-amber-300">
+                          {customerData.membershipTier || 'Member'}
+                        </p>
+                        <h3 className="text-2xl font-black text-white">
+                          {customerData.name || 'Rewards Member'}
+                        </h3>
                       </div>
                       <div className="text-right">
-                        {pointsPerDollar > 0 && (
-                          <div className="text-2xl font-black text-amber-300">{pointsPerDollar} pts</div>
-                        )}
-                        <div className="text-xs text-white/70">per $1 spent</div>
+                        <div className="text-3xl font-black text-amber-300">
+                          {customerData.loyaltyPoints.toLocaleString()}
+                        </div>
+                        <div className="text-xs text-white/70">points</div>
                       </div>
                     </div>
                     <p className="text-sm leading-relaxed text-white/90">
                       {membershipProgram?.heroCopy || 'Earn puntos with every order and unlock chef-curated rewards.'}
                     </p>
                   </div>
-                </div>
+                )}
+
+                {/* Guest View (if not logged in) */}
+                {!customerData && (
+                  <div className="relative overflow-hidden rounded-3xl border-2 border-amber-500/30 bg-gradient-to-br from-amber-400/20 to-yellow-400/20 p-6">
+                    <Image src={membershipImage} alt="Membership" fill className="object-cover opacity-20" sizes="400px" />
+                    <div className="relative space-y-4">
+                      <div className="flex items-center justify-between">
+                        <div>
+                          <p className="text-xs uppercase tracking-[0.4em] text-amber-300">{featuredTier?.name || 'Rewards'}</p>
+                          <h3 className="text-2xl font-black text-white">{membershipProgram?.featuredMemberName || 'Rewards Member'}</h3>
+                        </div>
+                        <div className="text-right">
+                          {pointsPerDollar > 0 && (
+                            <div className="text-2xl font-black text-amber-300">{pointsPerDollar} pts</div>
+                          )}
+                          <div className="text-xs text-white/70">per $1 spent</div>
+                        </div>
+                      </div>
+                      <p className="text-sm leading-relaxed text-white/90">
+                        {membershipProgram?.heroCopy || 'Earn puntos with every order and unlock chef-curated rewards.'}
+                      </p>
+                    </div>
+                  </div>
+                )}
 
                 {upcomingTier && (
                   <div className="rounded-2xl border-2 border-white/20 bg-white/5 p-4">
@@ -2276,9 +2487,47 @@ export default function OrderPageClient({
                   </ul>
                 </div>
 
-                <button className="w-full rounded-2xl bg-gradient-to-r from-amber-400 via-yellow-400 to-amber-400 px-6 py-4 text-lg font-black text-black shadow-2xl shadow-amber-500/40 transition-all hover:scale-105 hover:shadow-amber-500/60">
-                  Join Rewards Program
-                </button>
+                {/* Previous Orders with Re-order */}
+                {customerData && customerData.orders && customerData.orders.length > 0 && (
+                  <div className="rounded-2xl border-2 border-white/20 bg-white/5 p-4">
+                    <h4 className="mb-4 text-lg font-bold text-white">Previous Orders</h4>
+                    <div className="space-y-3 max-h-96 overflow-y-auto">
+                      {customerData.orders.map((order) => (
+                        <div key={order.id} className="rounded-xl border border-white/10 bg-white/5 p-3">
+                          <div className="flex items-center justify-between mb-2">
+                            <div>
+                              <p className="text-sm font-semibold text-white">
+                                {new Date(order.createdAt).toLocaleDateString()}
+                              </p>
+                              <p className="text-xs text-white/60">
+                                {order.items.length} item{order.items.length !== 1 ? 's' : ''} · ${order.totalAmount.toFixed(2)}
+                              </p>
+                            </div>
+                            <span className={`text-xs px-2 py-1 rounded-full ${
+                              order.status === 'completed' ? 'bg-green-500/20 text-green-300' :
+                              order.status === 'pending' ? 'bg-yellow-500/20 text-yellow-300' :
+                              'bg-gray-500/20 text-gray-300'
+                            }`}>
+                              {order.status}
+                            </span>
+                          </div>
+                          <button
+                            onClick={() => handleReorder(order)}
+                            className="w-full mt-2 rounded-lg bg-amber-500/20 border border-amber-500/40 px-3 py-2 text-sm font-semibold text-amber-300 transition hover:bg-amber-500/30"
+                          >
+                            Re-order
+                          </button>
+                        </div>
+                      ))}
+                    </div>
+                  </div>
+                )}
+
+                {!customerData && (
+                  <button className="w-full rounded-2xl bg-gradient-to-r from-amber-400 via-yellow-400 to-amber-400 px-6 py-4 text-lg font-black text-black shadow-2xl shadow-amber-500/40 transition-all hover:scale-105 hover:shadow-amber-500/60">
+                    Join Rewards Program
+                  </button>
+                )}
               </div>
             ) : (
               <div className="space-y-4 text-center text-white/80">

@@ -239,12 +239,105 @@ async function getCateringPackages(tenantId: string) {
   });
 }
 
+async function getRewardsData(tenantId: string) {
+  const settings = await prisma.tenantSettings.findUnique({
+    where: { tenantId },
+    select: { 
+      membershipProgram: true,
+      rewardsGallery: true,
+    },
+  });
+
+  return {
+    membershipProgram: (settings?.membershipProgram as any) || null,
+    rewardsGallery: (settings?.rewardsGallery as string[]) || [],
+  };
+}
+
+async function getCustomerRewardsData(tenantId: string) {
+  const { cookies } = await import('next/headers');
+  const token = cookies().get('customer_session')?.value;
+  
+  if (!token) {
+    return null;
+  }
+
+  const session = await prisma.customerSession.findFirst({
+    where: {
+      tenantId,
+      token,
+      expiresAt: { gt: new Date() },
+    },
+    include: {
+      customer: {
+        include: {
+          orders: {
+            orderBy: { createdAt: 'desc' },
+            take: 10, // Get last 10 orders for re-order
+            include: {
+              items: {
+                include: {
+                  menuItem: {
+                    select: {
+                      id: true,
+                      name: true,
+                      description: true,
+                      price: true,
+                      image: true,
+                      available: true,
+                    },
+                  },
+                },
+              },
+            },
+          },
+        },
+      },
+    },
+  });
+
+  if (!session?.customer) {
+    return null;
+  }
+
+  return {
+    id: session.customer.id,
+    name: session.customer.name,
+    email: session.customer.email,
+    phone: session.customer.phone,
+    loyaltyPoints: session.customer.loyaltyPoints ?? 0,
+    membershipTier: session.customer.membershipTier,
+    orders: session.customer.orders.map((order) => ({
+      id: order.id,
+      createdAt: order.createdAt.toISOString(),
+      totalAmount: Number(order.totalAmount ?? 0),
+      status: order.status,
+      fulfillmentMethod: order.fulfillmentMethod,
+      items: order.items.map((item) => ({
+        id: item.id,
+        quantity: item.quantity,
+        price: Number(item.price),
+        menuItem: item.menuItem ? {
+          id: item.menuItem.id,
+          name: item.menuItem.name,
+          description: item.menuItem.description,
+          price: Number(item.menuItem.price),
+          image: item.menuItem.image,
+          available: item.menuItem.available,
+        } : null,
+      })),
+    })),
+  };
+}
+
 export default async function OrderPage() {
   const tenant = await requireTenant();
   const sections = await getMenuSections(tenant.id);
   const featuredItems = await getFeaturedItems(tenant.id);
   const cateringTabConfig = await getCateringTabConfig(tenant.id);
   const cateringPackages = await getCateringPackages(tenant.id);
+  const rewardsData = await getRewardsData(tenant.id);
+  const customerRewardsData = await getCustomerRewardsData(tenant.id);
 
   return (
     <Suspense fallback={
@@ -261,6 +354,8 @@ export default async function OrderPage() {
         tenantSlug={tenant.slug}
         cateringTabConfig={cateringTabConfig}
         cateringPackages={cateringPackages}
+        rewardsData={rewardsData}
+        customerRewardsData={customerRewardsData}
       />
     </Suspense>
   );
