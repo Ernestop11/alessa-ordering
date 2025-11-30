@@ -785,12 +785,39 @@ export default function OrderPageClient({
     const handleVisibilityChange = () => {
       if (document.visibilityState === 'visible') {
         router.refresh(); // Refresh server components to get latest data from database
+        // Also refresh gallery images
+        const timestamp = Date.now();
+        fetch(`/api/catering-packages/gallery?t=${timestamp}`, {
+          cache: 'no-store',
+          headers: {
+            'Cache-Control': 'no-cache',
+            'Pragma': 'no-cache',
+          },
+        })
+          .then(res => res.json())
+          .then(data => {
+            setCateringGalleryImages(Array.isArray(data.gallery) ? data.gallery : []);
+          })
+          .catch(err => console.error('Failed to refresh gallery:', err));
       }
     };
 
     // Refresh on page focus (user clicks back into the window)
     const handleFocus = () => {
       router.refresh();
+      const timestamp = Date.now();
+      fetch(`/api/catering-packages/gallery?t=${timestamp}`, {
+        cache: 'no-store',
+        headers: {
+          'Cache-Control': 'no-cache',
+          'Pragma': 'no-cache',
+        },
+      })
+        .then(res => res.json())
+        .then(data => {
+          setCateringGalleryImages(Array.isArray(data.gallery) ? data.gallery : []);
+        })
+        .catch(err => console.error('Failed to refresh gallery:', err));
     };
 
     document.addEventListener('visibilitychange', handleVisibilityChange);

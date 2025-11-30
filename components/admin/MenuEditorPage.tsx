@@ -216,7 +216,15 @@ export default function MenuEditorPage() {
 
   const fetchCateringSections = async () => {
     try {
-      const res = await fetch('/api/admin/catering-sections');
+      // Add cache-busting timestamp to prevent browser caching
+      const timestamp = Date.now();
+      const res = await fetch(`/api/admin/catering-sections?t=${timestamp}`, {
+        cache: 'no-store',
+        headers: {
+          'Cache-Control': 'no-cache',
+          'Pragma': 'no-cache',
+        },
+      });
       const data = await res.json();
       setCateringSections(data || []);
       if (data && data.length > 0 && !selectedCateringSection) {
@@ -230,7 +238,15 @@ export default function MenuEditorPage() {
   const fetchCateringPackages = async () => {
     setLoading(true);
     try {
-      const res = await fetch('/api/admin/catering-packages');
+      // Add cache-busting timestamp to prevent browser caching
+      const timestamp = Date.now();
+      const res = await fetch(`/api/admin/catering-packages?t=${timestamp}`, {
+        cache: 'no-store',
+        headers: {
+          'Cache-Control': 'no-cache',
+          'Pragma': 'no-cache',
+        },
+      });
       const data = await res.json();
       setCateringPackages(data || []);
     } catch (err) {
@@ -291,7 +307,15 @@ export default function MenuEditorPage() {
 
   const fetchCateringGallery = async () => {
     try {
-      const res = await fetch('/api/admin/tenant-settings');
+      // Add cache-busting timestamp to prevent browser caching
+      const timestamp = Date.now();
+      const res = await fetch(`/api/admin/tenant-settings?t=${timestamp}`, {
+        cache: 'no-store',
+        headers: {
+          'Cache-Control': 'no-cache',
+          'Pragma': 'no-cache',
+        },
+      });
       const data = await res.json();
       setCateringGallery(data.cateringGallery || []);
     } catch (err) {
@@ -336,6 +360,8 @@ export default function MenuEditorPage() {
       });
       if (!res.ok) throw new Error('Failed to save gallery');
       setCateringGallery(gallery);
+      // Refresh gallery from server to ensure sync
+      await fetchCateringGallery();
     } catch (err) {
       console.error('Failed to save gallery', err);
       alert('Failed to save gallery');
@@ -637,6 +663,10 @@ export default function MenuEditorPage() {
                         src={url}
                         alt={`Gallery ${index + 1}`}
                         className="w-full h-32 object-cover rounded-lg border border-gray-200"
+                        onError={(e) => {
+                          console.error('Failed to load gallery image:', url);
+                          (e.target as HTMLImageElement).src = '/placeholder.jpg';
+                        }}
                       />
                       <button
                         onClick={() => handleRemoveGalleryImage(url)}
