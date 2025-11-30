@@ -1556,138 +1556,117 @@ export default function OrderPageClient({
 
   return (
     <div className="min-h-screen bg-gradient-to-br from-[#050A1C] via-[#0A1C2F] to-[#041326] text-white">
-      <header className="sticky top-0 z-40 border-b border-white/10 bg-black/60 backdrop-blur-xl">
+      <header className="sticky top-0 z-40 border-b border-white/10 bg-gradient-to-b from-black/95 to-black/80 backdrop-blur-xl">
         <div className="mx-auto max-w-6xl px-6 py-4">
-          {/* Top Row: Logo + Tabs */}
-          <div className="flex flex-col gap-4 md:flex-row md:items-center md:justify-between">
-            <div className="flex items-center gap-4">
-              {tenant.logoUrl ? (
-                <Image
-                  src={tenant.logoUrl}
-                  alt={`${tenant.name} logo`}
-                  width={56}
-                  height={56}
-                  className="h-14 w-14 rounded-full border border-white/20 object-cover"
-                />
-              ) : (
-                <div className="flex h-14 w-14 items-center justify-center rounded-full border border-white/20 text-2xl">🍽️</div>
-              )}
-              <div>
-                <h1 className="text-2xl font-semibold text-white">{tenant.name}</h1>
-                {tenant.tagline && <p className="text-sm text-white/60">{tenant.tagline}</p>}
+          {/* Centered Branding with Gradient Background */}
+          <div className="mb-5 flex flex-col items-center text-center">
+            <div className="mb-3 relative">
+              {/* Gradient Background Circle */}
+              <div className="absolute inset-0 rounded-3xl bg-gradient-to-br from-red-600/40 via-amber-500/30 to-yellow-400/40 blur-xl"></div>
+              <div className="absolute inset-0 rounded-3xl bg-gradient-to-br from-red-600/60 via-amber-500/50 to-yellow-400/60"></div>
+              
+              {/* Logo Container */}
+              <div className="relative">
+                {tenant.logoUrl ? (
+                  <Image
+                    src={tenant.logoUrl}
+                    alt={`${tenant.name} logo`}
+                    width={100}
+                    height={100}
+                    className="relative h-24 w-24 rounded-3xl border-4 border-white/40 object-cover shadow-2xl ring-4 ring-white/20"
+                  />
+                ) : (
+                  <div className="relative flex h-24 w-24 items-center justify-center rounded-3xl border-4 border-white/40 bg-gradient-to-br from-red-600 to-amber-500 text-5xl shadow-2xl ring-4 ring-white/20">🍽️</div>
+                )}
               </div>
             </div>
-            
-            {/* Tab Bar: Catering, ADA, Cart (right-aligned) */}
-            <div className="flex items-center gap-2">
-              {cateringEnabled && (
-                <button
-                  onClick={() => setShowCateringPanel(true)}
-                  className="flex items-center gap-2 rounded-full border border-white/20 bg-white/5 px-4 py-2 text-sm font-semibold text-white transition-all hover:border-[#ff0000] hover:bg-[#ff0000]/20 hover:text-white"
-                  style={{ 
-                    borderColor: showCateringPanel ? '#ff0000' : undefined,
-                    backgroundColor: showCateringPanel ? '#ff0000' : undefined
-                  }}
-                >
-                  <span>🎉</span>
-                  <span>Catering</span>
-                </button>
-              )}
-              <button
-                onClick={() => setAccessibilityOpen((prev) => !prev)}
-                className="flex items-center gap-2 rounded-full border border-white/20 bg-white/5 px-4 py-2 text-sm font-semibold text-white transition-all hover:border-[#ff0000] hover:bg-[#ff0000]/20 hover:text-white"
-                style={{ 
-                  borderColor: isAccessibilityOpen ? '#ff0000' : undefined,
-                  backgroundColor: isAccessibilityOpen ? '#ff0000' : undefined
-                }}
-              >
-                <span>♿</span>
-                <span className="hidden sm:inline">ADA</span>
-                <span className="sm:hidden">Accessibility</span>
-              </button>
-              <button
-                onClick={() => {
-                  const cartButton = document.querySelector('[data-cart-launcher]') as HTMLElement;
-                  cartButton?.click();
-                }}
-                className="flex items-center gap-2 rounded-full border border-white/20 bg-white/5 px-4 py-2 text-sm font-semibold text-white transition-all hover:border-[#ff0000] hover:bg-[#ff0000]/20 hover:text-white"
-              >
-                <span>🛒</span>
-                <span>Cart</span>
-                {cartItemCount > 0 && (
-                  <span className="rounded-full bg-[#ff0000] px-2 py-0.5 text-xs font-bold text-white">
-                    {cartItemCount > 99 ? '99+' : cartItemCount}
-                  </span>
-                )}
-              </button>
-            </div>
+            <h1 className="text-3xl font-black text-white">{tenant.name}</h1>
+            {tenant.tagline && <p className="mt-1 text-sm text-white/70">{tenant.tagline}</p>}
           </div>
           
-          {/* Bottom Row: Category Chips + View Toggles */}
-          <div className="mt-4 flex flex-col gap-3 md:flex-row md:items-center md:justify-between">
-            {navSections.length > 0 && (
-              <nav className="flex max-w-full items-center gap-2 overflow-x-auto text-sm font-medium text-white/80 scrollbar-hide pb-2">
-                {navSections.map((section) => {
-                  const isActive = activeSectionId === section.id;
-                  return (
-                    <button
-                      key={section.id}
-                      onClick={() => {
-                        setActiveSectionId(section.id);
-                        const element = document.getElementById(`section-${section.id}`);
-                        element?.scrollIntoView({ behavior: 'smooth', block: 'start' });
-                      }}
-                      className={`flex-shrink-0 rounded-full border px-4 py-2.5 text-sm transition-all hover:scale-105 ${
-                        isActive 
-                          ? 'border-[#ff0000] bg-[#ff0000] text-white font-semibold shadow-lg shadow-[#ff0000]/40' 
-                          : 'border-white/20 hover:border-[#ff0000]/40 hover:text-white hover:bg-white/5'
-                      }`}
-                    >
-                      <span className="text-base">{SECTION_ICONS[section.type] || '🍽️'}</span>
-                      <span className="ml-1.5">{section.name}</span>
-                    </button>
-                  );
-                })}
-              </nav>
+          {/* Action Bar */}
+          <div className="mb-4 flex items-center justify-center gap-3">
+            {cateringEnabled && (
+              <button
+                onClick={() => setShowCateringPanel(true)}
+                className="rounded-full border border-white/20 bg-white/5 px-4 py-2 text-sm font-medium text-white transition hover:bg-white/10 hover:border-white/30"
+              >
+                🎉 Catering
+              </button>
             )}
-
-            <div className="flex flex-wrap items-center gap-2">
-                <button
-                  type="button"
-                  onClick={() => {
-                    if (customerData) {
-                      setShowMembershipPanel(true);
-                    } else {
-                      setShowJoinModal(true);
-                    }
-                  }}
-                  className="group relative inline-flex items-center gap-2 rounded-full border-2 border-amber-400/60 bg-gradient-to-r from-amber-400/20 via-yellow-400/20 to-amber-400/20 px-5 py-2.5 text-sm font-black uppercase tracking-wide text-amber-700 transition-all hover:scale-105 hover:border-amber-400 hover:shadow-lg hover:shadow-amber-400/40"
-                >
-                  <span className="text-xl animate-bounce">🎁</span>
-                  <span>Rewards</span>
-                  {!customerData && (
-                    <span className="absolute -top-1 -right-1 flex h-3 w-3">
-                      <span className="absolute inline-flex h-full w-full animate-ping rounded-full bg-amber-400 opacity-75"></span>
-                      <span className="relative inline-flex h-3 w-3 rounded-full bg-amber-500"></span>
-                    </span>
-                  )}
-                </button>
-            </div>
+            <button
+              onClick={() => setAccessibilityOpen((prev) => !prev)}
+              className="rounded-full border border-white/20 bg-white/5 px-4 py-2 text-sm font-medium text-white transition hover:bg-white/10 hover:border-white/30"
+            >
+              ♿ ADA
+            </button>
+            <button
+              onClick={() => {
+                if (customerData) {
+                  setShowMembershipPanel(true);
+                } else {
+                  setShowJoinModal(true);
+                }
+              }}
+              className="rounded-full bg-gradient-to-r from-amber-400 to-yellow-400 px-5 py-2 text-sm font-bold text-black shadow-lg transition hover:scale-105 hover:shadow-xl"
+            >
+              🎁 Rewards
+            </button>
+            <button
+              onClick={() => {
+                const cartButton = document.querySelector('[data-cart-launcher]') as HTMLElement;
+                cartButton?.click();
+              }}
+              className="relative rounded-full bg-red-600 px-5 py-2 text-sm font-bold text-white shadow-lg transition hover:bg-red-500 hover:scale-105"
+            >
+              🛒 Cart
+              {cartItemCount > 0 && (
+                <span className="absolute -top-2 -right-2 h-6 w-6 rounded-full bg-yellow-400 text-xs font-black text-black flex items-center justify-center shadow-lg">
+                  {cartItemCount > 9 ? '9+' : cartItemCount}
+                </span>
+              )}
+            </button>
+          </div>
+          
+          {/* Navigation */}
+          <div className="flex items-center justify-between gap-4">
+            <nav className="flex flex-1 items-center gap-2 overflow-x-auto scrollbar-hide pb-2">
+              {navSections.map((section) => {
+                const isActive = activeSectionId === section.id;
+                return (
+                  <button
+                    key={section.id}
+                    onClick={() => {
+                      setActiveSectionId(section.id);
+                      const element = document.getElementById(`section-${section.id}`);
+                      element?.scrollIntoView({ behavior: 'smooth', block: 'start' });
+                    }}
+                    className={`flex-shrink-0 rounded-full px-4 py-2 text-sm font-medium transition ${
+                      isActive 
+                        ? 'bg-red-600 text-white shadow-lg shadow-red-600/40' 
+                        : 'bg-white/5 text-white/70 hover:bg-white/10 hover:text-white'
+                    }`}
+                  >
+                    <span className="mr-1.5">{SECTION_ICONS[section.type] || '🍽️'}</span>
+                    {section.name}
+                  </button>
+                );
+              })}
+            </nav>
             
-            {/* View Toggles: Grid | List | Showcase */}
-            <div className="flex items-center gap-2">
+            {/* View Toggles */}
+            <div className="flex items-center gap-1 rounded-full border border-white/20 bg-white/5 p-1">
               {LAYOUTS.map((layout) => (
                 <button
                   key={layout.id}
                   onClick={() => setActiveLayout(layout.id)}
-                  className={`flex items-center gap-2 rounded-full border px-3 py-1.5 text-xs font-semibold transition ${
-                    activeLayout === layout.id
-                      ? 'border-[#ff0000] bg-[#ff0000] text-white shadow-lg shadow-[#ff0000]/40'
-                      : 'border-white/20 text-white/70 hover:border-[#ff0000]/40 hover:text-white hover:bg-white/5'
+                  className={`rounded-full px-3 py-1.5 text-xs transition ${
+                    activeLayout === layout.id 
+                      ? 'bg-red-600 text-white shadow-lg' 
+                      : 'text-white/60 hover:text-white hover:bg-white/10'
                   }`}
                 >
-                  <span>{layout.icon}</span>
-                  <span className="hidden sm:inline">{layout.label}</span>
+                  {layout.icon}
                 </button>
               ))}
             </div>
