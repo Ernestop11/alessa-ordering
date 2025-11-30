@@ -2399,38 +2399,38 @@ export default function OrderPageClient({
                   </div>
                 </div>
 
-                {/* Customer Points Display (if logged in) */}
+                {/* Customer Points Display (if logged in) - Enhanced */}
                 {customerData && (
-                  <div className="rounded-2xl border-2 border-amber-500/30 bg-gradient-to-br from-amber-400/20 to-yellow-400/20 p-6">
+                  <div className="rounded-2xl border-2 border-amber-500/40 bg-gradient-to-br from-amber-400/30 via-yellow-400/30 to-amber-500/30 p-6 shadow-xl">
                     <div className="flex items-center justify-between mb-4">
                       <div>
-                        <p className="text-xs uppercase tracking-[0.4em] text-amber-300">
-                          {customerData.membershipTier || 'Member'}
+                        <p className="text-xs uppercase tracking-[0.4em] text-amber-200 font-bold">
+                          {customerData.membershipTier || 'Member'} Tier
                         </p>
-                        <h3 className="text-2xl font-black text-white">
+                        <h3 className="text-2xl font-black text-white mt-1">
                           {customerData.name || 'Rewards Member'}
                         </h3>
                       </div>
-                      <div className="text-right">
+                      <div className="text-right bg-white/10 rounded-xl px-4 py-3 border border-amber-400/30">
                         <div className="text-3xl font-black text-amber-300">
                           {customerData.loyaltyPoints.toLocaleString()}
                         </div>
-                        <div className="text-xs text-white/70">points</div>
+                        <div className="text-xs text-white/80 font-semibold">points</div>
                       </div>
                     </div>
                     
-                    {/* Points Progress Bar */}
+                    {/* Points Progress Bar - Enhanced */}
                     {upcomingTier && (
-                      <div className="mt-4">
-                        <div className="flex items-center justify-between text-xs text-white/70 mb-1">
-                          <span>Next tier: {upcomingTier.name}</span>
+                      <div className="mt-4 bg-white/10 rounded-xl p-3 border border-amber-400/20">
+                        <div className="flex items-center justify-between text-xs text-white/90 mb-2 font-semibold">
+                          <span>Next tier: <span className="text-amber-300">{upcomingTier.name}</span></span>
                           <span>
                             {customerData.loyaltyPoints} / {upcomingTier.threshold} pts
                           </span>
                         </div>
-                        <div className="w-full bg-white/20 rounded-full h-2">
+                        <div className="w-full bg-white/20 rounded-full h-3 overflow-hidden">
                           <div 
-                            className="bg-amber-400 h-2 rounded-full transition-all"
+                            className="bg-gradient-to-r from-amber-400 to-yellow-400 h-3 rounded-full transition-all shadow-lg"
                             style={{
                               width: `${Math.min(100, (customerData.loyaltyPoints / (upcomingTier.threshold || 1)) * 100)}%`
                             }}
@@ -2439,7 +2439,7 @@ export default function OrderPageClient({
                       </div>
                     )}
                     
-                    <p className="text-sm leading-relaxed text-white/90 mt-4">
+                    <p className="text-sm leading-relaxed text-white/90 mt-4 bg-white/5 rounded-lg p-3 border border-white/10">
                       {membershipProgram?.heroCopy || 'Earn puntos with every order and unlock chef-curated rewards.'}
                     </p>
                   </div>
@@ -2571,36 +2571,45 @@ export default function OrderPageClient({
                   </div>
                 )}
 
-                {/* Previous Orders with Re-order */}
+                {/* Previous Orders with Re-order - Enhanced Visibility */}
                 {customerData && customerData.orders && customerData.orders.length > 0 && (
-                  <div className="rounded-2xl border-2 border-white/20 bg-white/5 p-4">
-                    <h4 className="mb-4 text-lg font-bold text-white flex items-center gap-2">
-                      <span className="text-xl">🔄</span>
-                      Previous Orders
-                    </h4>
+                  <div className="rounded-2xl border-2 border-amber-500/40 bg-gradient-to-br from-amber-500/10 via-yellow-500/10 to-amber-500/10 p-6 shadow-xl">
+                    <div className="flex items-center justify-between mb-4">
+                      <h4 className="text-xl font-black text-white flex items-center gap-2">
+                        <span className="text-2xl animate-pulse">🔄</span>
+                        Quick Re-Order
+                      </h4>
+                      <span className="text-xs text-white/70 bg-white/10 px-3 py-1 rounded-full">
+                        {customerData.orders.length} previous order{customerData.orders.length !== 1 ? 's' : ''}
+                      </span>
+                    </div>
                     <div className="space-y-3 max-h-96 overflow-y-auto">
                       {customerData.orders.map((order) => (
-                        <div key={order.id} className="rounded-xl border border-white/10 bg-white/5 p-3 hover:bg-white/10 transition">
-                          <div className="flex items-center justify-between mb-2">
+                        <div key={order.id} className="rounded-xl border-2 border-amber-400/30 bg-white/10 p-4 hover:bg-white/20 transition-all hover:scale-[1.02] shadow-lg">
+                          <div className="flex items-center justify-between mb-3">
                             <div>
-                              <p className="text-sm font-semibold text-white">
-                                {new Date(order.createdAt).toLocaleDateString()}
+                              <p className="text-sm font-bold text-white">
+                                {new Date(order.createdAt).toLocaleDateString('en-US', { 
+                                  month: 'short', 
+                                  day: 'numeric', 
+                                  year: 'numeric' 
+                                })}
                               </p>
-                              <p className="text-xs text-white/60">
+                              <p className="text-xs text-white/70 mt-1">
                                 {order.items.length} item{order.items.length !== 1 ? 's' : ''} · ${order.totalAmount.toFixed(2)}
                               </p>
                             </div>
-                            <span className={`text-xs px-2 py-1 rounded-full ${
-                              order.status === 'completed' ? 'bg-green-500/20 text-green-300' :
-                              order.status === 'pending' ? 'bg-yellow-500/20 text-yellow-300' :
-                              'bg-gray-500/20 text-gray-300'
+                            <span className={`text-xs px-2 py-1 rounded-full font-semibold ${
+                              order.status === 'completed' ? 'bg-green-500/30 text-green-300 border border-green-500/50' :
+                              order.status === 'pending' ? 'bg-yellow-500/30 text-yellow-300 border border-yellow-500/50' :
+                              'bg-gray-500/30 text-gray-300 border border-gray-500/50'
                             }`}>
                               {order.status}
                             </span>
                           </div>
                           <button
                             onClick={() => handleReorder(order)}
-                            className="w-full mt-2 rounded-lg bg-gradient-to-r from-amber-500 to-yellow-500 px-4 py-2.5 text-sm font-bold text-black transition hover:scale-105 hover:shadow-lg hover:shadow-amber-500/40"
+                            className="w-full rounded-xl bg-gradient-to-r from-amber-400 via-yellow-400 to-amber-400 px-5 py-3 text-sm font-black text-black shadow-xl shadow-amber-500/50 transition-all hover:scale-105 hover:shadow-amber-500/70 active:scale-95"
                           >
                             ⚡ One-Click Re-Order
                           </button>

@@ -2,8 +2,9 @@
 
 import { useEffect, useState } from 'react';
 import Link from 'next/link';
-import { ArrowLeft, Plus, Edit2, Trash2, Star } from 'lucide-react';
+import { ArrowLeft, Plus, Edit2, Trash2, Star, Users } from 'lucide-react';
 import DashboardLayout from './DashboardLayout';
+import RewardsMembersList from './RewardsMembersList';
 
 interface MembershipTierForm {
   id: string;
@@ -42,6 +43,7 @@ export default function RewardsEditorPage() {
   const [loading, setLoading] = useState(true);
   const [saving, setSaving] = useState(false);
   const [uploadingGallery, setUploadingGallery] = useState(false);
+  const [activeTab, setActiveTab] = useState<'program' | 'members'>('program');
 
   useEffect(() => {
     fetchRewardsData();
@@ -103,6 +105,14 @@ export default function RewardsEditorPage() {
         }),
       });
       if (!res.ok) throw new Error('Failed to save rewards');
+      
+      // Revalidate the order page to ensure frontend updates
+      try {
+        await fetch('/api/revalidate?path=/order', { method: 'POST' });
+      } catch (revalidateErr) {
+        console.warn('Failed to revalidate order page:', revalidateErr);
+      }
+      
       alert('Rewards program saved successfully! Changes will appear on the frontend after refresh.');
       await fetchRewardsData(); // Refresh to ensure sync
     } catch (err) {
@@ -583,6 +593,11 @@ export default function RewardsEditorPage() {
               </div>
             </div>
           </div>
+          ) : (
+            <div className="bg-white rounded-lg shadow p-6">
+              <RewardsMembersList />
+            </div>
+          )}
         </div>
       </div>
     </DashboardLayout>
