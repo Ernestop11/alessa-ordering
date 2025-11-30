@@ -65,6 +65,7 @@ export async function GET() {
           isOpen: tenant.settings.isOpen ?? true,
           branding: tenant.settings.branding ?? null,
           cateringGallery: tenant.settings.cateringGallery ?? [],
+          rewardsGallery: (tenant.settings as any).rewardsGallery ?? [],
         }
       : null,
     integrations: tenant.integrations
@@ -159,6 +160,10 @@ export async function PUT(req: Request) {
 
   if (body.cateringGallery !== undefined) {
     settingsData.cateringGallery = Array.isArray(body.cateringGallery) ? body.cateringGallery : [];
+  }
+
+  if (body.rewardsGallery !== undefined) {
+    settingsData.rewardsGallery = Array.isArray(body.rewardsGallery) ? body.rewardsGallery : [];
   }
 
   if (body.branding !== undefined) {
@@ -335,6 +340,7 @@ export async function PUT(req: Request) {
           accessibilityDefaults: updatedTenant.settings.accessibilityDefaults,
           branding: updatedTenant.settings.branding ?? null,
           cateringGallery: updatedTenant.settings.cateringGallery ?? [],
+          rewardsGallery: (updatedTenant.settings as any).rewardsGallery ?? [],
         }
       : null,
     integrations: updatedTenant.integrations

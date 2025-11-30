@@ -41,6 +41,11 @@ self.addEventListener('fetch', (event) => {
     return;
   }
 
+  // Skip chrome-extension URLs (can't be cached)
+  if (event.request.url.startsWith('chrome-extension://')) {
+    return;
+  }
+
   // Skip API requests (always use network) - CRITICAL for real-time updates
   if (event.request.url.includes('/api/')) {
     return;
@@ -57,10 +62,15 @@ self.addEventListener('fetch', (event) => {
         return cachedResponse;
       }
 
-      return fetch(event.request)
+          return fetch(event.request)
         .then((response) => {
           // Don't cache non-successful responses
           if (!response || response.status !== 200 || response.type !== 'basic') {
+            return response;
+          }
+
+          // Don't cache chrome-extension URLs
+          if (event.request.url.startsWith('chrome-extension://')) {
             return response;
           }
 
@@ -68,7 +78,12 @@ self.addEventListener('fetch', (event) => {
           const responseToCache = response.clone();
 
           caches.open(CACHE_NAME).then((cache) => {
-            cache.put(event.request, responseToCache);
+            try {
+              cache.put(event.request, responseToCache);
+            } catch (error) {
+              // Silently fail if caching fails (e.g., chrome-extension URLs)
+              console.warn('Failed to cache:', event.request.url, error);
+            }
           });
 
           return response;

@@ -86,3 +86,4 @@
 - [ ] Reduce polling interval if needed
 - [ ] Add connection status indicator
 
+

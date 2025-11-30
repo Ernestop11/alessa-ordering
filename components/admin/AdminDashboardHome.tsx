@@ -1,7 +1,7 @@
 'use client';
 
 import Link from 'next/link';
-import { CheckCircle2, XCircle, CreditCard, Truck, Package, Settings, Menu, BarChart3, ChefHat } from 'lucide-react';
+import { CheckCircle2, XCircle, CreditCard, Truck, Package, Settings, Menu, BarChart3, ChefHat, Star } from 'lucide-react';
 import DashboardLayout from './DashboardLayout';
 
 interface AdminDashboardHomeProps {
@@ -280,6 +280,17 @@ export default function AdminDashboardHome({
                 <div>
                   <p className="font-medium text-gray-900">Catering Tab Settings</p>
                   <p className="text-sm text-gray-500">Configure catering button</p>
+                </div>
+              </Link>
+
+              <Link
+                href="/admin/rewards"
+                className="flex items-center p-4 border-2 border-gray-200 rounded-lg hover:border-yellow-500 hover:bg-yellow-50 transition-colors"
+              >
+                <Star className="h-6 w-6 text-gray-600 mr-3" />
+                <div>
+                  <p className="font-medium text-gray-900">Rewards Program</p>
+                  <p className="text-sm text-gray-500">Manage membership tiers & rewards</p>
                 </div>
               </Link>
             </div>

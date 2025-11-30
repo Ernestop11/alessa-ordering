@@ -29,7 +29,12 @@ export async function GET() {
     },
   });
 
-  return NextResponse.json(sections);
+  const response = NextResponse.json(sections);
+  // Prevent caching to ensure fresh data
+  response.headers.set('Cache-Control', 'no-store, no-cache, must-revalidate, proxy-revalidate');
+  response.headers.set('Pragma', 'no-cache');
+  response.headers.set('Expires', '0');
+  return response;
 }
 
 export async function POST(req: Request) {

@@ -1,13 +1,13 @@
 import { getServerSession } from 'next-auth'
 import { redirect } from 'next/navigation'
 import { authOptions } from '@/lib/auth/options'
-import MenuEditorPage from '@/components/admin/MenuEditorPage'
+import RewardsEditorPage from '@/components/admin/RewardsEditorPage'
 
 // Force dynamic rendering to prevent caching
 export const dynamic = 'force-dynamic'
 export const revalidate = 0
 
-export default async function AdminMenuPage() {
+export default async function AdminRewardsPage() {
   const session = await getServerSession(authOptions)
 
   if (!session) {
@@ -20,6 +20,6 @@ export default async function AdminMenuPage() {
     redirect('/')
   }
 
-  return <MenuEditorPage />
+  return <RewardsEditorPage />
 }
 

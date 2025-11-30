@@ -221,6 +221,7 @@ model TenantSettings {
   branding               Json?
   cateringTabConfig      Json?
   cateringGallery        String[] @default([])
+  rewardsGallery         String[] @default([])
   isOpen                 Boolean? @default(true)
   createdAt              DateTime @default(now())
   updatedAt              DateTime @updatedAt

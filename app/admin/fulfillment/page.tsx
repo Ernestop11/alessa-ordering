@@ -8,7 +8,7 @@ import { serializeOrder } from '@/lib/order-serializer';
 import FulfillmentDashboard from '@/components/fulfillment/FulfillmentDashboard';
 
 export const metadata: Metadata = {
-  manifest: '/admin/fulfillment/manifest.json',
+  manifest: '/admin/fulfillment/manifest',
   appleWebApp: {
     capable: true,
     statusBarStyle: 'default',
