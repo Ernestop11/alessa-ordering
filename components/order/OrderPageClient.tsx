@@ -2883,6 +2883,23 @@ export default function OrderPageClient({
       )}
 
       <RewardsModal open={isRewardsOpen} onClose={() => setRewardsOpen(false)} />
+      <JoinRewardsModal 
+        open={showJoinModal} 
+        onClose={() => setShowJoinModal(false)}
+        onSuccess={async () => {
+          // Refresh customer data
+          try {
+            const res = await fetch('/api/rewards/customer');
+            if (res.ok) {
+              const data = await res.json();
+              setCustomerData(data);
+            }
+          } catch (err) {
+            console.error('Failed to refresh customer data:', err);
+          }
+        }}
+        tenantSlug={tenantSlug}
+      />
     </div>
   );
 }
