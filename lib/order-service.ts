@@ -44,6 +44,11 @@ export interface OrderPayload {
     postalCode?: string | null;
     instructions?: string | null;
   } | null;
+  metadata?: {
+    becomeMember?: boolean;
+    joinRewards?: boolean;
+    [key: string]: any;
+  };
 }
 
 interface TenantWithRelations {

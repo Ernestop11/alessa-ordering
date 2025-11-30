@@ -2,6 +2,7 @@
 
 import Image from "next/image";
 import React, { useEffect, useMemo, useState } from "react";
+import { useSearchParams } from "next/navigation";
 import type { OrderPayload } from "../lib/order-service";
 import { useCart } from "../lib/store/cart";
 import { StripeCheckoutWrapper } from "./StripeCheckout";
