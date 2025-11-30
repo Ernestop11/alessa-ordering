@@ -4,6 +4,7 @@ import OrderPageClient, { type OrderMenuSection, type OrderMenuItem } from '../.
 import type { Metadata } from 'next';
 import { Suspense } from 'react';
 import OrderPageWrapper from '../../components/order/OrderPageWrapper';
+import { cookies } from 'next/headers';
 
 // Force dynamic rendering to ensure tenant data is always fresh
 export const dynamic = 'force-dynamic'
@@ -255,7 +256,6 @@ async function getRewardsData(tenantId: string) {
 }
 
 async function getCustomerRewardsData(tenantId: string) {
-  const { cookies } = await import('next/headers');
   const token = cookies().get('customer_session')?.value;
   
   if (!token) {
