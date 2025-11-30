@@ -2388,55 +2388,16 @@ export default function OrderPageClient({
             
             {membershipEnabled ? (
               <div className="space-y-6">
-                {/* Rewards Gallery Carousel */}
-                {rewardsGallery.length > 0 && (
-                  <div className="relative mb-6 overflow-hidden rounded-3xl border-2 border-amber-500/30">
-                    <div className="relative h-48 w-full">
-                      <Image
-                        src={rewardsGallery[rewardsGalleryIndex]}
-                        alt="Rewards"
-                        fill
-                        className="object-cover"
-                        sizes="(max-width: 768px) 100vw, 384px"
-                      />
-                      <div className="absolute inset-0 bg-gradient-to-t from-black/80 via-black/20 to-transparent" />
-                      <div className="absolute bottom-4 left-4 right-4">
-                        <p className="text-sm font-semibold uppercase tracking-wide text-amber-300">Rewards Program</p>
-                        <h3 className="text-xl font-black text-white">Unlock Exclusive Benefits</h3>
-                      </div>
+                {/* Rewards Header with Animated Icon */}
+                <div className="relative mb-6 overflow-hidden rounded-3xl border-2 border-amber-500/30 bg-gradient-to-br from-amber-400/20 via-yellow-400/20 to-amber-500/20 p-8">
+                  <div className="text-center">
+                    <div className="mx-auto mb-4 flex h-24 w-24 items-center justify-center rounded-full bg-gradient-to-br from-amber-400 to-yellow-400 text-6xl animate-pulse">
+                      ⭐
                     </div>
-                    {rewardsGallery.length > 1 && (
-                      <>
-                        <div className="absolute bottom-4 right-4 flex gap-2">
-                          <button
-                            onClick={() => setRewardsGalleryIndex((prev) => (prev - 1 + rewardsGallery.length) % rewardsGallery.length)}
-                            className="rounded-full bg-black/60 p-2 text-white backdrop-blur-sm transition hover:bg-black/80"
-                          >
-                            ←
-                          </button>
-                          <button
-                            onClick={() => setRewardsGalleryIndex((prev) => (prev + 1) % rewardsGallery.length)}
-                            className="rounded-full bg-black/60 p-2 text-white backdrop-blur-sm transition hover:bg-black/80"
-                          >
-                            →
-                          </button>
-                        </div>
-                        <div className="absolute bottom-4 left-1/2 flex -translate-x-1/2 gap-2">
-                          {rewardsGallery.map((_, index) => (
-                            <button
-                              key={index}
-                              onClick={() => setRewardsGalleryIndex(index)}
-                              className={`h-2 rounded-full transition-all ${
-                                index === rewardsGalleryIndex ? 'w-8 bg-amber-400' : 'w-2 bg-white/40'
-                              }`}
-                              aria-label={`Go to image ${index + 1}`}
-                            />
-                          ))}
-                        </div>
-                      </>
-                    )}
+                    <h3 className="text-2xl font-black text-white mb-2">Rewards Program</h3>
+                    <p className="text-sm text-white/80">Unlock Exclusive Benefits</p>
                   </div>
-                )}
+                </div>
 
                 {/* Customer Points Display (if logged in) */}
                 {customerData && (
