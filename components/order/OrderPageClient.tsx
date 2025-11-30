@@ -2595,8 +2595,104 @@ export default function OrderPageClient({
                   </ul>
                 </div>
 
-                {/* Milestone Rewards - Dessert Items */}
-                {customerData && membershipTiers.length > 0 && (
+                {/* Active Rewards - Real Rewards from Admin */}
+                {activeRewards.length > 0 && (
+                  <div className="rounded-2xl border-2 border-amber-500/40 bg-gradient-to-br from-amber-500/10 via-yellow-500/10 to-amber-500/10 p-6 shadow-xl">
+                    <h4 className="mb-4 text-xl font-black text-white flex items-center gap-2">
+                      <span className="text-2xl">🎁</span>
+                      Available Rewards
+                    </h4>
+                    <div className="space-y-3">
+                      {activeRewards.map((reward) => {
+                        const canAfford = !customerData || !reward.pointsCost || customerData.loyaltyPoints >= reward.pointsCost;
+                        
+                        return (
+                          <div 
+                            key={reward.id} 
+                            className={`rounded-xl border-2 p-4 ${
+                              canAfford
+                                ? 'border-amber-400/50 bg-white/10 hover:bg-white/20' 
+                                : 'border-gray-500/30 bg-white/5 opacity-60'
+                            } transition-all`}
+                          >
+                            <div className="flex items-start justify-between mb-2">
+                              <div className="flex-1">
+                                <div className="flex items-center gap-2 mb-1">
+                                  <span className="text-xl">
+                                    {reward.type === 'free_item' ? '🎁' :
+                                     reward.type === 'discount' ? '💰' :
+                                     reward.type === 'points_bonus' ? '⭐' :
+                                     reward.type === 'free_shipping' ? '🚚' : '🎉'}
+                                  </span>
+                                  <p className="font-bold text-white">{reward.name}</p>
+                                </div>
+                                {reward.description && (
+                                  <p className="text-xs text-white/70 mb-2">{reward.description}</p>
+                                )}
+                                <div className="flex items-center gap-3 text-xs text-white/60">
+                                  {reward.pointsCost > 0 && (
+                                    <span className="flex items-center gap-1">
+                                      <span className="text-amber-400">⭐</span>
+                                      {reward.pointsCost} pts
+                                    </span>
+                                  )}
+                                  {reward.pointsCost === 0 && (
+                                    <span className="text-green-400 font-semibold">FREE</span>
+                                  )}
+                                  {reward.expirationDate && (
+                                    <span>Expires {new Date(reward.expirationDate).toLocaleDateString()}</span>
+                                  )}
+                                </div>
+                              </div>
+                              {canAfford ? (
+                                <button
+                                  onClick={() => handleClaimReward(reward)}
+                                  className="ml-4 rounded-lg bg-gradient-to-r from-amber-400 to-yellow-400 px-4 py-2 text-sm font-bold text-black hover:from-amber-500 hover:to-yellow-500 transition shadow-lg"
+                                >
+                                  Claim
+                                </button>
+                              ) : (
+                                <div className="ml-4 text-xs text-white/50 text-center">
+                                  <div>Need</div>
+                                  <div className="font-bold">{reward.pointsCost - (customerData?.loyaltyPoints || 0)} more pts</div>
+                                </div>
+                              )}
+                            </div>
+                          </div>
+                        );
+                      })}
+                    </div>
+                  </div>
+                )}
+
+                {/* Email Offers */}
+                {emailOffers.length > 0 && (
+                  <div className="rounded-2xl border-2 border-blue-500/40 bg-gradient-to-br from-blue-500/10 via-indigo-500/10 to-blue-500/10 p-6 shadow-xl">
+                    <h4 className="mb-4 text-xl font-black text-white flex items-center gap-2">
+                      <span className="text-2xl">📧</span>
+                      Special Offers
+                    </h4>
+                    <div className="space-y-3">
+                      {emailOffers.slice(0, 3).map((offer) => (
+                        <div 
+                          key={offer.id} 
+                          className="rounded-xl border-2 border-blue-400/30 bg-white/10 p-4 hover:bg-white/20 transition"
+                        >
+                          <p className="font-bold text-white mb-1">{offer.subject}</p>
+                          <p className="text-xs text-white/70 line-clamp-2">{offer.body.replace(/{name}/g, customerData?.name || 'there')}</p>
+                          {offer.sentAt && (
+                            <p className="text-xs text-white/50 mt-2">
+                              Sent {new Date(offer.sentAt).toLocaleDateString()}
+                            </p>
+                          )}
+                        </div>
+                      ))}
+                    </div>
+                  </div>
+                )}
+
+                {/* Milestone Rewards - Dessert Items (Legacy - can be removed if using real rewards) */}
+                {customerData && membershipTiers.length > 0 && activeRewards.length === 0 && (
                   <div className="rounded-2xl border-2 border-white/20 bg-white/5 p-4">
                     <h4 className="mb-4 text-lg font-bold text-white">🎂 Unlock Dessert Rewards</h4>
                     <div className="space-y-3">

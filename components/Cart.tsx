@@ -152,15 +152,17 @@ export default function Cart() {
 
   const platformFee = useMemo(() => {
     if (items.length === 0) return 0;
-    const fee = subtotal * platformPercentFee + platformFlatFee;
+    // Calculate platform fee on subtotal after discount
+    const fee = subtotalAfterDiscount * platformPercentFee + platformFlatFee;
     return roundCurrency(Math.max(fee, 0));
-  }, [items.length, platformFlatFee, platformPercentFee, subtotal]);
+  }, [items.length, platformFlatFee, platformPercentFee, subtotalAfterDiscount]);
 
   const taxBase = useMemo(() => {
     if (items.length === 0) return 0;
-    const base = subtotal + resolvedDeliveryFee + platformFee;
+    // Calculate tax on subtotal after discount
+    const base = subtotalAfterDiscount + resolvedDeliveryFee + platformFee;
     return roundCurrency(base);
-  }, [items.length, platformFee, resolvedDeliveryFee, subtotal]);
+  }, [items.length, platformFee, resolvedDeliveryFee, subtotalAfterDiscount]);
 
   const fallbackTaxAmount = useMemo(
     () => roundCurrency(taxBase * defaultTaxRate),
