@@ -980,7 +980,7 @@ export default function OrderPageClient({
   // Handle re-order
   const handleReorder = useCallback((order: CustomerRewardsData['orders'][0]) => {
     if (!order.items || order.items.length === 0) {
-      showNotification('This order has no items to reorder', 'error');
+      showNotification('This order has no items to reorder');
       return;
     }
 
