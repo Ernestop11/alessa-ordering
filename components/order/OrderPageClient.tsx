@@ -404,8 +404,31 @@ export default function OrderPageClient({
     });
   }, [sections]);
 
-  // Use server-side rewards data if available, otherwise fall back to tenant data
-  const membershipProgram = rewardsData?.membershipProgram || tenant.membershipProgram;
+  // Use server-side rewards data if available, otherwise fall back to tenant data or default
+  const membershipProgram = rewardsData?.membershipProgram || tenant.membershipProgram || {
+    enabled: true,
+    pointsPerDollar: 10,
+    heroCopy: 'Earn puntos with every order and unlock sweet rewards.',
+    featuredMemberName: 'Gold Member',
+    tiers: [
+      {
+        id: 'tier-1',
+        name: 'Bronze',
+        threshold: 0,
+        rewardDescription: 'Welcome to the club!',
+        perks: ['Earn points on every purchase', 'Monthly chef tips'],
+        badgeColor: '#b45309',
+      },
+      {
+        id: 'tier-2',
+        name: 'Gold',
+        threshold: 500,
+        rewardDescription: 'Sweet treats and exclusive drops.',
+        perks: ['Free dessert on birthdays', 'Priority support', 'Exclusive tastings'],
+        badgeColor: '#d97706',
+      },
+    ],
+  };
   const membershipTiers = useMemo(() => {
     if (!membershipProgram || !Array.isArray(membershipProgram.tiers)) return [];
 
@@ -420,7 +443,7 @@ export default function OrderPageClient({
     );
   }, [membershipProgram]);
 
-  const membershipEnabled = membershipProgram?.enabled !== false && membershipTiers.length > 0;
+  const membershipEnabled = membershipProgram?.enabled !== false; // Show even if no tiers yet
   const featuredTier = membershipTiers[membershipTiers.length - 1] ?? null;
   const upcomingTier = useMemo(() => {
     return membershipTiers.filter((tier) => (tier.threshold ?? 0) > 0)[0] ?? null;
@@ -1537,7 +1560,7 @@ export default function OrderPageClient({
             <div className="flex flex-wrap items-center gap-2">
               <button
                 type="button"
-                onClick={() => setRewardsOpen(true)}
+                onClick={() => setShowMembershipPanel(true)}
                 className="inline-flex items-center gap-2 rounded-full border border-[#ff0000]/60 bg-[#ff0000]/15 px-4 py-2 text-xs font-semibold uppercase tracking-wide text-[#ff0000] transition hover:bg-[#ff0000]/30"
               >
                 <span>🎁</span>

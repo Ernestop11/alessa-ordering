@@ -113,6 +113,51 @@ export default function RewardsEditorPage() {
     }
   };
 
+  const loadSampleData = () => {
+    setMembershipProgram({
+      enabled: true,
+      pointsPerDollar: 10,
+      heroCopy: 'Earn puntos with every order and unlock sweet rewards. Join our loyalty program and get exclusive perks!',
+      featuredMemberName: 'Gold Member',
+      tiers: [
+        {
+          id: generateId('tier'),
+          name: 'Bronze',
+          threshold: 0,
+          rewardDescription: 'Welcome to the club! Start earning points today.',
+          perks: ['Earn 10 points per $1 spent', 'Monthly chef tips via email', 'Early access to new menu items'],
+          badgeColor: '#b45309',
+          sortOrder: 0,
+        },
+        {
+          id: generateId('tier'),
+          name: 'Silver',
+          threshold: 250,
+          rewardDescription: 'Unlock exclusive rewards and special offers.',
+          perks: ['Free dessert on orders over $30', 'Birthday surprise treat', 'Priority customer support'],
+          badgeColor: '#6b7280',
+          sortOrder: 1,
+        },
+        {
+          id: generateId('tier'),
+          name: 'Gold',
+          threshold: 500,
+          rewardDescription: 'Sweet treats and exclusive drops for our VIP members.',
+          perks: ['Free dessert on birthdays', 'Priority support', 'Exclusive tastings', '10% off all orders'],
+          badgeColor: '#d97706',
+          sortOrder: 2,
+        },
+      ],
+    });
+    
+    // Add sample gallery images
+    setRewardsGallery([
+      'https://images.unsplash.com/photo-1556910103-1c02745aae4d?w=1200&q=80',
+      'https://images.unsplash.com/photo-1551218808-94e220e084d2?w=1200&q=80',
+      'https://images.unsplash.com/photo-1555939594-58d7cb561b1e?w=1200&q=80',
+    ]);
+  };
+
   const addTier = () => {
     const newTier: MembershipTierForm = {
       id: generateId('tier'),
@@ -264,13 +309,21 @@ export default function RewardsEditorPage() {
           <div className="bg-white rounded-lg shadow p-6 mb-6">
             <div className="flex items-center justify-between mb-6">
               <h2 className="text-xl font-semibold text-gray-900">Program Settings</h2>
-              <button
-                onClick={handleSave}
-                disabled={saving}
-                className="inline-flex items-center px-4 py-2 border border-transparent text-sm font-medium rounded-md shadow-sm text-white bg-orange-600 hover:bg-orange-700 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-orange-500 disabled:opacity-50"
-              >
-                {saving ? 'Saving...' : 'Save Changes'}
-              </button>
+              <div className="flex gap-2">
+                <button
+                  onClick={loadSampleData}
+                  className="inline-flex items-center px-4 py-2 border border-gray-300 text-sm font-medium rounded-md text-gray-700 bg-white hover:bg-gray-50 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-orange-500"
+                >
+                  Load Sample Data
+                </button>
+                <button
+                  onClick={handleSave}
+                  disabled={saving}
+                  className="inline-flex items-center px-4 py-2 border border-transparent text-sm font-medium rounded-md shadow-sm text-white bg-orange-600 hover:bg-orange-700 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-orange-500 disabled:opacity-50"
+                >
+                  {saving ? 'Saving...' : 'Save Changes'}
+                </button>
+              </div>
             </div>
 
             <div className="space-y-6">
