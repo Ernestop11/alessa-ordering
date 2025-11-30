@@ -168,20 +168,31 @@ export async function createOrderFromPayload({
         },
       });
       customerId = createdCustomer.id;
+    }
+    
+    // If they're joining rewards (for new or existing customers), create/update customer session
+    if (payload.metadata?.becomeMember === true && customerId && (customerEmail || customerPhone)) {
+      // Delete old sessions for this customer
+      await prisma.customerSession.deleteMany({
+        where: {
+          tenantId: tenant.id,
+          customerId: customerId,
+        },
+      });
       
-      // If they're joining rewards, create a customer session
-      if (joinRewards && (customerEmail || customerPhone)) {
-        const sessionToken = crypto.randomUUID();
-        await prisma.customerSession.create({
-          data: {
-            tenantId: tenant.id,
-            customerId: createdCustomer.id,
-            token: sessionToken,
-            expiresAt: new Date(Date.now() + 90 * 24 * 60 * 60 * 1000), // 90 days
-          },
-        });
-        // Note: Cookie setting would be handled by the API route that calls this function
-      }
+      // Create new session
+      const sessionToken = crypto.randomUUID();
+      await prisma.customerSession.create({
+        data: {
+          tenantId: tenant.id,
+          customerId: customerId,
+          token: sessionToken,
+          expiresAt: new Date(Date.now() + 90 * 24 * 60 * 60 * 1000), // 90 days
+        },
+      });
+      
+      // Store session token in order metadata for later cookie setting
+      // This will be accessible via the order object
     }
   }
 
