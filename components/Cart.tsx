@@ -60,6 +60,8 @@ export default function Cart() {
   const [taxQuoteLoading, setTaxQuoteLoading] = useState(false);
   const [taxQuoteError, setTaxQuoteError] = useState<string | null>(null);
   const [becomeMember, setBecomeMember] = useState(false);
+  const [rewardDiscount, setRewardDiscount] = useState<{ type: 'percent' | 'amount'; value: number; name: string } | null>(null);
+  const [rewardFreeShipping, setRewardFreeShipping] = useState(false);
 
   // Check if user came from "Join Rewards" button
   useEffect(() => {
@@ -67,6 +69,24 @@ export default function Cart() {
       setBecomeMember(true);
     }
   }, [searchParams]);
+
+  // Load reward discounts from localStorage
+  useEffect(() => {
+    const discountStr = localStorage.getItem('activeRewardDiscount');
+    if (discountStr) {
+      try {
+        const discount = JSON.parse(discountStr);
+        setRewardDiscount(discount);
+      } catch (err) {
+        console.error('Failed to parse reward discount', err);
+      }
+    }
+
+    const freeShipping = localStorage.getItem('activeRewardFreeShipping');
+    if (freeShipping === 'true') {
+      setRewardFreeShipping(true);
+    }
+  }, []);
   
   // Get tenant theme colors
   const primaryColor = tenant.primaryColor || "#dc2626";
@@ -75,6 +95,21 @@ export default function Cart() {
   const subtotal = useMemo(
     () => roundCurrency(items.reduce((sum, item) => sum + item.price * item.quantity, 0)),
     [items],
+  );
+
+  // Calculate discount amount
+  const discountAmount = useMemo(() => {
+    if (!rewardDiscount || subtotal === 0) return 0;
+    if (rewardDiscount.type === 'percent') {
+      return roundCurrency(subtotal * (rewardDiscount.value / 100));
+    } else {
+      return roundCurrency(Math.min(rewardDiscount.value, subtotal));
+    }
+  }, [rewardDiscount, subtotal]);
+
+  const subtotalAfterDiscount = useMemo(
+    () => roundCurrency(Math.max(0, subtotal - discountAmount)),
+    [subtotal, discountAmount],
   );
 
   const platformPercentFee = tenant.platformPercentFee ?? DEFAULT_PLATFORM_PERCENT_FEE;
@@ -103,14 +138,17 @@ export default function Cart() {
       return Number.isFinite(parsed) ? roundCurrency(Math.max(parsed, 0)) : 0;
     }
     const percent = Number.parseInt(tipSelection, 10);
-    return roundCurrency(subtotal * ((Number.isFinite(percent) ? percent : 15) / 100));
-  }, [customTip, items.length, subtotal, tipSelection]);
+    // Calculate tip on subtotal after discount
+    return roundCurrency(subtotalAfterDiscount * ((Number.isFinite(percent) ? percent : 15) / 100));
+  }, [customTip, items.length, subtotalAfterDiscount, tipSelection]);
 
   const resolvedDeliveryFee = useMemo(() => {
     if (items.length === 0 || fulfillmentMethod !== "delivery") return 0;
+    // Apply free shipping reward if active
+    if (rewardFreeShipping) return 0;
     const fee = deliveryQuote ?? defaultDeliveryFee;
     return roundCurrency(fee);
-  }, [defaultDeliveryFee, deliveryQuote, fulfillmentMethod, items.length]);
+  }, [defaultDeliveryFee, deliveryQuote, fulfillmentMethod, items.length, rewardFreeShipping]);
 
   const platformFee = useMemo(() => {
     if (items.length === 0) return 0;
@@ -254,8 +292,8 @@ export default function Cart() {
   }, [taxQuote, taxQuoteLoading, tenant.taxProvider]);
 
   const totalAmount = useMemo(
-    () => roundCurrency(subtotal + resolvedDeliveryFee + platformFee + taxAmount + tipAmount),
-    [platformFee, resolvedDeliveryFee, subtotal, taxAmount, tipAmount],
+    () => roundCurrency(subtotalAfterDiscount + resolvedDeliveryFee + platformFee + taxAmount + tipAmount),
+    [platformFee, resolvedDeliveryFee, subtotalAfterDiscount, taxAmount, tipAmount],
   );
 
   const estimatedPoints = useMemo(() => {

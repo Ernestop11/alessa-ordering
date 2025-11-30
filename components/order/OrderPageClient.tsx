@@ -818,6 +818,8 @@ export default function OrderPageClient({
   const [rewardsGalleryIndex, setRewardsGalleryIndex] = useState(0);
   const [rewardsGalleryImages, setRewardsGalleryImages] = useState<string[]>(rewardsData?.rewardsGallery || []);
   const [customerData, setCustomerData] = useState<CustomerRewardsData | null>(customerRewardsData || null);
+  const [activeRewards, setActiveRewards] = useState<any[]>([]);
+  const [emailOffers, setEmailOffers] = useState<any[]>([]);
 
   // Refresh catering packages periodically for real-time updates (optional)
   useEffect(() => {
@@ -1036,6 +1038,87 @@ export default function OrderPageClient({
       }, 300);
     }
   }, [addToCart, showNotification, customerData]);
+
+  // Handle reward claiming
+  const handleClaimReward = useCallback(async (reward: any) => {
+    try {
+      // First, redeem the reward (deducts points if needed)
+      const redeemRes = await fetch('/api/rewards/redeem', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({
+          rewardId: reward.id,
+          pointsCost: reward.pointsCost || 0,
+        }),
+      });
+
+      if (!redeemRes.ok) {
+        const error = await redeemRes.json();
+        showNotification(error.error || 'Failed to claim reward');
+        return;
+      }
+
+      const redeemData = await redeemRes.json();
+
+      // Handle different reward types
+      if (reward.type === 'free_item' && reward.menuItemId) {
+        // Fetch menu item details
+        const menuRes = await fetch(`/api/menu/${reward.menuItemId}`);
+        if (menuRes.ok) {
+          const menuItem = await menuRes.json();
+          // Add to cart with price 0
+          addToCart({
+            id: menuItem.id,
+            name: menuItem.name,
+            price: 0, // Free!
+            quantity: 1,
+            image: menuItem.image || '',
+            description: menuItem.description || null,
+            note: `Free reward: ${reward.name}`,
+          });
+          showNotification(`🎉 ${reward.name} added to cart!`);
+        } else {
+          showNotification('Menu item not found');
+        }
+      } else if (reward.type === 'discount') {
+        // Store discount in localStorage for checkout
+        const discount = {
+          rewardId: reward.id,
+          type: reward.discountPercent ? 'percent' : 'amount',
+          value: reward.discountPercent || reward.discountAmount || 0,
+          name: reward.name,
+        };
+        localStorage.setItem('activeRewardDiscount', JSON.stringify(discount));
+        showNotification(`🎉 ${reward.name} discount applied! Will be applied at checkout.`);
+      } else if (reward.type === 'free_shipping') {
+        // Store free shipping flag
+        localStorage.setItem('activeRewardFreeShipping', 'true');
+        showNotification(`🎉 ${reward.name} - Free shipping will be applied at checkout!`);
+      } else if (reward.type === 'points_bonus') {
+        // Points bonus is handled server-side on order completion
+        showNotification(`🎉 ${reward.name} - Bonus points will be added on your next order!`);
+      }
+
+      // Refresh customer data to update points
+      const customerRes = await fetch('/api/rewards/customer');
+      if (customerRes.ok) {
+        const customerData = await customerRes.json();
+        setCustomerData(customerData);
+      }
+
+      // Refresh active rewards
+      const rewardsRes = await fetch('/api/rewards/active');
+      if (rewardsRes.ok) {
+        const rewardsData = await rewardsRes.json();
+        setActiveRewards(Array.isArray(rewardsData.rewards) ? rewardsData.rewards : []);
+      }
+
+      setShowMembershipPanel(false);
+    } catch (err) {
+      console.error('Failed to claim reward', err);
+      showNotification('Failed to claim reward. Please try again.');
+    }
+  }, [addToCart, showNotification]);
 
   // Sample Puebla Mexico themed media - can be replaced with actual tenant media
   const heroMedia = useMemo(() => {
