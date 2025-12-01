@@ -1556,49 +1556,58 @@ export default function OrderPageClient({
 
   return (
     <div className="min-h-screen bg-gradient-to-br from-[#050A1C] via-[#0A1C2F] to-[#041326] text-white">
-      <header className="sticky top-0 z-40 border-b border-white/10 bg-gradient-to-b from-black/95 to-black/80 backdrop-blur-xl">
+      <header className="sticky top-0 z-40 border-b border-white/10 bg-gradient-to-b from-black/95 to-black/80 backdrop-blur-xl shadow-2xl">
         <div className="mx-auto max-w-6xl px-6 py-4">
-          {/* Centered Branding with Gradient Background */}
-          <div className="mb-5 flex flex-col items-center text-center">
+          {/* Centered Branding Card with Gradient Background */}
+          <div className="mb-4 flex flex-col items-center text-center">
             <div className="mb-3 relative">
-              {/* Gradient Background Circle */}
-              <div className="absolute inset-0 rounded-3xl bg-gradient-to-br from-red-600/40 via-amber-500/30 to-yellow-400/40 blur-xl"></div>
-              <div className="absolute inset-0 rounded-3xl bg-gradient-to-br from-red-600/60 via-amber-500/50 to-yellow-400/60"></div>
+              {/* Enhanced Gradient Background with Glow */}
+              <div className="absolute inset-0 rounded-3xl bg-gradient-to-br from-red-600/50 via-amber-500/40 to-yellow-400/50 blur-2xl animate-pulse"></div>
+              <div className="absolute inset-0 rounded-3xl bg-gradient-to-br from-red-600/70 via-amber-500/60 to-yellow-400/70"></div>
               
-              {/* Logo Container */}
-              <div className="relative">
+              {/* Logo Container with Card Effect */}
+              <div className="relative rounded-3xl border-2 border-white/30 bg-white/5 p-2 shadow-2xl backdrop-blur-sm">
                 {tenant.logoUrl ? (
                   <Image
                     src={tenant.logoUrl}
                     alt={`${tenant.name} logo`}
                     width={100}
                     height={100}
-                    className="relative h-24 w-24 rounded-3xl border-4 border-white/40 object-cover shadow-2xl ring-4 ring-white/20"
+                    className="relative h-24 w-24 rounded-2xl object-cover"
                   />
                 ) : (
-                  <div className="relative flex h-24 w-24 items-center justify-center rounded-3xl border-4 border-white/40 bg-gradient-to-br from-red-600 to-amber-500 text-5xl shadow-2xl ring-4 ring-white/20">🍽️</div>
+                  <div className="relative flex h-24 w-24 items-center justify-center rounded-2xl bg-gradient-to-br from-red-600 to-amber-500 text-5xl">🍽️</div>
                 )}
               </div>
             </div>
-            <h1 className="text-3xl font-black text-white">{tenant.name}</h1>
-            {tenant.tagline && <p className="mt-1 text-sm text-white/70">{tenant.tagline}</p>}
+            <h1 className="text-3xl font-black text-white drop-shadow-lg">{tenant.name}</h1>
+            {tenant.tagline && <p className="mt-1 text-sm text-white/70 font-medium">{tenant.tagline}</p>}
           </div>
           
-          {/* Action Bar */}
-          <div className="mb-4 flex items-center justify-center gap-3">
+          {/* Action Bar - Better Positioning */}
+          <div className="mb-4 flex flex-wrap items-center justify-center gap-2">
             {cateringEnabled && (
               <button
                 onClick={() => setShowCateringPanel(true)}
-                className="rounded-full border border-white/20 bg-white/5 px-4 py-2 text-sm font-medium text-white transition hover:bg-white/10 hover:border-white/30"
+                className="group relative rounded-xl border border-white/20 bg-white/5 px-4 py-2.5 text-sm font-semibold text-white transition-all hover:border-red-500/50 hover:bg-red-500/20 hover:scale-105 hover:shadow-lg hover:shadow-red-500/20"
               >
-                🎉 Catering
+                <span className="mr-2">🎉</span>
+                <span>Catering</span>
+                {showCateringPanel && (
+                  <span className="absolute inset-0 rounded-xl bg-red-500/20 animate-pulse"></span>
+                )}
               </button>
             )}
             <button
               onClick={() => setAccessibilityOpen((prev) => !prev)}
-              className="rounded-full border border-white/20 bg-white/5 px-4 py-2 text-sm font-medium text-white transition hover:bg-white/10 hover:border-white/30"
+              className={`group relative rounded-xl border px-4 py-2.5 text-sm font-semibold transition-all hover:scale-105 hover:shadow-lg ${
+                isAccessibilityOpen
+                  ? 'border-blue-400/50 bg-blue-500/20 text-blue-200 shadow-blue-500/20'
+                  : 'border-white/20 bg-white/5 text-white hover:border-blue-400/50 hover:bg-blue-500/20'
+              }`}
             >
-              ♿ ADA
+              <span className="mr-2">♿</span>
+              <span>ADA</span>
             </button>
             <button
               onClick={() => {
@@ -1608,29 +1617,37 @@ export default function OrderPageClient({
                   setShowJoinModal(true);
                 }
               }}
-              className="rounded-full bg-gradient-to-r from-amber-400 to-yellow-400 px-5 py-2 text-sm font-bold text-black shadow-lg transition hover:scale-105 hover:shadow-xl"
+              className="group relative overflow-hidden rounded-xl bg-gradient-to-r from-amber-400 via-yellow-400 to-amber-400 px-5 py-2.5 text-sm font-black text-black shadow-xl transition-all hover:scale-110 hover:shadow-2xl hover:shadow-amber-500/50"
             >
-              🎁 Rewards
+              <span className="relative z-10 flex items-center gap-2">
+                <span className="text-lg">🎁</span>
+                <span>Rewards</span>
+              </span>
+              <div className="absolute inset-0 bg-gradient-to-r from-transparent via-white/20 to-transparent -translate-x-full group-hover:translate-x-full transition-transform duration-700"></div>
             </button>
             <button
               onClick={() => {
                 const cartButton = document.querySelector('[data-cart-launcher]') as HTMLElement;
                 cartButton?.click();
               }}
-              className="relative rounded-full bg-red-600 px-5 py-2 text-sm font-bold text-white shadow-lg transition hover:bg-red-500 hover:scale-105"
+              className="group relative overflow-hidden rounded-xl bg-gradient-to-r from-red-600 to-red-500 px-5 py-2.5 text-sm font-black text-white shadow-xl transition-all hover:scale-110 hover:shadow-2xl hover:shadow-red-500/50"
             >
-              🛒 Cart
+              <span className="relative z-10 flex items-center gap-2">
+                <span className="text-lg">🛒</span>
+                <span>Cart</span>
+              </span>
               {cartItemCount > 0 && (
-                <span className="absolute -top-2 -right-2 h-6 w-6 rounded-full bg-yellow-400 text-xs font-black text-black flex items-center justify-center shadow-lg">
+                <span className="absolute -top-2 -right-2 z-20 flex h-7 w-7 items-center justify-center rounded-full bg-gradient-to-br from-yellow-400 to-amber-500 text-xs font-black text-black shadow-lg ring-2 ring-black/20 animate-bounce">
                   {cartItemCount > 9 ? '9+' : cartItemCount}
                 </span>
               )}
+              <div className="absolute inset-0 bg-gradient-to-r from-transparent via-white/20 to-transparent -translate-x-full group-hover:translate-x-full transition-transform duration-700"></div>
             </button>
           </div>
           
-          {/* Navigation */}
+          {/* Enhanced Category Navigation */}
           <div className="flex items-center justify-between gap-4">
-            <nav className="flex flex-1 items-center gap-2 overflow-x-auto scrollbar-hide pb-2">
+            <nav className="flex flex-1 items-center gap-2 overflow-x-auto scrollbar-hide pb-2 scroll-smooth">
               {navSections.map((section) => {
                 const isActive = activeSectionId === section.id;
                 return (
@@ -1639,32 +1656,59 @@ export default function OrderPageClient({
                     onClick={() => {
                       setActiveSectionId(section.id);
                       const element = document.getElementById(`section-${section.id}`);
-                      element?.scrollIntoView({ behavior: 'smooth', block: 'start' });
+                      if (element) {
+                        // Calculate offset for sticky header
+                        const headerHeight = 200; // Approximate header height
+                        const elementPosition = element.getBoundingClientRect().top + window.pageYOffset;
+                        const offsetPosition = elementPosition - headerHeight;
+                        
+                        window.scrollTo({
+                          top: offsetPosition,
+                          behavior: 'smooth'
+                        });
+                        
+                        // Scroll nav to show active button
+                        setTimeout(() => {
+                          const button = document.querySelector(`[data-section-button="${section.id}"]`) as HTMLElement;
+                          if (button) {
+                            button.scrollIntoView({ behavior: 'smooth', block: 'nearest', inline: 'center' });
+                          }
+                        }, 100);
+                      }
                     }}
-                    className={`flex-shrink-0 rounded-full px-4 py-2 text-sm font-medium transition ${
+                    data-section-button={section.id}
+                    className={`group flex-shrink-0 rounded-xl px-4 py-2.5 text-sm font-semibold transition-all duration-300 ${
                       isActive 
-                        ? 'bg-red-600 text-white shadow-lg shadow-red-600/40' 
-                        : 'bg-white/5 text-white/70 hover:bg-white/10 hover:text-white'
+                        ? 'bg-gradient-to-r from-red-600 to-red-500 text-white shadow-xl shadow-red-600/50 scale-105' 
+                        : 'bg-white/5 text-white/70 hover:bg-white/10 hover:text-white hover:scale-105 hover:shadow-lg'
                     }`}
                   >
-                    <span className="mr-1.5">{SECTION_ICONS[section.type] || '🍽️'}</span>
-                    {section.name}
+                    <span className={`mr-2 text-base transition-transform ${isActive ? 'scale-125' : 'group-hover:scale-110'}`}>
+                      {SECTION_ICONS[section.type] || '🍽️'}
+                    </span>
+                    <span className="relative">
+                      {section.name}
+                      {isActive && (
+                        <span className="absolute -bottom-1 left-0 right-0 h-0.5 bg-white/50 rounded-full"></span>
+                      )}
+                    </span>
                   </button>
                 );
               })}
             </nav>
             
-            {/* View Toggles */}
-            <div className="flex items-center gap-1 rounded-full border border-white/20 bg-white/5 p-1">
+            {/* View Toggles - Polished */}
+            <div className="flex items-center gap-1 rounded-xl border border-white/20 bg-white/5 p-1.5 backdrop-blur-sm">
               {LAYOUTS.map((layout) => (
                 <button
                   key={layout.id}
                   onClick={() => setActiveLayout(layout.id)}
-                  className={`rounded-full px-3 py-1.5 text-xs transition ${
+                  className={`rounded-lg px-3 py-2 text-xs font-semibold transition-all duration-200 ${
                     activeLayout === layout.id 
-                      ? 'bg-red-600 text-white shadow-lg' 
-                      : 'text-white/60 hover:text-white hover:bg-white/10'
+                      ? 'bg-gradient-to-r from-red-600 to-red-500 text-white shadow-lg scale-110' 
+                      : 'text-white/60 hover:text-white hover:bg-white/10 hover:scale-105'
                   }`}
+                  title={layout.label}
                 >
                   {layout.icon}
                 </button>
