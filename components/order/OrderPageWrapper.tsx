@@ -1,7 +1,8 @@
 "use client";
 
-import { Suspense } from 'react';
+import { Suspense, useState, useEffect } from 'react';
 import OrderPageClient, { type OrderMenuSection, type OrderMenuItem } from './OrderPageClient';
+import PolishedOrderPage from './PolishedOrderPage';
 
 interface CateringPackage {
   id: string;
@@ -61,18 +62,49 @@ interface OrderPageWrapperProps {
   cateringPackages?: CateringPackage[];
   rewardsData?: RewardsData;
   customerRewardsData?: CustomerRewardsData | null;
+  isOpen?: boolean;
+  closedMessage?: string;
 }
 
+// UI Version Toggle - Set to 'polished' for new UI, 'classic' for original
+// Change this to 'classic' to instantly rollback to the original UI
+const UI_VERSION: 'polished' | 'classic' = 'polished';
+
 export default function OrderPageWrapper(props: OrderPageWrapperProps) {
-  return (
-    <Suspense fallback={
-      <div className="min-h-screen flex items-center justify-center bg-gradient-to-br from-red-900 via-red-800 to-orange-900">
-        <div className="text-center">
-          <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-white mx-auto mb-4"></div>
-          <p className="text-white text-lg">Loading menu...</p>
-        </div>
+  // Allow URL override for testing: ?ui=classic or ?ui=polished
+  const [uiVersion, setUiVersion] = useState<'polished' | 'classic'>(UI_VERSION);
+
+  useEffect(() => {
+    if (typeof window !== 'undefined') {
+      const params = new URLSearchParams(window.location.search);
+      const uiParam = params.get('ui');
+      if (uiParam === 'classic' || uiParam === 'polished') {
+        setUiVersion(uiParam);
+      }
+    }
+  }, []);
+
+  const LoadingFallback = (
+    <div className="min-h-screen flex items-center justify-center bg-gradient-to-br from-neutral-950 via-neutral-900 to-neutral-950">
+      <div className="text-center">
+        <div className="animate-spin rounded-full h-10 w-10 border-2 border-white/20 border-t-white mx-auto mb-4"></div>
+        <p className="text-white/70 text-sm">Loading menu...</p>
       </div>
-    }>
+    </div>
+  );
+
+  // Render the selected UI version
+  if (uiVersion === 'polished') {
+    return (
+      <Suspense fallback={LoadingFallback}>
+        <PolishedOrderPage {...props} />
+      </Suspense>
+    );
+  }
+
+  // Classic/Original UI
+  return (
+    <Suspense fallback={LoadingFallback}>
       <OrderPageClient {...props} />
     </Suspense>
   );
