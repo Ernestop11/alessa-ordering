@@ -142,9 +142,9 @@ export default function PolishedOrderPage({
   const sectionRefs = useRef<Record<string, HTMLElement | null>>({});
 
   // Modal states
-  const [showCateringPanel, setShowCateringPanel] = useState(false);
-  const [showMembershipPanel, setShowMembershipPanel] = useState(false);
-  const [showJoinModal, setShowJoinModal] = useState(false);
+  const [cateringPanelOpen, setCateringPanelOpen] = useState(false);
+  const [membershipPanelOpen, setMembershipPanelOpen] = useState(false);
+  const [joinModalOpen, setJoinModalOpen] = useState(false);
   const [accessibilityOpen, setAccessibilityOpen] = useState(false);
   const [accessibilityState, setAccessibilityState] = useState({
     highContrast: false,
@@ -270,12 +270,12 @@ export default function PolishedOrderPage({
   const cateringEnabled = tenant.featureFlags?.includes('catering') ?? false;
 
   // Modal handlers
-  const handleOpenCatering = useCallback(() => setShowCateringPanel(true), []);
+  const handleOpenCatering = useCallback(() => setCateringPanelOpen(true), []);
   const handleOpenRewards = useCallback(() => {
     if (customerRewardsData) {
-      setShowMembershipPanel(true);
+      setMembershipPanelOpen(true);
     } else {
-      setShowJoinModal(true);
+      setJoinModalOpen(true);
     }
   }, [customerRewardsData]);
   const handleToggleAccessibility = useCallback(() => setAccessibilityOpen(prev => !prev), []);
@@ -491,7 +491,7 @@ export default function PolishedOrderPage({
       )}
 
       {/* Catering Panel */}
-      {showCateringPanel && (
+      {cateringPanelOpen && (
         <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/60 backdrop-blur-sm p-4">
           <div className="w-full max-w-lg rounded-2xl bg-neutral-900 border border-white/10 p-6 shadow-2xl max-h-[90vh] overflow-y-auto">
             <div className="flex items-center justify-between mb-6">
@@ -500,7 +500,7 @@ export default function PolishedOrderPage({
                 <p className="text-sm text-white/50 mt-1">Full-service events, delivered with care</p>
               </div>
               <button
-                onClick={() => setShowCateringPanel(false)}
+                onClick={() => setCateringPanelOpen(false)}
                 className="p-2 rounded-full hover:bg-white/10 text-white/60 hover:text-white transition"
               >
                 ✕
@@ -515,7 +515,7 @@ export default function PolishedOrderPage({
               </div>
             </div>
             <button
-              onClick={() => setShowCateringPanel(false)}
+              onClick={() => setCateringPanelOpen(false)}
               className="mt-6 w-full py-3 rounded-xl bg-red-600 text-white font-semibold hover:bg-red-500 transition"
             >
               Close
@@ -525,22 +525,22 @@ export default function PolishedOrderPage({
       )}
 
       {/* Rewards Join Modal */}
-      {showJoinModal && (
+      {joinModalOpen && (
         <JoinRewardsModal
-          isOpen={showJoinModal}
-          onClose={() => setShowJoinModal(false)}
+          isOpen={joinModalOpen}
+          onClose={() => setJoinModalOpen(false)}
           onSuccess={() => {
-            setShowJoinModal(false);
+            setJoinModalOpen(false);
             showNotification('Welcome to the rewards program!');
           }}
         />
       )}
 
       {/* Rewards Modal for existing members */}
-      {showMembershipPanel && customerRewardsData && (
+      {membershipPanelOpen && customerRewardsData && (
         <RewardsModal
-          isOpen={showMembershipPanel}
-          onClose={() => setShowMembershipPanel(false)}
+          isOpen={membershipPanelOpen}
+          onClose={() => setMembershipPanelOpen(false)}
           customerData={customerRewardsData}
           membershipProgram={rewardsData?.membershipProgram}
         />
