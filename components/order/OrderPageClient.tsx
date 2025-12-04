@@ -1796,14 +1796,14 @@ export default function OrderPageClient({
         </div>
       </header>
 
-      {/* Category Navigation - Separate Bar */}
-      <div className="sticky top-[88px] z-30 bg-[#1a1a1a] border-b border-white/10 py-3">
+      {/* Category Navigation - Clean Minimal Bar (No Duplicate Icons) */}
+      <div className="sticky top-[88px] z-30 bg-[#1a1a1a]/95 backdrop-blur-md border-b border-white/10 py-2">
         <div className="mx-auto max-w-7xl px-4">
           <div className="flex items-center gap-3">
-            {/* Categories - scrollable */}
+            {/* Categories - Clean text buttons without icons */}
             <div className="flex-1 overflow-x-auto scrollbar-hide">
-              <nav className="flex items-center gap-2">
-                {navSections.map((section) => {
+              <nav className="flex items-center gap-1">
+                {navSections.map((section, index) => {
                   const isActive = activeSectionId === section.id;
                   return (
                     <button
@@ -1818,107 +1818,205 @@ export default function OrderPageClient({
                         }
                       }}
                       data-section-button={section.id}
-                      className={`flex-shrink-0 flex items-center gap-2 rounded-full px-5 py-2.5 text-sm font-semibold transition-all duration-200 ${
+                      className={`flex-shrink-0 px-4 py-2 text-sm font-semibold transition-all duration-200 relative ${
                         isActive
-                          ? 'bg-[#C41E3A] text-white shadow-lg'
-                          : 'bg-[#2a2a2a] text-white/70 hover:text-white hover:bg-[#3a3a3a]'
+                          ? 'text-white'
+                          : 'text-white/60 hover:text-white'
                       }`}
                     >
-                      <span>{SECTION_ICONS[section.type] || '🍽️'}</span>
-                      <span>{section.name}</span>
+                      {section.name}
+                      {/* Active indicator line */}
+                      {isActive && (
+                        <span className="absolute bottom-0 left-2 right-2 h-0.5 bg-[#C41E3A] rounded-full" />
+                      )}
                     </button>
                   );
                 })}
               </nav>
             </div>
 
-            {/* View Toggles - Desktop only */}
-            <div className="hidden md:flex items-center gap-1 rounded-lg bg-[#2a2a2a] p-1">
-              {LAYOUTS.map((layout) => (
-                <button
-                  key={layout.id}
-                  onClick={() => setActiveLayout(layout.id)}
-                  className={`rounded-md px-3 py-2 text-xs font-medium transition-all ${
-                    activeLayout === layout.id
-                      ? 'bg-[#C41E3A] text-white'
-                      : 'text-white/50 hover:text-white'
-                  }`}
-                  title={layout.label}
-                >
-                  {layout.icon}
-                </button>
-              ))}
+            {/* Section counter & View Toggles */}
+            <div className="hidden md:flex items-center gap-3">
+              <span className="text-xs text-white/40">
+                {navSections.findIndex(s => s.id === activeSectionId) + 1} / {navSections.length}
+              </span>
+              <div className="flex items-center gap-1 rounded-lg bg-[#2a2a2a] p-1">
+                {LAYOUTS.map((layout) => (
+                  <button
+                    key={layout.id}
+                    onClick={() => setActiveLayout(layout.id)}
+                    className={`rounded-md px-3 py-2 text-xs font-medium transition-all ${
+                      activeLayout === layout.id
+                        ? 'bg-[#C41E3A] text-white'
+                        : 'text-white/50 hover:text-white'
+                    }`}
+                    title={layout.label}
+                  >
+                    {layout.icon}
+                  </button>
+                ))}
+              </div>
             </div>
           </div>
         </div>
       </div>
 
-      {/* Hero Section with Food Image - Panda Express Style */}
-      <section className="relative overflow-hidden bg-[#1a1a1a]">
-        {/* Background with rounded container */}
-        <div className="mx-auto max-w-7xl px-4 py-8">
-          <div className="relative rounded-3xl overflow-hidden bg-gradient-to-r from-[#1a1a1a] via-[#2a2a2a] to-[#1a1a1a] border border-[#C41E3A]/30">
-            {/* Red accent line at top */}
-            <div className="absolute top-0 left-0 right-0 h-1 bg-gradient-to-r from-transparent via-[#C41E3A] to-transparent" />
+      {/* Floating Page Navigation - Right Side */}
+      <div className="fixed right-4 top-1/2 -translate-y-1/2 z-40 hidden lg:flex flex-col gap-2 p-2 rounded-2xl bg-black/60 backdrop-blur-md border border-white/10">
+        <div className="text-[10px] text-white/40 text-center px-2 py-1 border-b border-white/10 mb-1">
+          SECTIONS
+        </div>
+        {navSections.map((section, index) => {
+          const isActive = activeSectionId === section.id;
+          return (
+            <button
+              key={section.id}
+              onClick={() => {
+                setActiveSectionId(section.id);
+                const element = document.getElementById(`section-${section.id}`);
+                if (element) {
+                  const headerHeight = 160;
+                  const elementPosition = element.getBoundingClientRect().top + window.pageYOffset;
+                  window.scrollTo({ top: elementPosition - headerHeight, behavior: 'smooth' });
+                }
+              }}
+              className={`group flex items-center gap-2 px-3 py-2 rounded-xl text-xs transition-all ${
+                isActive
+                  ? 'bg-[#C41E3A] text-white'
+                  : 'text-white/50 hover:text-white hover:bg-white/10'
+              }`}
+              title={section.name}
+            >
+              <span className="w-5 h-5 flex items-center justify-center rounded-full bg-white/10 text-[10px] font-bold">
+                {index + 1}
+              </span>
+              <span className="max-w-[80px] truncate">{section.name}</span>
+            </button>
+          );
+        })}
+        {/* Scroll to top button */}
+        <button
+          onClick={() => window.scrollTo({ top: 0, behavior: 'smooth' })}
+          className="mt-1 p-2 rounded-xl text-white/40 hover:text-white hover:bg-white/10 transition-all"
+          title="Back to top"
+        >
+          <svg className="w-4 h-4 mx-auto" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+            <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M5 10l7-7m0 0l7 7m-7-7v18" />
+          </svg>
+        </button>
+      </div>
 
-            <div className="grid md:grid-cols-2 gap-8 p-8 md:p-12">
-              {/* Left side - Text Content */}
-              <div className="flex flex-col justify-center">
-                <div className="inline-flex items-center gap-2 mb-4">
-                  <span className="px-3 py-1 rounded-full bg-[#C41E3A] text-white text-xs font-bold uppercase tracking-wide">New!</span>
-                </div>
+      {/* Hero Section - Macy's Holiday Red Style with Glowing Edges */}
+      <section className="relative overflow-hidden">
+        {/* Macy's Holiday Red Background with Glowing Edges */}
+        <div className="absolute inset-0 bg-gradient-to-br from-[#8B0000] via-[#B22222] to-[#8B0000]" />
 
-                <h2 className="text-4xl md:text-5xl lg:text-6xl font-black text-white mb-4 leading-tight">
-                  {personality.heroTitle}
-                </h2>
+        {/* LED Glow Effects on Edges - Holiday Style */}
+        <div className="absolute inset-0 pointer-events-none">
+          {/* Top edge glow */}
+          <div className="absolute top-0 left-0 right-0 h-32 bg-gradient-to-b from-[#FF1744]/40 via-[#FF1744]/20 to-transparent blur-sm" />
+          {/* Bottom edge glow */}
+          <div className="absolute bottom-0 left-0 right-0 h-32 bg-gradient-to-t from-[#FF1744]/40 via-[#FF1744]/20 to-transparent blur-sm" />
+          {/* Left edge glow */}
+          <div className="absolute top-0 bottom-0 left-0 w-32 bg-gradient-to-r from-[#FF1744]/40 via-[#FF1744]/20 to-transparent blur-sm" />
+          {/* Right edge glow */}
+          <div className="absolute top-0 bottom-0 right-0 w-32 bg-gradient-to-l from-[#FF1744]/40 via-[#FF1744]/20 to-transparent blur-sm" />
 
-                <p className="text-lg md:text-xl text-white/70 mb-6 leading-relaxed">
-                  {tenant.heroSubtitle || tenant.tagline || 'Authentic flavors crafted with passion'}
-                </p>
+          {/* Corner sparkle effects */}
+          <div className="absolute top-4 left-4 w-24 h-24 bg-[#FFD700]/30 rounded-full blur-2xl animate-pulse" style={{ animationDuration: '2s' }} />
+          <div className="absolute top-4 right-4 w-20 h-20 bg-[#FFD700]/25 rounded-full blur-2xl animate-pulse" style={{ animationDuration: '3s', animationDelay: '0.5s' }} />
+          <div className="absolute bottom-4 left-4 w-16 h-16 bg-[#FFD700]/20 rounded-full blur-2xl animate-pulse" style={{ animationDuration: '2.5s', animationDelay: '1s' }} />
+          <div className="absolute bottom-4 right-4 w-20 h-20 bg-[#FFD700]/25 rounded-full blur-2xl animate-pulse" style={{ animationDuration: '3.5s', animationDelay: '1.5s' }} />
 
-                <div className="flex flex-wrap gap-3">
-                  <a
-                    href="#menu"
-                    className="inline-flex items-center gap-2 rounded-lg border-2 border-[#C41E3A] bg-transparent px-6 py-3 text-base font-bold text-[#C41E3A] hover:bg-[#C41E3A] hover:text-white transition-all"
-                  >
-                    START AN ORDER
-                  </a>
-                  <button
-                    onClick={() => {
-                      const firstSection = navSections[0];
-                      if (firstSection) {
-                        setActiveSectionId(firstSection.id);
-                        const element = document.getElementById(`section-${firstSection.id}`);
-                        if (element) element.scrollIntoView({ behavior: 'smooth' });
-                      }
-                    }}
-                    className="inline-flex items-center gap-2 rounded-lg bg-[#C41E3A] px-6 py-3 text-base font-bold text-white hover:bg-[#A01830] transition-all"
-                  >
-                    EXPLORE MENU
-                  </button>
-                </div>
+          {/* Subtle sparkle texture */}
+          <div className="absolute inset-0 opacity-10" style={{
+            backgroundImage: 'radial-gradient(circle at 20% 30%, #FFD700 1px, transparent 1px), radial-gradient(circle at 80% 70%, #FFD700 1px, transparent 1px), radial-gradient(circle at 50% 50%, #FFD700 1px, transparent 1px)',
+            backgroundSize: '100px 100px'
+          }} />
+        </div>
+
+        {/* Content */}
+        <div className="relative z-10 mx-auto max-w-7xl px-4 py-12 md:py-16">
+          <div className="grid md:grid-cols-2 gap-8 items-center">
+            {/* Left side - Text Content */}
+            <div className="flex flex-col justify-center text-center md:text-left">
+              <div className="inline-flex items-center gap-2 mb-4 justify-center md:justify-start">
+                <span className="px-4 py-1.5 rounded-full bg-[#FFD700] text-[#8B0000] text-xs font-black uppercase tracking-wide shadow-lg">
+                  ✨ Holiday Special
+                </span>
               </div>
 
-              {/* Right side - Featured Image */}
-              <div className="relative flex items-center justify-center">
-                <div className="relative w-full max-w-md aspect-square">
-                  {/* Decorative ring */}
-                  <div className="absolute inset-0 rounded-full border-2 border-[#C41E3A]/30 scale-110" />
-                  {/* Food image */}
-                  <div className="relative w-full h-full rounded-3xl overflow-hidden bg-[#2a2a2a]">
-                    {carouselItems[0]?.displayImage ? (
-                      <Image
-                        src={carouselItems[0].displayImage}
-                        alt="Featured dish"
-                        fill
-                        className="object-cover"
-                        sizes="(max-width: 768px) 100vw, 400px"
-                      />
-                    ) : (
-                      <div className="flex items-center justify-center h-full text-6xl">🍽️</div>
-                    )}
-                  </div>
+              <h2 className="text-4xl md:text-5xl lg:text-6xl font-black text-white mb-4 leading-tight drop-shadow-lg">
+                {personality.heroTitle}
+              </h2>
+
+              <p className="text-lg md:text-xl text-white/90 mb-8 leading-relaxed max-w-lg mx-auto md:mx-0">
+                {tenant.heroSubtitle || tenant.tagline || 'Authentic flavors crafted with passion'}
+              </p>
+
+              <div className="flex flex-wrap gap-4 justify-center md:justify-start">
+                <button
+                  onClick={() => {
+                    const firstSection = navSections[0];
+                    if (firstSection) {
+                      setActiveSectionId(firstSection.id);
+                      const element = document.getElementById(`section-${firstSection.id}`);
+                      if (element) {
+                        const headerHeight = 160;
+                        const elementPosition = element.getBoundingClientRect().top + window.pageYOffset;
+                        window.scrollTo({ top: elementPosition - headerHeight, behavior: 'smooth' });
+                      }
+                    }
+                  }}
+                  className="group inline-flex items-center gap-2 rounded-full bg-[#FFD700] px-8 py-4 text-base font-black text-[#8B0000] shadow-xl shadow-[#FFD700]/30 hover:shadow-[#FFD700]/50 transition-all hover:scale-105"
+                >
+                  ORDER NOW
+                  <svg className="w-5 h-5 group-hover:translate-x-1 transition-transform" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M13 7l5 5m0 0l-5 5m5-5H6" />
+                  </svg>
+                </button>
+                <button
+                  onClick={() => {
+                    const menuEl = document.getElementById('menu');
+                    if (menuEl) menuEl.scrollIntoView({ behavior: 'smooth' });
+                  }}
+                  className="inline-flex items-center gap-2 rounded-full border-2 border-white/50 bg-white/10 backdrop-blur-sm px-8 py-4 text-base font-bold text-white hover:bg-white/20 hover:border-white transition-all"
+                >
+                  VIEW MENU
+                </button>
+              </div>
+            </div>
+
+            {/* Right side - Featured Image with Holiday Glow */}
+            <div className="relative flex items-center justify-center">
+              <div className="relative w-full max-w-sm mx-auto">
+                {/* Glowing ring effect */}
+                <div className="absolute inset-0 rounded-full bg-gradient-to-br from-[#FFD700]/50 to-[#FF6B6B]/50 blur-3xl scale-110 animate-pulse" style={{ animationDuration: '3s' }} />
+                <div className="absolute inset-0 rounded-full border-4 border-[#FFD700]/30 scale-110" />
+
+                {/* Food image */}
+                <div className="relative aspect-square rounded-3xl overflow-hidden border-4 border-white/20 shadow-2xl bg-[#2a2a2a]">
+                  {carouselItems[0]?.displayImage ? (
+                    <Image
+                      src={carouselItems[0].displayImage}
+                      alt="Featured dish"
+                      fill
+                      className="object-cover"
+                      sizes="(max-width: 768px) 100vw, 400px"
+                    />
+                  ) : (
+                    <div className="flex items-center justify-center h-full text-6xl">🍽️</div>
+                  )}
+                  {/* Overlay gradient */}
+                  <div className="absolute inset-0 bg-gradient-to-t from-[#8B0000]/40 to-transparent" />
                 </div>
+
+                {/* Price badge */}
+                {carouselItems[0]?.price && (
+                  <div className="absolute -bottom-4 left-1/2 -translate-x-1/2 px-6 py-2 rounded-full bg-[#FFD700] text-[#8B0000] font-black text-lg shadow-xl">
+                    From ${carouselItems[0].price.toFixed(2)}
+                  </div>
+                )}
               </div>
             </div>
           </div>
@@ -3066,24 +3164,38 @@ export default function OrderPageClient({
       </footer>
 
       {customModal && (
-        <div className="fixed inset-0 z-50 flex items-end justify-center bg-black/70 backdrop-blur" onClick={closeCustomization}>
+        <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/80 backdrop-blur-sm p-4" onClick={closeCustomization}>
           <div
-            className="w-full max-w-lg translate-y-0 rounded-t-3xl border border-white/10 bg-[#0B142B] p-6 text-white shadow-2xl transition"
+            className="w-full max-w-xl rounded-3xl border border-white/20 bg-gradient-to-br from-[#1a1a1a] via-[#0d0d0d] to-[#1a1a1a] p-6 text-white shadow-2xl shadow-black/50 max-h-[90vh] overflow-y-auto"
             onClick={(e) => e.stopPropagation()}
           >
-            <div className="flex items-start justify-between gap-3">
-              <div>
-                <p className="text-xs uppercase tracking-[0.4em] text-white/40">Customize</p>
-                <h3 className="text-2xl font-semibold text-white">{customModal.item.name}</h3>
-                <p className="text-sm text-white/60">Base ${customModal.item.price.toFixed(2)} · Section {customModal.item.sectionType.toLowerCase()}</p>
+            {/* Header with close button */}
+            <div className="flex items-start justify-between gap-4 mb-4">
+              <div className="flex-1">
+                <div className="flex items-center gap-2 mb-1">
+                  <span className="px-2 py-0.5 rounded-full bg-[#C41E3A]/20 text-[#C41E3A] text-xs font-bold">
+                    Customize
+                  </span>
+                </div>
+                <h3 className="text-2xl font-black text-white">{customModal.item.name}</h3>
+                <p className="text-sm text-white/60 mt-1">
+                  Base ${customModal.item.price.toFixed(2)}
+                </p>
               </div>
-              <button onClick={closeCustomization} className="rounded-full border border-white/20 px-2 py-1 text-xs text-white/60 hover:border-white hover:text-white">Close</button>
+              <button
+                onClick={closeCustomization}
+                className="w-10 h-10 rounded-full bg-white/10 border border-white/20 text-white/60 hover:text-white hover:bg-white/20 transition-all flex items-center justify-center"
+              >
+                ✕
+              </button>
             </div>
+
+            {/* Item Image Gallery */}
             {customModal.item.displayGallery && customModal.item.displayGallery.length > 0 && (
-              <div className="mt-4 flex gap-2 overflow-x-auto pb-2">
+              <div className="mb-5 flex gap-2 overflow-x-auto pb-2 -mx-2 px-2">
                 {customModal.item.displayGallery.map((url, index) => (
-                  <div key={`${customModal.item.id}-modal-${index}`} className="relative h-20 w-32 flex-shrink-0 overflow-hidden rounded-xl border border-white/15">
-                    <Image src={url} alt={`${customModal.item.name} preview ${index + 1}`} fill className="object-cover" sizes="128px" />
+                  <div key={`${customModal.item.id}-modal-${index}`} className="relative h-24 w-36 flex-shrink-0 overflow-hidden rounded-2xl border-2 border-white/10 hover:border-[#C41E3A]/50 transition-all">
+                    <Image src={url} alt={`${customModal.item.name} preview ${index + 1}`} fill className="object-cover" sizes="144px" />
                   </div>
                 ))}
               </div>
@@ -3190,16 +3302,17 @@ export default function OrderPageClient({
               </div>
             </div>
 
-            <div className="mt-6 flex flex-col gap-3 sm:flex-row">
+            {/* Action Buttons */}
+            <div className="mt-6 flex flex-col gap-3 sm:flex-row-reverse">
               <button
                 onClick={handleConfirmCustomization}
-                className="flex-1 rounded-full bg-gradient-to-r from-red-600 via-amber-400 to-yellow-400 px-4 py-3 text-sm font-semibold text-black shadow-lg shadow-amber-500/30 transition hover:-translate-y-0.5"
+                className="flex-1 rounded-2xl bg-[#C41E3A] px-6 py-4 text-base font-bold text-white shadow-xl shadow-[#C41E3A]/30 transition-all hover:bg-[#A01830] hover:scale-[1.02] active:scale-[0.98]"
               >
                 Add to Cart · ${totalCustomizedPrice.toFixed(2)}
               </button>
               <button
                 onClick={closeCustomization}
-                className="flex-1 rounded-full border border-white/20 px-4 py-3 text-sm font-semibold text-white/70 transition hover:border-white hover:text-white"
+                className="flex-1 rounded-2xl border-2 border-white/20 px-6 py-4 text-base font-semibold text-white/70 transition-all hover:border-white/40 hover:text-white hover:bg-white/5"
               >
                 Cancel
               </button>
