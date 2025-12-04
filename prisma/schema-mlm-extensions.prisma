@@ -1,0 +1,129 @@
+// Additional MLM models for Phase 6 completion
+// These will be added to the main schema.prisma
+
+model Announcement {
+  id            String          @id @default(uuid())
+  title         String
+  content       String
+  type          String          @default("general") // general, training, contest, promotion, meeting
+  priority      String          @default("normal") // low, normal, high, urgent
+  targetAudience String?       // "all", "rank:SUPERVISOR+", "team:associateId", null = all
+  authorId      String?         // Associate ID who created it
+  expiresAt     DateTime?
+  createdAt     DateTime        @default(now())
+  updatedAt     DateTime        @updatedAt
+  readBy        AnnouncementRead[]
+
+  @@index([type])
+  @@index([priority])
+  @@index([createdAt])
+  @@index([expiresAt])
+}
+
+model AnnouncementRead {
+  id            String        @id @default(uuid())
+  announcementId String
+  associateId   String
+  readAt        DateTime      @default(now())
+  announcement  Announcement  @relation(fields: [announcementId], references: [id], onDelete: Cascade)
+  associate     Associate     @relation(fields: [associateId], references: [id], onDelete: Cascade)
+
+  @@unique([announcementId, associateId])
+  @@index([associateId])
+  @@index([announcementId])
+}
+
+model Meeting {
+  id            String          @id @default(uuid())
+  title         String
+  description   String?
+  type          String          @default("team") // team, training, sales, recruiting, leadership
+  hostId        String          // Associate ID
+  scheduledAt   DateTime
+  duration      Int             @default(60) // minutes
+  meetingUrl    String?         // Zoom, Google Meet, etc.
+  location      String?         // Physical location if in-person
+  maxAttendees  Int?
+  status        String          @default("scheduled") // scheduled, in-progress, completed, cancelled
+  attendees     MeetingAttendee[]
+  createdAt     DateTime        @default(now())
+  updatedAt     DateTime        @updatedAt
+
+  @@index([hostId])
+  @@index([scheduledAt])
+  @@index([type])
+  @@index([status])
+}
+
+model MeetingAttendee {
+  id            String    @id @default(uuid())
+  meetingId     String
+  associateId   String
+  status        String    @default("invited") // invited, confirmed, attended, no-show
+  confirmedAt   DateTime?
+  attendedAt    DateTime?
+  notes         String?
+  meeting       Meeting   @relation(fields: [meetingId], references: [id], onDelete: Cascade)
+  associate     Associate @relation(fields: [associateId], references: [id], onDelete: Cascade)
+
+  @@unique([meetingId, associateId])
+  @@index([meetingId])
+  @@index([associateId])
+  @@index([status])
+}
+
+model TeamMessage {
+  id            String          @id @default(uuid())
+  senderId      String          // Associate ID
+  recipientId   String?         // Associate ID (null = team broadcast)
+  teamId        String?         // Team/group ID (for group messages)
+  subject       String?
+  content       String
+  type          String          @default("message") // message, invitation, reminder, congratulations
+  priority      String          @default("normal")
+  read          Boolean         @default(false)
+  readAt        DateTime?
+  createdAt     DateTime        @default(now())
+  sender        Associate       @relation("SentMessages", fields: [senderId], references: [id], onDelete: Cascade)
+  recipient     Associate?      @relation("ReceivedMessages", fields: [recipientId], references: [id], onDelete: Cascade)
+
+  @@index([senderId])
+  @@index([recipientId])
+  @@index([teamId])
+  @@index([read])
+  @@index([createdAt])
+}
+
+model Leaderboard {
+  id            String          @id @default(uuid())
+  name          String
+  type          String          // "sales", "recruiting", "earnings", "rank_points"
+  period        String          @default("monthly") // daily, weekly, monthly, all-time
+  startDate     DateTime
+  endDate       DateTime
+  entries       LeaderboardEntry[]
+  createdAt     DateTime        @default(now())
+  updatedAt     DateTime        @updatedAt
+
+  @@index([type])
+  @@index([period])
+  @@index([startDate])
+  @@index([endDate])
+}
+
+model LeaderboardEntry {
+  id            String          @id @default(uuid())
+  leaderboardId String
+  associateId   String
+  rank          Int
+  score         Float
+  metadata      Json?          // Additional data (sales count, earnings, etc.)
+  leaderboard   Leaderboard     @relation(fields: [leaderboardId], references: [id], onDelete: Cascade)
+  associate     Associate       @relation(fields: [associateId], references: [id], onDelete: Cascade)
+
+  @@unique([leaderboardId, associateId])
+  @@index([leaderboardId])
+  @@index([associateId])
+  @@index([rank])
+}
+

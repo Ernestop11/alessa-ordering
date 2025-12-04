@@ -40,7 +40,8 @@
       "Bash(python3:*)",
       "Bash(npm view:*)",
       "Bash(npm run build:*)",
-      "Bash(ls:*)"
+      "Bash(ls:*)",
+      "Bash(git checkout:*)"
     ],
     "deny": [],
     "ask": []

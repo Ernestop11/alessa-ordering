@@ -4,6 +4,7 @@ import { getStripeClient } from '../../../../lib/stripe';
 import prisma from '../../../../lib/prisma';
 import { createOrderFromPayload, type OrderPayload } from '../../../../lib/order-service';
 import { createSubscriptionCommission } from '../../../../lib/mlm/commission-automation';
+import { createPlatformFeeCommission } from '../../../../lib/mlm/product-commissions';
 
 function isOrderPayload(v: any): v is OrderPayload {
   if (!v || typeof v !== 'object') return false;
@@ -123,6 +124,21 @@ export async function POST(req: Request) {
             },
           },
         });
+
+        // Create platform fee commission for MLM associates
+        if (order.platformFee && order.platformFee > 0) {
+          try {
+            await createPlatformFeeCommission(
+              session.tenant.id,
+              order.platformFee,
+              order.id,
+              `Platform fee commission for order ${order.id}`
+            );
+          } catch (error) {
+            console.error('[mlm] Error creating platform fee commission:', error);
+            // Don't fail webhook if commission creation fails
+          }
+        }
 
         // Send email notification to admin
         if (session.tenant.contactEmail) {

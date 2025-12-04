@@ -607,6 +607,7 @@ export default function OrderPageClient({
   }, [addToCart, closeCustomization, customModal, customNote, customQuantity, customRemovals, perItemCustomizedPrice, selectedAddonObjects]);
 
   const sectionRefs = useRef<Record<string, HTMLElement | null>>({});
+  const categoryNavRef = useRef<HTMLDivElement>(null);
 
   useEffect(() => {
     const sectionsToObserve = Object.entries(sectionRefs.current)
@@ -640,6 +641,29 @@ export default function OrderPageClient({
 
     return () => observer.disconnect();
   }, [navSections.length, sections]);
+
+  // Auto-scroll category nav to show active section button
+  useEffect(() => {
+    if (!activeSectionId || !categoryNavRef.current) return;
+
+    const activeButton = categoryNavRef.current.querySelector(`[data-section-button="${activeSectionId}"]`) as HTMLElement;
+    if (activeButton) {
+      const navContainer = categoryNavRef.current;
+      const buttonLeft = activeButton.offsetLeft;
+      const buttonWidth = activeButton.offsetWidth;
+      const containerWidth = navContainer.offsetWidth;
+      const scrollLeft = navContainer.scrollLeft;
+
+      // Calculate center position
+      const targetScroll = buttonLeft - (containerWidth / 2) + (buttonWidth / 2);
+
+      // Smooth scroll to center the active button
+      navContainer.scrollTo({
+        left: Math.max(0, targetScroll),
+        behavior: 'smooth'
+      });
+    }
+  }, [activeSectionId]);
 
   const addressParts = useMemo(() => {
     const parts = [
@@ -1796,13 +1820,17 @@ export default function OrderPageClient({
         </div>
       </header>
 
-      {/* Category Navigation - Clean Minimal Bar (No Duplicate Icons) */}
-      <div className="sticky top-[88px] z-30 bg-[#1a1a1a]/95 backdrop-blur-md border-b border-white/10 py-2">
-        <div className="mx-auto max-w-7xl px-4">
-          <div className="flex items-center gap-3">
-            {/* Categories - Clean text buttons without icons */}
-            <div className="flex-1 overflow-x-auto scrollbar-hide">
-              <nav className="flex items-center gap-1">
+      {/* Category Navigation - Enhanced Sticky Bar with Auto-Scroll */}
+      <div className="sticky top-[88px] z-30 bg-gradient-to-b from-[#1a1a1a] to-[#1a1a1a]/95 backdrop-blur-md border-b border-white/10 shadow-lg shadow-black/20">
+        <div className="mx-auto max-w-7xl px-4 py-2">
+          <div className="flex items-center gap-4">
+            {/* Categories - Enhanced scrollable nav */}
+            <div
+              ref={categoryNavRef}
+              className="flex-1 overflow-x-auto scrollbar-hide scroll-smooth"
+              style={{ scrollbarWidth: 'none', msOverflowStyle: 'none' }}
+            >
+              <nav className="flex items-center gap-1 py-1">
                 {navSections.map((section, index) => {
                   const isActive = activeSectionId === section.id;
                   return (
@@ -1818,37 +1846,51 @@ export default function OrderPageClient({
                         }
                       }}
                       data-section-button={section.id}
-                      className={`flex-shrink-0 px-4 py-2 text-sm font-semibold transition-all duration-200 relative ${
+                      className={`flex-shrink-0 px-5 py-2.5 rounded-full text-sm font-semibold transition-all duration-300 relative ${
                         isActive
-                          ? 'text-white'
-                          : 'text-white/60 hover:text-white'
+                          ? 'bg-gradient-to-r from-[#C41E3A] to-[#FF6B6B] text-white shadow-lg shadow-[#C41E3A]/30 scale-105'
+                          : 'text-white/60 hover:text-white hover:bg-white/10'
                       }`}
                     >
-                      {section.name}
-                      {/* Active indicator line */}
-                      {isActive && (
-                        <span className="absolute bottom-0 left-2 right-2 h-0.5 bg-[#C41E3A] rounded-full" />
-                      )}
+                      <span className="relative z-10 flex items-center gap-2">
+                        {isActive && (
+                          <span className="w-2 h-2 rounded-full bg-white animate-pulse" />
+                        )}
+                        {section.name}
+                      </span>
                     </button>
                   );
                 })}
               </nav>
             </div>
 
-            {/* Section counter & View Toggles */}
-            <div className="hidden md:flex items-center gap-3">
-              <span className="text-xs text-white/40">
-                {navSections.findIndex(s => s.id === activeSectionId) + 1} / {navSections.length}
-              </span>
-              <div className="flex items-center gap-1 rounded-lg bg-[#2a2a2a] p-1">
+            {/* Progress indicator & View Toggles */}
+            <div className="hidden md:flex items-center gap-4 border-l border-white/10 pl-4">
+              {/* Progress bar */}
+              <div className="flex items-center gap-2">
+                <div className="w-20 h-1.5 rounded-full bg-white/10 overflow-hidden">
+                  <div
+                    className="h-full bg-gradient-to-r from-[#C41E3A] to-[#FFD700] rounded-full transition-all duration-500"
+                    style={{
+                      width: `${((navSections.findIndex(s => s.id === activeSectionId) + 1) / navSections.length) * 100}%`
+                    }}
+                  />
+                </div>
+                <span className="text-xs text-white/50 font-medium min-w-[40px]">
+                  {navSections.findIndex(s => s.id === activeSectionId) + 1}/{navSections.length}
+                </span>
+              </div>
+
+              {/* View toggles */}
+              <div className="flex items-center gap-1 rounded-xl bg-[#2a2a2a] p-1">
                 {LAYOUTS.map((layout) => (
                   <button
                     key={layout.id}
                     onClick={() => setActiveLayout(layout.id)}
-                    className={`rounded-md px-3 py-2 text-xs font-medium transition-all ${
+                    className={`rounded-lg px-3 py-2 text-xs font-medium transition-all duration-200 ${
                       activeLayout === layout.id
-                        ? 'bg-[#C41E3A] text-white'
-                        : 'text-white/50 hover:text-white'
+                        ? 'bg-[#C41E3A] text-white shadow-md'
+                        : 'text-white/50 hover:text-white hover:bg-white/10'
                     }`}
                     title={layout.label}
                   >

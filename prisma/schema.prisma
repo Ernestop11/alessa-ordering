@@ -355,6 +355,61 @@ enum CommissionType {
   ORDER_VOLUME
   REFERRAL
   DOWNLINE_BONUS
+  HOSTING
+  TEMPLATE_SALE
+  DIGITAL_MENU
+  MARKETING_APP
+  MINI_BODEGA
+  OTHER
+}
+
+enum AssociateRank {
+  REP
+  SENIOR_REP
+  SUPERVISOR
+  MANAGER
+  SENIOR_MANAGER
+  DIRECTOR
+  SENIOR_DIRECTOR
+  VP
+  SVP
+}
+
+enum ProductType {
+  ORDERING_SYSTEM
+  WEB_HOSTING
+  DIGITAL_MENU
+  MARKETING_APP
+  WEBSITE_TEMPLATE
+  MINI_BODEGA
+}
+
+enum AchievementType {
+  FIRST_SALE
+  TEN_SALES
+  HUNDRED_SALES
+  THOUSAND_SALES
+  FIRST_RECRUIT
+  THREE_RECRUITS
+  TEN_RECRUITS
+  FIFTY_RECRUITS
+  HUNDRED_RECRUITS
+  FIRST_COMMISSION
+  THOUSAND_EARNED
+  TEN_THOUSAND_EARNED
+  HUNDRED_THOUSAND_EARNED
+  FIRST_ORDERING_SALE
+  FIRST_HOSTING_SALE
+  FIRST_TEMPLATE_SALE
+  MONTHLY_GOAL
+  QUARTERLY_GOAL
+  YEARLY_GOAL
+  TRAINING_COMPLETE
+  SALES_CERTIFIED
+  PRODUCT_EXPERT
+  TEAM_PLAYER
+  MENTOR
+  LEADER
 }
 
 model Associate {
@@ -367,6 +422,12 @@ model Associate {
   sponsorId        String? // Parent associate (self-referencing)
   level            Int             @default(1) // Depth in downline tree
   status           AssociateStatus @default(ACTIVE)
+  rank             AssociateRank   @default(REP)
+  rankPoints       Int             @default(0)
+  totalRecruits    Int             @default(0)
+  activeRecruits   Int             @default(0)
+  promotedAt       DateTime?
+  nextRank         AssociateRank?
   totalEarnings    Float           @default(0)
   monthlyEarnings  Float           @default(0)
   lifetimeEarnings Float           @default(0)
@@ -381,13 +442,25 @@ model Associate {
   downline Associate[] @relation("AssociateTree")
 
   // Related records
-  referrals   TenantReferral[]
-  commissions Commission[]
+  referrals           TenantReferral[]
+  commissions         Commission[]
+  achievements        Achievement[]
+  sales               Sale[]
+  productReferrals    ProductReferral[]
+  trainingProgress    TrainingProgress[]
+  contestParticipants ContestParticipant[]
+  sentMessages        TeamMessage[]        @relation("SentMessages")
+  receivedMessages    TeamMessage[]        @relation("ReceivedMessages")
+  meetingsHosted      Meeting[]
+  meetingAttendances  MeetingAttendee[]
+  leaderboardEntries  LeaderboardEntry[]
+  announcementReads   AnnouncementRead[]
 
   @@index([email])
   @@index([referralCode])
   @@index([sponsorId])
   @@index([status])
+  @@index([rank])
 }
 
 model TenantReferral {
@@ -418,6 +491,7 @@ model Commission {
   tenantId     String?
   orderId      String?
   referralId   String?
+  productType  ProductType?
   amount       Float
   type         CommissionType
   status       CommissionStatus @default(PENDING)
@@ -431,7 +505,239 @@ model Commission {
 
   @@index([associateId])
   @@index([tenantId])
-  @@index([status])
+  @@index([orderId])
+  @@index([referralId])
   @@index([type])
+  @@index([productType])
+  @@index([status])
   @@index([createdAt])
+}
+
+model Achievement {
+  id          String          @id @default(uuid())
+  associateId String
+  type        AchievementType
+  title       String
+  description String
+  icon        String // Emoji or icon URL
+  points      Int             @default(0)
+  earnedAt    DateTime        @default(now())
+  associate   Associate       @relation(fields: [associateId], references: [id], onDelete: Cascade)
+
+  @@index([associateId])
+  @@index([type])
+  @@index([earnedAt])
+}
+
+model Sale {
+  id            String      @id @default(uuid())
+  associateId   String
+  productType   ProductType
+  productId     String? // Tenant ID, hosting account ID, etc.
+  customerName  String
+  customerEmail String?
+  amount        Float
+  commission    Float
+  status        String      @default("pending")
+  soldAt        DateTime    @default(now())
+  associate     Associate   @relation(fields: [associateId], references: [id], onDelete: Cascade)
+
+  @@index([associateId])
+  @@index([productType])
+  @@index([soldAt])
+  @@index([status])
+}
+
+model ProductReferral {
+  id             String      @id @default(uuid())
+  associateId    String
+  productType    ProductType
+  productId      String // Tenant ID, hosting account, etc.
+  referralCode   String
+  commissionRate Float
+  status         String      @default("pending")
+  createdAt      DateTime    @default(now())
+  updatedAt      DateTime    @updatedAt
+  associate      Associate   @relation(fields: [associateId], references: [id], onDelete: Cascade)
+
+  @@index([associateId])
+  @@index([productType])
+  @@index([productId])
+  @@index([referralCode])
+  @@index([status])
+}
+
+model TrainingProgress {
+  id             String    @id @default(uuid())
+  associateId    String
+  courseId       String
+  courseName     String
+  progress       Int       @default(0) // 0-100
+  completed      Boolean   @default(false)
+  completedAt    DateTime?
+  certificateUrl String?
+  associate      Associate @relation(fields: [associateId], references: [id], onDelete: Cascade)
+
+  @@index([associateId])
+  @@index([courseId])
+  @@index([completed])
+}
+
+model Contest {
+  id           String               @id @default(uuid())
+  name         String
+  type         String // "sales", "recruiting", "training"
+  startDate    DateTime
+  endDate      DateTime
+  prize        String
+  rules        Json
+  participants ContestParticipant[]
+  createdAt    DateTime             @default(now())
+  updatedAt    DateTime             @updatedAt
+
+  @@index([startDate])
+  @@index([endDate])
+  @@index([type])
+}
+
+model ContestParticipant {
+  id          String    @id @default(uuid())
+  contestId   String
+  associateId String
+  score       Float     @default(0)
+  rank        Int?
+  contest     Contest   @relation(fields: [contestId], references: [id], onDelete: Cascade)
+  associate   Associate @relation(fields: [associateId], references: [id], onDelete: Cascade)
+
+  @@unique([contestId, associateId])
+  @@index([contestId])
+  @@index([associateId])
+  @@index([rank])
+}
+
+model Announcement {
+  id             String             @id @default(uuid())
+  title          String
+  content        String
+  type           String             @default("general")
+  priority       String             @default("normal")
+  targetAudience String?
+  authorId       String?
+  expiresAt      DateTime?
+  createdAt      DateTime           @default(now())
+  updatedAt      DateTime           @updatedAt
+  readBy         AnnouncementRead[]
+
+  @@index([type])
+  @@index([priority])
+  @@index([createdAt])
+  @@index([expiresAt])
+}
+
+model AnnouncementRead {
+  id             String       @id @default(uuid())
+  announcementId String
+  associateId    String
+  readAt         DateTime     @default(now())
+  announcement   Announcement @relation(fields: [announcementId], references: [id], onDelete: Cascade)
+  associate      Associate    @relation(fields: [associateId], references: [id], onDelete: Cascade)
+
+  @@unique([announcementId, associateId])
+  @@index([associateId])
+  @@index([announcementId])
+}
+
+model Meeting {
+  id           String            @id @default(uuid())
+  title        String
+  description  String?
+  type         String            @default("team")
+  hostId       String
+  scheduledAt  DateTime
+  duration     Int               @default(60)
+  meetingUrl   String?
+  location     String?
+  maxAttendees Int?
+  status       String            @default("scheduled")
+  attendees    MeetingAttendee[]
+  createdAt    DateTime          @default(now())
+  updatedAt    DateTime          @updatedAt
+  host         Associate         @relation(fields: [hostId], references: [id], onDelete: Cascade)
+
+  @@index([hostId])
+  @@index([scheduledAt])
+  @@index([type])
+  @@index([status])
+}
+
+model MeetingAttendee {
+  id          String    @id @default(uuid())
+  meetingId   String
+  associateId String
+  status      String    @default("invited")
+  confirmedAt DateTime?
+  attendedAt  DateTime?
+  notes       String?
+  meeting     Meeting   @relation(fields: [meetingId], references: [id], onDelete: Cascade)
+  associate   Associate @relation(fields: [associateId], references: [id], onDelete: Cascade)
+
+  @@unique([meetingId, associateId])
+  @@index([meetingId])
+  @@index([associateId])
+  @@index([status])
+}
+
+model TeamMessage {
+  id          String     @id @default(uuid())
+  senderId    String
+  recipientId String?
+  teamId      String?
+  subject     String?
+  content     String
+  type        String     @default("message")
+  priority    String     @default("normal")
+  read        Boolean    @default(false)
+  readAt      DateTime?
+  createdAt   DateTime   @default(now())
+  sender      Associate  @relation("SentMessages", fields: [senderId], references: [id], onDelete: Cascade)
+  recipient   Associate? @relation("ReceivedMessages", fields: [recipientId], references: [id], onDelete: Cascade)
+
+  @@index([senderId])
+  @@index([recipientId])
+  @@index([teamId])
+  @@index([read])
+  @@index([createdAt])
+}
+
+model Leaderboard {
+  id        String             @id @default(uuid())
+  name      String
+  type      String
+  period    String             @default("monthly")
+  startDate DateTime
+  endDate   DateTime
+  entries   LeaderboardEntry[]
+  createdAt DateTime           @default(now())
+  updatedAt DateTime           @updatedAt
+
+  @@index([type])
+  @@index([period])
+  @@index([startDate])
+  @@index([endDate])
+}
+
+model LeaderboardEntry {
+  id            String      @id @default(uuid())
+  leaderboardId String
+  associateId   String
+  rank          Int
+  score         Float
+  metadata      Json?
+  leaderboard   Leaderboard @relation(fields: [leaderboardId], references: [id], onDelete: Cascade)
+  associate     Associate   @relation(fields: [associateId], references: [id], onDelete: Cascade)
+
+  @@unique([leaderboardId, associateId])
+  @@index([leaderboardId])
+  @@index([associateId])
+  @@index([rank])
 }

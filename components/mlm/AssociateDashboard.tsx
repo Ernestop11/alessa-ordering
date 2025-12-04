@@ -2,7 +2,13 @@
 
 import { useState, useEffect } from 'react';
 import Link from 'next/link';
-import DownlineTree from './DownlineTree';
+import EnhancedDownlineTree from './EnhancedDownlineTree';
+import UplineView from './UplineView';
+import BulletinBoard from './BulletinBoard';
+import MeetingsSchedule from './MeetingsSchedule';
+import TeamCommunication from './TeamCommunication';
+import ContestLeaderboard from './ContestLeaderboard';
+import RecruitOnboarding from './RecruitOnboarding';
 
 interface Associate {
   id: string;
@@ -10,6 +16,10 @@ interface Associate {
   email: string;
   referralCode: string;
   level: number;
+  rank: string;
+  rankPoints: number;
+  totalRecruits: number;
+  activeRecruits: number;
   totalEarnings: number;
   monthlyEarnings: number;
   lifetimeEarnings: number;
@@ -44,8 +54,10 @@ export default function AssociateDashboard() {
   const [associate, setAssociate] = useState<Associate | null>(null);
   const [commissions, setCommissions] = useState<Commission[]>([]);
   const [referrals, setReferrals] = useState<Referral[]>([]);
+  const [achievements, setAchievements] = useState<any[]>([]);
+  const [rankProgress, setRankProgress] = useState<any>(null);
   const [loading, setLoading] = useState(true);
-  const [activeTab, setActiveTab] = useState<'overview' | 'earnings' | 'referrals' | 'downline'>('overview');
+  const [activeTab, setActiveTab] = useState<'overview' | 'earnings' | 'referrals' | 'downline' | 'upline' | 'achievements' | 'rank' | 'bulletin' | 'meetings' | 'communication' | 'leaderboard' | 'recruit'>('overview');
 
   useEffect(() => {
     loadDashboardData();
@@ -79,6 +91,20 @@ export default function AssociateDashboard() {
       if (referralsRes.ok) {
         const referralsData = await referralsRes.json();
         setReferrals(referralsData || []);
+      }
+
+      // Load achievements
+      const achievementsRes = await fetch(`/api/mlm/achievements?associateId=${associateObj.id}`);
+      if (achievementsRes.ok) {
+        const achievementsData = await achievementsRes.json();
+        setAchievements(achievementsData.achievements || []);
+      }
+
+      // Load rank progress
+      const rankRes = await fetch(`/api/mlm/rank?associateId=${associateObj.id}`);
+      if (rankRes.ok) {
+        const rankData = await rankRes.json();
+        setRankProgress(rankData);
       }
     } catch (error) {
       console.error('Error loading dashboard:', error);
@@ -129,9 +155,17 @@ export default function AssociateDashboard() {
         <nav className="flex gap-2 border-b border-gray-200 mb-8">
           {[
             { id: 'overview', label: 'Overview', icon: '📊' },
+            { id: 'rank', label: 'Rank', icon: '🏆' },
+            { id: 'achievements', label: 'Achievements', icon: '🎖️' },
             { id: 'earnings', label: 'Earnings', icon: '💰' },
             { id: 'referrals', label: 'Referrals', icon: '🔗' },
             { id: 'downline', label: 'Downline', icon: '🌳' },
+            { id: 'upline', label: 'Upline', icon: '⬆️' },
+            { id: 'bulletin', label: 'Bulletin', icon: '📢' },
+            { id: 'meetings', label: 'Meetings', icon: '📅' },
+            { id: 'communication', label: 'Messages', icon: '💬' },
+            { id: 'leaderboard', label: 'Contests', icon: '🏆' },
+            { id: 'recruit', label: 'Recruit', icon: '👥' },
           ].map((tab) => (
             <button
               key={tab.id}
@@ -151,6 +185,38 @@ export default function AssociateDashboard() {
         {/* Overview Tab */}
         {activeTab === 'overview' && (
           <div className="space-y-6">
+            {/* Rank Badge */}
+            {associate && (
+              <div className="rounded-2xl border-2 border-purple-200 bg-gradient-to-br from-purple-50 to-indigo-50 p-8 shadow-xl">
+                <div className="flex items-center justify-between">
+                  <div>
+                    <p className="text-sm font-semibold uppercase tracking-wider text-purple-600">Current Rank</p>
+                    <h2 className="mt-2 text-4xl font-black text-purple-900">
+                      {associate.rank || 'REP'}
+                    </h2>
+                    <p className="mt-2 text-sm text-purple-700">
+                      {rankProgress?.nextRank ? `Next: ${rankProgress.nextRank}` : 'Maximum rank achieved!'}
+                    </p>
+                  </div>
+                  <div className="text-6xl">🏆</div>
+                </div>
+                {rankProgress && rankProgress.progress < 100 && (
+                  <div className="mt-6">
+                    <div className="flex items-center justify-between mb-2">
+                      <span className="text-sm font-medium text-purple-700">Progress to {rankProgress.nextRank}</span>
+                      <span className="text-sm font-bold text-purple-900">{rankProgress.progress}%</span>
+                    </div>
+                    <div className="h-4 w-full rounded-full bg-purple-200">
+                      <div
+                        className="h-4 rounded-full bg-gradient-to-r from-purple-600 to-indigo-600 transition-all duration-500"
+                        style={{ width: `${rankProgress.progress}%` }}
+                      />
+                    </div>
+                  </div>
+                )}
+              </div>
+            )}
+
             {/* Stats Cards */}
             <div className="grid gap-6 sm:grid-cols-2 lg:grid-cols-4">
               <div className="rounded-2xl border border-gray-200 bg-gradient-to-br from-white to-purple-50 p-6 shadow-lg">
@@ -168,11 +234,11 @@ export default function AssociateDashboard() {
                 <p className="mt-2 text-sm text-gray-600">This month</p>
               </div>
               <div className="rounded-2xl border border-gray-200 bg-gradient-to-br from-white to-indigo-50 p-6 shadow-lg">
-                <p className="text-xs font-semibold uppercase tracking-wider text-gray-500">Pending</p>
+                <p className="text-xs font-semibold uppercase tracking-wider text-gray-500">Recruits</p>
                 <p className="mt-3 text-3xl font-black text-gray-900">
-                  ${associate?.totalPending.toFixed(2) || '0.00'}
+                  {associate?.totalRecruits || 0}
                 </p>
-                <p className="mt-2 text-sm text-gray-600">Awaiting payment</p>
+                <p className="mt-2 text-sm text-gray-600">{associate?.activeRecruits || 0} active</p>
               </div>
               <div className="rounded-2xl border border-gray-200 bg-gradient-to-br from-white to-blue-50 p-6 shadow-lg">
                 <p className="text-xs font-semibold uppercase tracking-wider text-gray-500">Referrals</p>
@@ -310,16 +376,199 @@ export default function AssociateDashboard() {
           </div>
         )}
 
+        {/* Rank Tab */}
+        {activeTab === 'rank' && rankProgress && (
+          <div className="space-y-6">
+            <div className="rounded-2xl border border-gray-200 bg-white p-8 shadow-xl">
+              <h3 className="text-2xl font-bold text-gray-900 mb-6">Rank Progress</h3>
+              
+              <div className="space-y-6">
+                <div>
+                  <div className="flex items-center justify-between mb-4">
+                    <div>
+                      <h4 className="text-lg font-bold text-gray-900">Current Rank: {rankProgress.currentRank}</h4>
+                      <p className="text-sm text-gray-600 mt-1">
+                        {rankProgress.requirements?.description || 'No description available'}
+                      </p>
+                    </div>
+                    <div className="text-5xl">
+                      {rankProgress.currentRank === 'SVP' ? '👑' : 
+                       rankProgress.currentRank === 'VP' ? '🎩' : 
+                       rankProgress.currentRank === 'DIRECTOR' ? '👔' : 
+                       rankProgress.currentRank === 'MANAGER' ? '🏅' : 
+                       rankProgress.currentRank === 'SUPERVISOR' ? '🎖️' : '⭐'}
+                    </div>
+                  </div>
+
+                  {rankProgress.nextRank && (
+                    <div className="mt-6">
+                      <div className="flex items-center justify-between mb-2">
+                        <span className="text-sm font-medium text-gray-700">Progress to {rankProgress.nextRank}</span>
+                        <span className="text-sm font-bold text-gray-900">{rankProgress.progress}%</span>
+                      </div>
+                      <div className="h-6 w-full rounded-full bg-gray-200">
+                        <div
+                          className="h-6 rounded-full bg-gradient-to-r from-purple-600 to-indigo-600 transition-all duration-500 flex items-center justify-end pr-2"
+                          style={{ width: `${rankProgress.progress}%` }}
+                        >
+                          {rankProgress.progress > 20 && (
+                            <span className="text-xs font-bold text-white">{rankProgress.progress}%</span>
+                          )}
+                        </div>
+                      </div>
+                    </div>
+                  )}
+
+                  {rankProgress.currentStats && (
+                    <div className="mt-8 grid grid-cols-2 gap-4">
+                      <div className="rounded-lg border border-gray-200 bg-gray-50 p-4">
+                        <p className="text-xs font-semibold text-gray-600">Active Recruits</p>
+                        <p className="mt-1 text-2xl font-bold text-gray-900">
+                          {rankProgress.currentStats.activeRecruits}
+                          {rankProgress.requirements && (
+                            <span className="text-sm font-normal text-gray-500">
+                              {' '}/ {rankProgress.requirements.minActiveRecruits}
+                            </span>
+                          )}
+                        </p>
+                      </div>
+                      <div className="rounded-lg border border-gray-200 bg-gray-50 p-4">
+                        <p className="text-xs font-semibold text-gray-600">Total Sales</p>
+                        <p className="mt-1 text-2xl font-bold text-gray-900">
+                          {rankProgress.currentStats.sales}
+                          {rankProgress.requirements && (
+                            <span className="text-sm font-normal text-gray-500">
+                              {' '}/ {rankProgress.requirements.minSales}
+                            </span>
+                          )}
+                        </p>
+                      </div>
+                      <div className="rounded-lg border border-gray-200 bg-gray-50 p-4">
+                        <p className="text-xs font-semibold text-gray-600">Total Earnings</p>
+                        <p className="mt-1 text-2xl font-bold text-gray-900">
+                          ${rankProgress.currentStats.earnings.toFixed(2)}
+                          {rankProgress.requirements && (
+                            <span className="text-sm font-normal text-gray-500">
+                              {' '}/ ${rankProgress.requirements.minEarnings.toFixed(2)}
+                            </span>
+                          )}
+                        </p>
+                      </div>
+                      {rankProgress.requirements?.minManagersInDownline && (
+                        <div className="rounded-lg border border-gray-200 bg-gray-50 p-4">
+                          <p className="text-xs font-semibold text-gray-600">Managers in Downline</p>
+                          <p className="mt-1 text-2xl font-bold text-gray-900">
+                            {rankProgress.currentStats.managersInDownline}
+                            <span className="text-sm font-normal text-gray-500">
+                              {' '}/ {rankProgress.requirements.minManagersInDownline}
+                            </span>
+                          </p>
+                        </div>
+                      )}
+                    </div>
+                  )}
+
+                  {rankProgress.missing && rankProgress.missing.length > 0 && (
+                    <div className="mt-6 rounded-lg border border-amber-200 bg-amber-50 p-4">
+                      <p className="text-sm font-semibold text-amber-800 mb-2">Requirements to meet:</p>
+                      <ul className="list-disc list-inside space-y-1 text-sm text-amber-700">
+                        {rankProgress.missing.map((req: string, idx: number) => (
+                          <li key={idx}>{req}</li>
+                        ))}
+                      </ul>
+                    </div>
+                  )}
+                </div>
+              </div>
+            </div>
+          </div>
+        )}
+
+        {/* Achievements Tab */}
+        {activeTab === 'achievements' && (
+          <div className="space-y-6">
+            <div className="rounded-2xl border border-gray-200 bg-white p-8 shadow-xl">
+              <h3 className="text-2xl font-bold text-gray-900 mb-6">Achievements</h3>
+              {achievements.length === 0 ? (
+                <div className="text-center py-12">
+                  <p className="text-gray-500">No achievements yet</p>
+                  <p className="mt-2 text-sm text-gray-400">Complete sales and recruit associates to earn achievements!</p>
+                </div>
+              ) : (
+                <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-4">
+                  {achievements.map((achievement) => (
+                    <div
+                      key={achievement.id}
+                      className="rounded-xl border border-gray-200 bg-gradient-to-br from-white to-purple-50 p-6 shadow-lg hover:shadow-xl transition"
+                    >
+                      <div className="flex items-center gap-4">
+                        <div className="text-4xl">{achievement.icon}</div>
+                        <div className="flex-1">
+                          <h4 className="font-bold text-gray-900">{achievement.title}</h4>
+                          <p className="text-sm text-gray-600 mt-1">{achievement.description}</p>
+                          <p className="text-xs text-purple-600 mt-2 font-semibold">
+                            +{achievement.points} points • {new Date(achievement.earnedAt).toLocaleDateString()}
+                          </p>
+                        </div>
+                      </div>
+                    </div>
+                  ))}
+                </div>
+              )}
+            </div>
+          </div>
+        )}
+
         {/* Downline Tab */}
         {activeTab === 'downline' && associate && (
           <div className="space-y-6">
-            <div className="rounded-2xl border border-gray-200 bg-white p-8 shadow-xl">
-              <h3 className="text-2xl font-bold text-gray-900 mb-6">Your Downline</h3>
-              <p className="text-gray-600 mb-6">
-                View the associates you&apos;ve recruited and their performance.
-              </p>
-              <DownlineTree associateId={associate.id} />
-            </div>
+            <EnhancedDownlineTree associateId={associate.id} />
+          </div>
+        )}
+
+        {/* Upline Tab */}
+        {activeTab === 'upline' && associate && (
+          <div className="space-y-6">
+            <UplineView associateId={associate.id} />
+          </div>
+        )}
+
+        {/* Bulletin Board Tab */}
+        {activeTab === 'bulletin' && associate && (
+          <div className="space-y-6">
+            <BulletinBoard associateId={associate.id} />
+          </div>
+        )}
+
+        {/* Meetings Tab */}
+        {activeTab === 'meetings' && associate && (
+          <div className="space-y-6">
+            <MeetingsSchedule associateId={associate.id} />
+          </div>
+        )}
+
+        {/* Communication Tab */}
+        {activeTab === 'communication' && associate && (
+          <div className="space-y-6">
+            <TeamCommunication associateId={associate.id} />
+          </div>
+        )}
+
+        {/* Leaderboard Tab */}
+        {activeTab === 'leaderboard' && associate && (
+          <div className="space-y-6">
+            <ContestLeaderboard associateId={associate.id} />
+          </div>
+        )}
+
+        {/* Recruit Tab */}
+        {activeTab === 'recruit' && associate && (
+          <div className="space-y-6">
+            <RecruitOnboarding sponsorId={associate.id} onSuccess={() => {
+              // Refresh data after successful recruitment
+              loadDashboardData();
+              setActiveTab('downline');
+            }} />
           </div>
         )}
       </main>
