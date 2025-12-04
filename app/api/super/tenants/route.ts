@@ -4,6 +4,7 @@ import { authOptions } from '@/lib/auth/options';
 import prisma from '@/lib/prisma';
 import type { MenuSectionType } from '@prisma/client';
 import { TenantStatus } from '@prisma/client';
+import { approveReferralOnTenantLive } from '@/lib/mlm/commission-automation';
 
 function unauthorized() {
   return NextResponse.json({ error: 'Unauthorized' }, { status: 401 });
@@ -297,6 +298,30 @@ export async function POST(req: Request) {
     include: { integrations: true, settings: true },
   });
 
+  // Handle MLM referral code if provided
+  if (body.referralCode) {
+    const referralCode = String(body.referralCode).trim().toUpperCase();
+    
+    // Find associate by referral code
+    const associate = await prisma.associate.findUnique({
+      where: { referralCode },
+    });
+
+    if (associate) {
+      // Create tenant referral record
+      await prisma.tenantReferral.create({
+        data: {
+          tenantId: tenant.id,
+          associateId: associate.id,
+          referralCode: referralCode,
+          commissionRate: 0.10, // 10% default commission rate
+          status: 'pending',
+        },
+      });
+    }
+    // If associate not found, silently continue (referral code might be invalid)
+  }
+
   // Apply template if provided
   if (body.templateFile) {
     const fs = await import('fs');
@@ -400,6 +425,11 @@ export async function POST(req: Request) {
     }
   }
 
+  // If tenant status is LIVE, approve any pending referrals
+  if (tenant.status === TenantStatus.LIVE) {
+    await approveReferralOnTenantLive(tenant.id);
+  }
+
   return NextResponse.json({
     id: tenant.id,
     name: tenant.name,
@@ -444,12 +474,18 @@ export async function PATCH(req: Request) {
   if (body.heroSubtitle !== undefined) tenantData.heroSubtitle = body.heroSubtitle || null;
   if (body.primaryColor !== undefined) tenantData.primaryColor = body.primaryColor || null;
   if (body.secondaryColor !== undefined) tenantData.secondaryColor = body.secondaryColor || null;
+  let statusChangedToLive = false;
   if (body.status !== undefined) {
     const requestedStatus = String(body.status).trim().toUpperCase();
     if (!Object.values(TenantStatus).includes(requestedStatus as TenantStatus)) {
       return NextResponse.json({ error: 'Invalid status value' }, { status: 400 });
     }
-    tenantData.status = requestedStatus as TenantStatus;
+    const newStatus = requestedStatus as TenantStatus;
+    // Check if status is changing to LIVE
+    if (tenant.status !== TenantStatus.LIVE && newStatus === TenantStatus.LIVE) {
+      statusChangedToLive = true;
+    }
+    tenantData.status = newStatus;
     tenantData.statusUpdatedAt = new Date();
   }
   if (body.statusNotes !== undefined) tenantData.statusNotes = body.statusNotes || null;
@@ -523,6 +559,11 @@ export async function PATCH(req: Request) {
 
   if (!updated) {
     return NextResponse.json({ error: 'Failed to load updated tenant' }, { status: 500 });
+  }
+
+  // If status changed to LIVE, approve any pending referrals
+  if (statusChangedToLive) {
+    await approveReferralOnTenantLive(tenantId);
   }
 
   return NextResponse.json({

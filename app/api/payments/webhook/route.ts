@@ -3,6 +3,7 @@ import Stripe from 'stripe';
 import { getStripeClient } from '../../../../lib/stripe';
 import prisma from '../../../../lib/prisma';
 import { createOrderFromPayload, type OrderPayload } from '../../../../lib/order-service';
+import { createSubscriptionCommission } from '../../../../lib/mlm/commission-automation';
 
 function isOrderPayload(v: any): v is OrderPayload {
   if (!v || typeof v !== 'object') return false;
@@ -192,7 +193,53 @@ export async function POST(req: Request) {
         },
       });
     }
-  } else if (!['payment_intent.succeeded', 'payment_intent.payment_failed'].includes(event.type)) {
+  }
+
+  // Handle subscription invoice payments for MLM commissions
+  if (event.type === 'invoice.payment_succeeded') {
+    const invoice = event.data.object as Stripe.Invoice;
+    console.log('✅ invoice.payment_succeeded received', invoice.id);
+
+    // Check if this is a subscription invoice
+    if ((invoice as any).subscription && invoice.customer) {
+      try {
+        // Find tenant by Stripe customer ID or account ID
+        const tenant = await prisma.tenant.findFirst({
+          where: {
+            OR: [
+              { integrations: { stripeAccountId: invoice.customer as string } },
+              // If using Stripe Customer objects, you'd need to store customer ID
+            ],
+          },
+          include: {
+            integrations: true,
+          },
+        });
+
+        if (tenant && invoice.amount_paid) {
+          const subscriptionAmount = invoice.amount_paid / 100; // Convert from cents
+          
+          // Create commission for associate referral
+          await createSubscriptionCommission(
+            tenant.id,
+            subscriptionAmount,
+            `Monthly subscription commission for ${tenant.name}`
+          );
+
+          console.log('[mlm] Commission created for subscription payment', {
+            tenantId: tenant.id,
+            tenantName: tenant.name,
+            amount: subscriptionAmount,
+          });
+        }
+      } catch (error) {
+        console.error('[mlm] Error creating subscription commission:', error);
+        // Don't fail webhook if commission creation fails
+      }
+    }
+  }
+
+  if (!['payment_intent.succeeded', 'payment_intent.payment_failed', 'invoice.payment_succeeded'].includes(event.type)) {
     console.log('[stripe] Unhandled webhook event', event.type);
   }
 

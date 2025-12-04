@@ -35,6 +35,7 @@ interface OnboardingForm {
   timeZone: string;
   stripeAccountId: string;
   seedDemo: boolean;
+  referralCode?: string; // MLM referral code
 }
 
 interface Props {
@@ -73,6 +74,7 @@ export default function OnboardingWizard({ templates, rootDomain, onCreateTenant
     timeZone: 'America/Los_Angeles',
     stripeAccountId: '',
     seedDemo: true,
+    referralCode: '',
   });
 
   const handleTemplateSelect = (template: BusinessTemplate) => {
@@ -455,6 +457,22 @@ export default function OnboardingWizard({ templates, rootDomain, onCreateTenant
               />
             </div>
             <div className="md:col-span-2">
+              <label className="block text-sm font-medium text-gray-700">
+                Referral Code (optional)
+                <span className="ml-2 text-xs text-gray-500">MLM associate referral code</span>
+              </label>
+              <input
+                type="text"
+                value={form.referralCode || ''}
+                onChange={(e) => handleChange('referralCode', e.target.value)}
+                className="mt-1 w-full rounded-lg border border-gray-300 px-4 py-2"
+                placeholder="Enter associate referral code"
+              />
+              <p className="mt-1 text-xs text-gray-500">
+                If this tenant was referred by an associate, enter their referral code here to track commissions.
+              </p>
+            </div>
+            <div className="md:col-span-2">
               <label className="flex items-center gap-2">
                 <input
                   type="checkbox"
@@ -494,6 +512,12 @@ export default function OnboardingWizard({ templates, rootDomain, onCreateTenant
                 <h3 className="font-semibold text-gray-900">Contact Email</h3>
                 <p className="text-gray-600">{form.contactEmail || 'Not set'}</p>
               </div>
+              {form.referralCode && (
+                <div>
+                  <h3 className="font-semibold text-gray-900">Referral Code</h3>
+                  <p className="text-gray-600">{form.referralCode}</p>
+                </div>
+              )}
               <div>
                 <h3 className="font-semibold text-gray-900">Colors</h3>
                 <div className="mt-2 flex gap-2">

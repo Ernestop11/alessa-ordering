@@ -630,6 +630,7 @@ export default function SuperAdminDashboard({ initialTenants, initialMetrics, ro
         minimumOrderValue: form.seedDemo ? Number(form.minimumOrderValue) || 0 : undefined,
         currency: form.currency,
         timeZone: form.timeZone,
+        referralCode: form.referralCode || undefined,
       };
       const res = await fetch('/api/super/tenants', {
         method: 'POST',

@@ -1906,51 +1906,78 @@ export default function OrderPageClient({
         </button>
       </div>
 
-      {/* Hero Section - Macy's Holiday Red Style with Glowing Edges */}
-      <section className="relative overflow-hidden">
-        {/* Macy's Holiday Red Background with Glowing Edges */}
-        <div className="absolute inset-0 bg-gradient-to-br from-[#8B0000] via-[#B22222] to-[#8B0000]" />
+      {/* Hero Section - Macy's Holiday Red Style with INTENSE Sparkles & Decorations */}
+      <section className="relative overflow-hidden min-h-[500px] md:min-h-[600px]">
+        {/* Rich Holiday Red Background */}
+        <div className="absolute inset-0 bg-gradient-to-br from-[#8B0000] via-[#B22222] to-[#6B0F0F]" />
 
-        {/* LED Glow Effects on Edges - Holiday Style */}
+        {/* Animated Fire/Glow Texture Overlay */}
+        <div className="absolute inset-0 opacity-30" style={{
+          backgroundImage: `url("data:image/svg+xml,%3Csvg viewBox='0 0 400 400' xmlns='http://www.w3.org/2000/svg'%3E%3Cfilter id='noiseFilter'%3E%3CfeTurbulence type='fractalNoise' baseFrequency='0.9' numOctaves='3' stitchTiles='stitch'/%3E%3C/filter%3E%3Crect width='100%25' height='100%25' filter='url(%23noiseFilter)'/%3E%3C/svg%3E")`,
+          mixBlendMode: 'overlay'
+        }} />
+
+        {/* LED Glow Effects - More Intense */}
         <div className="absolute inset-0 pointer-events-none">
-          {/* Top edge glow */}
-          <div className="absolute top-0 left-0 right-0 h-32 bg-gradient-to-b from-[#FF1744]/40 via-[#FF1744]/20 to-transparent blur-sm" />
-          {/* Bottom edge glow */}
-          <div className="absolute bottom-0 left-0 right-0 h-32 bg-gradient-to-t from-[#FF1744]/40 via-[#FF1744]/20 to-transparent blur-sm" />
-          {/* Left edge glow */}
-          <div className="absolute top-0 bottom-0 left-0 w-32 bg-gradient-to-r from-[#FF1744]/40 via-[#FF1744]/20 to-transparent blur-sm" />
-          {/* Right edge glow */}
-          <div className="absolute top-0 bottom-0 right-0 w-32 bg-gradient-to-l from-[#FF1744]/40 via-[#FF1744]/20 to-transparent blur-sm" />
+          {/* Radial glow from center */}
+          <div className="absolute top-1/2 left-1/2 -translate-x-1/2 -translate-y-1/2 w-[150%] h-[150%] bg-[radial-gradient(ellipse_at_center,rgba(255,215,0,0.15)_0%,transparent_50%)]" />
 
-          {/* Corner sparkle effects */}
-          <div className="absolute top-4 left-4 w-24 h-24 bg-[#FFD700]/30 rounded-full blur-2xl animate-pulse" style={{ animationDuration: '2s' }} />
-          <div className="absolute top-4 right-4 w-20 h-20 bg-[#FFD700]/25 rounded-full blur-2xl animate-pulse" style={{ animationDuration: '3s', animationDelay: '0.5s' }} />
-          <div className="absolute bottom-4 left-4 w-16 h-16 bg-[#FFD700]/20 rounded-full blur-2xl animate-pulse" style={{ animationDuration: '2.5s', animationDelay: '1s' }} />
-          <div className="absolute bottom-4 right-4 w-20 h-20 bg-[#FFD700]/25 rounded-full blur-2xl animate-pulse" style={{ animationDuration: '3.5s', animationDelay: '1.5s' }} />
+          {/* Edge glows - Stronger */}
+          <div className="absolute top-0 left-0 right-0 h-40 bg-gradient-to-b from-[#FF4444]/50 via-[#FF1744]/30 to-transparent" />
+          <div className="absolute bottom-0 left-0 right-0 h-40 bg-gradient-to-t from-[#FF4444]/50 via-[#FF1744]/30 to-transparent" />
+          <div className="absolute top-0 bottom-0 left-0 w-40 bg-gradient-to-r from-[#FF4444]/50 via-[#FF1744]/30 to-transparent" />
+          <div className="absolute top-0 bottom-0 right-0 w-40 bg-gradient-to-l from-[#FF4444]/50 via-[#FF1744]/30 to-transparent" />
 
-          {/* Subtle sparkle texture */}
-          <div className="absolute inset-0 opacity-10" style={{
-            backgroundImage: 'radial-gradient(circle at 20% 30%, #FFD700 1px, transparent 1px), radial-gradient(circle at 80% 70%, #FFD700 1px, transparent 1px), radial-gradient(circle at 50% 50%, #FFD700 1px, transparent 1px)',
-            backgroundSize: '100px 100px'
-          }} />
+          {/* Floating Sparkle Stars - Scattered */}
+          {[...Array(20)].map((_, i) => (
+            <div
+              key={`sparkle-${i}`}
+              className="absolute w-1 h-1 bg-[#FFD700] rounded-full animate-pulse"
+              style={{
+                left: `${Math.random() * 100}%`,
+                top: `${Math.random() * 100}%`,
+                animationDuration: `${1 + Math.random() * 2}s`,
+                animationDelay: `${Math.random() * 2}s`,
+                boxShadow: '0 0 6px 2px rgba(255,215,0,0.8)',
+              }}
+            />
+          ))}
+
+          {/* Large Corner Sparkle Bursts */}
+          <div className="absolute top-8 left-8 w-32 h-32 bg-[#FFD700]/40 rounded-full blur-3xl animate-pulse" style={{ animationDuration: '2s' }} />
+          <div className="absolute top-12 right-12 w-24 h-24 bg-[#FFD700]/35 rounded-full blur-2xl animate-pulse" style={{ animationDuration: '2.5s', animationDelay: '0.5s' }} />
+          <div className="absolute bottom-16 left-16 w-20 h-20 bg-[#FFD700]/30 rounded-full blur-2xl animate-pulse" style={{ animationDuration: '3s', animationDelay: '1s' }} />
+          <div className="absolute bottom-8 right-8 w-28 h-28 bg-[#FFD700]/40 rounded-full blur-3xl animate-pulse" style={{ animationDuration: '2.2s', animationDelay: '1.5s' }} />
+
+          {/* Star burst decorations */}
+          <div className="absolute top-20 left-[20%] text-4xl animate-bounce" style={{ animationDuration: '3s' }}>✨</div>
+          <div className="absolute top-32 right-[15%] text-3xl animate-bounce" style={{ animationDuration: '2.5s', animationDelay: '0.5s' }}>⭐</div>
+          <div className="absolute bottom-24 left-[10%] text-2xl animate-bounce" style={{ animationDuration: '2.8s', animationDelay: '1s' }}>✨</div>
+          <div className="absolute bottom-32 right-[25%] text-3xl animate-bounce" style={{ animationDuration: '3.2s', animationDelay: '0.3s' }}>🌟</div>
+
+          {/* Diagonal light rays */}
+          <div className="absolute top-0 left-1/4 w-1 h-full bg-gradient-to-b from-[#FFD700]/20 via-transparent to-transparent transform -skew-x-12" />
+          <div className="absolute top-0 right-1/3 w-0.5 h-full bg-gradient-to-b from-[#FFD700]/15 via-transparent to-transparent transform skew-x-12" />
         </div>
 
         {/* Content */}
-        <div className="relative z-10 mx-auto max-w-7xl px-4 py-12 md:py-16">
+        <div className="relative z-10 mx-auto max-w-7xl px-4 py-12 md:py-20">
           <div className="grid md:grid-cols-2 gap-8 items-center">
             {/* Left side - Text Content */}
             <div className="flex flex-col justify-center text-center md:text-left">
-              <div className="inline-flex items-center gap-2 mb-4 justify-center md:justify-start">
-                <span className="px-4 py-1.5 rounded-full bg-[#FFD700] text-[#8B0000] text-xs font-black uppercase tracking-wide shadow-lg">
-                  ✨ Holiday Special
+              {/* Animated badge */}
+              <div className="inline-flex items-center gap-2 mb-6 justify-center md:justify-start">
+                <span className="relative px-5 py-2 rounded-full bg-gradient-to-r from-[#FFD700] to-[#FFA500] text-[#8B0000] text-xs font-black uppercase tracking-wide shadow-xl overflow-hidden">
+                  <span className="relative z-10">✨ Holiday Special ✨</span>
+                  <div className="absolute inset-0 bg-gradient-to-r from-transparent via-white/30 to-transparent animate-shimmer" style={{ animationDuration: '2s' }} />
                 </span>
               </div>
 
-              <h2 className="text-4xl md:text-5xl lg:text-6xl font-black text-white mb-4 leading-tight drop-shadow-lg">
+              <h2 className="text-5xl md:text-6xl lg:text-7xl font-black text-white mb-6 leading-[0.9] drop-shadow-[0_4px_20px_rgba(0,0,0,0.5)]">
                 {personality.heroTitle}
               </h2>
 
-              <p className="text-lg md:text-xl text-white/90 mb-8 leading-relaxed max-w-lg mx-auto md:mx-0">
+              <p className="text-lg md:text-xl text-white/90 mb-8 leading-relaxed max-w-lg mx-auto md:mx-0 drop-shadow-lg">
                 {tenant.heroSubtitle || tenant.tagline || 'Authentic flavors crafted with passion'}
               </p>
 
@@ -1968,59 +1995,74 @@ export default function OrderPageClient({
                       }
                     }
                   }}
-                  className="group inline-flex items-center gap-2 rounded-full bg-[#FFD700] px-8 py-4 text-base font-black text-[#8B0000] shadow-xl shadow-[#FFD700]/30 hover:shadow-[#FFD700]/50 transition-all hover:scale-105"
+                  className="group relative inline-flex items-center gap-3 rounded-full bg-gradient-to-r from-[#FFD700] to-[#FFA500] px-10 py-5 text-lg font-black text-[#8B0000] shadow-2xl shadow-[#FFD700]/40 hover:shadow-[#FFD700]/60 transition-all hover:scale-105 overflow-hidden"
                 >
-                  ORDER NOW
-                  <svg className="w-5 h-5 group-hover:translate-x-1 transition-transform" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                  <span className="relative z-10">ORDER NOW</span>
+                  <svg className="w-6 h-6 group-hover:translate-x-1 transition-transform relative z-10" fill="none" viewBox="0 0 24 24" stroke="currentColor">
                     <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M13 7l5 5m0 0l-5 5m5-5H6" />
                   </svg>
+                  <div className="absolute inset-0 bg-gradient-to-r from-transparent via-white/40 to-transparent -translate-x-full group-hover:translate-x-full transition-transform duration-700" />
                 </button>
                 <button
                   onClick={() => {
                     const menuEl = document.getElementById('menu');
                     if (menuEl) menuEl.scrollIntoView({ behavior: 'smooth' });
                   }}
-                  className="inline-flex items-center gap-2 rounded-full border-2 border-white/50 bg-white/10 backdrop-blur-sm px-8 py-4 text-base font-bold text-white hover:bg-white/20 hover:border-white transition-all"
+                  className="inline-flex items-center gap-2 rounded-full border-2 border-white/60 bg-white/10 backdrop-blur-md px-10 py-5 text-lg font-bold text-white hover:bg-white/25 hover:border-white transition-all"
                 >
                   VIEW MENU
                 </button>
               </div>
             </div>
 
-            {/* Right side - Featured Image with Holiday Glow */}
+            {/* Right side - Featured Image with Intense Holiday Glow */}
             <div className="relative flex items-center justify-center">
-              <div className="relative w-full max-w-sm mx-auto">
-                {/* Glowing ring effect */}
-                <div className="absolute inset-0 rounded-full bg-gradient-to-br from-[#FFD700]/50 to-[#FF6B6B]/50 blur-3xl scale-110 animate-pulse" style={{ animationDuration: '3s' }} />
-                <div className="absolute inset-0 rounded-full border-4 border-[#FFD700]/30 scale-110" />
+              <div className="relative w-full max-w-md mx-auto">
+                {/* Multiple glowing rings */}
+                <div className="absolute inset-0 rounded-full bg-gradient-to-br from-[#FFD700]/60 to-[#FF6B6B]/40 blur-[80px] scale-125 animate-pulse" style={{ animationDuration: '2s' }} />
+                <div className="absolute inset-0 rounded-full bg-[radial-gradient(circle,rgba(255,215,0,0.3)_0%,transparent_70%)] scale-150" />
+                <div className="absolute inset-[-20px] rounded-full border-2 border-[#FFD700]/40 animate-spin" style={{ animationDuration: '20s' }} />
+                <div className="absolute inset-[-10px] rounded-full border border-[#FFD700]/20 animate-spin" style={{ animationDuration: '15s', animationDirection: 'reverse' }} />
 
-                {/* Food image */}
-                <div className="relative aspect-square rounded-3xl overflow-hidden border-4 border-white/20 shadow-2xl bg-[#2a2a2a]">
+                {/* Food image - Larger */}
+                <div className="relative aspect-square rounded-[40px] overflow-hidden border-4 border-[#FFD700]/50 shadow-[0_0_60px_rgba(255,215,0,0.3)] bg-[#2a2a2a]">
                   {carouselItems[0]?.displayImage ? (
                     <Image
                       src={carouselItems[0].displayImage}
                       alt="Featured dish"
                       fill
                       className="object-cover"
-                      sizes="(max-width: 768px) 100vw, 400px"
+                      sizes="(max-width: 768px) 100vw, 450px"
                     />
                   ) : (
-                    <div className="flex items-center justify-center h-full text-6xl">🍽️</div>
+                    <div className="flex items-center justify-center h-full text-8xl">🍽️</div>
                   )}
                   {/* Overlay gradient */}
-                  <div className="absolute inset-0 bg-gradient-to-t from-[#8B0000]/40 to-transparent" />
+                  <div className="absolute inset-0 bg-gradient-to-t from-[#8B0000]/60 via-transparent to-transparent" />
+
+                  {/* Hot badge */}
+                  <div className="absolute top-4 right-4 px-4 py-2 rounded-full bg-[#FF4444] text-white text-sm font-black shadow-lg animate-pulse">
+                    🔥 HOT
+                  </div>
                 </div>
 
-                {/* Price badge */}
+                {/* Price badge - More prominent */}
                 {carouselItems[0]?.price && (
-                  <div className="absolute -bottom-4 left-1/2 -translate-x-1/2 px-6 py-2 rounded-full bg-[#FFD700] text-[#8B0000] font-black text-lg shadow-xl">
+                  <div className="absolute -bottom-6 left-1/2 -translate-x-1/2 px-8 py-3 rounded-2xl bg-gradient-to-r from-[#FFD700] to-[#FFA500] text-[#8B0000] font-black text-xl shadow-2xl shadow-[#FFD700]/40">
                     From ${carouselItems[0].price.toFixed(2)}
                   </div>
                 )}
+
+                {/* Floating food emojis */}
+                <div className="absolute -top-4 -left-4 text-4xl animate-bounce" style={{ animationDuration: '2s' }}>🌮</div>
+                <div className="absolute -bottom-2 -right-4 text-3xl animate-bounce" style={{ animationDuration: '2.5s', animationDelay: '0.5s' }}>🌯</div>
               </div>
             </div>
           </div>
         </div>
+
+        {/* Bottom curved edge */}
+        <div className="absolute bottom-0 left-0 right-0 h-16 bg-[#0d0d0d]" style={{ clipPath: 'ellipse(60% 100% at 50% 100%)' }} />
       </section>
 
       {/* Quick Info Bar */}
@@ -2121,39 +2163,214 @@ export default function OrderPageClient({
           />
         )}
 
-        {/* Removed hardcoded sections - only show database sections now */}
+        {/* Menu Sections with Promotional Banners Between */}
+        {enrichedSections.map((section, sectionIndex) => (
+          <div key={section.id}>
+            {/* Promotional Billboard Banner - After first section */}
+            {sectionIndex === 1 && (
+              <div className="mb-10 relative overflow-hidden rounded-3xl bg-gradient-to-r from-[#8B0000] via-[#B22222] to-[#6B0F0F] p-1">
+                <div className="relative overflow-hidden rounded-[22px] bg-gradient-to-br from-[#1a0a0a] to-[#2a1515] p-6 md:p-8">
+                  {/* Texture overlay */}
+                  <div className="absolute inset-0 opacity-20" style={{
+                    backgroundImage: `url("data:image/svg+xml,%3Csvg viewBox='0 0 400 400' xmlns='http://www.w3.org/2000/svg'%3E%3Cfilter id='noiseFilter'%3E%3CfeTurbulence type='fractalNoise' baseFrequency='0.9' numOctaves='3' stitchTiles='stitch'/%3E%3C/filter%3E%3Crect width='100%25' height='100%25' filter='url(%23noiseFilter)'/%3E%3C/svg%3E")`,
+                  }} />
 
-        {enrichedSections.map((section) => (
-          <section
-            key={section.id}
-            id={`section-${section.id}`}
-            ref={(el) => {
-              sectionRefs.current[section.id] = el;
-            }}
-            className="scroll-mt-32 mb-10"
-          >
-            {/* Clean Section Header */}
-            <header className="mb-6">
-              <div className="flex items-center gap-3 mb-2">
-                <span className="text-2xl">{SECTION_ICONS[section.type] || '🍽️'}</span>
-                <div className="flex items-center gap-3">
-                  <h2 className="text-2xl font-bold text-white">{section.name}</h2>
-                  <span className="text-sm text-white/40">
-                    {section.items.length} {section.items.length === 1 ? 'item' : 'items'}
-                  </span>
+                  {/* Sparkle decorations */}
+                  <div className="absolute top-4 left-4 text-2xl animate-pulse">✨</div>
+                  <div className="absolute top-6 right-8 text-xl animate-pulse" style={{ animationDelay: '0.5s' }}>⭐</div>
+                  <div className="absolute bottom-4 right-4 text-2xl animate-pulse" style={{ animationDelay: '1s' }}>✨</div>
+
+                  <div className="relative grid md:grid-cols-2 gap-6 items-center">
+                    <div>
+                      <span className="inline-block px-4 py-1.5 rounded-full bg-[#FFD700]/20 text-[#FFD700] text-xs font-bold uppercase tracking-wider mb-4">
+                        🔥 Best Value
+                      </span>
+                      <h3 className="text-3xl md:text-4xl font-black text-white mb-3">
+                        Family Fiesta Bundle
+                      </h3>
+                      <p className="text-white/70 mb-4">
+                        Feed the whole crew! Get 12 tacos, rice, beans, chips & salsa for one amazing price.
+                      </p>
+                      <div className="flex items-center gap-4">
+                        <span className="text-4xl font-black text-[#FFD700]">$39.99</span>
+                        <span className="text-lg text-white/50 line-through">$52.00</span>
+                        <span className="px-3 py-1 rounded-full bg-[#FF4444] text-white text-sm font-bold">
+                          Save $12!
+                        </span>
+                      </div>
+                      <button
+                        onClick={() => setShowCateringPanel(true)}
+                        className="mt-6 inline-flex items-center gap-2 px-8 py-4 rounded-full bg-gradient-to-r from-[#FFD700] to-[#FFA500] text-[#8B0000] font-black text-lg shadow-xl hover:scale-105 transition-transform"
+                      >
+                        Order Bundle
+                        <svg className="w-5 h-5" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                          <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M13 7l5 5m0 0l-5 5m5-5H6" />
+                        </svg>
+                      </button>
+                    </div>
+                    <div className="relative h-48 md:h-64 rounded-2xl overflow-hidden">
+                      <div className="absolute inset-0 bg-gradient-to-br from-[#C41E3A]/20 to-transparent" />
+                      <div className="flex items-center justify-center h-full text-8xl">
+                        🌮🌯🫔
+                      </div>
+                      {/* Glow effect */}
+                      <div className="absolute inset-0 bg-[radial-gradient(circle_at_center,rgba(255,215,0,0.2)_0%,transparent_70%)]" />
+                    </div>
+                  </div>
                 </div>
               </div>
-              {section.description && (
-                <p className="text-sm text-white/50 pl-10">{section.description}</p>
-              )}
-            </header>
-            <MenuSectionGrid
-              section={section}
-              layout={activeLayout}
-              onAddToCart={handleAddToCart}
-              onCustomize={openCustomization}
-            />
-          </section>
+            )}
+
+            {/* "WE WOK FOR YOU" Style Banner - After third section */}
+            {sectionIndex === 3 && (
+              <div className="mb-10 relative overflow-hidden rounded-3xl">
+                <div className="relative bg-gradient-to-r from-[#1a1a1a] via-[#2a2a2a] to-[#1a1a1a] p-8 md:p-12">
+                  {/* Flame/Wok inspired background pattern */}
+                  <div className="absolute inset-0 opacity-30">
+                    <div className="absolute bottom-0 left-0 right-0 h-32 bg-gradient-to-t from-[#FF4444]/40 via-[#FF6B00]/20 to-transparent" />
+                    <div className="absolute bottom-0 left-1/4 w-1/2 h-48 bg-[radial-gradient(ellipse_at_bottom,rgba(255,100,0,0.3)_0%,transparent_70%)]" />
+                  </div>
+
+                  {/* Animated flames */}
+                  <div className="absolute bottom-2 left-1/3 text-4xl animate-bounce" style={{ animationDuration: '1.5s' }}>🔥</div>
+                  <div className="absolute bottom-4 left-1/2 text-3xl animate-bounce" style={{ animationDuration: '1.2s', animationDelay: '0.3s' }}>🔥</div>
+                  <div className="absolute bottom-2 right-1/3 text-4xl animate-bounce" style={{ animationDuration: '1.4s', animationDelay: '0.6s' }}>🔥</div>
+
+                  <div className="relative text-center">
+                    <h3 className="text-4xl md:text-6xl font-black text-white mb-4 tracking-tight">
+                      WE <span className="text-[#FF6B00]">COOK</span> FOR YOU
+                    </h3>
+                    <p className="text-xl text-white/70 mb-6 max-w-2xl mx-auto">
+                      Fresh ingredients, authentic recipes, made with passion every single day
+                    </p>
+                    <div className="flex flex-wrap justify-center gap-6 text-white/60">
+                      <div className="flex items-center gap-2">
+                        <span className="text-2xl">🌶️</span>
+                        <span className="font-medium">Fresh Daily</span>
+                      </div>
+                      <div className="flex items-center gap-2">
+                        <span className="text-2xl">👨‍🍳</span>
+                        <span className="font-medium">Family Recipes</span>
+                      </div>
+                      <div className="flex items-center gap-2">
+                        <span className="text-2xl">❤️</span>
+                        <span className="font-medium">Made with Love</span>
+                      </div>
+                    </div>
+                  </div>
+                </div>
+              </div>
+            )}
+
+            {/* Quick Deal Strip - After 5th section */}
+            {sectionIndex === 5 && (
+              <div className="mb-10 relative overflow-hidden rounded-2xl bg-gradient-to-r from-[#FFD700] via-[#FFA500] to-[#FFD700] p-0.5">
+                <div className="bg-[#1a1a1a] rounded-[14px] px-6 py-4">
+                  <div className="flex flex-wrap items-center justify-between gap-4">
+                    <div className="flex items-center gap-4">
+                      <span className="text-3xl animate-bounce">🎉</span>
+                      <div>
+                        <p className="text-[#FFD700] font-black text-lg">LUNCH SPECIAL</p>
+                        <p className="text-white/60 text-sm">Any 2 tacos + drink for $8.99</p>
+                      </div>
+                    </div>
+                    <div className="flex items-center gap-3">
+                      <span className="text-white/40 text-sm">11am - 3pm Daily</span>
+                      <button
+                        onClick={() => {
+                          const firstSection = enrichedSections.find(s => s.name.toLowerCase().includes('taco'));
+                          if (firstSection) {
+                            const element = document.getElementById(`section-${firstSection.id}`);
+                            element?.scrollIntoView({ behavior: 'smooth' });
+                          }
+                        }}
+                        className="px-6 py-2.5 rounded-full bg-[#FFD700] text-[#8B0000] font-bold hover:bg-white transition-colors"
+                      >
+                        Get Deal
+                      </button>
+                    </div>
+                  </div>
+                </div>
+              </div>
+            )}
+
+            <section
+              id={`section-${section.id}`}
+              ref={(el) => {
+                sectionRefs.current[section.id] = el;
+              }}
+              className="scroll-mt-32 mb-10"
+            >
+              {/* Section Header with varied styles based on index */}
+              <header className="mb-6">
+                {sectionIndex % 4 === 0 ? (
+                  // Style 1: Classic with underline accent
+                  <div className="relative pb-4">
+                    <div className="flex items-center gap-3 mb-2">
+                      <span className="text-3xl">{SECTION_ICONS[section.type] || '🍽️'}</span>
+                      <h2 className="text-3xl font-black text-white">{section.name}</h2>
+                    </div>
+                    {section.description && (
+                      <p className="text-base text-white/60 ml-12">{section.description}</p>
+                    )}
+                    <div className="absolute bottom-0 left-0 w-24 h-1 rounded-full bg-gradient-to-r from-[#C41E3A] to-[#FF6B6B]" />
+                  </div>
+                ) : sectionIndex % 4 === 1 ? (
+                  // Style 2: Centered with badge
+                  <div className="text-center mb-8">
+                    <span className="inline-block text-4xl mb-2">{SECTION_ICONS[section.type] || '🍽️'}</span>
+                    <h2 className="text-3xl font-black text-white mb-2">{section.name}</h2>
+                    {section.description && (
+                      <p className="text-base text-white/50 max-w-lg mx-auto">{section.description}</p>
+                    )}
+                    <div className="mt-3 flex justify-center gap-1">
+                      {[...Array(3)].map((_, i) => (
+                        <div key={i} className="w-2 h-2 rounded-full bg-[#C41E3A]/60" />
+                      ))}
+                    </div>
+                  </div>
+                ) : sectionIndex % 4 === 2 ? (
+                  // Style 3: Card style with background
+                  <div className="bg-white/[0.03] rounded-2xl p-4 mb-4 border border-white/[0.08]">
+                    <div className="flex items-center gap-4">
+                      <div className="w-14 h-14 rounded-xl bg-gradient-to-br from-[#C41E3A] to-[#FF6B6B] flex items-center justify-center text-2xl shadow-lg">
+                        {SECTION_ICONS[section.type] || '🍽️'}
+                      </div>
+                      <div>
+                        <h2 className="text-2xl font-bold text-white">{section.name}</h2>
+                        {section.description && (
+                          <p className="text-sm text-white/50">{section.description}</p>
+                        )}
+                      </div>
+                      <span className="ml-auto text-sm text-white/40 bg-white/5 px-3 py-1 rounded-full">
+                        {section.items.length} items
+                      </span>
+                    </div>
+                  </div>
+                ) : (
+                  // Style 4: Minimal with side accent
+                  <div className="flex items-stretch gap-4 mb-4">
+                    <div className="w-1 rounded-full bg-gradient-to-b from-[#FFD700] to-[#C41E3A]" />
+                    <div>
+                      <div className="flex items-center gap-2">
+                        <span className="text-2xl">{SECTION_ICONS[section.type] || '🍽️'}</span>
+                        <h2 className="text-2xl font-bold text-white">{section.name}</h2>
+                      </div>
+                      {section.description && (
+                        <p className="text-sm text-white/50 mt-1">{section.description}</p>
+                      )}
+                    </div>
+                  </div>
+                )}
+              </header>
+              <MenuSectionGrid
+                section={section}
+                layout={activeLayout}
+                onAddToCart={handleAddToCart}
+                onCustomize={openCustomization}
+              />
+            </section>
+          </div>
         ))}
       </main>
 
