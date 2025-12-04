@@ -141,6 +141,17 @@ export default function PolishedOrderPage({
   const [notification, setNotification] = useState('');
   const sectionRefs = useRef<Record<string, HTMLElement | null>>({});
 
+  // Modal states
+  const [showCateringPanel, setShowCateringPanel] = useState(false);
+  const [showMembershipPanel, setShowMembershipPanel] = useState(false);
+  const [showJoinModal, setShowJoinModal] = useState(false);
+  const [accessibilityOpen, setAccessibilityOpen] = useState(false);
+  const [accessibilityState, setAccessibilityState] = useState({
+    highContrast: false,
+    largeText: false,
+    reducedMotion: false,
+  });
+
   // Intersection observer for section tracking
   useEffect(() => {
     const observer = new IntersectionObserver(
@@ -258,6 +269,17 @@ export default function PolishedOrderPage({
 
   const cateringEnabled = tenant.featureFlags?.includes('catering') ?? false;
 
+  // Modal handlers
+  const handleOpenCatering = useCallback(() => setShowCateringPanel(true), []);
+  const handleOpenRewards = useCallback(() => {
+    if (customerRewardsData) {
+      setShowMembershipPanel(true);
+    } else {
+      setShowJoinModal(true);
+    }
+  }, [customerRewardsData]);
+  const handleToggleAccessibility = useCallback(() => setAccessibilityOpen(prev => !prev), []);
+
   return (
     <div className="min-h-screen bg-gradient-to-b from-neutral-950 via-neutral-900 to-neutral-950 text-white">
       {/* Closed Banner */}
@@ -281,11 +303,11 @@ export default function PolishedOrderPage({
         onLayoutChange={setActiveLayout}
         cartItemCount={cartItemCount}
         onCartClick={handleCartClick}
-        onCateringClick={onOpenCatering}
-        onRewardsClick={onOpenRewards}
-        onAccessibilityClick={onOpenAccessibility}
+        onCateringClick={handleOpenCatering}
+        onRewardsClick={handleOpenRewards}
+        onAccessibilityClick={handleToggleAccessibility}
         cateringEnabled={cateringEnabled}
-        isAccessibilityOpen={isAccessibilityOpen}
+        isAccessibilityOpen={accessibilityOpen}
         hasCustomerData={!!customerRewardsData}
       />
 
@@ -409,12 +431,120 @@ export default function PolishedOrderPage({
       <MobileBottomBar
         cartItemCount={cartItemCount}
         onCartClick={handleCartClick}
-        onCateringClick={onOpenCatering}
-        onRewardsClick={onOpenRewards}
-        onAccessibilityClick={onOpenAccessibility}
+        onCateringClick={handleOpenCatering}
+        onRewardsClick={handleOpenRewards}
+        onAccessibilityClick={handleToggleAccessibility}
         cateringEnabled={cateringEnabled}
-        isAccessibilityOpen={isAccessibilityOpen}
+        isAccessibilityOpen={accessibilityOpen}
       />
+
+      {/* Accessibility Panel */}
+      {accessibilityOpen && (
+        <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/60 backdrop-blur-sm p-4">
+          <div className="w-full max-w-md rounded-2xl bg-neutral-900 border border-white/10 p-6 shadow-2xl">
+            <div className="flex items-center justify-between mb-6">
+              <h3 className="text-lg font-semibold text-white">Accessibility Options</h3>
+              <button
+                onClick={() => setAccessibilityOpen(false)}
+                className="p-2 rounded-full hover:bg-white/10 text-white/60 hover:text-white transition"
+              >
+                ✕
+              </button>
+            </div>
+            <div className="space-y-4">
+              <label className="flex items-center justify-between py-3 border-b border-white/10">
+                <span className="text-white/80">High Contrast</span>
+                <input
+                  type="checkbox"
+                  checked={accessibilityState.highContrast}
+                  onChange={(e) => setAccessibilityState(s => ({ ...s, highContrast: e.target.checked }))}
+                  className="w-5 h-5 rounded accent-red-500"
+                />
+              </label>
+              <label className="flex items-center justify-between py-3 border-b border-white/10">
+                <span className="text-white/80">Large Text</span>
+                <input
+                  type="checkbox"
+                  checked={accessibilityState.largeText}
+                  onChange={(e) => setAccessibilityState(s => ({ ...s, largeText: e.target.checked }))}
+                  className="w-5 h-5 rounded accent-red-500"
+                />
+              </label>
+              <label className="flex items-center justify-between py-3">
+                <span className="text-white/80">Reduced Motion</span>
+                <input
+                  type="checkbox"
+                  checked={accessibilityState.reducedMotion}
+                  onChange={(e) => setAccessibilityState(s => ({ ...s, reducedMotion: e.target.checked }))}
+                  className="w-5 h-5 rounded accent-red-500"
+                />
+              </label>
+            </div>
+            <button
+              onClick={() => setAccessibilityOpen(false)}
+              className="mt-6 w-full py-3 rounded-xl bg-red-600 text-white font-semibold hover:bg-red-500 transition"
+            >
+              Done
+            </button>
+          </div>
+        </div>
+      )}
+
+      {/* Catering Panel */}
+      {showCateringPanel && (
+        <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/60 backdrop-blur-sm p-4">
+          <div className="w-full max-w-lg rounded-2xl bg-neutral-900 border border-white/10 p-6 shadow-2xl max-h-[90vh] overflow-y-auto">
+            <div className="flex items-center justify-between mb-6">
+              <div>
+                <h3 className="text-xl font-semibold text-white">Catering Services</h3>
+                <p className="text-sm text-white/50 mt-1">Full-service events, delivered with care</p>
+              </div>
+              <button
+                onClick={() => setShowCateringPanel(false)}
+                className="p-2 rounded-full hover:bg-white/10 text-white/60 hover:text-white transition"
+              >
+                ✕
+              </button>
+            </div>
+            <div className="space-y-4 text-white/70 text-sm">
+              <p>We offer catering for events of all sizes. Contact us to discuss your needs!</p>
+              <div className="p-4 rounded-xl bg-white/5 border border-white/10">
+                <p className="font-medium text-white mb-2">Get a Quote</p>
+                <p className="text-xs">Email: catering@{tenant.slug || 'restaurant'}.com</p>
+                <p className="text-xs">Or call us during business hours</p>
+              </div>
+            </div>
+            <button
+              onClick={() => setShowCateringPanel(false)}
+              className="mt-6 w-full py-3 rounded-xl bg-red-600 text-white font-semibold hover:bg-red-500 transition"
+            >
+              Close
+            </button>
+          </div>
+        </div>
+      )}
+
+      {/* Rewards Join Modal */}
+      {showJoinModal && (
+        <JoinRewardsModal
+          isOpen={showJoinModal}
+          onClose={() => setShowJoinModal(false)}
+          onSuccess={() => {
+            setShowJoinModal(false);
+            showNotification('Welcome to the rewards program!');
+          }}
+        />
+      )}
+
+      {/* Rewards Modal for existing members */}
+      {showMembershipPanel && customerRewardsData && (
+        <RewardsModal
+          isOpen={showMembershipPanel}
+          onClose={() => setShowMembershipPanel(false)}
+          customerData={customerRewardsData}
+          membershipProgram={rewardsData?.membershipProgram}
+        />
+      )}
     </div>
   );
 }

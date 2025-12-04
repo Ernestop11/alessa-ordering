@@ -1,7 +1,6 @@
 "use client";
 
 import Image from 'next/image';
-import { useState } from 'react';
 import { useTenantTheme } from '../TenantThemeProvider';
 import PolishedCategoryTabs from './PolishedCategoryTabs';
 
@@ -31,9 +30,9 @@ interface PolishedHeaderProps {
 }
 
 const LAYOUTS: Array<{ id: LayoutView; label: string; icon: string }> = [
-  { id: 'grid', label: 'Grid', icon: '▦' },
+  { id: 'grid', label: 'Grid', icon: '⊞' },
   { id: 'list', label: 'List', icon: '☰' },
-  { id: 'cards', label: 'Showcase', icon: '⬚' },
+  { id: 'cards', label: 'Cards', icon: '▢' },
 ];
 
 export default function PolishedHeader({
@@ -52,29 +51,58 @@ export default function PolishedHeader({
   hasCustomerData = false,
 }: PolishedHeaderProps) {
   const tenant = useTenantTheme();
-  const [isExpanded, setIsExpanded] = useState(false);
+
+  // Liquid glass button style
+  const glassButtonStyle = {
+    background: `linear-gradient(135deg,
+      rgba(255,255,255,0.08) 0%,
+      rgba(255,255,255,0.02) 50%,
+      rgba(255,255,255,0.05) 100%
+    )`,
+    backdropFilter: 'blur(20px) saturate(150%)',
+    WebkitBackdropFilter: 'blur(20px) saturate(150%)',
+    border: '1px solid rgba(255,255,255,0.1)',
+  };
+
+  const glassButtonActiveStyle = {
+    background: `linear-gradient(135deg,
+      rgba(255,255,255,0.15) 0%,
+      rgba(255,255,255,0.05) 50%,
+      rgba(255,255,255,0.1) 100%
+    )`,
+    backdropFilter: 'blur(20px) saturate(180%)',
+    WebkitBackdropFilter: 'blur(20px) saturate(180%)',
+    border: '1px solid rgba(255,255,255,0.2)',
+    boxShadow: '0 4px 16px rgba(0,0,0,0.2), inset 0 1px 0 rgba(255,255,255,0.2)',
+  };
 
   return (
-    <header className="sticky top-0 z-40 border-b border-white/[0.06] bg-black/95 backdrop-blur-xl">
+    <header className="sticky top-0 z-40 bg-neutral-900/80 backdrop-blur-2xl border-b border-white/[0.06]">
       <div className="mx-auto max-w-6xl px-4 md:px-6">
         {/* Main Header Row */}
-        <div className="flex items-center justify-between gap-3 py-3 md:py-4">
-          {/* Logo & Name - Compact on Mobile */}
+        <div className="flex items-center justify-between gap-4 py-3">
+          {/* Logo & Name */}
           <div className="flex items-center gap-3 min-w-0">
-            {/* Logo with Gradient Ring */}
+            {/* Logo with Solid Background Card */}
             <div className="relative flex-shrink-0">
-              <div className="absolute -inset-1 rounded-xl bg-gradient-to-br from-red-500/40 via-amber-500/30 to-yellow-500/40 blur-md opacity-70" />
-              <div className="relative rounded-xl border border-white/20 bg-black/60 p-0.5 overflow-hidden">
+              {/* Solid background container for logo visibility */}
+              <div
+                className="rounded-2xl p-1 shadow-xl"
+                style={{
+                  background: 'linear-gradient(145deg, rgba(255,255,255,0.95), rgba(240,240,240,0.9))',
+                  boxShadow: '0 8px 32px rgba(0,0,0,0.3), 0 2px 8px rgba(0,0,0,0.2)',
+                }}
+              >
                 {tenant.logoUrl ? (
                   <Image
                     src={tenant.logoUrl}
                     alt={tenant.name}
-                    width={44}
-                    height={44}
-                    className="h-11 w-11 rounded-lg object-cover"
+                    width={48}
+                    height={48}
+                    className="h-12 w-12 rounded-xl object-cover"
                   />
                 ) : (
-                  <div className="flex h-11 w-11 items-center justify-center rounded-lg bg-gradient-to-br from-red-600 to-amber-500 text-2xl">
+                  <div className="flex h-12 w-12 items-center justify-center rounded-xl bg-gradient-to-br from-red-600 to-amber-500 text-2xl">
                     🍽️
                   </div>
                 )}
@@ -82,20 +110,21 @@ export default function PolishedHeader({
             </div>
 
             {/* Name & Tagline */}
-            <div className="min-w-0">
-              <h1 className="font-bold text-white text-base md:text-lg truncate">{tenant.name}</h1>
+            <div className="min-w-0 hidden sm:block">
+              <h1 className="font-semibold text-white text-lg tracking-tight truncate">{tenant.name}</h1>
               {tenant.tagline && (
-                <p className="text-[10px] md:text-xs text-white/50 truncate hidden sm:block">{tenant.tagline}</p>
+                <p className="text-[11px] text-white/40 truncate">{tenant.tagline}</p>
               )}
             </div>
           </div>
 
-          {/* Desktop Action Buttons */}
-          <div className="hidden md:flex items-center gap-2">
+          {/* Feature Tabs - Desktop */}
+          <div className="hidden md:flex items-center gap-1.5">
             {cateringEnabled && onCateringClick && (
               <button
                 onClick={onCateringClick}
-                className="flex items-center gap-1.5 rounded-xl border border-white/10 bg-white/[0.03] px-3 py-2 text-xs font-medium text-white/80 transition-all hover:bg-white/[0.08] hover:border-white/20 hover:text-white"
+                style={glassButtonStyle}
+                className="flex items-center gap-2 rounded-full px-4 py-2 text-[13px] font-medium text-white/70 hover:text-white transition-all duration-300 hover:scale-[1.02]"
               >
                 <span>🎉</span>
                 <span>Catering</span>
@@ -105,10 +134,9 @@ export default function PolishedHeader({
             {onAccessibilityClick && (
               <button
                 onClick={onAccessibilityClick}
-                className={`flex items-center gap-1.5 rounded-xl border px-3 py-2 text-xs font-medium transition-all ${
-                  isAccessibilityOpen
-                    ? 'border-blue-400/40 bg-blue-500/20 text-blue-200'
-                    : 'border-white/10 bg-white/[0.03] text-white/80 hover:bg-white/[0.08] hover:border-white/20 hover:text-white'
+                style={isAccessibilityOpen ? glassButtonActiveStyle : glassButtonStyle}
+                className={`flex items-center gap-2 rounded-full px-4 py-2 text-[13px] font-medium transition-all duration-300 hover:scale-[1.02] ${
+                  isAccessibilityOpen ? 'text-white' : 'text-white/70 hover:text-white'
                 }`}
               >
                 <span>♿</span>
@@ -120,23 +148,31 @@ export default function PolishedHeader({
               <button
                 onClick={onRewardsClick}
                 style={{
-                  background: `linear-gradient(135deg, ${tenant.secondaryColor || '#f59e0b'}, ${tenant.primaryColor || '#dc2626'})`,
+                  background: 'linear-gradient(135deg, rgba(251,191,36,0.2) 0%, rgba(245,158,11,0.1) 100%)',
+                  backdropFilter: 'blur(20px)',
+                  WebkitBackdropFilter: 'blur(20px)',
+                  border: '1px solid rgba(251,191,36,0.3)',
                 }}
-                className="flex items-center gap-1.5 rounded-xl px-4 py-2 text-xs font-bold text-white shadow-lg transition-all hover:scale-105 hover:shadow-xl"
+                className="flex items-center gap-2 rounded-full px-4 py-2 text-[13px] font-medium text-amber-200 hover:text-amber-100 transition-all duration-300 hover:scale-[1.02]"
               >
                 <span>🎁</span>
-                <span>{hasCustomerData ? 'My Rewards' : 'Join'}</span>
+                <span>{hasCustomerData ? 'Rewards' : 'Join'}</span>
               </button>
             )}
 
+            {/* Cart Button */}
             <button
               onClick={onCartClick}
-              className="relative flex items-center gap-1.5 rounded-xl bg-gradient-to-r from-red-600 to-red-500 px-4 py-2 text-xs font-bold text-white shadow-lg shadow-red-600/20 transition-all hover:scale-105 hover:shadow-xl hover:shadow-red-600/30"
+              style={{
+                background: 'linear-gradient(135deg, rgba(220,38,38,0.9) 0%, rgba(185,28,28,0.9) 100%)',
+                boxShadow: '0 4px 20px rgba(220,38,38,0.3)',
+              }}
+              className="relative flex items-center gap-2 rounded-full px-5 py-2 text-[13px] font-semibold text-white transition-all duration-300 hover:scale-[1.02] hover:shadow-lg"
             >
               <span>🛒</span>
               <span>Cart</span>
               {cartItemCount > 0 && (
-                <span className="absolute -top-1.5 -right-1.5 flex h-5 w-5 items-center justify-center rounded-full bg-gradient-to-br from-yellow-400 to-amber-500 text-[10px] font-black text-black ring-2 ring-black">
+                <span className="absolute -top-1.5 -right-1 flex h-5 w-5 items-center justify-center rounded-full bg-amber-400 text-[10px] font-bold text-black shadow-lg">
                   {cartItemCount > 9 ? '9+' : cartItemCount}
                 </span>
               )}
@@ -146,11 +182,15 @@ export default function PolishedHeader({
           {/* Mobile Cart Button */}
           <button
             onClick={onCartClick}
-            className="md:hidden relative flex items-center justify-center w-10 h-10 rounded-xl bg-gradient-to-r from-red-600 to-red-500 text-white shadow-lg"
+            style={{
+              background: 'linear-gradient(135deg, rgba(220,38,38,0.9) 0%, rgba(185,28,28,0.9) 100%)',
+              boxShadow: '0 4px 16px rgba(220,38,38,0.3)',
+            }}
+            className="md:hidden relative flex items-center justify-center w-11 h-11 rounded-full text-white transition-all hover:scale-105"
           >
             <span className="text-lg">🛒</span>
             {cartItemCount > 0 && (
-              <span className="absolute -top-1 -right-1 flex h-4 w-4 items-center justify-center rounded-full bg-gradient-to-br from-yellow-400 to-amber-500 text-[9px] font-black text-black ring-1 ring-black">
+              <span className="absolute -top-1 -right-1 flex h-5 w-5 items-center justify-center rounded-full bg-amber-400 text-[10px] font-bold text-black shadow-lg">
                 {cartItemCount > 9 ? '9+' : cartItemCount}
               </span>
             )}
@@ -158,9 +198,9 @@ export default function PolishedHeader({
         </div>
 
         {/* Category Navigation Row */}
-        <div className="pb-3 md:pb-4">
-          <div className="flex items-center gap-2 md:gap-3">
-            {/* Categories - Flexible Width */}
+        <div className="pb-3">
+          <div className="flex items-center gap-3">
+            {/* Categories */}
             <div className="flex-1 min-w-0 overflow-hidden">
               <PolishedCategoryTabs
                 sections={sections}
@@ -169,16 +209,19 @@ export default function PolishedHeader({
               />
             </div>
 
-            {/* Layout Toggle - Desktop Only */}
-            <div className="hidden md:flex items-center gap-0.5 rounded-lg border border-white/10 bg-white/[0.02] p-1">
+            {/* Layout Toggle - Desktop */}
+            <div
+              className="hidden md:flex items-center gap-0.5 rounded-full p-1"
+              style={glassButtonStyle}
+            >
               {LAYOUTS.map((layout) => (
                 <button
                   key={layout.id}
                   onClick={() => onLayoutChange(layout.id)}
-                  className={`rounded-md px-2.5 py-1.5 text-xs font-medium transition-all duration-200 ${
+                  className={`rounded-full px-3 py-1.5 text-xs font-medium transition-all duration-200 ${
                     activeLayout === layout.id
-                      ? 'bg-gradient-to-r from-red-600 to-red-500 text-white shadow-sm'
-                      : 'text-white/50 hover:text-white hover:bg-white/[0.06]'
+                      ? 'bg-white/20 text-white'
+                      : 'text-white/50 hover:text-white/80'
                   }`}
                   title={layout.label}
                 >

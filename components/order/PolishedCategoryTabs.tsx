@@ -23,7 +23,7 @@ const DEFAULT_ICONS: Record<string, string> = {
   BAKERY: '🥐',
   GROCERY: '🛒',
   BEVERAGE: '🥤',
-  SPECIAL: '👨‍🍳',
+  SPECIAL: '⭐',
   OTHER: '🍽️',
 };
 
@@ -38,7 +38,6 @@ export default function PolishedCategoryTabs({
   const [showLeftGradient, setShowLeftGradient] = useState(false);
   const [showRightGradient, setShowRightGradient] = useState(false);
 
-  // Check scroll position to show/hide gradients
   const updateGradients = () => {
     const el = scrollRef.current;
     if (!el) return;
@@ -59,7 +58,6 @@ export default function PolishedCategoryTabs({
     };
   }, [sections]);
 
-  // Auto-scroll active tab into view
   useEffect(() => {
     const activeButton = document.querySelector(`[data-tab-id="${activeId}"]`) as HTMLElement;
     if (activeButton && scrollRef.current) {
@@ -69,7 +67,6 @@ export default function PolishedCategoryTabs({
       const containerWidth = container.clientWidth;
       const scrollLeft = container.scrollLeft;
 
-      // Check if button is outside visible area
       if (buttonLeft < scrollLeft + 40) {
         container.scrollTo({ left: buttonLeft - 40, behavior: 'smooth' });
       } else if (buttonLeft + buttonWidth > scrollLeft + containerWidth - 40) {
@@ -80,11 +77,9 @@ export default function PolishedCategoryTabs({
 
   const handleSelect = (sectionId: string) => {
     onSelect(sectionId);
-
-    // Smooth scroll to section
     const element = document.getElementById(`section-${sectionId}`);
     if (element) {
-      const headerHeight = 180;
+      const headerHeight = 160;
       const elementPosition = element.getBoundingClientRect().top + window.pageYOffset;
       window.scrollTo({
         top: elementPosition - headerHeight,
@@ -103,73 +98,87 @@ export default function PolishedCategoryTabs({
 
   return (
     <div className="relative">
-      {/* Left Fade Gradient */}
+      {/* Left Fade - Subtle */}
       <div
-        className={`absolute left-0 top-0 bottom-0 w-8 md:w-12 bg-gradient-to-r from-black/90 to-transparent z-10 pointer-events-none transition-opacity duration-200 ${
+        className={`absolute left-0 top-0 bottom-0 w-6 bg-gradient-to-r from-neutral-900 to-transparent z-10 pointer-events-none transition-opacity duration-300 ${
           showLeftGradient ? 'opacity-100' : 'opacity-0'
         }`}
       />
 
-      {/* Right Fade Gradient */}
+      {/* Right Fade - Subtle */}
       <div
-        className={`absolute right-0 top-0 bottom-0 w-8 md:w-12 bg-gradient-to-l from-black/90 to-transparent z-10 pointer-events-none transition-opacity duration-200 ${
+        className={`absolute right-0 top-0 bottom-0 w-6 bg-gradient-to-l from-neutral-900 to-transparent z-10 pointer-events-none transition-opacity duration-300 ${
           showRightGradient ? 'opacity-100' : 'opacity-0'
         }`}
       />
 
-      {/* Scrollable Container */}
+      {/* Apple-style Liquid Glass Container */}
       <div
         ref={scrollRef}
-        className="flex gap-1.5 md:gap-2 overflow-x-auto scrollbar-hide scroll-smooth px-1 py-1 -mx-1"
+        className="flex gap-2 overflow-x-auto scrollbar-hide scroll-smooth py-1"
         style={{ scrollbarWidth: 'none', msOverflowStyle: 'none' }}
       >
         {sections.map((section) => {
           const isActive = activeId === section.id;
           const icon = section.icon || sectionIcons[section.type || 'OTHER'] || '🍽️';
-          const itemCount = section.items?.length || 0;
 
           return (
             <button
               key={section.id}
               data-tab-id={section.id}
               onClick={() => handleSelect(section.id)}
-              style={
-                isActive
-                  ? {
-                      background: `linear-gradient(135deg, ${tenant.primaryColor || '#dc2626'}, ${tenant.secondaryColor || '#f59e0b'})`,
-                      boxShadow: `0 8px 24px -4px ${tenant.primaryColor || '#dc2626'}50`,
-                    }
-                  : undefined
-              }
-              className={`relative flex-shrink-0 flex items-center gap-1.5 md:gap-2 rounded-xl md:rounded-2xl px-3 md:px-4 py-2 md:py-2.5 text-xs md:text-sm font-semibold transition-all duration-300 ${
-                isActive
-                  ? 'text-white scale-[1.02]'
-                  : 'bg-white/[0.04] text-white/70 hover:bg-white/[0.08] hover:text-white border border-white/[0.06] hover:border-white/[0.12]'
-              }`}
+              className={`
+                relative flex-shrink-0 flex items-center gap-2
+                rounded-full px-4 py-2
+                text-[13px] font-medium tracking-wide
+                transition-all duration-300 ease-out
+                ${isActive
+                  ? 'text-white'
+                  : 'text-white/60 hover:text-white/90'
+                }
+              `}
             >
-              {/* Icon */}
-              <span className={`text-sm md:text-base transition-transform duration-200 ${isActive ? 'scale-110' : ''}`}>
-                {icon}
-              </span>
-
-              {/* Label */}
-              <span className="whitespace-nowrap">{section.name}</span>
-
-              {/* Item Count Badge - Hidden on mobile for cleaner look */}
-              {itemCount > 0 && (
-                <span className={`hidden md:inline-flex ml-0.5 text-[10px] font-semibold rounded-full px-1.5 py-0.5 transition-colors ${
-                  isActive
-                    ? 'bg-white/20 text-white'
-                    : 'bg-white/10 text-white/50'
-                }`}>
-                  {itemCount}
-                </span>
-              )}
-
-              {/* Active Indicator Line */}
+              {/* Liquid Glass Background - Active State */}
               {isActive && (
-                <span className="absolute -bottom-0.5 left-1/2 -translate-x-1/2 w-6 md:w-8 h-0.5 bg-white/60 rounded-full" />
+                <span
+                  className="absolute inset-0 rounded-full"
+                  style={{
+                    background: `linear-gradient(135deg,
+                      rgba(255,255,255,0.15) 0%,
+                      rgba(255,255,255,0.05) 50%,
+                      rgba(255,255,255,0.1) 100%
+                    )`,
+                    backdropFilter: 'blur(20px) saturate(180%)',
+                    WebkitBackdropFilter: 'blur(20px) saturate(180%)',
+                    border: '1px solid rgba(255,255,255,0.2)',
+                    boxShadow: `
+                      0 4px 16px rgba(0,0,0,0.2),
+                      inset 0 1px 0 rgba(255,255,255,0.2),
+                      inset 0 -1px 0 rgba(0,0,0,0.1)
+                    `,
+                  }}
+                />
               )}
+
+              {/* Hover Background - Inactive State */}
+              {!isActive && (
+                <span
+                  className="absolute inset-0 rounded-full opacity-0 hover:opacity-100 transition-opacity duration-300"
+                  style={{
+                    background: 'rgba(255,255,255,0.05)',
+                    backdropFilter: 'blur(10px)',
+                    WebkitBackdropFilter: 'blur(10px)',
+                  }}
+                />
+              )}
+
+              {/* Content */}
+              <span className="relative z-10 flex items-center gap-2">
+                <span className={`text-sm transition-transform duration-200 ${isActive ? 'scale-105' : ''}`}>
+                  {icon}
+                </span>
+                <span>{section.name}</span>
+              </span>
             </button>
           );
         })}
