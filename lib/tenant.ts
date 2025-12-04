@@ -150,7 +150,15 @@ export async function resolveTenant(options: TenantResolutionOptions = {}) {
     path: path || null,
   });
 
-  if (hostHeader) {
+  // Skip tenant resolution for root domain - should show landing page
+  if (hostHeader === ROOT_DOMAIN || hostHeader === `www.${ROOT_DOMAIN}`) {
+    throw new Error(
+      `Root domain accessed - should show landing page (host="${hostHeader}", path="${path || 'unknown'}")`,
+    );
+  }
+
+  // Only try to use hostname as slug if it's a valid slug format (no dots)
+  if (hostHeader && /^[a-z0-9-]+$/i.test(hostHeader)) {
     const tenantFromHost = await getTenantBySlug(hostHeader);
     if (tenantFromHost) {
       return tenantFromHost;

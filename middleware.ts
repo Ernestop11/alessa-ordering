@@ -18,17 +18,26 @@ function resolveCustomDomain(host?: string | null) {
 export async function middleware(req: NextRequest) {
   const url = req.nextUrl;
   const host = req.headers.get("host")?.toLowerCase();
+  const ROOT_DOMAIN = process.env.ROOT_DOMAIN || "alessacloud.com";
   let tenant = null;
 
   try {
+    // Skip tenant resolution for root domain (show landing page)
+    const hostname = host?.split(':')[0] || '';
+    if (hostname === ROOT_DOMAIN || hostname === `www.${ROOT_DOMAIN}`) {
+      const response = NextResponse.next();
+      // Don't set tenant header for root domain - let app/page.tsx handle it
+      return response;
+    }
+
     // 1. SUBDOMAIN OF ALESSACLOUD (lasreinas.alessacloud.com)
-    if (host?.endsWith("alessacloud.com")) {
-      const sub = host.replace(".alessacloud.com", "");
+    if (host?.endsWith(`.${ROOT_DOMAIN}`)) {
+      const sub = host.replace(`.${ROOT_DOMAIN}`, "");
       if (sub && sub !== "www") tenant = sub;
     }
 
     // 2. CUSTOM DOMAIN (lasreinascolusa.com)
-    if (!tenant && !host?.endsWith("alessacloud.com")) {
+    if (!tenant && !host?.endsWith(`.${ROOT_DOMAIN}`) && hostname !== ROOT_DOMAIN) {
       tenant = resolveCustomDomain(host);
     }
 
@@ -38,7 +47,7 @@ export async function middleware(req: NextRequest) {
       if (qp) tenant = qp.toLowerCase();
     }
 
-    // 4. DEFAULT TENANT
+    // 4. DEFAULT TENANT (only if we have a path that needs a tenant)
     if (!tenant) tenant = DEFAULT_TENANT;
 
     // Inject tenant via header (not query param to avoid rewrite loop)
