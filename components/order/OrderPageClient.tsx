@@ -1571,171 +1571,151 @@ export default function OrderPageClient({
   );
 
   return (
-    <div className="min-h-screen bg-gradient-to-br from-[#050A1C] via-[#0A1C2F] to-[#041326] text-white">
+    <div className="min-h-screen bg-neutral-950 text-white">
       {/* Closed State Banner */}
       {!isOpen && (
-        <div className="sticky top-0 z-50 bg-gradient-to-r from-red-600 via-red-700 to-red-600 text-white shadow-lg">
-          <div className="mx-auto max-w-6xl px-6 py-4 text-center">
-            <div className="flex items-center justify-center gap-3">
-              <span className="text-2xl">🚫</span>
-              <div>
-                <p className="font-semibold text-lg">{closedMessage || 'We are currently closed. Please check back during our operating hours.'}</p>
-              </div>
-            </div>
+        <div className="sticky top-0 z-50 bg-red-600 text-white">
+          <div className="mx-auto max-w-6xl px-4 py-3 text-center">
+            <p className="font-semibold text-sm flex items-center justify-center gap-2">
+              <span>🚫</span>
+              {closedMessage || 'We are currently closed'}
+            </p>
           </div>
         </div>
       )}
-      <header className="sticky top-0 z-40 border-b border-white/10 bg-gradient-to-b from-black/95 to-black/80 backdrop-blur-xl shadow-2xl">
-        <div className="mx-auto max-w-6xl px-6 py-4">
-          {/* Centered Branding Card with Gradient Background */}
-          <div className="mb-4 flex flex-col items-center text-center">
-            <div className="mb-3 relative">
-              {/* Enhanced Gradient Background with Glow */}
-              <div className="absolute inset-0 rounded-3xl bg-gradient-to-br from-red-600/50 via-amber-500/40 to-yellow-400/50 blur-2xl animate-pulse"></div>
-              <div className="absolute inset-0 rounded-3xl bg-gradient-to-br from-red-600/70 via-amber-500/60 to-yellow-400/70"></div>
-              
-              {/* Logo Container with Card Effect */}
-              <div className="relative rounded-3xl border-2 border-white/30 bg-white/5 p-2 shadow-2xl backdrop-blur-sm">
-                {tenant.logoUrl ? (
-                  <Image
-                    src={tenant.logoUrl}
-                    alt={`${tenant.name} logo`}
-                    width={100}
-                    height={100}
-                    className="relative h-24 w-24 rounded-2xl object-cover"
-                  />
-                ) : (
-                  <div className="relative flex h-24 w-24 items-center justify-center rounded-2xl bg-gradient-to-br from-red-600 to-amber-500 text-5xl">🍽️</div>
-                )}
+
+      {/* Modern App Header */}
+      <header className="sticky top-0 z-40 bg-neutral-950/95 backdrop-blur-lg border-b border-white/[0.06]">
+        <div className="mx-auto max-w-6xl px-4">
+          {/* Top Row - Logo & Actions */}
+          <div className="flex items-center justify-between py-3">
+            {/* Logo & Name */}
+            <div className="flex items-center gap-3">
+              <div className="relative">
+                <div className="rounded-xl bg-white p-1 shadow-lg">
+                  {tenant.logoUrl ? (
+                    <Image
+                      src={tenant.logoUrl}
+                      alt={`${tenant.name} logo`}
+                      width={44}
+                      height={44}
+                      className="h-11 w-11 rounded-lg object-cover"
+                    />
+                  ) : (
+                    <div className="flex h-11 w-11 items-center justify-center rounded-lg bg-gradient-to-br from-red-600 to-amber-500 text-2xl">🍽️</div>
+                  )}
+                </div>
+              </div>
+              <div className="hidden sm:block">
+                <h1 className="font-bold text-white text-lg leading-tight">{tenant.name}</h1>
+                {tenant.tagline && <p className="text-xs text-white/50">{tenant.tagline}</p>}
               </div>
             </div>
-            <h1 className="text-3xl font-black text-white drop-shadow-lg">{tenant.name}</h1>
-            {tenant.tagline && <p className="mt-1 text-sm text-white/70 font-medium">{tenant.tagline}</p>}
-          </div>
-          
-          {/* Action Bar - Better Positioning */}
-          <div className="mb-4 flex flex-wrap items-center justify-center gap-2">
-            {cateringEnabled && (
+
+            {/* Action Buttons */}
+            <div className="flex items-center gap-2">
+              {cateringEnabled && (
+                <button
+                  onClick={() => setShowCateringPanel(true)}
+                  className="hidden sm:flex items-center gap-1.5 rounded-full bg-white/[0.06] border border-white/[0.08] px-3 py-2 text-sm font-medium text-white/70 hover:bg-white/10 hover:text-white transition-all"
+                >
+                  <span>🎉</span>
+                  <span>Catering</span>
+                </button>
+              )}
               <button
-                onClick={() => setShowCateringPanel(true)}
-                className="group relative rounded-xl border border-white/20 bg-white/5 px-4 py-2.5 text-sm font-semibold text-white transition-all hover:border-red-500/50 hover:bg-red-500/20 hover:scale-105 hover:shadow-lg hover:shadow-red-500/20"
+                onClick={() => setAccessibilityOpen((prev) => !prev)}
+                className={`hidden sm:flex items-center gap-1.5 rounded-full border px-3 py-2 text-sm font-medium transition-all ${
+                  isAccessibilityOpen
+                    ? 'bg-blue-500/20 border-blue-500/30 text-blue-300'
+                    : 'bg-white/[0.06] border-white/[0.08] text-white/70 hover:bg-white/10 hover:text-white'
+                }`}
               >
-                <span className="mr-2">🎉</span>
-                <span>Catering</span>
-                {showCateringPanel && (
-                  <span className="absolute inset-0 rounded-xl bg-red-500/20 animate-pulse"></span>
+                <span>♿</span>
+                <span>ADA</span>
+              </button>
+              <button
+                onClick={() => {
+                  if (customerData) {
+                    setShowMembershipPanel(true);
+                  } else {
+                    setShowJoinModal(true);
+                  }
+                }}
+                className="flex items-center gap-1.5 rounded-full bg-amber-500/20 border border-amber-500/30 px-3 py-2 text-sm font-semibold text-amber-300 hover:bg-amber-500/30 transition-all"
+              >
+                <span>🎁</span>
+                <span className="hidden sm:inline">{customerData ? 'Rewards' : 'Join'}</span>
+              </button>
+              <button
+                onClick={() => {
+                  const cartButton = document.querySelector('[data-cart-launcher]') as HTMLElement;
+                  cartButton?.click();
+                }}
+                className="relative flex items-center gap-1.5 rounded-full bg-red-600 px-4 py-2 text-sm font-bold text-white hover:bg-red-500 transition-all"
+              >
+                <span>🛒</span>
+                <span className="hidden sm:inline">Cart</span>
+                {cartItemCount > 0 && (
+                  <span className="absolute -top-1 -right-1 flex h-5 w-5 items-center justify-center rounded-full bg-amber-400 text-[10px] font-bold text-black">
+                    {cartItemCount > 9 ? '9+' : cartItemCount}
+                  </span>
                 )}
               </button>
-            )}
-            <button
-              onClick={() => setAccessibilityOpen((prev) => !prev)}
-              className={`group relative rounded-xl border px-4 py-2.5 text-sm font-semibold transition-all hover:scale-105 hover:shadow-lg ${
-                isAccessibilityOpen
-                  ? 'border-blue-400/50 bg-blue-500/20 text-blue-200 shadow-blue-500/20'
-                  : 'border-white/20 bg-white/5 text-white hover:border-blue-400/50 hover:bg-blue-500/20'
-              }`}
-            >
-              <span className="mr-2">♿</span>
-              <span>ADA</span>
-            </button>
-            <button
-              onClick={() => {
-                if (customerData) {
-                  setShowMembershipPanel(true);
-                } else {
-                  setShowJoinModal(true);
-                }
-              }}
-              className="group relative overflow-hidden rounded-xl bg-gradient-to-r from-amber-400 via-yellow-400 to-amber-400 px-5 py-2.5 text-sm font-black text-black shadow-xl transition-all hover:scale-110 hover:shadow-2xl hover:shadow-amber-500/50"
-            >
-              <span className="relative z-10 flex items-center gap-2">
-                <span className="text-lg">🎁</span>
-                <span>Rewards</span>
-              </span>
-              <div className="absolute inset-0 bg-gradient-to-r from-transparent via-white/20 to-transparent -translate-x-full group-hover:translate-x-full transition-transform duration-700"></div>
-            </button>
-            <button
-              onClick={() => {
-                const cartButton = document.querySelector('[data-cart-launcher]') as HTMLElement;
-                cartButton?.click();
-              }}
-              className="group relative overflow-hidden rounded-xl bg-gradient-to-r from-red-600 to-red-500 px-5 py-2.5 text-sm font-black text-white shadow-xl transition-all hover:scale-110 hover:shadow-2xl hover:shadow-red-500/50"
-            >
-              <span className="relative z-10 flex items-center gap-2">
-                <span className="text-lg">🛒</span>
-                <span>Cart</span>
-              </span>
-              {cartItemCount > 0 && (
-                <span className="absolute -top-2 -right-2 z-20 flex h-7 w-7 items-center justify-center rounded-full bg-gradient-to-br from-yellow-400 to-amber-500 text-xs font-black text-black shadow-lg ring-2 ring-black/20 animate-bounce">
-                  {cartItemCount > 9 ? '9+' : cartItemCount}
-                </span>
-              )}
-              <div className="absolute inset-0 bg-gradient-to-r from-transparent via-white/20 to-transparent -translate-x-full group-hover:translate-x-full transition-transform duration-700"></div>
-            </button>
+            </div>
           </div>
-          
-          {/* Enhanced Category Navigation */}
-          <div className="flex items-center justify-between gap-4">
-            <nav className="flex flex-1 items-center gap-2 overflow-x-auto scrollbar-hide pb-2 scroll-smooth">
-              {navSections.map((section) => {
-                const isActive = activeSectionId === section.id;
-                return (
-                  <button
-                    key={section.id}
-                    onClick={() => {
-                      setActiveSectionId(section.id);
-                      const element = document.getElementById(`section-${section.id}`);
-                      if (element) {
-                        // Calculate offset for sticky header
-                        const headerHeight = 200; // Approximate header height
-                        const elementPosition = element.getBoundingClientRect().top + window.pageYOffset;
-                        const offsetPosition = elementPosition - headerHeight;
-                        
-                        window.scrollTo({
-                          top: offsetPosition,
-                          behavior: 'smooth'
-                        });
-                        
-                        // Scroll nav to show active button
-                        setTimeout(() => {
-                          const button = document.querySelector(`[data-section-button="${section.id}"]`) as HTMLElement;
-                          if (button) {
-                            button.scrollIntoView({ behavior: 'smooth', block: 'nearest', inline: 'center' });
-                          }
-                        }, 100);
-                      }
-                    }}
-                    data-section-button={section.id}
-                    className={`group flex-shrink-0 rounded-xl px-4 py-2.5 text-sm font-semibold transition-all duration-300 ${
-                      isActive 
-                        ? 'bg-gradient-to-r from-red-600 to-red-500 text-white shadow-xl shadow-red-600/50 scale-105' 
-                        : 'bg-white/5 text-white/70 hover:bg-white/10 hover:text-white hover:scale-105 hover:shadow-lg'
-                    }`}
-                  >
-                    <span className={`mr-2 text-base transition-transform ${isActive ? 'scale-125' : 'group-hover:scale-110'}`}>
-                      {SECTION_ICONS[section.type] || '🍽️'}
-                    </span>
-                    <span className="relative">
-                      {section.name}
-                      {isActive && (
-                        <span className="absolute -bottom-1 left-0 right-0 h-0.5 bg-white/50 rounded-full"></span>
-                      )}
-                    </span>
-                  </button>
-                );
-              })}
-            </nav>
-            
-            {/* View Toggles - Polished */}
-            <div className="flex items-center gap-1 rounded-xl border border-white/20 bg-white/5 p-1.5 backdrop-blur-sm">
+
+          {/* Category Navigation */}
+          <div className="pb-3 flex items-center gap-3">
+            {/* Categories - scrollable */}
+            <div className="flex-1 -mx-4 px-4 overflow-x-auto scrollbar-hide">
+              <nav className="flex items-center gap-1.5">
+                {navSections.map((section) => {
+                  const isActive = activeSectionId === section.id;
+                  return (
+                    <button
+                      key={section.id}
+                      onClick={() => {
+                        setActiveSectionId(section.id);
+                        const element = document.getElementById(`section-${section.id}`);
+                        if (element) {
+                          const headerHeight = 160;
+                          const elementPosition = element.getBoundingClientRect().top + window.pageYOffset;
+                          window.scrollTo({ top: elementPosition - headerHeight, behavior: 'smooth' });
+                        }
+                      }}
+                      data-section-button={section.id}
+                      className={`flex-shrink-0 flex items-center gap-2 rounded-full px-4 py-2 text-[13px] font-medium transition-all duration-300 ${
+                        isActive
+                          ? 'bg-white/15 text-white shadow-lg'
+                          : 'text-white/60 hover:text-white/90 hover:bg-white/5'
+                      }`}
+                      style={isActive ? {
+                        backdropFilter: 'blur(20px)',
+                        border: '1px solid rgba(255,255,255,0.2)',
+                        boxShadow: '0 4px 16px rgba(0,0,0,0.2), inset 0 1px 0 rgba(255,255,255,0.2)',
+                      } : {}}
+                    >
+                      <span className={`text-sm ${isActive ? 'scale-105' : ''}`}>
+                        {SECTION_ICONS[section.type] || '🍽️'}
+                      </span>
+                      <span>{section.name}</span>
+                    </button>
+                  );
+                })}
+              </nav>
+            </div>
+
+            {/* View Toggles - Desktop only */}
+            <div className="hidden md:flex items-center gap-0.5 rounded-full p-1 bg-white/5 border border-white/10">
               {LAYOUTS.map((layout) => (
                 <button
                   key={layout.id}
                   onClick={() => setActiveLayout(layout.id)}
-                  className={`rounded-lg px-3 py-2 text-xs font-semibold transition-all duration-200 ${
-                    activeLayout === layout.id 
-                      ? 'bg-gradient-to-r from-red-600 to-red-500 text-white shadow-lg scale-110' 
-                      : 'text-white/60 hover:text-white hover:bg-white/10 hover:scale-105'
+                  className={`rounded-full px-3 py-1.5 text-xs font-medium transition-all duration-200 ${
+                    activeLayout === layout.id
+                      ? 'bg-white/20 text-white'
+                      : 'text-white/50 hover:text-white/80'
                   }`}
                   title={layout.label}
                 >
@@ -1747,61 +1727,67 @@ export default function OrderPageClient({
         </div>
       </header>
 
-      <section className="relative flex min-h-[85vh] items-center justify-center overflow-hidden text-white">
-        {/* Red Gradient Background */}
-        <div className="absolute inset-0">
-          {/* Red Gradient Background for Las Reinas */}
-          <div
-            className="absolute inset-0 z-10 bg-gradient-to-br from-[#ff0000] via-[#cc0000] to-[#990000]"
-          />
-          {/* Subtle Pattern Overlay */}
-          <div className="absolute inset-0 z-20 bg-[radial-gradient(circle_at_50%_50%,rgba(255,255,255,0.05)_0%,transparent_50%)]" />
-          {/* Gradient Overlay for Depth */}
-          <div className="absolute inset-0 z-30 bg-gradient-to-t from-black/60 via-black/30 to-transparent" />
-        </div>
-        <div className="relative z-40 mx-auto max-w-5xl px-6 text-center">
-          <div className="mb-8 inline-flex items-center gap-2 rounded-full border border-white/20 bg-white/10 px-4 py-2 text-sm font-semibold text-white backdrop-blur-sm">
-            <span className="h-2 w-2 animate-pulse rounded-full bg-green-400"></span>
-            Order Now - Fast Delivery Available
+      {/* Modern Hero Section - Minimal & Clean */}
+      <section className="relative py-16 md:py-24 overflow-hidden">
+        {/* Subtle gradient background */}
+        <div className="absolute inset-0 bg-gradient-to-b from-neutral-900 via-neutral-950 to-neutral-950" />
+        <div className="absolute inset-0 bg-[radial-gradient(ellipse_at_top,rgba(220,38,38,0.15)_0%,transparent_50%)]" />
+
+        <div className="relative z-10 mx-auto max-w-5xl px-6">
+          {/* Status Badge */}
+          <div className="flex justify-center mb-6">
+            <div className="inline-flex items-center gap-2 rounded-full bg-white/5 border border-white/10 px-4 py-2 text-sm">
+              <span className="h-2 w-2 rounded-full bg-green-500 animate-pulse" />
+              <span className="text-white/70">Open for Orders</span>
+            </div>
           </div>
-          <h2 className="text-6xl font-black tracking-tight text-white sm:text-7xl md:text-8xl lg:text-9xl">
+
+          {/* Main Title */}
+          <h2 className="text-center text-5xl sm:text-6xl md:text-7xl font-black tracking-tight text-white mb-4">
             {personality.heroTitle}
           </h2>
-          <p className="mx-auto mt-8 max-w-2xl text-2xl leading-relaxed text-white/90 md:text-3xl">
+
+          {/* Tagline */}
+          <p className="text-center text-lg md:text-xl text-white/60 max-w-xl mx-auto mb-8">
             {tenant.heroSubtitle || tenant.tagline || 'Experience flavors that tell a story.'}
           </p>
-          <div className="mt-12 flex flex-wrap items-center justify-center gap-4">
+
+          {/* CTA Button */}
+          <div className="flex justify-center mb-10">
             <a
               href="#menu"
-              className="group relative overflow-hidden rounded-full bg-[#ff0000] px-10 py-5 text-lg font-bold text-white shadow-2xl shadow-[#ff0000]/40 transition-all hover:scale-105 hover:shadow-[#ff0000]/60"
+              className="inline-flex items-center gap-2 rounded-full bg-red-600 hover:bg-red-500 px-8 py-4 text-base font-bold text-white transition-all hover:scale-105 shadow-lg shadow-red-600/25"
             >
-              <span className="relative z-10">Explore Menu ✨</span>
-              <span className="absolute inset-0 bg-gradient-to-r from-yellow-400 via-amber-400 to-red-600 opacity-0 transition-opacity group-hover:opacity-100"></span>
+              <span>Start Order</span>
+              <svg className="w-5 h-5" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2}>
+                <path strokeLinecap="round" strokeLinejoin="round" d="M19 9l-7 7-7-7" />
+              </svg>
             </a>
           </div>
-          {/* Stats moved to bottom of hero - less prominent */}
-          <div className="mt-12 grid gap-3 rounded-2xl border border-white/10 bg-black/30 p-4 backdrop-blur-sm sm:grid-cols-2 md:grid-cols-4">
-            <div className="text-center text-sm text-white/70">
-              <p className="text-xl font-bold text-white">{personality.totalItems}</p>
-              <p className="text-xs">Menu Items</p>
+
+          {/* Quick Stats */}
+          <div className="flex flex-wrap justify-center gap-6 text-center">
+            <div className="px-4">
+              <p className="text-2xl font-bold text-white">{personality.totalItems}</p>
+              <p className="text-xs text-white/40 uppercase tracking-wide">Items</p>
             </div>
-            <div className="text-center text-sm text-white/70">
-              <p className="text-xl font-bold text-white">{personality.bestSeller}</p>
-              <p className="text-xs">Popular Today</p>
+            <div className="h-10 w-px bg-white/10 hidden sm:block" />
+            <div className="px-4">
+              <p className="text-2xl font-bold text-white">{hoursDisplay || hoursSummary || 'Open'}</p>
+              <p className="text-xs text-white/40 uppercase tracking-wide">Hours</p>
             </div>
-            <div className="text-center text-sm text-white/70">
-              <p className="text-xl font-bold text-white">{hoursDisplay || hoursSummary || 'Open'}</p>
-              <p className="text-xs">Hours</p>
-            </div>
-            <div className="text-center text-sm text-white/70">
-              <p className="text-xl font-bold text-white">{locationDisplay || locationSummary || 'Here'}</p>
-              <p className="text-xs">Location</p>
+            <div className="h-10 w-px bg-white/10 hidden sm:block" />
+            <div className="px-4">
+              <p className="text-2xl font-bold text-white">{locationDisplay || locationSummary || 'Local'}</p>
+              <p className="text-xs text-white/40 uppercase tracking-wide">Location</p>
             </div>
           </div>
+
+          {/* Branding Highlights */}
           {brandingHighlights.length > 0 && (
-            <div className="mt-6 flex flex-wrap items-center justify-center gap-2 text-xs uppercase tracking-wide text-white/60">
+            <div className="mt-8 flex flex-wrap justify-center gap-2">
               {brandingHighlights.map((highlight) => (
-                <span key={highlight} className="rounded-full border border-white/20 px-3 py-1">
+                <span key={highlight} className="rounded-full bg-white/5 border border-white/10 px-3 py-1 text-xs text-white/50 uppercase tracking-wide">
                   {highlight}
                 </span>
               ))}
@@ -1818,47 +1804,62 @@ export default function OrderPageClient({
         )}
 
 
-        {/* Mobile Sticky Bottom Bar */}
-        <div className="fixed bottom-0 left-0 right-0 z-50 flex items-center justify-around border-t border-white/10 bg-black/90 backdrop-blur-xl px-4 py-3 sm:hidden">
-          {cateringEnabled && (
+        {/* Mobile Sticky Bottom Bar - Modern Glass Style */}
+        <div className="fixed bottom-0 left-0 right-0 z-50 sm:hidden">
+          <div className="mx-3 mb-3 flex items-center justify-around rounded-2xl bg-neutral-900/95 backdrop-blur-xl border border-white/10 px-2 py-2">
+            {cateringEnabled && (
+              <button
+                onClick={() => setShowCateringPanel(true)}
+                className={`flex flex-col items-center gap-0.5 rounded-xl px-4 py-2 text-[11px] font-medium transition-all ${
+                  showCateringPanel
+                    ? 'bg-white/10 text-white'
+                    : 'text-white/60'
+                }`}
+              >
+                <span className="text-base">🎉</span>
+                <span>Catering</span>
+              </button>
+            )}
             <button
-              onClick={() => setShowCateringPanel(true)}
-              className={`flex flex-col items-center gap-1 rounded-lg px-3 py-2 text-xs font-semibold transition ${
-                showCateringPanel 
-                  ? 'text-[#ff0000]' 
-                  : 'text-white/70 hover:text-white'
+              onClick={() => setAccessibilityOpen((prev) => !prev)}
+              className={`flex flex-col items-center gap-0.5 rounded-xl px-4 py-2 text-[11px] font-medium transition-all ${
+                isAccessibilityOpen
+                  ? 'bg-white/10 text-white'
+                  : 'text-white/60'
               }`}
             >
-              <span className="text-lg">🎉</span>
-              <span>Catering</span>
+              <span className="text-base">♿</span>
+              <span>ADA</span>
             </button>
-          )}
-          <button
-            onClick={() => setAccessibilityOpen((prev) => !prev)}
-            className={`flex flex-col items-center gap-1 rounded-lg px-3 py-2 text-xs font-semibold transition ${
-              isAccessibilityOpen 
-                ? 'text-[#ff0000]' 
-                : 'text-white/70 hover:text-white'
-            }`}
-          >
-            <span className="text-lg">♿</span>
-            <span>ADA</span>
-          </button>
-          <button
-            onClick={() => {
-              const cartButton = document.querySelector('[data-cart-launcher]') as HTMLElement;
-              cartButton?.click();
-            }}
-            className="relative flex flex-col items-center gap-1 rounded-lg px-3 py-2 text-xs font-semibold text-white/70 hover:text-white transition"
-          >
-            <span className="text-lg">🛒</span>
-            <span>Cart</span>
-            {cartItemCount > 0 && (
-              <span className="absolute -top-1 -right-1 flex h-5 w-5 items-center justify-center rounded-full bg-[#ff0000] text-[10px] font-bold text-white">
-                {cartItemCount > 9 ? '9+' : cartItemCount}
-              </span>
-            )}
-          </button>
+            <button
+              onClick={() => {
+                if (customerData) {
+                  setShowMembershipPanel(true);
+                } else {
+                  setShowJoinModal(true);
+                }
+              }}
+              className="flex flex-col items-center gap-0.5 rounded-xl px-4 py-2 text-[11px] font-medium text-amber-400 transition-all"
+            >
+              <span className="text-base">🎁</span>
+              <span>{customerData ? 'Rewards' : 'Join'}</span>
+            </button>
+            <button
+              onClick={() => {
+                const cartButton = document.querySelector('[data-cart-launcher]') as HTMLElement;
+                cartButton?.click();
+              }}
+              className="relative flex flex-col items-center gap-0.5 rounded-xl bg-red-600 px-5 py-2 text-[11px] font-bold text-white transition-all"
+            >
+              <span className="text-base">🛒</span>
+              <span>Cart</span>
+              {cartItemCount > 0 && (
+                <span className="absolute -top-1.5 -right-1 flex h-5 w-5 items-center justify-center rounded-full bg-amber-400 text-[10px] font-bold text-black">
+                  {cartItemCount > 9 ? '9+' : cartItemCount}
+                </span>
+              )}
+            </button>
+          </div>
         </div>
         
         {/* Cart Launcher - Only rendered in root layout, header buttons trigger it */}
@@ -1872,60 +1873,38 @@ export default function OrderPageClient({
 
         {/* Removed hardcoded sections - only show database sections now */}
 
-        {enrichedSections.map((section) => {
-          const isBakery = section.type === 'BAKERY' || section.name.toLowerCase().includes('panad') || section.name.toLowerCase().includes('bakery');
-          return (
-            <section
-              key={section.id}
-              id={`section-${section.id}`}
-              ref={(el) => {
-                sectionRefs.current[section.id] = el;
-              }}
-              className={`scroll-mt-32 space-y-8 rounded-3xl p-8 transition-all mb-8 ${
-                isBakery
-                  ? 'bg-gradient-to-br from-amber-400/15 via-red-600/12 to-yellow-400/15 border-2 border-amber-400/30 shadow-2xl shadow-amber-500/20'
-                  : 'bg-white/5 border border-white/10'
-              }`}
-            >
-              <header className="flex flex-col gap-4 md:flex-row md:items-center md:justify-between">
-                <div>
-                  <p className={`text-xs uppercase tracking-[0.4em] mb-2 ${
-                    isBakery ? 'text-amber-300 font-bold' : 'text-white/50'
-                  }`}>
-                    {section.icon} {section.type}
-                  </p>
-                  <h2 className={`text-4xl font-black mb-2 ${
-                    isBakery 
-                      ? 'bg-gradient-to-r from-amber-300 via-red-400 to-yellow-300 bg-clip-text text-transparent drop-shadow-lg' 
-                      : 'text-white'
-                  }`}>
-                    {section.name}
-                  </h2>
-                  {section.description && (
-                    <p className={`mt-2 max-w-2xl text-base leading-relaxed ${
-                      isBakery ? 'text-amber-100 font-medium' : 'text-white/60'
-                    }`}>
-                      {section.description}
-                    </p>
-                  )}
+        {enrichedSections.map((section) => (
+          <section
+            key={section.id}
+            id={`section-${section.id}`}
+            ref={(el) => {
+              sectionRefs.current[section.id] = el;
+            }}
+            className="scroll-mt-32 mb-10"
+          >
+            {/* Clean Section Header */}
+            <header className="mb-6">
+              <div className="flex items-center gap-3 mb-2">
+                <span className="text-2xl">{SECTION_ICONS[section.type] || '🍽️'}</span>
+                <div className="flex items-center gap-3">
+                  <h2 className="text-2xl font-bold text-white">{section.name}</h2>
+                  <span className="text-sm text-white/40">
+                    {section.items.length} {section.items.length === 1 ? 'item' : 'items'}
+                  </span>
                 </div>
-                <span className={`rounded-full border-2 px-5 py-2.5 text-sm font-black shadow-lg ${
-                  isBakery
-                    ? 'border-amber-400/60 bg-gradient-to-r from-amber-400/30 to-yellow-400/30 text-amber-100 shadow-amber-500/30'
-                    : 'border-white/10 bg-white/5 text-white/70'
-                }`}>
-                  {section.items.length} item{section.items.length === 1 ? '' : 's'}
-                </span>
-              </header>
-              <MenuSectionGrid
-                section={section}
-                layout={activeLayout}
-                onAddToCart={handleAddToCart}
-                onCustomize={openCustomization}
-              />
-            </section>
-          );
-        })}
+              </div>
+              {section.description && (
+                <p className="text-sm text-white/50 pl-10">{section.description}</p>
+              )}
+            </header>
+            <MenuSectionGrid
+              section={section}
+              layout={activeLayout}
+              onAddToCart={handleAddToCart}
+              onCustomize={openCustomization}
+            />
+          </section>
+        ))}
       </main>
 
       {/* Catering Slide-In Panel */}

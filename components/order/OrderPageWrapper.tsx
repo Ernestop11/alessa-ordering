@@ -68,7 +68,7 @@ interface OrderPageWrapperProps {
 
 // UI Version Toggle - Set to 'polished' for new UI, 'classic' for original
 // Change this to 'classic' to instantly rollback to the original UI
-const UI_VERSION: 'polished' | 'classic' = 'polished';
+const UI_VERSION: 'polished' | 'classic' = 'classic';
 
 export default function OrderPageWrapper(props: OrderPageWrapperProps) {
   // Allow URL override for testing: ?ui=classic or ?ui=polished

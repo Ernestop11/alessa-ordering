@@ -1,0 +1,500 @@
+{
+  "metadata": {
+    "name": "Las Reinas Colusa Template",
+    "slug": "lasreinas",
+    "extractedAt": "2025-12-04T06:01:25.555Z",
+    "version": "1.0.0"
+  },
+  "tenant": {
+    "name": "Las Reinas Colusa",
+    "slug": "lasreinas",
+    "contactEmail": "info@lasreinascolusa.com",
+    "contactPhone": "",
+    "addressLine1": "",
+    "addressLine2": null,
+    "city": "Colusa",
+    "state": "CA",
+    "postalCode": "",
+    "country": "US",
+    "logoUrl": "https://images.unsplash.com/photo-1633984302429-68ba3e01eff6?auto=format&fit=crop&w=400&q=80",
+    "heroImageUrl": "/uploads/1762920830369-494f4d76-5a69-43be-aab7-e89e277ca12e.jpg",
+    "heroTitle": "Las Reinas Colusa",
+    "heroSubtitle": "Authentic Mexican cuisine",
+    "primaryColor": "#dc2626",
+    "secondaryColor": "#f59e0b",
+    "subscriptionPlan": "alessa-starter",
+    "subscriptionMonthlyFee": 30,
+    "subscriptionAddons": [
+      "ada-compliance"
+    ],
+    "featureFlags": [
+      "catering"
+    ]
+  },
+  "settings": {
+    "tagline": "Authentic Mexican flavors",
+    "about": "Family-owned restaurant serving traditional Mexican cuisine",
+    "socialInstagram": null,
+    "socialFacebook": null,
+    "socialTikTok": null,
+    "socialYouTube": null,
+    "deliveryRadiusMi": 5,
+    "minimumOrderValue": 15,
+    "currency": "USD",
+    "timeZone": "America/Los_Angeles",
+    "operatingHours": {
+      "timezone": "America/Los_Angeles",
+      "storeHours": {
+        "friday": {
+          "open": "09:00",
+          "close": "23:00",
+          "closed": false
+        },
+        "monday": {
+          "open": "09:00",
+          "close": "21:00",
+          "closed": false
+        },
+        "sunday": {
+          "open": "10:00",
+          "close": "21:00",
+          "closed": false
+        },
+        "tuesday": {
+          "open": "09:00",
+          "close": "21:00",
+          "closed": false
+        },
+        "saturday": {
+          "open": "09:00",
+          "close": "23:00",
+          "closed": false
+        },
+        "thursday": {
+          "open": "09:00",
+          "close": "22:00",
+          "closed": false
+        },
+        "wednesday": {
+          "open": "09:00",
+          "close": "21:00",
+          "closed": false
+        }
+      },
+      "serviceMode": {
+        "dineIn": true,
+        "pickup": true,
+        "delivery": true
+      }
+    },
+    "membershipProgram": null,
+    "upsellBundles": [],
+    "rewards": null,
+    "emailOffers": null,
+    "accessibilityDefaults": null,
+    "branding": {
+      "heroImages": []
+    },
+    "cateringTabConfig": null,
+    "cateringGallery": [],
+    "rewardsGallery": [],
+    "isOpen": true
+  },
+  "integrations": {
+    "platformPercentFee": 0.029,
+    "platformFlatFee": 0.3,
+    "defaultTaxRate": 0.0825,
+    "deliveryBaseFee": 4.99,
+    "taxProvider": "builtin",
+    "paymentProcessor": "stripe",
+    "autoAcceptOrders": false,
+    "autoPrintOrders": false,
+    "fulfillmentNotificationsEnabled": true
+  },
+  "menuSections": [
+    {
+      "name": "Carnitas y Más",
+      "description": "Plates from the taqueria line",
+      "type": "RESTAURANT",
+      "position": 0,
+      "hero": false,
+      "imageUrl": null,
+      "menuItems": [
+        {
+          "name": "Carnitas Plate",
+          "description": "Carnitas served with beans, rice, and handmade tortillas",
+          "price": 15.99,
+          "category": "plates",
+          "image": "/tenant/lasreinas/images/menu-items/platillos-plates.jpg",
+          "gallery": null,
+          "available": true,
+          "isFeatured": false,
+          "tags": [
+            "taqueria"
+          ],
+          "customizationRemovals": [],
+          "customizationAddons": null
+        },
+        {
+          "name": "Birria Tacos",
+          "description": "Crispy birria tacos served with consommé",
+          "price": 16.49,
+          "category": "tacos",
+          "image": "/tenant/lasreinas/images/menu-items/tacos.jpg",
+          "gallery": null,
+          "available": true,
+          "isFeatured": false,
+          "tags": [
+            "taqueria",
+            "special"
+          ],
+          "customizationRemovals": [],
+          "customizationAddons": null
+        }
+      ]
+    },
+    {
+      "name": "Carnicería Grocery",
+      "description": "Meats and grocery staples from the carnicería",
+      "type": "GROCERY",
+      "position": 1,
+      "hero": false,
+      "imageUrl": null,
+      "menuItems": [
+        {
+          "name": "Carne Asada (1 lb)",
+          "description": "Seasoned skirt steak ready for the grill",
+          "price": 11.99,
+          "category": "grocery",
+          "image": "/tenant/lasreinas/images/menu-items/meat-by-the-pound.jpg",
+          "gallery": null,
+          "available": true,
+          "isFeatured": false,
+          "tags": [
+            "grocery",
+            "butcher"
+          ],
+          "customizationRemovals": [],
+          "customizationAddons": null
+        },
+        {
+          "name": "Homemade Salsa Roja (16oz)",
+          "description": "House-made roja salsa perfect for tacos and chips",
+          "price": 6.5,
+          "category": "grocery",
+          "image": "/tenant/lasreinas/images/menu-items/sides.jpg",
+          "gallery": null,
+          "available": true,
+          "isFeatured": false,
+          "tags": [
+            "grocery",
+            "salsa"
+          ],
+          "customizationRemovals": [],
+          "customizationAddons": null
+        }
+      ]
+    }
+  ],
+  "cateringSections": [
+    {
+      "name": "Popular Catering Options",
+      "description": "Our most requested catering packages for any occasion",
+      "position": 0,
+      "cateringPackages": [
+        {
+          "name": "Taco Bar Catering",
+          "description": "Choice of 3 proteins, fresh toppings, salsas, tortillas. Perfect for events and parties.",
+          "pricePerGuest": 12,
+          "price": null,
+          "category": "popular",
+          "image": null,
+          "gallery": null,
+          "badge": null,
+          "customizationRemovals": [
+            "Onions",
+            "Cilantro",
+            "Spicy Salsa"
+          ],
+          "customizationAddons": [
+            {
+              "id": "guac",
+              "label": "Add Guacamole",
+              "price": 2
+            },
+            {
+              "id": "queso",
+              "label": "Add Queso",
+              "price": 1.5
+            },
+            {
+              "id": "churros",
+              "label": "Add Churros Dessert",
+              "price": 3
+            }
+          ],
+          "available": true,
+          "displayOrder": 0
+        },
+        {
+          "name": "Family Platters Catering",
+          "description": "Enchiladas, rice, beans, salad. Serves 10-15 people.",
+          "pricePerGuest": 0,
+          "price": 120,
+          "category": "popular",
+          "image": null,
+          "gallery": null,
+          "badge": null,
+          "customizationRemovals": [
+            "Lettuce",
+            "Tomatoes",
+            "Sour Cream"
+          ],
+          "customizationAddons": [
+            {
+              "id": "extra-rice",
+              "label": "Extra Rice & Beans",
+              "price": 15
+            },
+            {
+              "id": "flan",
+              "label": "Add Flan Dessert",
+              "price": 20
+            },
+            {
+              "id": "drinks",
+              "label": "Aguas Frescas (2 gal)",
+              "price": 25
+            }
+          ],
+          "available": true,
+          "displayOrder": 1
+        },
+        {
+          "name": "Breakfast Catering",
+          "description": "Breakfast burritos, chilaquiles, pan dulce. Start your event right!",
+          "pricePerGuest": 10,
+          "price": null,
+          "category": "popular",
+          "image": null,
+          "gallery": null,
+          "badge": null,
+          "customizationRemovals": [
+            "Eggs",
+            "Cheese",
+            "Beans"
+          ],
+          "customizationAddons": [
+            {
+              "id": "coffee",
+              "label": "Add Coffee Service",
+              "price": 2.5
+            },
+            {
+              "id": "juice",
+              "label": "Add Orange Juice",
+              "price": 1.5
+            },
+            {
+              "id": "fruit",
+              "label": "Fruit Platter",
+              "price": 3
+            }
+          ],
+          "available": true,
+          "displayOrder": 2
+        },
+        {
+          "name": "Dessert Packages",
+          "description": "Tres leches, churros, conchas. Sweet endings for your celebration.",
+          "pricePerGuest": 4,
+          "price": null,
+          "category": "popular",
+          "image": null,
+          "gallery": null,
+          "badge": null,
+          "customizationRemovals": [
+            "Whipped Cream",
+            "Chocolate Drizzle"
+          ],
+          "customizationAddons": [
+            {
+              "id": "ice-cream",
+              "label": "Add Ice Cream",
+              "price": 1.5
+            },
+            {
+              "id": "coffee-service",
+              "label": "Coffee & Tea Service",
+              "price": 2
+            },
+            {
+              "id": "champurrado",
+              "label": "Hot Champurrado",
+              "price": 1
+            }
+          ],
+          "available": true,
+          "displayOrder": 3
+        }
+      ]
+    },
+    {
+      "name": "Holiday & Event Bundles",
+      "description": "Special packages for celebrations and holidays",
+      "position": 1,
+      "cateringPackages": [
+        {
+          "name": "Thanksgiving Dinner Bundle",
+          "description": "Complete feast: Roasted turkey, mole, rice, beans, tortillas, salsa verde, dessert tray. Serves 8-10.",
+          "pricePerGuest": 0,
+          "price": 280,
+          "category": "holiday",
+          "image": null,
+          "gallery": null,
+          "badge": "Popular",
+          "customizationRemovals": [
+            "Mole Sauce",
+            "Cilantro",
+            "Turkey Gravy"
+          ],
+          "customizationAddons": [
+            {
+              "id": "extra-turkey",
+              "label": "Extra Turkey (5 lbs)",
+              "price": 40
+            },
+            {
+              "id": "cranberry",
+              "label": "Cranberry Sauce",
+              "price": 10
+            },
+            {
+              "id": "pumpkin-pie",
+              "label": "Pumpkin Pie",
+              "price": 25
+            },
+            {
+              "id": "wine",
+              "label": "Wine Pairing (2 bottles)",
+              "price": 50
+            }
+          ],
+          "available": true,
+          "displayOrder": 0
+        },
+        {
+          "name": "Christmas Fiesta Bundle",
+          "description": "Tamales (12), pozole (1 gallon), pan dulce assortment, champurrado. Serves 6-8.",
+          "pricePerGuest": 0,
+          "price": 180,
+          "category": "holiday",
+          "image": null,
+          "gallery": null,
+          "badge": null,
+          "customizationRemovals": [
+            "Pork Tamales",
+            "Spicy Pozole"
+          ],
+          "customizationAddons": [
+            {
+              "id": "extra-tamales",
+              "label": "Extra Tamales (6)",
+              "price": 25
+            },
+            {
+              "id": "buñuelos",
+              "label": "Add Buñuelos",
+              "price": 15
+            },
+            {
+              "id": "ponche",
+              "label": "Ponche Navideño (1 gal)",
+              "price": 20
+            }
+          ],
+          "available": true,
+          "displayOrder": 1
+        },
+        {
+          "name": "Birthday Party Bundle",
+          "description": "Taco bar for 15, chips & salsa, tres leches cake, aguas frescas (2 gallons). Party ready!",
+          "pricePerGuest": 0,
+          "price": 220,
+          "category": "holiday",
+          "image": null,
+          "gallery": null,
+          "badge": null,
+          "customizationRemovals": [
+            "Spicy Options",
+            "Dairy",
+            "Nuts"
+          ],
+          "customizationAddons": [
+            {
+              "id": "decorations",
+              "label": "Party Decorations",
+              "price": 30
+            },
+            {
+              "id": "extra-cake",
+              "label": "Extra Cake (serves 10)",
+              "price": 35
+            },
+            {
+              "id": "balloons",
+              "label": "Balloon Bouquet",
+              "price": 20
+            },
+            {
+              "id": "piñata",
+              "label": "Add Piñata",
+              "price": 25
+            }
+          ],
+          "available": true,
+          "displayOrder": 2
+        },
+        {
+          "name": "Office Lunch Bundle",
+          "description": "Burrito bar for 20, chips, guac, salsa, cookies. Individual packaging available.",
+          "pricePerGuest": 0,
+          "price": 240,
+          "category": "holiday",
+          "image": null,
+          "gallery": null,
+          "badge": null,
+          "customizationRemovals": [
+            "Gluten",
+            "Dairy",
+            "Meat"
+          ],
+          "customizationAddons": [
+            {
+              "id": "utensils",
+              "label": "Disposable Utensils & Plates",
+              "price": 15
+            },
+            {
+              "id": "individual-pack",
+              "label": "Individual Packaging",
+              "price": 25
+            },
+            {
+              "id": "beverages",
+              "label": "Soda & Water (20 ct)",
+              "price": 30
+            },
+            {
+              "id": "dessert-box",
+              "label": "Dessert Box (20 cookies)",
+              "price": 35
+            }
+          ],
+          "available": true,
+          "displayOrder": 3
+        }
+      ]
+    }
+  ]
+}

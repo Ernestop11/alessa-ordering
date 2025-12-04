@@ -10,41 +10,51 @@ interface MenuSectionGridProps {
   onCustomize: (item: OrderMenuItem & { displayImage: string }, sectionType: string) => void;
 }
 
+const SECTION_ICONS: Record<string, string> = {
+  RESTAURANT: '🌮',
+  BAKERY: '🥐',
+  BEVERAGE: '🥤',
+  GROCERY: '🛒',
+  SPECIAL: '⭐',
+  OTHER: '🍽️',
+};
+
 export default function MenuSectionGrid({
   section,
   layout,
   onAddToCart,
   onCustomize,
 }: MenuSectionGridProps) {
-  const gridClass = layout === 'grid' 
-    ? 'grid gap-6 sm:gap-8 sm:grid-cols-2 xl:grid-cols-3' 
+  const icon = SECTION_ICONS[section.type] || '🍽️';
+
+  const gridClass = layout === 'grid'
+    ? 'grid gap-4 sm:gap-5 grid-cols-1 sm:grid-cols-2 lg:grid-cols-3'
     : layout === 'list'
-    ? 'space-y-4'
-    : 'grid gap-6 sm:grid-cols-2';
+    ? 'flex flex-col gap-3'
+    : 'grid gap-4 sm:gap-5 grid-cols-1 sm:grid-cols-2';
 
   return (
-    <section 
+    <section
       id={`section-${section.id}`}
-      className="scroll-mt-32 space-y-8 rounded-3xl p-8 transition-all mb-8 bg-white/5 border border-white/10"
+      className="scroll-mt-32 mb-8"
     >
-      <header className="flex flex-col gap-4 md:flex-row md:items-center md:justify-between">
-        <div>
-          <p className="text-xs uppercase tracking-[0.4em] mb-2 text-white/50">
-            {section.type === 'RESTAURANT' ? '🌮' : 
-             section.type === 'BAKERY' ? '🥐' :
-             section.type === 'BEVERAGE' ? '🥤' :
-             section.type === 'GROCERY' ? '🛒' : '🍽️'} {section.type}
-          </p>
-          <h2 className="text-4xl font-black mb-2 text-white">{section.name}</h2>
-          {section.description && (
-            <p className="text-sm text-white/60 mt-2">{section.description}</p>
-          )}
+      {/* Section Header */}
+      <header className="mb-5">
+        <div className="flex items-center gap-3 mb-2">
+          <span className="text-2xl">{icon}</span>
+          <div className="flex items-center gap-3">
+            <h2 className="text-2xl font-bold text-white">{section.name}</h2>
+            <span className="text-sm text-white/40">
+              {section.items.length} {section.items.length === 1 ? 'item' : 'items'}
+            </span>
+          </div>
         </div>
-        <span className="rounded-full border-2 px-5 py-2.5 text-sm font-black shadow-lg border-white/10 bg-white/5 text-white/70">
-          {section.items.length} {section.items.length === 1 ? 'item' : 'items'}
-        </span>
+        {section.description && (
+          <p className="text-sm text-white/50 pl-10">{section.description}</p>
+        )}
       </header>
 
+      {/* Items Grid */}
       <div className={gridClass}>
         {section.items.map((item) => (
           <MenuItemCard
@@ -61,4 +71,3 @@ export default function MenuSectionGrid({
     </section>
   );
 }
-

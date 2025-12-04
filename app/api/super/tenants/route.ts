@@ -297,8 +297,78 @@ export async function POST(req: Request) {
     include: { integrations: true, settings: true },
   });
 
-  if (body.seedDemo) {
-    // Determine template based on template ID or default to taqueria
+  // Apply template if provided
+  if (body.templateFile) {
+    const fs = await import('fs');
+    const path = await import('path');
+    const templatePath = path.join(process.cwd(), 'templates', body.templateFile);
+    
+    if (fs.existsSync(templatePath)) {
+      const template = JSON.parse(fs.readFileSync(templatePath, 'utf-8'));
+      
+      // Create menu sections and items from template
+      for (const sectionTemplate of template.menuSections || []) {
+        const createdSection = await prisma.menuSection.create({
+          data: {
+            tenantId: tenant.id,
+            name: sectionTemplate.name,
+            description: sectionTemplate.description || null,
+            type: sectionTemplate.type,
+            position: sectionTemplate.position,
+            hero: sectionTemplate.hero || false,
+            imageUrl: sectionTemplate.imageUrl || null,
+            menuItems: {
+              create: (sectionTemplate.menuItems || []).map((item: any) => ({
+                tenantId: tenant.id,
+                name: item.name,
+                description: item.description,
+                price: item.price,
+                category: item.category,
+                image: item.image || null,
+                gallery: item.gallery || null,
+                available: item.available !== false,
+                isFeatured: item.isFeatured || false,
+                tags: item.tags || [],
+                customizationRemovals: item.customizationRemovals || [],
+                customizationAddons: item.customizationAddons || null,
+              })),
+            },
+          },
+        });
+      }
+
+      // Create catering sections and packages from template
+      for (const sectionTemplate of template.cateringSections || []) {
+        await prisma.cateringSection.create({
+          data: {
+            tenantId: tenant.id,
+            name: sectionTemplate.name,
+            description: sectionTemplate.description || null,
+            position: sectionTemplate.position,
+            imageUrl: sectionTemplate.imageUrl || null,
+            packages: {
+              create: (sectionTemplate.cateringPackages || []).map((pkg: any) => ({
+                tenantId: tenant.id,
+                name: pkg.name,
+                description: pkg.description,
+                pricePerGuest: pkg.pricePerGuest || null,
+                price: pkg.price || null,
+                category: pkg.category,
+                image: pkg.image || null,
+                gallery: pkg.gallery || null,
+                badge: pkg.badge || null,
+                customizationRemovals: pkg.customizationRemovals || [],
+                customizationAddons: pkg.customizationAddons || null,
+                available: pkg.available !== false,
+                displayOrder: pkg.displayOrder || 0,
+              })),
+            },
+          },
+        });
+      }
+    }
+  } else if (body.seedDemo) {
+    // Fallback to old template system
     const templateId = body.templateId || 'taqueria';
     const sections = TEMPLATE_SECTIONS[templateId] || TEMPLATE_SECTIONS.taqueria;
     

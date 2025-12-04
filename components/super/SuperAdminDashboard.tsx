@@ -224,6 +224,14 @@ interface BusinessTemplate {
 
 const BUSINESS_TEMPLATES: BusinessTemplate[] = [
   {
+    id: 'lasreinas',
+    name: 'Las Reinas (Full Template)',
+    icon: '👑',
+    description: 'Complete template with menu, catering, and all features from Las Reinas',
+    colors: { primary: '#dc2626', secondary: '#f59e0b' },
+    features: ['Full Menu', 'Catering', 'Rewards', 'Complete Setup'],
+  },
+  {
     id: 'taqueria',
     name: 'Taqueria',
     icon: '🌮',
@@ -586,6 +594,16 @@ export default function SuperAdminDashboard({ initialTenants, initialMetrics, ro
     setCreateError(null);
     setCreateMessage(null);
     try {
+      // Map template IDs to template files
+      const templateFileMap: Record<string, string> = {
+        'lasreinas': 'lasreinas-template.json',
+        // Add more template mappings here as needed
+      };
+      
+      const templateFile = form.template?.id && templateFileMap[form.template.id] 
+        ? templateFileMap[form.template.id] 
+        : undefined;
+
       const payload = {
         name: form.name,
         slug: form.slug,
@@ -604,8 +622,9 @@ export default function SuperAdminDashboard({ initialTenants, initialMetrics, ro
         logoUrl: form.logoUrl,
         heroImageUrl: form.heroImageUrl,
         stripeAccountId: form.stripeAccountId,
-        seedDemo: form.seedDemo,
+        seedDemo: form.seedDemo && !templateFile, // Only use seedDemo if no template file
         templateId: form.template?.id || 'taqueria',
+        templateFile: templateFile, // Pass template file if available
         deliveryRadiusMi: form.seedDemo ? Number(form.deliveryRadiusMi) || 5 : undefined,
         minimumOrderValue: form.seedDemo ? Number(form.minimumOrderValue) || 0 : undefined,
         currency: form.currency,

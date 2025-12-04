@@ -220,8 +220,57 @@ export default function LandingPage() {
             </div>
           </div>
 
+          {/* Login Sections */}
+          <div className="mt-32 grid gap-8 md:grid-cols-2">
+            {/* Restaurant Owner Login */}
+            <div className="group relative overflow-hidden rounded-3xl border-2 border-gray-200 bg-gradient-to-br from-white to-blue-50 p-10 shadow-xl transition-all hover:scale-105 hover:border-blue-300 hover:shadow-2xl">
+              <div className="mb-6 text-5xl transition-transform group-hover:scale-110">🍽️</div>
+              <h3 className="text-3xl font-bold text-gray-900">Restaurant Owner</h3>
+              <p className="mt-4 text-base leading-7 text-gray-600">
+                Manage your restaurant&apos;s menu, orders, and settings. Access your admin dashboard to track sales and fulfill orders.
+              </p>
+              <div className="mt-8">
+                <Link
+                  href="/owner/login"
+                  className="inline-flex items-center gap-2 rounded-full bg-gradient-to-r from-blue-600 to-indigo-600 px-8 py-3 text-base font-semibold text-white shadow-lg shadow-blue-500/30 transition hover:scale-105 hover:shadow-blue-500/50"
+                >
+                  Restaurant Login →
+                </Link>
+              </div>
+              <div className="mt-6 text-sm text-gray-500">
+                <p>Already have an account?</p>
+                <Link href="/admin/login" className="font-semibold text-blue-600 hover:text-blue-700">
+                  Sign in here
+                </Link>
+              </div>
+            </div>
+
+            {/* Associate Program */}
+            <div className="group relative overflow-hidden rounded-3xl border-2 border-gray-200 bg-gradient-to-br from-white to-purple-50 p-10 shadow-xl transition-all hover:scale-105 hover:border-purple-300 hover:shadow-2xl">
+              <div className="mb-6 text-5xl transition-transform group-hover:scale-110">👥</div>
+              <h3 className="text-3xl font-bold text-gray-900">Become an Associate</h3>
+              <p className="mt-4 text-base leading-7 text-gray-600">
+                Join our associate program and earn commissions by referring restaurants. Build your downline and grow your income.
+              </p>
+              <div className="mt-8">
+                <Link
+                  href="/associate/login"
+                  className="inline-flex items-center gap-2 rounded-full bg-gradient-to-r from-purple-600 to-pink-600 px-8 py-3 text-base font-semibold text-white shadow-lg shadow-purple-500/30 transition hover:scale-105 hover:shadow-purple-500/50"
+                >
+                  Associate Login →
+                </Link>
+              </div>
+              <div className="mt-6 text-sm text-gray-500">
+                <p>New to the program?</p>
+                <Link href="/associate/register" className="font-semibold text-purple-600 hover:text-purple-700">
+                  Join as Associate
+                </Link>
+              </div>
+            </div>
+          </div>
+
           {/* CTA Section */}
-          <div className="relative mt-32 overflow-hidden rounded-4xl bg-gradient-to-br from-blue-600 via-indigo-600 to-purple-600 px-8 py-24 sm:px-12 sm:py-32">
+          <div className="relative mt-16 overflow-hidden rounded-4xl bg-gradient-to-br from-blue-600 via-indigo-600 to-purple-600 px-8 py-24 sm:px-12 sm:py-32">
             <div className="absolute inset-0 bg-[url('data:image/svg+xml;base64,PHN2ZyB3aWR0aD0iNjAiIGhlaWdodD0iNjAiIHZpZXdCb3g9IjAgMCA2MCA2MCIgeG1sbnM9Imh0dHA6Ly93d3cudzMub3JnLzIwMDAvc3ZnIj48ZyBmaWxsPSJub25lIiBmaWxsLXJ1bGU9ImV2ZW5vZGQiPjxnIGZpbGw9IiNmZmYiIGZpbGwtb3BhY2l0eT0iMC4xIj48Y2lyY2xlIGN4PSIzMCIgY3k9IjMwIiByPSIyIi8+PC9nPjwvZz48L3N2Zz4=')] opacity-20"></div>
             <div className="relative mx-auto max-w-3xl text-center">
               <h2 className="text-5xl font-black tracking-tight text-white sm:text-6xl md:text-7xl">
@@ -240,20 +289,22 @@ export default function LandingPage() {
                     <span className="absolute inset-0 bg-gradient-to-r from-blue-50 to-indigo-50 opacity-0 transition-opacity group-hover:opacity-100"></span>
                   </Link>
                 ) : (
-                  <Link
-                    href="/admin/login"
-                    className="group relative overflow-hidden rounded-full bg-white px-10 py-5 text-lg font-bold text-blue-600 shadow-2xl transition-all hover:scale-105 hover:shadow-white/50"
-                  >
-                    <span className="relative z-10">Admin Login</span>
-                    <span className="absolute inset-0 bg-gradient-to-r from-blue-50 to-indigo-50 opacity-0 transition-opacity group-hover:opacity-100"></span>
-                  </Link>
+                  <>
+                    <Link
+                      href="/owner/login"
+                      className="group relative overflow-hidden rounded-full bg-white px-10 py-5 text-lg font-bold text-blue-600 shadow-2xl transition-all hover:scale-105 hover:shadow-white/50"
+                    >
+                      <span className="relative z-10">Restaurant Login</span>
+                      <span className="absolute inset-0 bg-gradient-to-r from-blue-50 to-indigo-50 opacity-0 transition-opacity group-hover:opacity-100"></span>
+                    </Link>
+                    <Link
+                      href="/super-admin"
+                      className="rounded-full border-2 border-white/50 bg-white/10 px-8 py-5 text-base font-bold text-white backdrop-blur-md transition-all hover:border-white hover:bg-white/20 hover:scale-105"
+                    >
+                      Super Admin →
+                    </Link>
+                  </>
                 )}
-                <Link
-                  href="/super-admin"
-                  className="rounded-full border-2 border-white/50 bg-white/10 px-8 py-5 text-base font-bold text-white backdrop-blur-md transition-all hover:border-white hover:bg-white/20 hover:scale-105"
-                >
-                  Learn More →
-                </Link>
               </div>
             </div>
           </div>
