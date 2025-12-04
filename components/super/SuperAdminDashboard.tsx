@@ -3,6 +3,7 @@
 import Link from 'next/link';
 import { useCallback, useEffect, useMemo, useState } from 'react';
 import OnboardingWizard from './OnboardingWizard';
+import MLMAdminPanel from '../mlm/MLMAdminPanel';
 
 type TenantLifecycleStatus =
   | 'PENDING_REVIEW'
@@ -211,7 +212,7 @@ const defaultCreateForm = {
 
 type CreateFormState = typeof defaultCreateForm;
 
-type SuperAdminTab = 'dashboard' | 'tenants' | 'onboarding' | 'templates';
+type SuperAdminTab = 'dashboard' | 'tenants' | 'onboarding' | 'templates' | 'mlm';
 
 interface BusinessTemplate {
   id: string;
@@ -901,6 +902,7 @@ export default function SuperAdminDashboard({ initialTenants, initialMetrics, ro
             { id: 'tenants' as SuperAdminTab, label: 'Tenants', icon: '👥' },
             { id: 'onboarding' as SuperAdminTab, label: 'Onboarding', icon: '✨' },
             { id: 'templates' as SuperAdminTab, label: 'Templates', icon: '🎨' },
+            { id: 'mlm' as SuperAdminTab, label: 'MLM', icon: '🌳' },
           ].map((tab) => (
             <button
               key={tab.id}
@@ -1538,6 +1540,8 @@ export default function SuperAdminDashboard({ initialTenants, initialMetrics, ro
             />
           </section>
         )}
+
+        {activeTab === 'mlm' && <MLMAdminPanel />}
 
         {activeTab === 'templates' && (
           <section className="space-y-6">

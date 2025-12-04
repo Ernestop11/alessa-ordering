@@ -5,6 +5,7 @@ import Link from 'next/link';
 
 export default function AssociateLoginPage() {
   const [error, setError] = useState('');
+  const [message, setMessage] = useState('');
   const [loading, setLoading] = useState(false);
   const [email, setEmail] = useState('');
   const [password, setPassword] = useState('');
@@ -13,13 +14,41 @@ export default function AssociateLoginPage() {
     e.preventDefault();
     setError('');
     setLoading(true);
+    setMessage('');
 
-    // TODO: Implement associate authentication
-    // For now, show a message that this feature is coming soon
-    setTimeout(() => {
-      setError('Associate program login is coming soon. Please check back later.');
+    const formData = new FormData(e.currentTarget);
+    const email = formData.get('email') as string;
+    const password = formData.get('password') as string;
+
+    try {
+      const res = await fetch('/api/mlm/auth/login', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ email, password }),
+      });
+
+      const data = await res.json();
+
+      if (!res.ok) {
+        setError(data.error || 'Login failed');
+        setLoading(false);
+        return;
+      }
+
+      if (data.success && data.associate) {
+        // Store associate data in sessionStorage (temporary until proper auth)
+        sessionStorage.setItem('associate', JSON.stringify(data.associate));
+        // Redirect to associate dashboard
+        window.location.href = '/associate';
+      } else {
+        setError('Login failed');
+      }
+    } catch (error: any) {
+      setError('An error occurred. Please try again.');
+      console.error('Login error:', error);
+    } finally {
       setLoading(false);
-    }, 1000);
+    }
   };
 
   return (
@@ -43,15 +72,6 @@ export default function AssociateLoginPage() {
         </div>
 
         <div className="rounded-2xl border border-gray-200 bg-white p-8 shadow-xl">
-          <div className="mb-6 rounded-lg bg-purple-50 border border-purple-200 p-4">
-            <p className="text-sm font-medium text-purple-800">
-              🚧 Associate Program Coming Soon
-            </p>
-            <p className="mt-2 text-xs text-purple-700">
-              The MLM associate program is currently under development. Check back soon to start earning commissions!
-            </p>
-          </div>
-
           <form className="space-y-6" onSubmit={handleSubmit}>
             <div>
               <label htmlFor="email" className="block text-sm font-medium text-gray-700 mb-2">
@@ -65,8 +85,7 @@ export default function AssociateLoginPage() {
                 required
                 value={email}
                 onChange={(e) => setEmail(e.target.value)}
-                disabled
-                className="w-full rounded-lg border border-gray-300 px-4 py-3 text-gray-500 bg-gray-100 cursor-not-allowed"
+                className="w-full rounded-lg border border-gray-300 px-4 py-3 text-gray-900 placeholder-gray-500 focus:border-purple-500 focus:ring-2 focus:ring-purple-500 focus:outline-none transition"
                 placeholder="your@email.com"
               />
             </div>
@@ -82,8 +101,7 @@ export default function AssociateLoginPage() {
                 required
                 value={password}
                 onChange={(e) => setPassword(e.target.value)}
-                disabled
-                className="w-full rounded-lg border border-gray-300 px-4 py-3 text-gray-500 bg-gray-100 cursor-not-allowed"
+                className="w-full rounded-lg border border-gray-300 px-4 py-3 text-gray-900 placeholder-gray-500 focus:border-purple-500 focus:ring-2 focus:ring-purple-500 focus:outline-none transition"
                 placeholder="••••••••"
               />
             </div>
@@ -94,13 +112,19 @@ export default function AssociateLoginPage() {
               </div>
             )}
 
+            {message && (
+              <div className="rounded-lg bg-blue-50 border border-blue-200 p-4">
+                <p className="text-sm font-medium text-blue-800">{message}</p>
+              </div>
+            )}
+
             <div>
               <button
                 type="submit"
-                disabled={true}
-                className="w-full rounded-full bg-gradient-to-r from-purple-600 to-pink-600 px-6 py-3 text-base font-semibold text-white shadow-lg shadow-purple-500/30 opacity-50 cursor-not-allowed"
+                disabled={loading}
+                className="w-full rounded-full bg-gradient-to-r from-purple-600 to-pink-600 px-6 py-3 text-base font-semibold text-white shadow-lg shadow-purple-500/30 transition hover:scale-105 hover:shadow-purple-500/50 disabled:opacity-50 disabled:cursor-not-allowed disabled:hover:scale-100"
               >
-                Sign in (Coming Soon)
+                {loading ? 'Signing in...' : 'Sign in'}
               </button>
             </div>
           </form>

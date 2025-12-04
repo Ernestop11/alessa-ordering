@@ -1570,8 +1570,29 @@ export default function OrderPageClient({
     [activeSectionId, navSections],
   );
 
+  // Profile menu state
+  const [showProfileMenu, setShowProfileMenu] = useState(false);
+
   return (
-    <div className="min-h-screen bg-[#1a1a1a] text-white">
+    <div className="min-h-screen bg-[#0d0d0d] text-white relative overflow-hidden">
+      {/* Ambient LED Glow Effects */}
+      <div className="fixed inset-0 pointer-events-none z-0">
+        {/* Top-left red glow */}
+        <div className="absolute -top-32 -left-32 w-96 h-96 bg-[#C41E3A] rounded-full opacity-20 blur-[120px] animate-pulse" style={{ animationDuration: '4s' }} />
+        {/* Top-right amber glow */}
+        <div className="absolute -top-20 -right-20 w-80 h-80 bg-[#8B2323] rounded-full opacity-15 blur-[100px] animate-pulse" style={{ animationDuration: '5s', animationDelay: '1s' }} />
+        {/* Bottom-left glow */}
+        <div className="absolute bottom-0 left-1/4 w-96 h-64 bg-[#C41E3A] rounded-full opacity-10 blur-[150px] animate-pulse" style={{ animationDuration: '6s', animationDelay: '2s' }} />
+        {/* Center subtle glow */}
+        <div className="absolute top-1/2 left-1/2 -translate-x-1/2 -translate-y-1/2 w-[800px] h-[600px] bg-gradient-radial from-[#C41E3A]/5 to-transparent rounded-full blur-[100px]" />
+        {/* Bottom-right glow */}
+        <div className="absolute -bottom-20 -right-20 w-72 h-72 bg-[#8B2323] rounded-full opacity-15 blur-[80px] animate-pulse" style={{ animationDuration: '7s', animationDelay: '3s' }} />
+        {/* Subtle texture overlay */}
+        <div className="absolute inset-0 bg-[url('data:image/svg+xml;base64,PHN2ZyB4bWxucz0iaHR0cDovL3d3dy53My5vcmcvMjAwMC9zdmciIHdpZHRoPSI0IiBoZWlnaHQ9IjQiPjxyZWN0IHdpZHRoPSI0IiBoZWlnaHQ9IjQiIGZpbGw9IiMwMDAiLz48cmVjdCB3aWR0aD0iMSIgaGVpZ2h0PSIxIiBmaWxsPSIjMTExIi8+PC9zdmc+')] opacity-30" />
+      </div>
+
+      {/* Main content wrapper */}
+      <div className="relative z-10">
       {/* Closed State Banner */}
       {!isOpen && (
         <div className="sticky top-0 z-50 bg-red-700 text-white">
@@ -1655,12 +1676,112 @@ export default function OrderPageClient({
                 )}
               </button>
 
-              {/* Profile Icon */}
-              <button className="hidden sm:flex items-center justify-center w-10 h-10 rounded-full border-2 border-white/30 text-white/80 hover:border-white hover:text-white transition-all">
-                <svg className="w-5 h-5" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2}>
-                  <path strokeLinecap="round" strokeLinejoin="round" d="M16 7a4 4 0 11-8 0 4 4 0 018 0zM12 14a7 7 0 00-7 7h14a7 7 0 00-7-7z" />
-                </svg>
-              </button>
+              {/* Profile Icon with Dropdown */}
+              <div className="relative hidden sm:block">
+                <button
+                  onClick={() => setShowProfileMenu(!showProfileMenu)}
+                  className={`flex items-center justify-center w-10 h-10 rounded-full border-2 transition-all ${
+                    customerData
+                      ? 'border-amber-400 bg-amber-400/20 text-amber-300 hover:bg-amber-400/30'
+                      : 'border-white/30 text-white/80 hover:border-white hover:text-white'
+                  }`}
+                >
+                  {customerData ? (
+                    <span className="text-lg">👤</span>
+                  ) : (
+                    <svg className="w-5 h-5" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2}>
+                      <path strokeLinecap="round" strokeLinejoin="round" d="M16 7a4 4 0 11-8 0 4 4 0 018 0zM12 14a7 7 0 00-7 7h14a7 7 0 00-7-7z" />
+                    </svg>
+                  )}
+                </button>
+
+                {/* Profile Dropdown Menu */}
+                {showProfileMenu && (
+                  <>
+                    <div className="fixed inset-0 z-40" onClick={() => setShowProfileMenu(false)} />
+                    <div className="absolute right-0 top-12 z-50 w-72 rounded-2xl bg-[#1a1a1a] border border-white/10 shadow-2xl shadow-black/50 overflow-hidden">
+                      {customerData ? (
+                        /* Member View */
+                        <div className="p-4">
+                          <div className="flex items-center gap-3 mb-4 pb-4 border-b border-white/10">
+                            <div className="w-12 h-12 rounded-full bg-gradient-to-br from-amber-400 to-orange-500 flex items-center justify-center text-2xl">
+                              👤
+                            </div>
+                            <div>
+                              <p className="font-bold text-white">{customerData.name || 'Member'}</p>
+                              <p className="text-xs text-amber-300">{customerData.loyaltyPoints} points</p>
+                            </div>
+                          </div>
+
+                          <button
+                            onClick={() => { setShowProfileMenu(false); setShowMembershipPanel(true); }}
+                            className="w-full flex items-center gap-3 px-3 py-2.5 rounded-xl text-left text-white/80 hover:bg-white/5 transition-all"
+                          >
+                            <span className="text-lg">🎁</span>
+                            <span className="text-sm font-medium">My Rewards</span>
+                          </button>
+
+                          <button
+                            onClick={() => { setShowProfileMenu(false); setShowMembershipPanel(true); }}
+                            className="w-full flex items-center gap-3 px-3 py-2.5 rounded-xl text-left text-white/80 hover:bg-white/5 transition-all"
+                          >
+                            <span className="text-lg">📋</span>
+                            <span className="text-sm font-medium">Order History & Reorder</span>
+                          </button>
+
+                          <button
+                            onClick={() => setShowProfileMenu(false)}
+                            className="w-full flex items-center gap-3 px-3 py-2.5 rounded-xl text-left text-white/80 hover:bg-white/5 transition-all"
+                          >
+                            <span className="text-lg">⚙️</span>
+                            <span className="text-sm font-medium">Account Settings</span>
+                          </button>
+                        </div>
+                      ) : (
+                        /* Non-Member Onboarding View */
+                        <div className="p-4">
+                          <div className="text-center mb-4">
+                            <div className="w-16 h-16 mx-auto mb-3 rounded-full bg-gradient-to-br from-[#C41E3A] to-[#8B2323] flex items-center justify-center">
+                              <span className="text-3xl">🎁</span>
+                            </div>
+                            <h3 className="text-lg font-bold text-white">Join Our Rewards!</h3>
+                            <p className="text-sm text-white/60 mt-1">Earn points, get free food</p>
+                          </div>
+
+                          <div className="space-y-2 mb-4">
+                            <div className="flex items-center gap-2 text-sm text-white/70">
+                              <span className="text-green-400">✓</span>
+                              <span>Earn 10 points per $1 spent</span>
+                            </div>
+                            <div className="flex items-center gap-2 text-sm text-white/70">
+                              <span className="text-green-400">✓</span>
+                              <span>Free birthday treat</span>
+                            </div>
+                            <div className="flex items-center gap-2 text-sm text-white/70">
+                              <span className="text-green-400">✓</span>
+                              <span>Exclusive member deals</span>
+                            </div>
+                          </div>
+
+                          <button
+                            onClick={() => { setShowProfileMenu(false); setShowJoinModal(true); }}
+                            className="w-full py-3 rounded-xl bg-[#C41E3A] text-white font-bold hover:bg-[#A01830] transition-all"
+                          >
+                            Join Now - It&apos;s Free!
+                          </button>
+
+                          <button
+                            onClick={() => { setShowProfileMenu(false); setShowJoinModal(true); }}
+                            className="w-full mt-2 py-2 text-sm text-white/60 hover:text-white transition-all"
+                          >
+                            Already a member? Sign In
+                          </button>
+                        </div>
+                      )}
+                    </div>
+                  </>
+                )}
+              </div>
             </div>
           </div>
         </div>
@@ -3133,8 +3254,8 @@ export default function OrderPageClient({
       )}
 
       <RewardsModal open={isRewardsOpen} onClose={() => setRewardsOpen(false)} />
-      <JoinRewardsModal 
-        open={showJoinModal} 
+      <JoinRewardsModal
+        open={showJoinModal}
         onClose={() => setShowJoinModal(false)}
         onSuccess={async () => {
           // Refresh customer data
@@ -3150,6 +3271,7 @@ export default function OrderPageClient({
         }}
         tenantSlug={tenantSlug}
       />
+      </div>{/* End main content wrapper */}
     </div>
   );
 }

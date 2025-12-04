@@ -25,12 +25,41 @@ export default function MenuItemCard({
   const isExternalImage = imageSrc.startsWith('http');
   const isTenantImage = imageSrc.startsWith('/tenant/');
 
+  // Apple Liquid Glass Button Styles
+  const liquidGlassButton = `
+    relative overflow-hidden
+    rounded-2xl py-3.5 text-sm font-bold
+    bg-gradient-to-b from-white/20 to-white/5
+    backdrop-blur-xl
+    border border-white/20
+    shadow-[0_8px_32px_rgba(0,0,0,0.3),inset_0_1px_0_rgba(255,255,255,0.3),inset_0_-1px_0_rgba(0,0,0,0.1)]
+    text-white
+    transition-all duration-300 ease-out
+    hover:shadow-[0_12px_40px_rgba(196,30,58,0.4),inset_0_1px_0_rgba(255,255,255,0.4)]
+    hover:scale-[1.02] hover:border-white/30
+    active:scale-[0.98]
+    disabled:opacity-50 disabled:cursor-not-allowed disabled:hover:scale-100
+  `;
+
+  const quickAddButton = `
+    absolute top-3 left-3 z-10
+    w-10 h-10 rounded-full
+    bg-[#C41E3A]/90 backdrop-blur-md
+    border border-white/20
+    shadow-lg shadow-[#C41E3A]/30
+    flex items-center justify-center
+    text-white text-xl font-bold
+    transition-all duration-200
+    hover:scale-110 hover:bg-[#C41E3A] hover:shadow-xl
+    active:scale-95
+  `;
+
   // List layout - compact horizontal card
   if (layout === 'list') {
     return (
-      <article className="group flex gap-4 rounded-xl bg-[#2a2a2a] border border-white/5 p-3 transition-all duration-200 hover:bg-[#333] active:scale-[0.99]">
+      <article className="group flex gap-4 rounded-2xl bg-white/[0.03] backdrop-blur-sm border border-white/[0.08] p-3 transition-all duration-300 hover:bg-white/[0.06] hover:border-white/10 active:scale-[0.99]">
         {/* Image */}
-        <div className="relative h-24 w-24 flex-shrink-0 overflow-hidden rounded-lg bg-[#1a1a1a]">
+        <div className="relative h-24 w-24 flex-shrink-0 overflow-hidden rounded-xl bg-[#1a1a1a]">
           {isExternalImage ? (
             <img
               src={imageSrc}
@@ -51,6 +80,16 @@ export default function MenuItemCard({
               unoptimized={isExternalImage || isTenantImage}
             />
           )}
+          {/* Quick Add */}
+          {item.available && (
+            <button
+              onClick={(e) => { e.stopPropagation(); onAddToCart(); }}
+              className="absolute top-1 left-1 w-7 h-7 rounded-full bg-[#C41E3A]/90 backdrop-blur-sm border border-white/20 flex items-center justify-center text-white text-sm shadow-lg hover:scale-110 transition-transform"
+              title="Quick add to cart"
+            >
+              +
+            </button>
+          )}
           {!item.available && (
             <div className="absolute inset-0 flex items-center justify-center bg-black/70">
               <span className="text-xs font-bold text-white/80">SOLD OUT</span>
@@ -69,10 +108,9 @@ export default function MenuItemCard({
             <button
               onClick={onCustomize}
               disabled={!item.available}
-              className="flex items-center gap-1.5 rounded-lg bg-[#C41E3A] px-4 py-2 text-sm font-bold text-white transition-all hover:bg-[#A01830] active:scale-95 disabled:bg-[#444] disabled:text-white/40"
+              className="flex items-center gap-1.5 rounded-xl bg-gradient-to-b from-white/15 to-white/5 backdrop-blur-sm border border-white/20 px-4 py-2 text-sm font-bold text-white shadow-lg hover:from-white/20 hover:to-white/10 hover:scale-105 active:scale-95 transition-all disabled:opacity-40"
             >
-              <span>+</span>
-              <span>Add</span>
+              <span>Customize</span>
             </button>
           </div>
         </div>
@@ -83,14 +121,14 @@ export default function MenuItemCard({
   // Cards layout - larger horizontal card
   if (layout === 'cards') {
     return (
-      <article className="group relative overflow-hidden rounded-xl bg-[#2a2a2a] border border-white/5 transition-all duration-200 hover:bg-[#333]">
+      <article className="group relative overflow-hidden rounded-2xl bg-white/[0.03] backdrop-blur-sm border border-white/[0.08] transition-all duration-300 hover:bg-white/[0.06] hover:border-white/10">
         {/* Image */}
         <div className="relative h-44 w-full overflow-hidden bg-[#1a1a1a]">
           {isExternalImage ? (
             <img
               src={imageSrc}
               alt={item.name}
-              className="h-full w-full object-cover transition-transform duration-300 group-hover:scale-105"
+              className="h-full w-full object-cover transition-transform duration-500 group-hover:scale-105"
               onError={(e) => {
                 const target = e.target as HTMLImageElement;
                 target.src = getStockImageForCategory(item.category || sectionType, 0);
@@ -101,21 +139,32 @@ export default function MenuItemCard({
               src={imageSrc}
               alt={item.name}
               fill
-              className="object-cover transition-transform duration-300 group-hover:scale-105"
+              className="object-cover transition-transform duration-500 group-hover:scale-105"
               sizes="(min-width: 640px) 50vw, 100vw"
               unoptimized={isExternalImage || isTenantImage}
             />
           )}
-          <div className="absolute inset-0 bg-gradient-to-t from-black/60 via-transparent to-transparent" />
+          <div className="absolute inset-0 bg-gradient-to-t from-black/70 via-transparent to-transparent" />
+
+          {/* Quick Add Button */}
+          {item.available && (
+            <button
+              onClick={(e) => { e.stopPropagation(); onAddToCart(); }}
+              className={quickAddButton}
+              title="Quick add to cart"
+            >
+              +
+            </button>
+          )}
 
           {/* Price badge */}
-          <div className="absolute top-3 right-3 rounded-lg bg-[#C41E3A] px-3 py-1">
+          <div className="absolute top-3 right-3 rounded-xl bg-[#C41E3A]/90 backdrop-blur-sm px-3 py-1.5 border border-white/10">
             <span className="text-lg font-bold text-white">${item.price.toFixed(2)}</span>
           </div>
 
           {!item.available && (
             <div className="absolute inset-0 flex items-center justify-center bg-black/70">
-              <span className="rounded-lg bg-[#333] px-4 py-2 text-sm font-bold text-white/80">SOLD OUT</span>
+              <span className="rounded-xl bg-[#333] px-4 py-2 text-sm font-bold text-white/80">SOLD OUT</span>
             </div>
           )}
         </div>
@@ -128,25 +177,27 @@ export default function MenuItemCard({
           <button
             onClick={onCustomize}
             disabled={!item.available}
-            className="mt-4 w-full rounded-lg bg-[#C41E3A] py-3 text-sm font-bold text-white transition-all hover:bg-[#A01830] active:scale-[0.98] disabled:bg-[#444] disabled:text-white/40"
+            className={`mt-4 w-full flex items-center justify-center gap-2 ${liquidGlassButton}`}
           >
-            {item.available ? 'ADD TO ORDER' : 'Sold Out'}
+            <span className="relative z-10">{item.available ? 'ADD TO ORDER' : 'Sold Out'}</span>
+            {/* Animated shine effect */}
+            <span className="absolute inset-0 bg-gradient-to-r from-transparent via-white/10 to-transparent -translate-x-full group-hover:translate-x-full transition-transform duration-700" />
           </button>
         </div>
       </article>
     );
   }
 
-  // Grid layout (default) - Panda Express style card
+  // Grid layout (default) - Premium card with liquid glass
   return (
-    <article className="group relative overflow-hidden rounded-xl bg-[#2a2a2a] border border-white/5 transition-all duration-200 hover:border-[#C41E3A]/30 hover:shadow-lg hover:shadow-[#C41E3A]/5">
+    <article className="group relative overflow-hidden rounded-2xl bg-white/[0.03] backdrop-blur-sm border border-white/[0.08] transition-all duration-300 hover:border-[#C41E3A]/40 hover:shadow-xl hover:shadow-[#C41E3A]/10">
       {/* Image container */}
       <div className="relative aspect-[4/3] w-full overflow-hidden bg-[#1a1a1a]">
         {isExternalImage ? (
           <img
             src={imageSrc}
             alt={item.name}
-            className="h-full w-full object-cover transition-transform duration-300 group-hover:scale-105"
+            className="h-full w-full object-cover transition-transform duration-500 group-hover:scale-105"
             onError={(e) => {
               const target = e.target as HTMLImageElement;
               target.src = getStockImageForCategory(item.category || sectionType, 0);
@@ -157,18 +208,29 @@ export default function MenuItemCard({
             src={imageSrc}
             alt={item.name}
             fill
-            className="object-cover transition-transform duration-300 group-hover:scale-105"
+            className="object-cover transition-transform duration-500 group-hover:scale-105"
             sizes="(min-width: 1280px) 33vw, (min-width: 640px) 50vw, 100vw"
             unoptimized={isExternalImage || isTenantImage}
           />
         )}
 
         {/* Gradient overlay */}
-        <div className="absolute inset-0 bg-gradient-to-t from-black/60 via-transparent to-transparent" />
+        <div className="absolute inset-0 bg-gradient-to-t from-black/70 via-black/20 to-transparent" />
+
+        {/* Quick Add Button - Always visible */}
+        {item.available && (
+          <button
+            onClick={(e) => { e.stopPropagation(); onAddToCart(); }}
+            className={quickAddButton}
+            title="Quick add to cart"
+          >
+            +
+          </button>
+        )}
 
         {/* Price badge - top right */}
         <div className="absolute top-3 right-3">
-          <div className="rounded-lg bg-[#C41E3A] px-3 py-1.5 shadow-lg">
+          <div className="rounded-xl bg-[#C41E3A]/90 backdrop-blur-sm px-3 py-1.5 shadow-lg border border-white/10">
             <span className="text-base font-bold text-white">${item.price.toFixed(2)}</span>
           </div>
         </div>
@@ -176,7 +238,7 @@ export default function MenuItemCard({
         {/* Sold out overlay */}
         {!item.available && (
           <div className="absolute inset-0 flex items-center justify-center bg-black/80">
-            <span className="rounded-lg bg-[#333] px-6 py-3 text-sm font-bold text-white/80">
+            <span className="rounded-xl bg-[#333] px-6 py-3 text-sm font-bold text-white/80">
               SOLD OUT
             </span>
           </div>
@@ -207,16 +269,18 @@ export default function MenuItemCard({
           </div>
         )}
 
-        {/* Add button */}
+        {/* Apple Liquid Glass Add Button */}
         <button
           onClick={onCustomize}
           disabled={!item.available}
-          className="mt-4 w-full flex items-center justify-center gap-2 rounded-lg bg-[#C41E3A] py-3.5 text-sm font-bold text-white transition-all hover:bg-[#A01830] active:scale-[0.98] disabled:bg-[#444] disabled:text-white/40"
+          className={`mt-4 w-full flex items-center justify-center gap-2 ${liquidGlassButton}`}
         >
-          <svg className="h-5 w-5" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2.5}>
+          <svg className="h-5 w-5 relative z-10" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2.5}>
             <path strokeLinecap="round" strokeLinejoin="round" d="M12 4v16m8-8H4" />
           </svg>
-          {item.available ? 'ADD TO ORDER' : 'Sold Out'}
+          <span className="relative z-10">{item.available ? 'ADD TO ORDER' : 'Sold Out'}</span>
+          {/* Animated shine effect */}
+          <span className="absolute inset-0 bg-gradient-to-r from-transparent via-white/10 to-transparent -translate-x-full group-hover:translate-x-full transition-transform duration-700" />
         </button>
       </div>
     </article>

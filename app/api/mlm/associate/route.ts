@@ -68,6 +68,26 @@ export async function GET(req: Request) {
     return NextResponse.json(associatesWithoutPasswords);
   }
 
+  // For testing, allow getting associate by ID without auth
+  if (associateId) {
+    const associate = await prisma.associate.findUnique({
+      where: { id: associateId },
+      include: {
+        sponsor: {
+          select: { id: true, name: true, email: true, referralCode: true },
+        },
+        _count: {
+          select: { downline: true, referrals: true, commissions: true },
+        },
+      },
+    });
+    if (!associate) {
+      return NextResponse.json({ error: 'Associate not found' }, { status: 404 });
+    }
+    const { password, ...associateWithoutPassword } = associate;
+    return NextResponse.json(associateWithoutPassword);
+  }
+
   // Regular users need to authenticate as associate (TODO: implement associate auth)
   return NextResponse.json({ error: 'Unauthorized' }, { status: 401 });
 }

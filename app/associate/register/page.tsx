@@ -8,6 +8,7 @@ export default function AssociateRegisterPage() {
     name: '',
     email: '',
     phone: '',
+    password: '',
     referralCode: '',
   });
   const [loading, setLoading] = useState(false);
@@ -18,12 +19,33 @@ export default function AssociateRegisterPage() {
     setLoading(true);
     setMessage('');
 
-    // TODO: Implement associate registration
-    // For now, show a message that this feature is coming soon
-    setTimeout(() => {
-      setMessage('Associate registration is coming soon. Please check back later or contact support.');
+    try {
+      const res = await fetch('/api/mlm/associate', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify(formData),
+      });
+
+      const data = await res.json();
+
+      if (!res.ok) {
+        setMessage(data.error || 'Registration failed');
+        setLoading(false);
+        return;
+      }
+
+      if (data.id) {
+        setMessage('Registration successful! Redirecting to login...');
+        setTimeout(() => {
+          window.location.href = '/associate/login';
+        }, 2000);
+      }
+    } catch (error: any) {
+      setMessage('An error occurred. Please try again.');
+      console.error('Registration error:', error);
+    } finally {
       setLoading(false);
-    }, 1000);
+    }
   };
 
   return (
@@ -47,14 +69,6 @@ export default function AssociateRegisterPage() {
         </div>
 
         <div className="rounded-2xl border border-gray-200 bg-white p-8 shadow-xl">
-          <div className="mb-6 rounded-lg bg-purple-50 border border-purple-200 p-4">
-            <p className="text-sm font-medium text-purple-800">
-              🚧 Associate Program Coming Soon
-            </p>
-            <p className="mt-2 text-xs text-purple-700">
-              The MLM associate program is currently under development. Check back soon to start earning commissions!
-            </p>
-          </div>
 
           <form className="space-y-6" onSubmit={handleSubmit}>
             <div>
@@ -68,8 +82,7 @@ export default function AssociateRegisterPage() {
                 required
                 value={formData.name}
                 onChange={(e) => setFormData({ ...formData, name: e.target.value })}
-                disabled
-                className="w-full rounded-lg border border-gray-300 px-4 py-3 text-gray-500 bg-gray-100 cursor-not-allowed"
+                className="w-full rounded-lg border border-gray-300 px-4 py-3 text-gray-900 placeholder-gray-500 focus:border-purple-500 focus:ring-2 focus:ring-purple-500 focus:outline-none transition"
                 placeholder="John Doe"
               />
             </div>
@@ -85,8 +98,7 @@ export default function AssociateRegisterPage() {
                 required
                 value={formData.email}
                 onChange={(e) => setFormData({ ...formData, email: e.target.value })}
-                disabled
-                className="w-full rounded-lg border border-gray-300 px-4 py-3 text-gray-500 bg-gray-100 cursor-not-allowed"
+                className="w-full rounded-lg border border-gray-300 px-4 py-3 text-gray-900 placeholder-gray-500 focus:border-purple-500 focus:ring-2 focus:ring-purple-500 focus:outline-none transition"
                 placeholder="your@email.com"
               />
             </div>
@@ -101,9 +113,24 @@ export default function AssociateRegisterPage() {
                 required
                 value={formData.phone}
                 onChange={(e) => setFormData({ ...formData, phone: e.target.value })}
-                disabled
-                className="w-full rounded-lg border border-gray-300 px-4 py-3 text-gray-500 bg-gray-100 cursor-not-allowed"
+                className="w-full rounded-lg border border-gray-300 px-4 py-3 text-gray-900 placeholder-gray-500 focus:border-purple-500 focus:ring-2 focus:ring-purple-500 focus:outline-none transition"
                 placeholder="(555) 123-4567"
+              />
+            </div>
+            <div>
+              <label htmlFor="password" className="block text-sm font-medium text-gray-700 mb-2">
+                Password
+              </label>
+              <input
+                id="password"
+                name="password"
+                type="password"
+                autoComplete="new-password"
+                required
+                value={formData.password}
+                onChange={(e) => setFormData({ ...formData, password: e.target.value })}
+                className="w-full rounded-lg border border-gray-300 px-4 py-3 text-gray-900 placeholder-gray-500 focus:border-purple-500 focus:ring-2 focus:ring-purple-500 focus:outline-none transition"
+                placeholder="••••••••"
               />
             </div>
             <div>
@@ -116,8 +143,7 @@ export default function AssociateRegisterPage() {
                 type="text"
                 value={formData.referralCode}
                 onChange={(e) => setFormData({ ...formData, referralCode: e.target.value })}
-                disabled
-                className="w-full rounded-lg border border-gray-300 px-4 py-3 text-gray-500 bg-gray-100 cursor-not-allowed"
+                className="w-full rounded-lg border border-gray-300 px-4 py-3 text-gray-900 placeholder-gray-500 focus:border-purple-500 focus:ring-2 focus:ring-purple-500 focus:outline-none transition"
                 placeholder="Enter referral code if you have one"
               />
               <p className="mt-1 text-xs text-gray-500">
@@ -126,18 +152,26 @@ export default function AssociateRegisterPage() {
             </div>
 
             {message && (
-              <div className="rounded-lg bg-blue-50 border border-blue-200 p-4">
-                <p className="text-sm font-medium text-blue-800">{message}</p>
+              <div className={`rounded-lg border p-4 ${
+                message.includes('successful') || message.includes('Redirecting')
+                  ? 'bg-green-50 border-green-200'
+                  : 'bg-blue-50 border-blue-200'
+              }`}>
+                <p className={`text-sm font-medium ${
+                  message.includes('successful') || message.includes('Redirecting')
+                    ? 'text-green-800'
+                    : 'text-blue-800'
+                }`}>{message}</p>
               </div>
             )}
 
             <div>
               <button
                 type="submit"
-                disabled={true}
-                className="w-full rounded-full bg-gradient-to-r from-purple-600 to-pink-600 px-6 py-3 text-base font-semibold text-white shadow-lg shadow-purple-500/30 opacity-50 cursor-not-allowed"
+                disabled={loading}
+                className="w-full rounded-full bg-gradient-to-r from-purple-600 to-pink-600 px-6 py-3 text-base font-semibold text-white shadow-lg shadow-purple-500/30 transition hover:scale-105 hover:shadow-purple-500/50 disabled:opacity-50 disabled:cursor-not-allowed disabled:hover:scale-100"
               >
-                Register (Coming Soon)
+                {loading ? 'Registering...' : 'Register'}
               </button>
             </div>
           </form>
