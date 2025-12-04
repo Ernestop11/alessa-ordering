@@ -60,17 +60,39 @@ export default async function RootLayout({
 }: {
   children: React.ReactNode
 }) {
-  const tenant = await requireTenant()
-  const staticTheme = getStaticTenantTheme(tenant.slug)
+  // Check if we're on the root domain - if so, use default theme without tenant
+  const headersList = headers();
+  const hostHeader = headersList.get('host') || '';
+  const hostname = hostHeader.split(':')[0];
+  const ROOT_DOMAIN = process.env.ROOT_DOMAIN || 'alessacloud.com';
+  const isRootDomain = hostname === ROOT_DOMAIN || hostname === `www.${ROOT_DOMAIN}` || hostname === 'localhost';
+  
+  let tenant;
+  try {
+    if (isRootDomain) {
+      // For root domain, use a minimal tenant object for theme
+      tenant = null;
+    } else {
+      tenant = await requireTenant();
+    }
+  } catch (error) {
+    // If tenant resolution fails and we're not on root domain, use default
+    if (!isRootDomain) {
+      throw error;
+    }
+    tenant = null;
+  }
+  
+  const staticTheme = getStaticTenantTheme(tenant?.slug)
 
-  // Add cache-busting to tenant images using updatedAt timestamp
-  const tenantTimestamp = new Date(tenant.updatedAt).getTime();
+  // For root domain, use default theme; otherwise use tenant theme
+  const tenantTimestamp = tenant ? new Date(tenant.updatedAt).getTime() : Date.now();
   const addCacheBuster = (url: string | null) => {
     if (!url) return null;
     return url.includes('?') ? `${url}&t=${tenantTimestamp}` : `${url}?t=${tenantTimestamp}`;
   };
 
-  const tenantTheme: TenantTheme = {
+  const tenantTheme: TenantTheme = tenant ? {
     id: tenant.id,
     name: tenant.name,
     slug: tenant.slug,
@@ -110,6 +132,44 @@ export default async function RootLayout({
       : [],
     accessibilityDefaults: (tenant.settings?.accessibilityDefaults ?? null) as unknown as AccessibilityDefaults | null,
     branding: (tenant.settings?.branding ?? null) as unknown as TenantBranding | null,
+  } : {
+    id: 'root',
+    name: 'Alessa Cloud',
+    slug: 'root',
+    logoUrl: staticTheme.assets.logo,
+    heroImageUrl: staticTheme.assets.hero,
+    heroTitle: 'Alessa Cloud',
+    heroSubtitle: 'Multi-tenant restaurant ordering platform',
+    tagline: '',
+    primaryColor: staticTheme.primaryColor,
+    secondaryColor: staticTheme.secondaryColor,
+    themeColor: staticTheme.themeColor,
+    featureFlags: [],
+    contactEmail: null,
+    contactPhone: null,
+    addressLine1: null,
+    addressLine2: null,
+    city: null,
+    state: null,
+    country: 'US',
+    postalCode: null,
+    deliveryRadiusMi: null,
+    minimumOrderValue: null,
+    platformPercentFee: 0.029,
+    platformFlatFee: 0.3,
+    defaultTaxRate: 0.0825,
+    deliveryBaseFee: 4.99,
+    taxProvider: 'builtin',
+    socials: {
+      instagram: null,
+      facebook: null,
+      tikTok: null,
+      youtube: null,
+    },
+    membershipProgram: null,
+    upsellBundles: [],
+    accessibilityDefaults: null,
+    branding: null,
   }
 
   const themeVars = {
