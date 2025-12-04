@@ -112,13 +112,37 @@ function calculateWithDefaultRate({
   };
 }
 
+/**
+ * Validates TaxJar API key by making a test request
+ */
+async function validateTaxJarKey(apiKey: string): Promise<boolean> {
+  try {
+    const response = await fetch('https://api.taxjar.com/v2/categories', {
+      method: 'GET',
+      headers: {
+        Authorization: `Bearer ${apiKey}`,
+        'Content-Type': 'application/json',
+      },
+    });
+    return response.ok;
+  } catch (error) {
+    console.warn('[tax] TaxJar API key validation failed:', error);
+    return false;
+  }
+}
+
 async function calculateWithTaxJar(
   input: TaxCalculationInput,
   config: ParsedTaxConfig,
 ): Promise<TaxCalculationResult> {
   const apiKey = config.apiKey ?? process.env.TAXJAR_API_KEY;
   if (!apiKey) {
-    throw new Error('Missing TaxJar API key.');
+    throw new Error('Missing TaxJar API key. Set TAXJAR_API_KEY in environment or configure in tenant settings.');
+  }
+
+  // Validate API key format (TaxJar keys start with specific prefix)
+  if (!apiKey.startsWith('token_') && !apiKey.match(/^[a-zA-Z0-9]{32,}$/)) {
+    console.warn('[tax] TaxJar API key format may be invalid');
   }
 
   const origin: TaxDestination = {

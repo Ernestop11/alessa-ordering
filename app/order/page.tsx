@@ -5,6 +5,7 @@ import type { Metadata } from 'next';
 import { Suspense } from 'react';
 import OrderPageWrapper from '../../components/order/OrderPageWrapper';
 import { cookies } from 'next/headers';
+import { validateOperatingHours } from '@/lib/hours-validator';
 
 // Force dynamic rendering to ensure tenant data is always fresh
 export const dynamic = 'force-dynamic'
@@ -339,6 +340,17 @@ export default async function OrderPage() {
   const rewardsData = await getRewardsData(tenant.id);
   const customerRewardsData = await getCustomerRewardsData(tenant.id);
 
+  // Check if restaurant is open
+  const tenantSettings = await prisma.tenantSettings.findUnique({
+    where: { tenantId: tenant.id },
+    select: { operatingHours: true, isOpen: true },
+  });
+
+  const hoursValidation = validateOperatingHours(
+    tenantSettings?.operatingHours as any,
+    tenantSettings?.isOpen ?? true
+  );
+
   return (
     <Suspense fallback={
       <div className="min-h-screen flex items-center justify-center bg-gradient-to-br from-red-900 via-red-800 to-orange-900">
@@ -356,6 +368,8 @@ export default async function OrderPage() {
         cateringPackages={cateringPackages}
         rewardsData={rewardsData}
         customerRewardsData={customerRewardsData}
+        isOpen={hoursValidation.isOpen}
+        closedMessage={hoursValidation.message}
       />
     </Suspense>
   );

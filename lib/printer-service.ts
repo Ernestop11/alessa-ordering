@@ -310,13 +310,70 @@ export function stringToBytes(str: string): Uint8Array {
 
 /**
  * Send data to Bluetooth printer
+ * Supports both Capacitor (iOS/Android) and Web Bluetooth (desktop browsers)
  */
 export async function sendToBluetoothPrinter(
   deviceId: string,
   data: string
 ): Promise<void> {
+  // Check if running in Capacitor (native app)
+  if (typeof window !== 'undefined') {
+    const { Capacitor } = require('@capacitor/core');
+    if (Capacitor.isNativePlatform()) {
+      // Use Capacitor Bluetooth plugin for iOS/Android
+      try {
+        const { BluetoothLE } = require('@capacitor-community/bluetooth-le');
+        
+        // Connect to device
+        await BluetoothLE.connect({ address: deviceId });
+        
+        // Find the serial port service (SPP)
+        const services = await BluetoothLE.discover({ address: deviceId });
+        const sppService = services.services?.find(
+          (s: any) => s.uuid.toLowerCase() === '00001101-0000-1000-8000-00805f9b34fb'
+        );
+        
+        if (!sppService) {
+          throw new Error('Serial Port Profile service not found');
+        }
+        
+        // Find the characteristic for writing data
+        const characteristics = await BluetoothLE.characteristics({ 
+          address: deviceId,
+          service: sppService.uuid 
+        });
+        
+        const writeChar = characteristics.characteristics?.find(
+          (c: any) => c.properties?.write || c.properties?.writeWithoutResponse
+        );
+        
+        if (!writeChar) {
+          throw new Error('Write characteristic not found');
+        }
+        
+        // Convert data to bytes and write
+        const bytes = stringToBytes(data);
+        await BluetoothLE.write({
+          address: deviceId,
+          service: sppService.uuid,
+          characteristic: writeChar.uuid,
+          value: Array.from(bytes).map(b => b.toString(16).padStart(2, '0')).join(''),
+        });
+        
+        // Disconnect
+        await BluetoothLE.disconnect({ address: deviceId });
+        
+        return;
+      } catch (error) {
+        console.error('[Bluetooth Printer] Capacitor error:', error);
+        throw new Error(`Failed to send data to Bluetooth printer: ${error instanceof Error ? error.message : 'Unknown error'}`);
+      }
+    }
+  }
+
+  // Fallback to Web Bluetooth API (for desktop browsers)
   if (!('bluetooth' in navigator)) {
-    throw new Error('Web Bluetooth is not supported');
+    throw new Error('Web Bluetooth is not supported. Please use the native app on iOS/Android.');
   }
 
   try {

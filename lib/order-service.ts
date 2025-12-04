@@ -4,6 +4,7 @@ import { serializeOrder } from './order-serializer';
 import { autoPrintOrder } from './printer-dispatcher';
 import { calculateOrderTax } from './tax/calculate-tax';
 import { notifyFulfillmentTeam } from './notifications/fulfillment';
+import { validateOperatingHours } from './hours-validator';
 
 export interface OrderItemPayload {
   menuItemId: string;
@@ -82,6 +83,21 @@ export async function createOrderFromPayload({
   payload: OrderPayload;
   paymentIntentId?: string | null;
 }) {
+  // Validate if restaurant is open before creating order
+  const tenantSettings = await prisma.tenantSettings.findUnique({
+    where: { tenantId: tenant.id },
+    select: { operatingHours: true, isOpen: true },
+  });
+
+  const hoursValidation = validateOperatingHours(
+    tenantSettings?.operatingHours as any,
+    tenantSettings?.isOpen ?? true
+  );
+
+  if (!hoursValidation.isOpen) {
+    throw new Error(hoursValidation.message || 'Restaurant is currently closed. Please try again during our operating hours.');
+  }
+
   const subtotalAmount = Number(payload.subtotalAmount || 0);
   const totalAmount = Number(payload.totalAmount || subtotalAmount);
   let taxAmount = Number(payload.taxAmount || 0);

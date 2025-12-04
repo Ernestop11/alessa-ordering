@@ -38,7 +38,9 @@
       "Bash(node:*)",
       "Bash(npx eslint:*)",
       "Bash(python3:*)",
-      "Bash(npm view:*)"
+      "Bash(npm view:*)",
+      "Bash(npm run build:*)",
+      "Bash(ls:*)"
     ],
     "deny": [],
     "ask": []

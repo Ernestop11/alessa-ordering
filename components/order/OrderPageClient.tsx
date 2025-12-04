@@ -110,6 +110,8 @@ interface OrderPageClientProps {
   cateringPackages?: CateringPackage[];
   rewardsData?: RewardsData;
   customerRewardsData?: CustomerRewardsData | null;
+  isOpen?: boolean;
+  closedMessage?: string;
 }
 
 type LayoutView = 'grid' | 'list' | 'cards';
@@ -223,7 +225,9 @@ export default function OrderPageClient({
   cateringTabConfig = { enabled: true, label: 'Catering', icon: 'ChefHat', description: 'Full-service events, delivered' },
   cateringPackages: initialCateringPackages = [],
   rewardsData,
-  customerRewardsData
+  customerRewardsData,
+  isOpen = true,
+  closedMessage
 }: OrderPageClientProps) {
   const searchParams = useSearchParams();
   const router = useRouter();
@@ -732,7 +736,11 @@ export default function OrderPageClient({
   }, []);
 
   const handleAddToCart = useCallback(
-    (item: OrderMenuItem, image?: string) => {
+    (item: OrderMenuItem, image?: string | null) => {
+      if (!isOpen) {
+        showNotification(closedMessage || 'We are currently closed. Please check back during our operating hours.');
+        return;
+      }
       if (!item.available) return;
 
       addToCart({
@@ -746,11 +754,15 @@ export default function OrderPageClient({
 
       showNotification(`Added ${item.name} to cart`);
     },
-    [addToCart, showNotification],
+    [addToCart, showNotification, isOpen, closedMessage],
   );
 
   const handleAddHighlight = useCallback(
     (card: HighlightCard) => {
+      if (!isOpen) {
+        showNotification(closedMessage || 'We are currently closed. Please check back during our operating hours.');
+        return;
+      }
       addToCart({
         id: `${card.id}-${Date.now()}`,
         name: card.title,
@@ -763,11 +775,15 @@ export default function OrderPageClient({
       });
       showNotification(`Bundle added: ${card.title}`);
     },
-    [addToCart, showNotification],
+    [addToCart, showNotification, isOpen, closedMessage],
   );
 
   const handleCarouselAddToCart = useCallback(
     (item: { id: string; name: string; description: string; price: number; image?: string | null; displayImage?: string }) => {
+      if (!isOpen) {
+        showNotification(closedMessage || 'We are currently closed. Please check back during our operating hours.');
+        return;
+      }
       addToCart({
         id: item.id,
         name: item.name,
@@ -778,7 +794,7 @@ export default function OrderPageClient({
       });
       showNotification(`Added ${item.name} to cart`);
     },
-    [addToCart, showNotification],
+    [addToCart, showNotification, isOpen, closedMessage],
   );
 
   const enrichedSections = useMemo(() => {
@@ -1556,6 +1572,19 @@ export default function OrderPageClient({
 
   return (
     <div className="min-h-screen bg-gradient-to-br from-[#050A1C] via-[#0A1C2F] to-[#041326] text-white">
+      {/* Closed State Banner */}
+      {!isOpen && (
+        <div className="sticky top-0 z-50 bg-gradient-to-r from-red-600 via-red-700 to-red-600 text-white shadow-lg">
+          <div className="mx-auto max-w-6xl px-6 py-4 text-center">
+            <div className="flex items-center justify-center gap-3">
+              <span className="text-2xl">🚫</span>
+              <div>
+                <p className="font-semibold text-lg">{closedMessage || 'We are currently closed. Please check back during our operating hours.'}</p>
+              </div>
+            </div>
+          </div>
+        </div>
+      )}
       <header className="sticky top-0 z-40 border-b border-white/10 bg-gradient-to-b from-black/95 to-black/80 backdrop-blur-xl shadow-2xl">
         <div className="mx-auto max-w-6xl px-6 py-4">
           {/* Centered Branding Card with Gradient Background */}

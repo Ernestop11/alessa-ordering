@@ -55,12 +55,30 @@ export default function PrinterSetup({ currentConfig, onSave, onTest }: Props) {
   const [error, setError] = useState<string | null>(null);
   const [success, setSuccess] = useState<string | null>(null);
 
-  // Check if Web Bluetooth is available
-  const bluetoothAvailable = typeof navigator !== 'undefined' && 'bluetooth' in navigator;
+  // Check if Bluetooth is available (Capacitor or Web Bluetooth)
+  const [bluetoothAvailable, setBluetoothAvailable] = useState(false);
+  const [isNativeApp, setIsNativeApp] = useState(false);
+
+  useEffect(() => {
+    if (typeof window !== 'undefined') {
+      // Check if running in Capacitor
+      const { Capacitor } = require('@capacitor/core');
+      const native = Capacitor.isNativePlatform();
+      setIsNativeApp(native);
+
+      if (native) {
+        // In native app, Bluetooth should be available via Capacitor plugin
+        setBluetoothAvailable(true);
+      } else {
+        // In web browser, check for Web Bluetooth
+        setBluetoothAvailable('bluetooth' in navigator);
+      }
+    }
+  }, []);
 
   const scanBluetoothPrinters = async () => {
     if (!bluetoothAvailable) {
-      setError('Web Bluetooth is not supported in this browser');
+      setError('Bluetooth is not available. Please use the native app on iOS/Android.');
       return;
     }
 
@@ -69,35 +87,73 @@ export default function PrinterSetup({ currentConfig, onSave, onTest }: Props) {
     setAvailableDevices([]);
 
     try {
-      // Request device with filters for known printer services
-      const device = await ((navigator as any).bluetooth).requestDevice({
-        // Accept all devices to allow manual selection
-        acceptAllDevices: true,
-        optionalServices: [
-          ...KNOWN_VENDORS.brother.services,
-          ...KNOWN_VENDORS.star.services,
-          ...KNOWN_VENDORS.escpos.services,
-        ],
-      });
+      if (isNativeApp) {
+        // Use Capacitor Bluetooth plugin
+        const { BluetoothLE } = require('@capacitor-community/bluetooth-le');
+        
+        // Request permissions first
+        const permission = await BluetoothLE.requestLEScan({});
+        if (!permission.value) {
+          throw new Error('Bluetooth permission denied');
+        }
 
-      if (device) {
-        setAvailableDevices([device]);
-        setPrinterType('bluetooth');
-        setPrinterName(device.name || 'Unknown Printer');
-        setDeviceId(device.id);
-        setSuccess(`Found printer: ${device.name || 'Unknown'}`);
+        // Start scanning
+        await BluetoothLE.startLEScan({
+          services: [
+            ...KNOWN_VENDORS.brother.services,
+            ...KNOWN_VENDORS.star.services,
+            ...KNOWN_VENDORS.escpos.services,
+          ],
+        });
+
+        // Listen for devices
+        BluetoothLE.addListener('onScanResult', (result: any) => {
+          if (result.devices && result.devices.length > 0) {
+            const device = result.devices[0];
+            setAvailableDevices([device]);
+            setPrinterType('bluetooth');
+            setPrinterName(device.name || 'Unknown Printer');
+            setDeviceId(device.address || device.id);
+            setSuccess(`Found printer: ${device.name || 'Unknown'}`);
+            BluetoothLE.stopLEScan();
+            setScanning(false);
+          }
+        });
+
+        // Stop scanning after 10 seconds
+        setTimeout(() => {
+          BluetoothLE.stopLEScan();
+          setScanning(false);
+        }, 10000);
+      } else {
+        // Use Web Bluetooth API (desktop browsers)
+        const device = await ((navigator as any).bluetooth).requestDevice({
+          acceptAllDevices: true,
+          optionalServices: [
+            ...KNOWN_VENDORS.brother.services,
+            ...KNOWN_VENDORS.star.services,
+            ...KNOWN_VENDORS.escpos.services,
+          ],
+        });
+
+        if (device) {
+          setAvailableDevices([device]);
+          setPrinterType('bluetooth');
+          setPrinterName(device.name || 'Unknown Printer');
+          setDeviceId(device.id);
+          setSuccess(`Found printer: ${device.name || 'Unknown'}`);
+        }
       }
     } catch (err) {
       if (err instanceof Error) {
         if (err.name === 'NotFoundError') {
           setError('No printer selected');
         } else if (err.name === 'NotSupportedError') {
-          setError('Web Bluetooth is not supported');
+          setError('Bluetooth is not supported');
         } else {
           setError(`Bluetooth error: ${err.message}`);
         }
       }
-    } finally {
       setScanning(false);
     }
   };
@@ -225,9 +281,22 @@ export default function PrinterSetup({ currentConfig, onSave, onTest }: Props) {
             </div>
 
             {!bluetoothAvailable && (
-              <p className="text-sm text-amber-600">
-                ⚠️ Web Bluetooth is not available in this browser. Please use Chrome, Edge, or Opera.
-              </p>
+              <div className="p-3 bg-amber-50 border border-amber-200 rounded text-sm text-amber-800">
+                <p className="font-medium mb-1">⚠️ Bluetooth Not Available</p>
+                {isNativeApp ? (
+                  <p>Bluetooth permissions may be required. Please check your device settings.</p>
+                ) : (
+                  <div>
+                    <p className="mb-2">Web Bluetooth is not available in Safari on iOS/iPadOS.</p>
+                    <p className="mb-2">To use Bluetooth printing on iPad:</p>
+                    <ul className="list-disc list-inside space-y-1 mb-2">
+                      <li>Install the native iOS app (built with Capacitor)</li>
+                      <li>Or use a <strong>Network Printer</strong> instead (works on all devices)</li>
+                    </ul>
+                    <p className="text-xs">Web Bluetooth works in Chrome, Edge, or Opera on desktop computers.</p>
+                  </div>
+                )}
+              </div>
             )}
 
             {deviceId && (

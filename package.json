@@ -19,12 +19,24 @@
     "test:smoke": "node -e \"try{require('fs').rmSync('.smoke-tests',{recursive:true,force:true});}catch{}\" && tsc --project tsconfig.smoke.json && node .smoke-tests/tests/smoke/index.js",
     "verify": "npm run lint && npm run test:types && npm run test:smoke",
     "verify:full": "bash scripts/verify.sh",
-    "seed:lasreinas": "node scripts/seed-lasreinas.mjs"
+    "seed:lasreinas": "node scripts/seed-lasreinas.mjs",
+    "cap:sync": "npx cap sync",
+    "cap:ios": "npx cap open ios",
+    "build:ios": "npm run build && npx cap sync ios",
+    "test:stripe": "tsx scripts/test-stripe-config.ts",
+    "generate:onboarding": "tsx scripts/generate-onboarding-link.ts",
+    "check:account-mode": "tsx scripts/check-stripe-account-mode.ts",
+    "reset:stripe-account": "tsx scripts/reset-stripe-account.ts",
+    "verify:stripe-mode": "tsx scripts/verify-stripe-mode.ts"
   },
   "dependencies": {
+    "@capacitor-community/bluetooth-le": "^7.2.0",
+    "@capacitor/cli": "^7.4.4",
+    "@capacitor/core": "^7.4.4",
+    "@capacitor/ios": "^7.4.4",
     "@prisma/client": "^5.22.0",
-    "@stripe/react-stripe-js": "^2.4.0",
-    "@stripe/stripe-js": "^8.5.3",
+    "@stripe/react-stripe-js": "^2.9.0",
+    "@stripe/stripe-js": "^4.10.0",
     "@types/nodemailer": "^7.0.4",
     "framer-motion": "^12.23.24",
     "jsonwebtoken": "^9.0.2",
@@ -44,11 +56,14 @@
     "@types/react": "^18.2.37",
     "@types/react-dom": "^18.2.15",
     "autoprefixer": "^10.4.21",
+    "dotenv": "^17.2.3",
     "eslint": "^8.54.0",
     "eslint-config-next": "14.0.3",
     "postcss": "^8.5.6",
     "prisma": "^5.22.0",
     "puppeteer": "^24.31.0",
+    "ts-node": "^10.9.2",
+    "tsx": "^4.21.0",
     "typescript": "^5.2.2"
   }
 }
