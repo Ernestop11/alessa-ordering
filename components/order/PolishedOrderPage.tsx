@@ -527,22 +527,21 @@ export default function PolishedOrderPage({
       {/* Rewards Join Modal */}
       {joinModalOpen && (
         <JoinRewardsModal
-          isOpen={joinModalOpen}
+          open={joinModalOpen}
           onClose={() => setJoinModalOpen(false)}
           onSuccess={() => {
             setJoinModalOpen(false);
             showNotification('Welcome to the rewards program!');
           }}
+          tenantSlug={tenantSlug}
         />
       )}
 
       {/* Rewards Modal for existing members */}
-      {membershipPanelOpen && customerRewardsData && (
+      {membershipPanelOpen && (
         <RewardsModal
-          isOpen={membershipPanelOpen}
+          open={membershipPanelOpen}
           onClose={() => setMembershipPanelOpen(false)}
-          customerData={customerRewardsData}
-          membershipProgram={rewardsData?.membershipProgram}
         />
       )}
     </div>
