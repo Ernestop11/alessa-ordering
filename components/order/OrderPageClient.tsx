@@ -1571,10 +1571,10 @@ export default function OrderPageClient({
   );
 
   return (
-    <div className="min-h-screen bg-neutral-950 text-white">
+    <div className="min-h-screen bg-[#1a1a1a] text-white">
       {/* Closed State Banner */}
       {!isOpen && (
-        <div className="sticky top-0 z-50 bg-red-600 text-white">
+        <div className="sticky top-0 z-50 bg-red-700 text-white">
           <div className="mx-auto max-w-6xl px-4 py-3 text-center">
             <p className="font-semibold text-sm flex items-center justify-center gap-2">
               <span>🚫</span>
@@ -1584,92 +1584,104 @@ export default function OrderPageClient({
         </div>
       )}
 
-      {/* Modern App Header */}
-      <header className="sticky top-0 z-40 bg-neutral-950/95 backdrop-blur-lg border-b border-white/[0.06]">
-        <div className="mx-auto max-w-6xl px-4">
+      {/* Warm Header - Panda Express Style */}
+      <header className="sticky top-0 z-40 bg-[#8B2323] shadow-lg">
+        <div className="mx-auto max-w-7xl px-4">
           {/* Top Row - Logo & Actions */}
-          <div className="flex items-center justify-between py-3">
+          <div className="flex items-center justify-between py-2">
             {/* Logo & Name */}
-            <div className="flex items-center gap-3">
-              <div className="relative">
-                <div className="rounded-xl bg-white p-1 shadow-lg">
+            <div className="flex items-center gap-4">
+              <div className="relative flex-shrink-0">
+                <div className="rounded-full bg-white p-1.5 shadow-md">
                   {tenant.logoUrl ? (
                     <Image
                       src={tenant.logoUrl}
                       alt={`${tenant.name} logo`}
-                      width={44}
-                      height={44}
-                      className="h-11 w-11 rounded-lg object-cover"
+                      width={48}
+                      height={48}
+                      className="h-12 w-12 rounded-full object-cover"
                     />
                   ) : (
-                    <div className="flex h-11 w-11 items-center justify-center rounded-lg bg-gradient-to-br from-red-600 to-amber-500 text-2xl">🍽️</div>
+                    <div className="flex h-12 w-12 items-center justify-center rounded-full bg-gradient-to-br from-red-600 to-amber-500 text-2xl">🍽️</div>
                   )}
                 </div>
               </div>
-              <div className="hidden sm:block">
-                <h1 className="font-bold text-white text-lg leading-tight">{tenant.name}</h1>
-                {tenant.tagline && <p className="text-xs text-white/50">{tenant.tagline}</p>}
-              </div>
+              {/* Navigation Links */}
+              <nav className="hidden md:flex items-center gap-1">
+                <span className="px-3 py-2 text-sm font-semibold text-white/90 hover:text-white cursor-pointer">Our Food</span>
+                <span className="text-white/30">|</span>
+                {cateringEnabled && (
+                  <>
+                    <button onClick={() => setShowCateringPanel(true)} className="px-3 py-2 text-sm font-semibold text-white/90 hover:text-white">Catering</button>
+                    <span className="text-white/30">|</span>
+                  </>
+                )}
+                <button
+                  onClick={() => customerData ? setShowMembershipPanel(true) : setShowJoinModal(true)}
+                  className="px-3 py-2 text-sm font-semibold text-white/90 hover:text-white"
+                >
+                  Our Rewards
+                </button>
+                <span className="text-white/30">|</span>
+                <button onClick={() => setAccessibilityOpen((prev) => !prev)} className="px-3 py-2 text-sm font-semibold text-white/90 hover:text-white">Accessibility</button>
+              </nav>
             </div>
 
-            {/* Action Buttons */}
-            <div className="flex items-center gap-2">
-              {cateringEnabled && (
-                <button
-                  onClick={() => setShowCateringPanel(true)}
-                  className="hidden sm:flex items-center gap-1.5 rounded-full bg-white/[0.06] border border-white/[0.08] px-3 py-2 text-sm font-medium text-white/70 hover:bg-white/10 hover:text-white transition-all"
-                >
-                  <span>🎉</span>
-                  <span>Catering</span>
-                </button>
-              )}
-              <button
-                onClick={() => setAccessibilityOpen((prev) => !prev)}
-                className={`hidden sm:flex items-center gap-1.5 rounded-full border px-3 py-2 text-sm font-medium transition-all ${
-                  isAccessibilityOpen
-                    ? 'bg-blue-500/20 border-blue-500/30 text-blue-300'
-                    : 'bg-white/[0.06] border-white/[0.08] text-white/70 hover:bg-white/10 hover:text-white'
-                }`}
-              >
-                <span>♿</span>
-                <span>ADA</span>
-              </button>
-              <button
-                onClick={() => {
-                  if (customerData) {
-                    setShowMembershipPanel(true);
-                  } else {
-                    setShowJoinModal(true);
-                  }
-                }}
-                className="flex items-center gap-1.5 rounded-full bg-amber-500/20 border border-amber-500/30 px-3 py-2 text-sm font-semibold text-amber-300 hover:bg-amber-500/30 transition-all"
-              >
-                <span>🎁</span>
-                <span className="hidden sm:inline">{customerData ? 'Rewards' : 'Join'}</span>
-              </button>
+            {/* Right Side - Location & Cart */}
+            <div className="flex items-center gap-3">
+              {/* Location Selector */}
+              <div className="hidden sm:flex items-center gap-2 rounded-lg bg-[#6B1C1C] px-3 py-2">
+                <span className="text-xs text-white/60">Pickup at</span>
+                <span className="text-sm font-semibold text-white">{locationDisplay || 'Select Location'}</span>
+                <svg className="w-4 h-4 text-white/60" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M19 9l-7 7-7-7" />
+                </svg>
+              </div>
+
+              {/* Cart Button - Panda Style */}
               <button
                 onClick={() => {
                   const cartButton = document.querySelector('[data-cart-launcher]') as HTMLElement;
                   cartButton?.click();
                 }}
-                className="relative flex items-center gap-1.5 rounded-full bg-red-600 px-4 py-2 text-sm font-bold text-white hover:bg-red-500 transition-all"
+                className="relative flex items-center gap-2 rounded-lg bg-[#FFF5E6] px-4 py-2 text-sm font-bold text-[#8B2323] hover:bg-white transition-all"
               >
-                <span>🛒</span>
-                <span className="hidden sm:inline">Cart</span>
+                <span>My Bag</span>
+                <span className="font-black">${(cartItems.reduce((sum, item) => sum + item.price * item.quantity, 0)).toFixed(2)}</span>
                 {cartItemCount > 0 && (
-                  <span className="absolute -top-1 -right-1 flex h-5 w-5 items-center justify-center rounded-full bg-amber-400 text-[10px] font-bold text-black">
-                    {cartItemCount > 9 ? '9+' : cartItemCount}
+                  <span className="absolute -top-2 -right-2 flex h-6 w-6 items-center justify-center rounded-full bg-[#C41E3A] text-xs font-bold text-white shadow-md">
+                    {cartItemCount}
                   </span>
                 )}
               </button>
+
+              {/* Profile Icon */}
+              <button className="hidden sm:flex items-center justify-center w-10 h-10 rounded-full border-2 border-white/30 text-white/80 hover:border-white hover:text-white transition-all">
+                <svg className="w-5 h-5" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2}>
+                  <path strokeLinecap="round" strokeLinejoin="round" d="M16 7a4 4 0 11-8 0 4 4 0 018 0zM12 14a7 7 0 00-7 7h14a7 7 0 00-7-7z" />
+                </svg>
+              </button>
             </div>
           </div>
+        </div>
 
-          {/* Category Navigation */}
-          <div className="pb-3 flex items-center gap-3">
+        {/* Promotional Banner */}
+        <div className="bg-[#6B1C1C] border-t border-white/10">
+          <div className="mx-auto max-w-7xl px-4 py-2 flex items-center justify-center gap-4">
+            <span className="text-amber-300 font-semibold text-sm">🎉 Order online for pickup or delivery</span>
+            <span className="text-white/50">•</span>
+            <span className="text-white/80 text-sm">{hoursDisplay || 'Open Daily'}</span>
+          </div>
+        </div>
+      </header>
+
+      {/* Category Navigation - Separate Bar */}
+      <div className="sticky top-[88px] z-30 bg-[#1a1a1a] border-b border-white/10 py-3">
+        <div className="mx-auto max-w-7xl px-4">
+          <div className="flex items-center gap-3">
             {/* Categories - scrollable */}
-            <div className="flex-1 -mx-4 px-4 overflow-x-auto scrollbar-hide">
-              <nav className="flex items-center gap-1.5">
+            <div className="flex-1 overflow-x-auto scrollbar-hide">
+              <nav className="flex items-center gap-2">
                 {navSections.map((section) => {
                   const isActive = activeSectionId === section.id;
                   return (
@@ -1685,20 +1697,13 @@ export default function OrderPageClient({
                         }
                       }}
                       data-section-button={section.id}
-                      className={`flex-shrink-0 flex items-center gap-2 rounded-full px-4 py-2 text-[13px] font-medium transition-all duration-300 ${
+                      className={`flex-shrink-0 flex items-center gap-2 rounded-full px-5 py-2.5 text-sm font-semibold transition-all duration-200 ${
                         isActive
-                          ? 'bg-white/15 text-white shadow-lg'
-                          : 'text-white/60 hover:text-white/90 hover:bg-white/5'
+                          ? 'bg-[#C41E3A] text-white shadow-lg'
+                          : 'bg-[#2a2a2a] text-white/70 hover:text-white hover:bg-[#3a3a3a]'
                       }`}
-                      style={isActive ? {
-                        backdropFilter: 'blur(20px)',
-                        border: '1px solid rgba(255,255,255,0.2)',
-                        boxShadow: '0 4px 16px rgba(0,0,0,0.2), inset 0 1px 0 rgba(255,255,255,0.2)',
-                      } : {}}
                     >
-                      <span className={`text-sm ${isActive ? 'scale-105' : ''}`}>
-                        {SECTION_ICONS[section.type] || '🍽️'}
-                      </span>
+                      <span>{SECTION_ICONS[section.type] || '🍽️'}</span>
                       <span>{section.name}</span>
                     </button>
                   );
@@ -1707,15 +1712,15 @@ export default function OrderPageClient({
             </div>
 
             {/* View Toggles - Desktop only */}
-            <div className="hidden md:flex items-center gap-0.5 rounded-full p-1 bg-white/5 border border-white/10">
+            <div className="hidden md:flex items-center gap-1 rounded-lg bg-[#2a2a2a] p-1">
               {LAYOUTS.map((layout) => (
                 <button
                   key={layout.id}
                   onClick={() => setActiveLayout(layout.id)}
-                  className={`rounded-full px-3 py-1.5 text-xs font-medium transition-all duration-200 ${
+                  className={`rounded-md px-3 py-2 text-xs font-medium transition-all ${
                     activeLayout === layout.id
-                      ? 'bg-white/20 text-white'
-                      : 'text-white/50 hover:text-white/80'
+                      ? 'bg-[#C41E3A] text-white'
+                      : 'text-white/50 hover:text-white'
                   }`}
                   title={layout.label}
                 >
@@ -1725,48 +1730,84 @@ export default function OrderPageClient({
             </div>
           </div>
         </div>
-      </header>
+      </div>
 
-      {/* Modern Hero Section - Minimal & Clean */}
-      <section className="relative py-16 md:py-24 overflow-hidden">
-        {/* Subtle gradient background */}
-        <div className="absolute inset-0 bg-gradient-to-b from-neutral-900 via-neutral-950 to-neutral-950" />
-        <div className="absolute inset-0 bg-[radial-gradient(ellipse_at_top,rgba(220,38,38,0.15)_0%,transparent_50%)]" />
+      {/* Hero Section with Food Image - Panda Express Style */}
+      <section className="relative overflow-hidden bg-[#1a1a1a]">
+        {/* Background with rounded container */}
+        <div className="mx-auto max-w-7xl px-4 py-8">
+          <div className="relative rounded-3xl overflow-hidden bg-gradient-to-r from-[#1a1a1a] via-[#2a2a2a] to-[#1a1a1a] border border-[#C41E3A]/30">
+            {/* Red accent line at top */}
+            <div className="absolute top-0 left-0 right-0 h-1 bg-gradient-to-r from-transparent via-[#C41E3A] to-transparent" />
 
-        <div className="relative z-10 mx-auto max-w-5xl px-6">
-          {/* Status Badge */}
-          <div className="flex justify-center mb-6">
-            <div className="inline-flex items-center gap-2 rounded-full bg-white/5 border border-white/10 px-4 py-2 text-sm">
-              <span className="h-2 w-2 rounded-full bg-green-500 animate-pulse" />
-              <span className="text-white/70">Open for Orders</span>
+            <div className="grid md:grid-cols-2 gap-8 p-8 md:p-12">
+              {/* Left side - Text Content */}
+              <div className="flex flex-col justify-center">
+                <div className="inline-flex items-center gap-2 mb-4">
+                  <span className="px-3 py-1 rounded-full bg-[#C41E3A] text-white text-xs font-bold uppercase tracking-wide">New!</span>
+                </div>
+
+                <h2 className="text-4xl md:text-5xl lg:text-6xl font-black text-white mb-4 leading-tight">
+                  {personality.heroTitle}
+                </h2>
+
+                <p className="text-lg md:text-xl text-white/70 mb-6 leading-relaxed">
+                  {tenant.heroSubtitle || tenant.tagline || 'Authentic flavors crafted with passion'}
+                </p>
+
+                <div className="flex flex-wrap gap-3">
+                  <a
+                    href="#menu"
+                    className="inline-flex items-center gap-2 rounded-lg border-2 border-[#C41E3A] bg-transparent px-6 py-3 text-base font-bold text-[#C41E3A] hover:bg-[#C41E3A] hover:text-white transition-all"
+                  >
+                    START AN ORDER
+                  </a>
+                  <button
+                    onClick={() => {
+                      const firstSection = navSections[0];
+                      if (firstSection) {
+                        setActiveSectionId(firstSection.id);
+                        const element = document.getElementById(`section-${firstSection.id}`);
+                        if (element) element.scrollIntoView({ behavior: 'smooth' });
+                      }
+                    }}
+                    className="inline-flex items-center gap-2 rounded-lg bg-[#C41E3A] px-6 py-3 text-base font-bold text-white hover:bg-[#A01830] transition-all"
+                  >
+                    EXPLORE MENU
+                  </button>
+                </div>
+              </div>
+
+              {/* Right side - Featured Image */}
+              <div className="relative flex items-center justify-center">
+                <div className="relative w-full max-w-md aspect-square">
+                  {/* Decorative ring */}
+                  <div className="absolute inset-0 rounded-full border-2 border-[#C41E3A]/30 scale-110" />
+                  {/* Food image */}
+                  <div className="relative w-full h-full rounded-3xl overflow-hidden bg-[#2a2a2a]">
+                    {carouselItems[0]?.displayImage ? (
+                      <Image
+                        src={carouselItems[0].displayImage}
+                        alt="Featured dish"
+                        fill
+                        className="object-cover"
+                        sizes="(max-width: 768px) 100vw, 400px"
+                      />
+                    ) : (
+                      <div className="flex items-center justify-center h-full text-6xl">🍽️</div>
+                    )}
+                  </div>
+                </div>
+              </div>
             </div>
           </div>
+        </div>
+      </section>
 
-          {/* Main Title */}
-          <h2 className="text-center text-5xl sm:text-6xl md:text-7xl font-black tracking-tight text-white mb-4">
-            {personality.heroTitle}
-          </h2>
-
-          {/* Tagline */}
-          <p className="text-center text-lg md:text-xl text-white/60 max-w-xl mx-auto mb-8">
-            {tenant.heroSubtitle || tenant.tagline || 'Experience flavors that tell a story.'}
-          </p>
-
-          {/* CTA Button */}
-          <div className="flex justify-center mb-10">
-            <a
-              href="#menu"
-              className="inline-flex items-center gap-2 rounded-full bg-red-600 hover:bg-red-500 px-8 py-4 text-base font-bold text-white transition-all hover:scale-105 shadow-lg shadow-red-600/25"
-            >
-              <span>Start Order</span>
-              <svg className="w-5 h-5" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2}>
-                <path strokeLinecap="round" strokeLinejoin="round" d="M19 9l-7 7-7-7" />
-              </svg>
-            </a>
-          </div>
-
-          {/* Quick Stats */}
-          <div className="flex flex-wrap justify-center gap-6 text-center">
+      {/* Quick Info Bar */}
+      <div className="bg-[#2a2a2a] py-4 border-y border-white/5">
+        <div className="mx-auto max-w-7xl px-4">
+          <div className="flex flex-wrap justify-center gap-8 text-center">
             <div className="px-4">
               <p className="text-2xl font-bold text-white">{personality.totalItems}</p>
               <p className="text-xs text-white/40 uppercase tracking-wide">Items</p>
@@ -1783,20 +1824,10 @@ export default function OrderPageClient({
             </div>
           </div>
 
-          {/* Branding Highlights */}
-          {brandingHighlights.length > 0 && (
-            <div className="mt-8 flex flex-wrap justify-center gap-2">
-              {brandingHighlights.map((highlight) => (
-                <span key={highlight} className="rounded-full bg-white/5 border border-white/10 px-3 py-1 text-xs text-white/50 uppercase tracking-wide">
-                  {highlight}
-                </span>
-              ))}
-            </div>
-          )}
         </div>
-      </section>
+      </div>
 
-      <main id="menu" className="mx-auto max-w-6xl space-y-12 px-6 py-12">
+      <main id="menu" className="mx-auto max-w-7xl space-y-10 px-4 py-8">
         {notification && (
           <div className="fixed right-6 top-20 z-50 rounded-2xl bg-green-500/95 px-6 py-3 text-sm font-semibold text-white shadow-lg shadow-green-500/40">
             {notification}
@@ -1804,16 +1835,16 @@ export default function OrderPageClient({
         )}
 
 
-        {/* Mobile Sticky Bottom Bar - Modern Glass Style */}
+        {/* Mobile Sticky Bottom Bar - Warm Theme */}
         <div className="fixed bottom-0 left-0 right-0 z-50 sm:hidden">
-          <div className="mx-3 mb-3 flex items-center justify-around rounded-2xl bg-neutral-900/95 backdrop-blur-xl border border-white/10 px-2 py-2">
+          <div className="mx-2 mb-2 flex items-center justify-around rounded-2xl bg-[#8B2323] shadow-lg px-2 py-2">
             {cateringEnabled && (
               <button
                 onClick={() => setShowCateringPanel(true)}
-                className={`flex flex-col items-center gap-0.5 rounded-xl px-4 py-2 text-[11px] font-medium transition-all ${
+                className={`flex flex-col items-center gap-0.5 rounded-xl px-3 py-2 text-[11px] font-medium transition-all ${
                   showCateringPanel
-                    ? 'bg-white/10 text-white'
-                    : 'text-white/60'
+                    ? 'bg-white/20 text-white'
+                    : 'text-white/70'
                 }`}
               >
                 <span className="text-base">🎉</span>
@@ -1822,10 +1853,10 @@ export default function OrderPageClient({
             )}
             <button
               onClick={() => setAccessibilityOpen((prev) => !prev)}
-              className={`flex flex-col items-center gap-0.5 rounded-xl px-4 py-2 text-[11px] font-medium transition-all ${
+              className={`flex flex-col items-center gap-0.5 rounded-xl px-3 py-2 text-[11px] font-medium transition-all ${
                 isAccessibilityOpen
-                  ? 'bg-white/10 text-white'
-                  : 'text-white/60'
+                  ? 'bg-white/20 text-white'
+                  : 'text-white/70'
               }`}
             >
               <span className="text-base">♿</span>
@@ -1839,7 +1870,7 @@ export default function OrderPageClient({
                   setShowJoinModal(true);
                 }
               }}
-              className="flex flex-col items-center gap-0.5 rounded-xl px-4 py-2 text-[11px] font-medium text-amber-400 transition-all"
+              className="flex flex-col items-center gap-0.5 rounded-xl px-3 py-2 text-[11px] font-medium text-amber-300 transition-all"
             >
               <span className="text-base">🎁</span>
               <span>{customerData ? 'Rewards' : 'Join'}</span>
@@ -1849,13 +1880,13 @@ export default function OrderPageClient({
                 const cartButton = document.querySelector('[data-cart-launcher]') as HTMLElement;
                 cartButton?.click();
               }}
-              className="relative flex flex-col items-center gap-0.5 rounded-xl bg-red-600 px-5 py-2 text-[11px] font-bold text-white transition-all"
+              className="relative flex flex-col items-center gap-0.5 rounded-xl bg-[#FFF5E6] px-4 py-2 text-[11px] font-bold text-[#8B2323] transition-all"
             >
               <span className="text-base">🛒</span>
-              <span>Cart</span>
+              <span>My Bag</span>
               {cartItemCount > 0 && (
-                <span className="absolute -top-1.5 -right-1 flex h-5 w-5 items-center justify-center rounded-full bg-amber-400 text-[10px] font-bold text-black">
-                  {cartItemCount > 9 ? '9+' : cartItemCount}
+                <span className="absolute -top-1.5 -right-1 flex h-5 w-5 items-center justify-center rounded-full bg-[#C41E3A] text-[10px] font-bold text-white shadow-md">
+                  {cartItemCount}
                 </span>
               )}
             </button>

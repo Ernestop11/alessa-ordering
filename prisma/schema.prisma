@@ -20,105 +20,105 @@ enum TenantStatus {
 }
 
 model MenuItem {
-  id                      String        @id @default(uuid())
-  tenantId                String
-  menuSectionId           String?
-  name                    String
-  description             String
-  price                   Float
-  category                String        @default("general")
-  image                   String?
-  gallery                 Json?
-  available               Boolean       @default(true)
-  isFeatured              Boolean       @default(false)
-  tags                    String[]      @default([])
-  customizationRemovals   String[]      @default([])
-  customizationAddons     Json?
-  createdAt               DateTime      @default(now())
-  updatedAt               DateTime      @updatedAt
-  tenant                  Tenant        @relation(fields: [tenantId], references: [id], onDelete: Cascade)
-  section                 MenuSection?  @relation(fields: [menuSectionId], references: [id], onDelete: SetNull)
-  orders                  OrderItem[]
+  id                    String       @id @default(uuid())
+  tenantId              String
+  menuSectionId         String?
+  name                  String
+  description           String
+  price                 Float
+  category              String       @default("general")
+  image                 String?
+  gallery               Json?
+  available             Boolean      @default(true)
+  isFeatured            Boolean      @default(false)
+  tags                  String[]     @default([])
+  customizationRemovals String[]     @default([])
+  customizationAddons   Json?
+  createdAt             DateTime     @default(now())
+  updatedAt             DateTime     @updatedAt
+  tenant                Tenant       @relation(fields: [tenantId], references: [id], onDelete: Cascade)
+  section               MenuSection? @relation(fields: [menuSectionId], references: [id], onDelete: SetNull)
+  orders                OrderItem[]
 }
 
 model CateringPackage {
-  id                      String               @id @default(uuid())
-  tenantId                String
-  cateringSectionId       String?
-  name                    String
-  description             String
-  pricePerGuest           Float
-  price                   Float?
-  category                String               @default("popular")
-  image                   String?
-  gallery                 Json?
-  badge                   String?
-  customizationRemovals   String[]             @default([])
-  customizationAddons     Json?
-  available               Boolean              @default(true)
-  displayOrder            Int                  @default(0)
-  createdAt               DateTime             @default(now())
-  updatedAt               DateTime             @updatedAt
-  tenant                  Tenant               @relation(fields: [tenantId], references: [id], onDelete: Cascade)
-  section                 CateringSection?     @relation(fields: [cateringSectionId], references: [id], onDelete: SetNull)
+  id                    String           @id @default(uuid())
+  tenantId              String
+  cateringSectionId     String?
+  name                  String
+  description           String
+  pricePerGuest         Float
+  price                 Float?
+  category              String           @default("popular")
+  image                 String?
+  gallery               Json?
+  badge                 String?
+  customizationRemovals String[]         @default([])
+  customizationAddons   Json?
+  available             Boolean          @default(true)
+  displayOrder          Int              @default(0)
+  createdAt             DateTime         @default(now())
+  updatedAt             DateTime         @updatedAt
+  tenant                Tenant           @relation(fields: [tenantId], references: [id], onDelete: Cascade)
+  section               CateringSection? @relation(fields: [cateringSectionId], references: [id], onDelete: SetNull)
 }
 
 model CateringSection {
-  id               String             @id @default(uuid())
-  tenantId         String
-  name             String
-  description      String?
-  position         Int                @default(0)
-  imageUrl         String?
-  createdAt        DateTime           @default(now())
-  updatedAt        DateTime           @updatedAt
-  tenant           Tenant             @relation(fields: [tenantId], references: [id], onDelete: Cascade)
-  packages         CateringPackage[]
+  id          String            @id @default(uuid())
+  tenantId    String
+  name        String
+  description String?
+  position    Int               @default(0)
+  imageUrl    String?
+  createdAt   DateTime          @default(now())
+  updatedAt   DateTime          @updatedAt
+  tenant      Tenant            @relation(fields: [tenantId], references: [id], onDelete: Cascade)
+  packages    CateringPackage[]
 }
 
 model Order {
-  id               String        @id @default(uuid())
-  tenantId         String
-  customerId       String?
-  subtotalAmount   Float?
-  taxAmount        Float?        @default(0)
-  deliveryFee      Float?        @default(0)
-  tipAmount        Float?        @default(0)
-  platformFee      Float?        @default(0)
-  totalAmount      Float
-  paymentIntentId  String?       @unique
-  status           String        @default("pending")
-  fulfillmentMethod String       @default("pickup")
-  deliveryPartner  String?
-  paymentMethod    String?
-  customerName     String?
-  customerEmail    String?
-  customerPhone    String?
-  notes            String?
-  acknowledgedAt   DateTime?
-  createdAt        DateTime      @default(now())
-  updatedAt        DateTime      @updatedAt
-  tenant           Tenant        @relation(fields: [tenantId], references: [id], onDelete: Cascade)
-  customer         Customer?     @relation(fields: [customerId], references: [id], onDelete: SetNull)
-  items            OrderItem[]
+  id                String      @id @default(uuid())
+  tenantId          String
+  customerId        String?
+  subtotalAmount    Float?
+  taxAmount         Float?      @default(0)
+  deliveryFee       Float?      @default(0)
+  tipAmount         Float?      @default(0)
+  platformFee       Float?      @default(0)
+  totalAmount       Float
+  paymentIntentId   String?     @unique
+  status            String      @default("pending")
+  fulfillmentMethod String      @default("pickup")
+  deliveryPartner   String?
+  paymentMethod     String?
+  customerName      String?
+  customerEmail     String?
+  customerPhone     String?
+  notes             String?
+  acknowledgedAt    DateTime?
+  createdAt         DateTime    @default(now())
+  updatedAt         DateTime    @updatedAt
+  tenant            Tenant      @relation(fields: [tenantId], references: [id], onDelete: Cascade)
+  customer          Customer?   @relation(fields: [customerId], references: [id], onDelete: SetNull)
+  items             OrderItem[]
 }
 
 model CateringInquiry {
-  id               String        @id @default(uuid())
-  tenantId         String
-  customerName     String
-  customerEmail    String
-  customerPhone    String
-  eventDate        DateTime?
-  guestCount       Int?
-  message          String?
-  status           String        @default("new") // new, contacted, quoted, booked, cancelled
-  respondedAt      DateTime?
-  responseNotes    String?
-  createdAt        DateTime      @default(now())
-  updatedAt        DateTime      @updatedAt
-  tenant           Tenant        @relation(fields: [tenantId], references: [id], onDelete: Cascade)
-  
+  id            String    @id @default(uuid())
+  tenantId      String
+  customerName  String
+  customerEmail String
+  customerPhone String
+  eventDate     DateTime?
+  guestCount    Int?
+  message       String?
+  status        String    @default("new") // new, contacted, quoted, booked, cancelled
+  respondedAt   DateTime?
+  responseNotes String?
+  createdAt     DateTime  @default(now())
+  updatedAt     DateTime  @updatedAt
+  tenant        Tenant    @relation(fields: [tenantId], references: [id], onDelete: Cascade)
+
   @@index([tenantId])
   @@index([status])
   @@index([createdAt])
@@ -136,7 +136,7 @@ model PaymentSession {
   tenant          Tenant   @relation(fields: [tenantId], references: [id], onDelete: Cascade)
   createdAt       DateTime @default(now())
   updatedAt       DateTime @updatedAt
-  
+
   @@index([tenantId])
   @@index([paymentIntentId])
   @@index([status])
@@ -156,115 +156,116 @@ model OrderItem {
 }
 
 model Tenant {
-  id               String             @id @default(uuid())
-  name             String
-  slug             String             @unique
-  domain           String?
-  customDomain     String?
-  contactEmail     String?
-  contactPhone     String?
-  addressLine1     String?
-  addressLine2     String?
-  city             String?
-  state            String?
-  postalCode       String?
-  country          String?
-  logoUrl          String?
-  heroImageUrl     String?
-  heroTitle        String?
-  heroSubtitle     String?
-  primaryColor     String?           @default("#dc2626")
-  secondaryColor   String?           @default("#f59e0b")
-  status           TenantStatus      @default(PENDING_REVIEW)
-  statusNotes      String?
-  statusUpdatedAt  DateTime?         @default(now())
-  subscriptionPlan String?
-  subscriptionMonthlyFee Float       @default(0)
-  subscriptionAddons  String[]       @default([])
-  featureFlags     String[]          @default([])
-  createdAt        DateTime          @default(now())
-  updatedAt        DateTime          @updatedAt
-  settings         TenantSettings?
-  integrations     TenantIntegration?
-  customers        Customer[]
-  customerSessions   CustomerSession[]
-  menuSections       MenuSection[]
-  menuItems          MenuItem[]
-  cateringSections   CateringSection[]
-  cateringPackages   CateringPackage[]
-  orders             Order[]
-  orderItems         OrderItem[]
-  integrationLogs    IntegrationLog[]
-  paymentSessions    PaymentSession[]
-  cateringInquiries  CateringInquiry[]
+  id                     String             @id @default(uuid())
+  name                   String
+  slug                   String             @unique
+  domain                 String?
+  customDomain           String?
+  contactEmail           String?
+  contactPhone           String?
+  addressLine1           String?
+  addressLine2           String?
+  city                   String?
+  state                  String?
+  postalCode             String?
+  country                String?
+  logoUrl                String?
+  heroImageUrl           String?
+  heroTitle              String?
+  heroSubtitle           String?
+  primaryColor           String?            @default("#dc2626")
+  secondaryColor         String?            @default("#f59e0b")
+  status                 TenantStatus       @default(PENDING_REVIEW)
+  statusNotes            String?
+  statusUpdatedAt        DateTime?          @default(now())
+  subscriptionPlan       String?
+  subscriptionMonthlyFee Float              @default(0)
+  subscriptionAddons     String[]           @default([])
+  featureFlags           String[]           @default([])
+  createdAt              DateTime           @default(now())
+  updatedAt              DateTime           @updatedAt
+  settings               TenantSettings?
+  integrations           TenantIntegration?
+  customers              Customer[]
+  customerSessions       CustomerSession[]
+  menuSections           MenuSection[]
+  menuItems              MenuItem[]
+  cateringSections       CateringSection[]
+  cateringPackages       CateringPackage[]
+  orders                 Order[]
+  orderItems             OrderItem[]
+  integrationLogs        IntegrationLog[]
+  paymentSessions        PaymentSession[]
+  cateringInquiries      CateringInquiry[]
+  referrals              TenantReferral[]
 
   @@index([status])
 }
 
 model TenantSettings {
-  id                     String   @id @default(uuid())
-  tenantId               String   @unique
-  tagline                String?
-  about                  String?
-  socialInstagram        String?
-  socialFacebook         String?
-  socialTikTok           String?
-  socialYouTube          String?
-  deliveryRadiusMi       Int?     @default(5)
-  minimumOrderValue      Float?   @default(0)
-  currency               String?  @default("USD")
-  timeZone               String?  @default("America/Los_Angeles")
-  operatingHours         Json?
-  membershipProgram      Json?
-  upsellBundles          Json?
-  rewards                Json?     // Array of Reward objects
-  emailOffers            Json?     // Array of EmailOffer objects
-  accessibilityDefaults  Json?
-  branding               Json?
-  cateringTabConfig      Json?
-  cateringGallery        String[] @default([])
-  rewardsGallery         String[] @default([])
-  isOpen                 Boolean? @default(true)
-  createdAt              DateTime @default(now())
-  updatedAt              DateTime @updatedAt
-  tenant                 Tenant   @relation(fields: [tenantId], references: [id], onDelete: Cascade)
+  id                    String   @id @default(uuid())
+  tenantId              String   @unique
+  tagline               String?
+  about                 String?
+  socialInstagram       String?
+  socialFacebook        String?
+  socialTikTok          String?
+  socialYouTube         String?
+  deliveryRadiusMi      Int?     @default(5)
+  minimumOrderValue     Float?   @default(0)
+  currency              String?  @default("USD")
+  timeZone              String?  @default("America/Los_Angeles")
+  operatingHours        Json?
+  membershipProgram     Json?
+  upsellBundles         Json?
+  rewards               Json? // Array of Reward objects
+  emailOffers           Json? // Array of EmailOffer objects
+  accessibilityDefaults Json?
+  branding              Json?
+  cateringTabConfig     Json?
+  cateringGallery       String[] @default([])
+  rewardsGallery        String[] @default([])
+  isOpen                Boolean? @default(true)
+  createdAt             DateTime @default(now())
+  updatedAt             DateTime @updatedAt
+  tenant                Tenant   @relation(fields: [tenantId], references: [id], onDelete: Cascade)
 }
 
 model TenantIntegration {
-  id                               String   @id @default(uuid())
-  tenantId                         String   @unique
-  doorDashStoreId                  String?
-  doorDashOAuthToken               String?
-  cloverMerchantId                 String?
-  cloverApiKey                     String?
-  stripeAccountId                  String?
-  stripeOnboardingComplete         Boolean? @default(false)
-  stripeChargesEnabled             Boolean? @default(false)
-  stripePayoutsEnabled             Boolean? @default(false)
-  stripeDetailsSubmitted           Boolean? @default(false)
-  stripeOnboardedAt                DateTime?
-  cloverAccessToken                String?
-  squareLocationId                 String?
-  squareAccessToken                String?
-  taxProvider                      String?  @default("builtin")
-  taxConfig                        Json?
-  paymentProcessor                 String?  @default("stripe")
-  paymentConfig                    Json?
-  printerType                      String?  @default("bluetooth")
-  printerEndpoint                  String?
-  printerConfig                    Json?
-  applePayMerchantId               String?
+  id                                   String    @id @default(uuid())
+  tenantId                             String    @unique
+  doorDashStoreId                      String?
+  doorDashOAuthToken                   String?
+  cloverMerchantId                     String?
+  cloverApiKey                         String?
+  stripeAccountId                      String?
+  stripeOnboardingComplete             Boolean?  @default(false)
+  stripeChargesEnabled                 Boolean?  @default(false)
+  stripePayoutsEnabled                 Boolean?  @default(false)
+  stripeDetailsSubmitted               Boolean?  @default(false)
+  stripeOnboardedAt                    DateTime?
+  cloverAccessToken                    String?
+  squareLocationId                     String?
+  squareAccessToken                    String?
+  taxProvider                          String?   @default("builtin")
+  taxConfig                            Json?
+  paymentProcessor                     String?   @default("stripe")
+  paymentConfig                        Json?
+  printerType                          String?   @default("bluetooth")
+  printerEndpoint                      String?
+  printerConfig                        Json?
+  applePayMerchantId                   String?
   applePayPaymentProcessingCertificate String?
-  autoAcceptOrders                 Boolean? @default(false)
-  autoPrintOrders                  Boolean? @default(false)
-  fulfillmentNotificationsEnabled  Boolean? @default(true)
-  platformPercentFee               Float?   @default(0.029)
-  platformFlatFee                  Float?   @default(0.3)
-  defaultTaxRate                   Float?   @default(0.0825)
-  deliveryBaseFee                  Float?   @default(4.99)
-  createdAt                        DateTime @default(now())
-  updatedAt                        DateTime @updatedAt
-  tenant                           Tenant   @relation(fields: [tenantId], references: [id], onDelete: Cascade)
+  autoAcceptOrders                     Boolean?  @default(false)
+  autoPrintOrders                      Boolean?  @default(false)
+  fulfillmentNotificationsEnabled      Boolean?  @default(true)
+  platformPercentFee                   Float?    @default(0.029)
+  platformFlatFee                      Float?    @default(0.3)
+  defaultTaxRate                       Float?    @default(0.0825)
+  deliveryBaseFee                      Float?    @default(4.99)
+  createdAt                            DateTime  @default(now())
+  updatedAt                            DateTime  @updatedAt
+  tenant                               Tenant    @relation(fields: [tenantId], references: [id], onDelete: Cascade)
 }
 
 model MenuSection {
@@ -292,20 +293,20 @@ enum MenuSectionType {
 }
 
 model Customer {
-  id                      String   @id @default(uuid())
-  tenantId                String
-  name                    String?
-  email                   String?
-  phone                   String?
-  emailVerified           DateTime?
-  loyaltyPoints           Int      @default(0)
-  membershipTier          String?
+  id                       String            @id @default(uuid())
+  tenantId                 String
+  name                     String?
+  email                    String?
+  phone                    String?
+  emailVerified            DateTime?
+  loyaltyPoints            Int               @default(0)
+  membershipTier           String?
   accessibilityPreferences Json?
-  createdAt               DateTime @default(now())
-  updatedAt               DateTime @updatedAt
-  tenant                  Tenant   @relation(fields: [tenantId], references: [id], onDelete: Cascade)
-  orders                  Order[]
-  sessions                CustomerSession[]
+  createdAt                DateTime          @default(now())
+  updatedAt                DateTime          @updatedAt
+  tenant                   Tenant            @relation(fields: [tenantId], references: [id], onDelete: Cascade)
+  orders                   Order[]
+  sessions                 CustomerSession[]
 
   @@index([tenantId, email])
   @@index([tenantId, phone])
@@ -333,4 +334,104 @@ model CustomerSession {
   customer   Customer @relation(fields: [customerId], references: [id], onDelete: Cascade)
 
   @@index([tenantId, token])
+}
+
+// MLM Associate Program Models
+enum AssociateStatus {
+  ACTIVE
+  INACTIVE
+  SUSPENDED
+}
+
+enum CommissionStatus {
+  PENDING
+  APPROVED
+  PAID
+  CANCELLED
+}
+
+enum CommissionType {
+  SUBSCRIPTION
+  ORDER_VOLUME
+  REFERRAL
+  DOWNLINE_BONUS
+}
+
+model Associate {
+  id               String          @id @default(uuid())
+  email            String          @unique
+  password         String // hashed password
+  name             String
+  phone            String?
+  referralCode     String          @unique
+  sponsorId        String? // Parent associate (self-referencing)
+  level            Int             @default(1) // Depth in downline tree
+  status           AssociateStatus @default(ACTIVE)
+  totalEarnings    Float           @default(0)
+  monthlyEarnings  Float           @default(0)
+  lifetimeEarnings Float           @default(0)
+  totalCommissions Float           @default(0)
+  totalPaid        Float           @default(0)
+  totalPending     Float           @default(0)
+  createdAt        DateTime        @default(now())
+  updatedAt        DateTime        @updatedAt
+
+  // Self-referencing for downline tree
+  sponsor  Associate?  @relation("AssociateTree", fields: [sponsorId], references: [id], onDelete: SetNull)
+  downline Associate[] @relation("AssociateTree")
+
+  // Related records
+  referrals   TenantReferral[]
+  commissions Commission[]
+
+  @@index([email])
+  @@index([referralCode])
+  @@index([sponsorId])
+  @@index([status])
+}
+
+model TenantReferral {
+  id             String    @id @default(uuid())
+  tenantId       String
+  associateId    String
+  referralCode   String // The code used to refer this tenant
+  commissionRate Float     @default(0.10) // 10% of subscription fee
+  status         String    @default("pending") // pending, approved, active, cancelled
+  approvedAt     DateTime?
+  activatedAt    DateTime?
+  createdAt      DateTime  @default(now())
+  updatedAt      DateTime  @updatedAt
+
+  tenant    Tenant    @relation(fields: [tenantId], references: [id], onDelete: Cascade)
+  associate Associate @relation(fields: [associateId], references: [id], onDelete: Cascade)
+
+  @@unique([tenantId, associateId]) // One referral per tenant-associate pair
+  @@index([tenantId])
+  @@index([associateId])
+  @@index([referralCode])
+  @@index([status])
+}
+
+model Commission {
+  id           String           @id @default(uuid())
+  associateId  String
+  tenantId     String?
+  orderId      String?
+  referralId   String?
+  amount       Float
+  type         CommissionType
+  status       CommissionStatus @default(PENDING)
+  description  String?
+  paidAt       DateTime?
+  paymentNotes String?
+  createdAt    DateTime         @default(now())
+  updatedAt    DateTime         @updatedAt
+
+  associate Associate @relation(fields: [associateId], references: [id], onDelete: Cascade)
+
+  @@index([associateId])
+  @@index([tenantId])
+  @@index([status])
+  @@index([type])
+  @@index([createdAt])
 }
