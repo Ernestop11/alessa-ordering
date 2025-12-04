@@ -1861,50 +1861,7 @@ export default function OrderPageClient({
         </div>
       </div>
 
-      {/* Floating Page Navigation - Right Side */}
-      <div className="fixed right-4 top-1/2 -translate-y-1/2 z-40 hidden lg:flex flex-col gap-2 p-2 rounded-2xl bg-black/60 backdrop-blur-md border border-white/10">
-        <div className="text-[10px] text-white/40 text-center px-2 py-1 border-b border-white/10 mb-1">
-          SECTIONS
-        </div>
-        {navSections.map((section, index) => {
-          const isActive = activeSectionId === section.id;
-          return (
-            <button
-              key={section.id}
-              onClick={() => {
-                setActiveSectionId(section.id);
-                const element = document.getElementById(`section-${section.id}`);
-                if (element) {
-                  const headerHeight = 160;
-                  const elementPosition = element.getBoundingClientRect().top + window.pageYOffset;
-                  window.scrollTo({ top: elementPosition - headerHeight, behavior: 'smooth' });
-                }
-              }}
-              className={`group flex items-center gap-2 px-3 py-2 rounded-xl text-xs transition-all ${
-                isActive
-                  ? 'bg-[#C41E3A] text-white'
-                  : 'text-white/50 hover:text-white hover:bg-white/10'
-              }`}
-              title={section.name}
-            >
-              <span className="w-5 h-5 flex items-center justify-center rounded-full bg-white/10 text-[10px] font-bold">
-                {index + 1}
-              </span>
-              <span className="max-w-[80px] truncate">{section.name}</span>
-            </button>
-          );
-        })}
-        {/* Scroll to top button */}
-        <button
-          onClick={() => window.scrollTo({ top: 0, behavior: 'smooth' })}
-          className="mt-1 p-2 rounded-xl text-white/40 hover:text-white hover:bg-white/10 transition-all"
-          title="Back to top"
-        >
-          <svg className="w-4 h-4 mx-auto" fill="none" viewBox="0 0 24 24" stroke="currentColor">
-            <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M5 10l7-7m0 0l7 7m-7-7v18" />
-          </svg>
-        </button>
-      </div>
+      {/* Right-side floating nav removed - using horizontal sticky nav instead */}
 
       {/* Hero Section - Macy's Holiday Red Style with INTENSE Sparkles & Decorations */}
       <section className="relative overflow-hidden min-h-[500px] md:min-h-[600px]">
@@ -2040,9 +1997,12 @@ export default function OrderPageClient({
                   {/* Overlay gradient */}
                   <div className="absolute inset-0 bg-gradient-to-t from-[#8B0000]/60 via-transparent to-transparent" />
 
-                  {/* Hot badge */}
-                  <div className="absolute top-4 right-4 px-4 py-2 rounded-full bg-[#FF4444] text-white text-sm font-black shadow-lg animate-pulse">
-                    🔥 HOT
+                  {/* Hot badge with flame icon */}
+                  <div className="absolute top-4 right-4 px-4 py-2 rounded-full bg-gradient-to-r from-[#FF4444] to-[#FF6B00] text-white text-sm font-black shadow-lg animate-pulse flex items-center gap-1.5">
+                    <svg className="w-4 h-4" fill="currentColor" viewBox="0 0 20 20">
+                      <path fillRule="evenodd" d="M12.395 2.553a1 1 0 00-1.45-.385c-.345.23-.614.558-.822.88-.214.33-.403.713-.57 1.116-.334.804-.614 1.768-.84 2.734a31.365 31.365 0 00-.613 3.58 2.64 2.64 0 01-.945-1.067c-.328-.68-.398-1.534-.398-2.654A1 1 0 005.05 6.05 6.981 6.981 0 003 11a7 7 0 1011.95-4.95c-.592-.591-.98-.985-1.348-1.467-.363-.476-.724-1.063-1.207-2.03zM12.12 15.12A3 3 0 017 13s.879.5 2.5.5c0-1 .5-4 1.25-4.5.5 1 .786 1.293 1.371 1.879A2.99 2.99 0 0113 13a2.99 2.99 0 01-.879 2.121z" clipRule="evenodd" />
+                    </svg>
+                    HOT
                   </div>
                 </div>
 
@@ -2053,9 +2013,11 @@ export default function OrderPageClient({
                   </div>
                 )}
 
-                {/* Floating food emojis */}
-                <div className="absolute -top-4 -left-4 text-4xl animate-bounce" style={{ animationDuration: '2s' }}>🌮</div>
-                <div className="absolute -bottom-2 -right-4 text-3xl animate-bounce" style={{ animationDuration: '2.5s', animationDelay: '0.5s' }}>🌯</div>
+                {/* Floating visual effects instead of emojis */}
+                <div className="absolute -top-4 -left-4 w-12 h-12 rounded-full bg-gradient-to-br from-[#FFD700]/80 to-[#FF6B00]/60 blur-sm animate-pulse" style={{ animationDuration: '2s' }} />
+                <div className="absolute -top-2 -left-2 w-8 h-8 rounded-full border-2 border-[#FFD700]/60 animate-ping" style={{ animationDuration: '2s' }} />
+                <div className="absolute -bottom-2 -right-4 w-10 h-10 rounded-full bg-gradient-to-br from-[#FF6B6B]/70 to-[#FFD700]/50 blur-sm animate-pulse" style={{ animationDuration: '2.5s', animationDelay: '0.5s' }} />
+                <div className="absolute bottom-0 -right-2 w-6 h-6 rounded-full border-2 border-[#FF6B6B]/50 animate-ping" style={{ animationDuration: '2.5s', animationDelay: '0.5s' }} />
               </div>
             </div>
           </div>
@@ -2208,13 +2170,33 @@ export default function OrderPageClient({
                         </svg>
                       </button>
                     </div>
-                    <div className="relative h-48 md:h-64 rounded-2xl overflow-hidden">
-                      <div className="absolute inset-0 bg-gradient-to-br from-[#C41E3A]/20 to-transparent" />
-                      <div className="flex items-center justify-center h-full text-8xl">
-                        🌮🌯🫔
+                    <div className="relative h-48 md:h-64 rounded-2xl overflow-hidden bg-gradient-to-br from-[#2a1515] to-[#1a0a0a]">
+                      {/* Animated concentric circles */}
+                      <div className="absolute inset-0 flex items-center justify-center">
+                        <div className="absolute w-40 h-40 rounded-full border-2 border-[#FFD700]/20 animate-ping" style={{ animationDuration: '3s' }} />
+                        <div className="absolute w-32 h-32 rounded-full border-2 border-[#FFD700]/30 animate-ping" style={{ animationDuration: '2.5s', animationDelay: '0.5s' }} />
+                        <div className="absolute w-24 h-24 rounded-full border-2 border-[#FFD700]/40 animate-pulse" />
+                        <div className="absolute w-16 h-16 rounded-full bg-gradient-to-br from-[#FFD700] to-[#FF6B00] shadow-lg shadow-[#FFD700]/50 flex items-center justify-center">
+                          <svg className="w-8 h-8 text-[#8B0000]" fill="currentColor" viewBox="0 0 20 20">
+                            <path d="M3 1a1 1 0 000 2h1.22l.305 1.222a.997.997 0 00.01.042l1.358 5.43-.893.892C3.74 11.846 4.632 14 6.414 14H15a1 1 0 000-2H6.414l1-1H14a1 1 0 00.894-.553l3-6A1 1 0 0017 3H6.28l-.31-1.243A1 1 0 005 1H3zM16 16.5a1.5 1.5 0 11-3 0 1.5 1.5 0 013 0zM6.5 18a1.5 1.5 0 100-3 1.5 1.5 0 000 3z" />
+                          </svg>
+                        </div>
                       </div>
-                      {/* Glow effect */}
-                      <div className="absolute inset-0 bg-[radial-gradient(circle_at_center,rgba(255,215,0,0.2)_0%,transparent_70%)]" />
+                      {/* Floating particles */}
+                      {[...Array(6)].map((_, i) => (
+                        <div
+                          key={i}
+                          className="absolute w-2 h-2 rounded-full bg-[#FFD700]/60 animate-bounce"
+                          style={{
+                            left: `${20 + i * 12}%`,
+                            top: `${30 + (i % 2) * 40}%`,
+                            animationDuration: `${1.5 + i * 0.2}s`,
+                            animationDelay: `${i * 0.15}s`,
+                          }}
+                        />
+                      ))}
+                      {/* Gradient overlay */}
+                      <div className="absolute inset-0 bg-[radial-gradient(circle_at_center,rgba(255,215,0,0.15)_0%,transparent_70%)]" />
                     </div>
                   </div>
                 </div>
@@ -2268,7 +2250,14 @@ export default function OrderPageClient({
                 <div className="bg-[#1a1a1a] rounded-[14px] px-6 py-4">
                   <div className="flex flex-wrap items-center justify-between gap-4">
                     <div className="flex items-center gap-4">
-                      <span className="text-3xl animate-bounce">🎉</span>
+                      {/* Animated sparkle instead of emoji */}
+                      <div className="relative w-10 h-10">
+                        <div className="absolute inset-0 bg-[#FFD700] rounded-full animate-ping opacity-30" />
+                        <div className="absolute inset-2 bg-gradient-to-br from-[#FFD700] to-[#FF6B00] rounded-full animate-pulse" />
+                        <svg className="absolute inset-0 w-full h-full text-white" viewBox="0 0 24 24" fill="currentColor">
+                          <path d="M12 2L9 9H2l5.5 4.5L5 22l7-5 7 5-2.5-8.5L22 9h-7L12 2z" />
+                        </svg>
+                      </div>
                       <div>
                         <p className="text-[#FFD700] font-black text-lg">LUNCH SPECIAL</p>
                         <p className="text-white/60 text-sm">Any 2 tacos + drink for $8.99</p>
@@ -2290,6 +2279,89 @@ export default function OrderPageClient({
                       </button>
                     </div>
                   </div>
+                </div>
+              </div>
+            )}
+
+            {/* Fresh Quality Banner - After 7th section */}
+            {sectionIndex === 7 && (
+              <div className="mb-10 relative overflow-hidden rounded-3xl">
+                <div className="relative bg-gradient-to-r from-emerald-900/80 via-emerald-800/80 to-emerald-900/80 p-8 md:p-10 border border-emerald-500/20">
+                  {/* Animated gradient background */}
+                  <div className="absolute inset-0 bg-[linear-gradient(45deg,transparent_25%,rgba(16,185,129,0.1)_50%,transparent_75%)] bg-[length:250%_250%] animate-shimmer" style={{ animationDuration: '3s' }} />
+
+                  {/* Decorative leaf shapes */}
+                  <div className="absolute top-4 left-8 w-16 h-16 border-2 border-emerald-400/30 rounded-full" />
+                  <div className="absolute bottom-4 right-8 w-12 h-12 border-2 border-emerald-400/20 rounded-full" />
+                  <div className="absolute top-1/2 right-1/4 w-8 h-8 bg-emerald-400/10 rounded-full blur-sm" />
+
+                  <div className="relative flex flex-col md:flex-row items-center justify-between gap-6">
+                    <div className="text-center md:text-left">
+                      <div className="inline-flex items-center gap-2 px-4 py-1.5 rounded-full bg-emerald-400/20 text-emerald-300 text-xs font-bold uppercase tracking-wider mb-3">
+                        <svg className="w-4 h-4" fill="currentColor" viewBox="0 0 20 20">
+                          <path fillRule="evenodd" d="M6.267 3.455a3.066 3.066 0 001.745-.723 3.066 3.066 0 013.976 0 3.066 3.066 0 001.745.723 3.066 3.066 0 012.812 2.812c.051.643.304 1.254.723 1.745a3.066 3.066 0 010 3.976 3.066 3.066 0 00-.723 1.745 3.066 3.066 0 01-2.812 2.812 3.066 3.066 0 00-1.745.723 3.066 3.066 0 01-3.976 0 3.066 3.066 0 00-1.745-.723 3.066 3.066 0 01-2.812-2.812 3.066 3.066 0 00-.723-1.745 3.066 3.066 0 010-3.976 3.066 3.066 0 00.723-1.745 3.066 3.066 0 012.812-2.812zm7.44 5.252a1 1 0 00-1.414-1.414L9 10.586 7.707 9.293a1 1 0 00-1.414 1.414l2 2a1 1 0 001.414 0l4-4z" clipRule="evenodd" />
+                        </svg>
+                        Fresh Guarantee
+                      </div>
+                      <h3 className="text-3xl md:text-4xl font-black text-white mb-2">
+                        Quality You Can <span className="text-emerald-400">Taste</span>
+                      </h3>
+                      <p className="text-emerald-100/70 max-w-md">
+                        All ingredients sourced fresh daily from local suppliers
+                      </p>
+                    </div>
+                    <div className="flex gap-4">
+                      <div className="text-center p-4 rounded-xl bg-white/5 backdrop-blur-sm border border-white/10">
+                        <div className="text-3xl font-black text-emerald-400">100%</div>
+                        <div className="text-xs text-white/60 mt-1">Fresh Daily</div>
+                      </div>
+                      <div className="text-center p-4 rounded-xl bg-white/5 backdrop-blur-sm border border-white/10">
+                        <div className="text-3xl font-black text-emerald-400">Local</div>
+                        <div className="text-xs text-white/60 mt-1">Sourced</div>
+                      </div>
+                    </div>
+                  </div>
+                </div>
+              </div>
+            )}
+
+            {/* Customer Reviews Strip - After 9th section */}
+            {sectionIndex === 9 && (
+              <div className="mb-10 relative overflow-hidden rounded-2xl bg-gradient-to-r from-purple-900/50 via-pink-900/50 to-purple-900/50 border border-purple-500/20 p-6 md:p-8">
+                {/* Animated stars background */}
+                <div className="absolute inset-0 overflow-hidden">
+                  {[...Array(8)].map((_, i) => (
+                    <div
+                      key={i}
+                      className="absolute w-1 h-1 bg-purple-400/60 rounded-full animate-pulse"
+                      style={{
+                        left: `${10 + i * 12}%`,
+                        top: `${20 + (i % 3) * 25}%`,
+                        animationDelay: `${i * 0.2}s`,
+                      }}
+                    />
+                  ))}
+                </div>
+
+                <div className="relative flex flex-col md:flex-row items-center justify-between gap-6">
+                  <div className="text-center md:text-left">
+                    <div className="flex items-center gap-1 mb-2 justify-center md:justify-start">
+                      {[...Array(5)].map((_, i) => (
+                        <svg key={i} className="w-6 h-6 text-yellow-400" fill="currentColor" viewBox="0 0 20 20">
+                          <path d="M9.049 2.927c.3-.921 1.603-.921 1.902 0l1.07 3.292a1 1 0 00.95.69h3.462c.969 0 1.371 1.24.588 1.81l-2.8 2.034a1 1 0 00-.364 1.118l1.07 3.292c.3.921-.755 1.688-1.54 1.118l-2.8-2.034a1 1 0 00-1.175 0l-2.8 2.034c-.784.57-1.838-.197-1.539-1.118l1.07-3.292a1 1 0 00-.364-1.118L2.98 8.72c-.783-.57-.38-1.81.588-1.81h3.461a1 1 0 00.951-.69l1.07-3.292z" />
+                        </svg>
+                      ))}
+                      <span className="ml-2 text-white font-bold">4.9</span>
+                    </div>
+                    <p className="text-white/80 text-lg font-medium">&ldquo;Best authentic Mexican food in town!&rdquo;</p>
+                    <p className="text-purple-300/60 text-sm mt-1">— Over 500+ 5-star reviews</p>
+                  </div>
+                  <button
+                    onClick={() => window.open('https://www.google.com/maps', '_blank')}
+                    className="px-6 py-3 rounded-full bg-white/10 backdrop-blur-sm border border-white/20 text-white font-semibold hover:bg-white/20 transition-all"
+                  >
+                    Read Reviews
+                  </button>
                 </div>
               </div>
             )}
