@@ -8,15 +8,16 @@ function validateApiKey(req: Request): boolean {
 
 export async function GET(
   req: Request,
-  { params }: { params: { tenantId: string } }
+  { params }: { params: Promise<{ tenantId: string }> | { tenantId: string } }
 ) {
   try {
+    const resolvedParams = await Promise.resolve(params);
     if (!validateApiKey(req)) {
       return NextResponse.json({ error: 'Unauthorized' }, { status: 401 });
     }
 
     const products = await prisma.menuItem.findMany({
-      where: { tenantId: params.tenantId },
+      where: { tenantId: resolvedParams.tenantId },
       select: {
         id: true,
         name: true,
@@ -56,9 +57,10 @@ export async function GET(
 // Allow SMP to update products (bidirectional sync)
 export async function POST(
   req: Request,
-  { params }: { params: { tenantId: string } }
+  { params }: { params: Promise<{ tenantId: string }> | { tenantId: string } }
 ) {
   try {
+    const resolvedParams = await Promise.resolve(params);
     if (!validateApiKey(req)) {
       return NextResponse.json({ error: 'Unauthorized' }, { status: 401 });
     }
@@ -72,7 +74,7 @@ export async function POST(
 
     // Verify tenant owns this product
     const existing = await prisma.menuItem.findFirst({
-      where: { id, tenantId: params.tenantId },
+      where: { id, tenantId: resolvedParams.tenantId },
     });
 
     if (!existing) {

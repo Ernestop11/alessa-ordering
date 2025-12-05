@@ -14,15 +14,16 @@ function validateApiKey(req: Request): boolean {
 
 export async function GET(
   req: Request,
-  { params }: { params: { slug: string } }
+  { params }: { params: Promise<{ slug: string }> | { slug: string } }
 ) {
   try {
+    const resolvedParams = await Promise.resolve(params);
     if (!validateApiKey(req)) {
       return NextResponse.json({ error: 'Unauthorized' }, { status: 401 });
     }
 
     const tenant = await prisma.tenant.findUnique({
-      where: { slug: params.slug },
+      where: { slug: resolvedParams.slug },
       select: {
         id: true,
         slug: true,

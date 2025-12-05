@@ -8,15 +8,16 @@ function validateApiKey(req: Request): boolean {
 
 export async function GET(
   req: Request,
-  { params }: { params: { tenantId: string } }
+  { params }: { params: Promise<{ tenantId: string }> | { tenantId: string } }
 ) {
   try {
+    const resolvedParams = await Promise.resolve(params);
     if (!validateApiKey(req)) {
       return NextResponse.json({ error: 'Unauthorized' }, { status: 401 });
     }
 
     const categories = await prisma.menuSection.findMany({
-      where: { tenantId: params.tenantId },
+      where: { tenantId: resolvedParams.tenantId },
       select: {
         id: true,
         name: true,
