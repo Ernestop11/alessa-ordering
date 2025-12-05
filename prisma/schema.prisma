@@ -34,6 +34,13 @@ model MenuItem {
   tags                  String[]     @default([])
   customizationRemovals String[]     @default([])
   customizationAddons   Json?
+  // Time-specific availability (e.g., Taco Tuesday)
+  timeSpecificEnabled   Boolean      @default(false)
+  timeSpecificDays      Int[]        @default([]) // 0=Sunday, 1=Monday, etc.
+  timeSpecificStartTime String? // e.g., "11:00"
+  timeSpecificEndTime   String? // e.g., "15:00"
+  timeSpecificPrice     Float? // Override price during time window
+  timeSpecificLabel     String? // e.g., "Taco Tuesday Special"
   createdAt             DateTime     @default(now())
   updatedAt             DateTime     @updatedAt
   tenant                Tenant       @relation(fields: [tenantId], references: [id], onDelete: Cascade)
@@ -57,6 +64,13 @@ model CateringPackage {
   customizationAddons   Json?
   available             Boolean          @default(true)
   displayOrder          Int              @default(0)
+  // Time-specific availability (e.g., Weekend Special)
+  timeSpecificEnabled   Boolean          @default(false)
+  timeSpecificDays      Int[]            @default([]) // 0=Sunday, 1=Monday, etc.
+  timeSpecificStartTime String? // e.g., "11:00"
+  timeSpecificEndTime   String? // e.g., "15:00"
+  timeSpecificPrice     Float? // Override price during time window
+  timeSpecificLabel     String? // e.g., "Weekend Special"
   createdAt             DateTime         @default(now())
   updatedAt             DateTime         @updatedAt
   tenant                Tenant           @relation(fields: [tenantId], references: [id], onDelete: Cascade)
@@ -198,6 +212,10 @@ model Tenant {
   paymentSessions        PaymentSession[]
   cateringInquiries      CateringInquiry[]
   referrals              TenantReferral[]
+  tenantSyncs            TenantSync[]
+  ecosystemEvents        EcosystemEvent[]
+  crmActivities          CRMActivity[]
+  crmNotes               CRMNote[]
 
   @@index([status])
 }
@@ -740,4 +758,80 @@ model LeaderboardEntry {
   @@index([leaderboardId])
   @@index([associateId])
   @@index([rank])
+}
+
+// Ecosystem Sync & Communication
+model TenantSync {
+  id          String    @id @default(uuid())
+  tenantId    String
+  productType String // 'SMP', 'ORDERING', 'MARKETING_APP', etc.
+  lastSyncAt  DateTime?
+  syncStatus  String    @default("pending") // pending, syncing, success, error
+  syncError   String?
+  syncConfig  Json? // Product-specific sync configuration
+  createdAt   DateTime  @default(now())
+  updatedAt   DateTime  @updatedAt
+  tenant      Tenant    @relation(fields: [tenantId], references: [id], onDelete: Cascade)
+
+  @@unique([tenantId, productType])
+  @@index([tenantId])
+  @@index([productType])
+}
+
+model EcosystemEvent {
+  id          String    @id @default(uuid())
+  tenantId    String?
+  eventType   String // 'order_created', 'menu_updated', 'sync_completed', etc.
+  source      String // 'ORDERING', 'SMP', 'MARKETING_APP', etc.
+  target      String? // Target product if cross-product event
+  payload     Json?
+  processed   Boolean   @default(false)
+  processedAt DateTime?
+  createdAt   DateTime  @default(now())
+  tenant      Tenant?   @relation(fields: [tenantId], references: [id], onDelete: SetNull)
+
+  @@index([tenantId])
+  @@index([eventType])
+  @@index([source])
+  @@index([processed])
+  @@index([createdAt])
+}
+
+model CRMActivity {
+  id           String    @id @default(uuid())
+  tenantId     String?
+  activityType String // 'call', 'email', 'meeting', 'note', 'task', 'status_change'
+  title        String
+  description  String?
+  assignedTo   String? // User ID or email
+  dueDate      DateTime?
+  completed    Boolean   @default(false)
+  completedAt  DateTime?
+  metadata     Json? // Additional activity data
+  createdAt    DateTime  @default(now())
+  updatedAt    DateTime  @updatedAt
+  tenant       Tenant?   @relation(fields: [tenantId], references: [id], onDelete: SetNull)
+
+  @@index([tenantId])
+  @@index([activityType])
+  @@index([assignedTo])
+  @@index([completed])
+  @@index([dueDate])
+}
+
+model CRMNote {
+  id        String   @id @default(uuid())
+  tenantId  String
+  author    String // User ID or email
+  content   String
+  tags      String[] @default([])
+  pinned    Boolean  @default(false)
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+  tenant    Tenant   @relation(fields: [tenantId], references: [id], onDelete: Cascade)
+
+  @@index([tenantId])
+  @@index([author])
+  @@index([pinned])
+  @@index([createdAt])
 }

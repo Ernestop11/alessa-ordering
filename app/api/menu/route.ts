@@ -4,6 +4,7 @@ import { getServerSession } from 'next-auth'
 import { authOptions } from '@/lib/auth/options'
 import prisma from '@/lib/prisma'
 import { requireTenant } from '@/lib/tenant'
+import { emitMenuUpdate } from '@/lib/ecosystem/communication'
 
 export async function GET() {
   try {
@@ -48,11 +49,25 @@ export async function POST(req: Request) {
       tags: Array.isArray(body.tags) ? body.tags : [],
       tenantId: tenant.id,
       menuSectionId: body.menuSectionId || null,
+      // Time-specific fields
+      timeSpecificEnabled: body.timeSpecificEnabled === undefined ? false : Boolean(body.timeSpecificEnabled),
+      timeSpecificDays: Array.isArray(body.timeSpecificDays) ? body.timeSpecificDays : [],
+      timeSpecificStartTime: body.timeSpecificStartTime || null,
+      timeSpecificEndTime: body.timeSpecificEndTime || null,
+      timeSpecificPrice: body.timeSpecificPrice ? parseFloat(String(body.timeSpecificPrice)) : null,
+      timeSpecificLabel: body.timeSpecificLabel || null,
     }
 
     const created = await prisma.menuItem.create({
       data,
     })
+
+    // Emit ecosystem event for SMP sync
+    try {
+      await emitMenuUpdate(tenant.id, 'added', created.id, created.name)
+    } catch (err) {
+      console.error('[Menu API] Error emitting ecosystem event:', err)
+    }
 
     // Revalidate customer-facing pages so menu changes reflect immediately
     revalidatePath('/')

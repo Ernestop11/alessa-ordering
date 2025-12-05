@@ -4,6 +4,7 @@ import Link from 'next/link';
 import { useCallback, useEffect, useMemo, useState } from 'react';
 import OnboardingWizard from './OnboardingWizard';
 import MLMAdminPanel from '../mlm/MLMAdminPanel';
+import CRMPanel from './CRMPanel';
 
 type TenantLifecycleStatus =
   | 'PENDING_REVIEW'
@@ -212,7 +213,7 @@ const defaultCreateForm = {
 
 type CreateFormState = typeof defaultCreateForm;
 
-type SuperAdminTab = 'dashboard' | 'tenants' | 'onboarding' | 'templates' | 'mlm';
+type SuperAdminTab = 'dashboard' | 'tenants' | 'onboarding' | 'templates' | 'mlm' | 'crm';
 
 interface BusinessTemplate {
   id: string;
@@ -904,6 +905,7 @@ export default function SuperAdminDashboard({ initialTenants, initialMetrics, ro
             { id: 'onboarding' as SuperAdminTab, label: 'Onboarding', icon: '✨' },
             { id: 'templates' as SuperAdminTab, label: 'Templates', icon: '🎨' },
             { id: 'mlm' as SuperAdminTab, label: 'MLM', icon: '🌳' },
+            { id: 'crm' as SuperAdminTab, label: 'CRM', icon: '💼' },
           ].map((tab) => (
             <button
               key={tab.id}
@@ -1543,6 +1545,10 @@ export default function SuperAdminDashboard({ initialTenants, initialMetrics, ro
         )}
 
         {activeTab === 'mlm' && <MLMAdminPanel />}
+
+        {activeTab === 'crm' && (
+          <CRMPanel tenants={tenants.map((t) => ({ id: t.id, name: t.name, slug: t.slug }))} />
+        )}
 
         {activeTab === 'templates' && (
           <section className="space-y-6">

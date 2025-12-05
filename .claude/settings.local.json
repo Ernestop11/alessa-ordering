@@ -41,7 +41,8 @@
       "Bash(npm view:*)",
       "Bash(npm run build:*)",
       "Bash(ls:*)",
-      "Bash(git checkout:*)"
+      "Bash(git checkout:*)",
+      "Bash(openssl rand:*)"
     ],
     "deny": [],
     "ask": []

@@ -13,6 +13,7 @@ import CartLauncher from '../CartLauncher';
 import RewardsModal from './RewardsModal';
 import JoinRewardsModal from './JoinRewardsModal';
 import MenuSectionGrid from './MenuSectionGrid';
+import { isTimeSpecificActive, getTimeSpecificPrice, getTimeSpecificLabel, shouldShowItem } from '../../lib/menu-time-specific';
 
 interface CustomizationOption {
   id: string;
@@ -825,20 +826,50 @@ export default function OrderPageClient({
     return sections.map((section, sectionIndex) => ({
       ...section,
       icon: SECTION_ICONS[section.type] || '🍽️',
-      items: section.items.map((item, itemIndex) => {
-        const fallback = getStockImageForCategory(item.category || section.type, itemIndex + sectionIndex);
-        const baseGallery = Array.isArray(item.gallery) ? item.gallery.filter((url) => typeof url === 'string' && url.length > 0) : [];
-        const displayGallery = [...baseGallery];
-        if (item.image && !displayGallery.includes(item.image)) {
-          displayGallery.unshift(item.image);
-        }
-        if (displayGallery.length === 0) {
-          displayGallery.push(fallback);
-        }
-        const image = displayGallery[0] ?? fallback;
-        const emoji = getEmojiForItem(item, section.type);
-        return { ...item, displayImage: image, displayGallery, emoji };
-      }),
+      items: section.items
+        .map((item, itemIndex) => {
+          // Check if time-specific is active
+          const timeSpecificConfig = {
+            timeSpecificEnabled: (item as any).timeSpecificEnabled || false,
+            timeSpecificDays: (item as any).timeSpecificDays || [],
+            timeSpecificStartTime: (item as any).timeSpecificStartTime,
+            timeSpecificEndTime: (item as any).timeSpecificEndTime,
+            timeSpecificPrice: (item as any).timeSpecificPrice,
+            timeSpecificLabel: (item as any).timeSpecificLabel,
+            regularPrice: item.price,
+          };
+          
+          // Filter out items that shouldn't be shown
+          if (!shouldShowItem(timeSpecificConfig)) return null;
+          
+          const isTimeActive = isTimeSpecificActive(timeSpecificConfig);
+          const displayPrice = getTimeSpecificPrice(timeSpecificConfig);
+          const timeLabel = getTimeSpecificLabel(timeSpecificConfig);
+          
+          const fallback = getStockImageForCategory(item.category || section.type, itemIndex + sectionIndex);
+          const baseGallery = Array.isArray(item.gallery) ? item.gallery.filter((url) => typeof url === 'string' && url.length > 0) : [];
+          const displayGallery = [...baseGallery];
+          if (item.image && !displayGallery.includes(item.image)) {
+            displayGallery.unshift(item.image);
+          }
+          if (displayGallery.length === 0) {
+            displayGallery.push(fallback);
+          }
+          const image = displayGallery[0] ?? fallback;
+          const emoji = getEmojiForItem(item, section.type);
+          
+          return {
+            ...item,
+            price: displayPrice, // Use time-specific price if active
+            displayPrice,
+            isTimeSpecific: isTimeActive,
+            timeSpecificLabel: timeLabel,
+            displayImage: image,
+            displayGallery,
+            emoji,
+          };
+        })
+        .filter((item): item is NonNullable<typeof item> => item !== null), // Remove nulls
     }));
   }, [sections]);
 
@@ -1307,8 +1338,20 @@ export default function OrderPageClient({
                 <div className="flex flex-1 flex-col justify-between">
                   <div>
                     <div className="flex items-start justify-between gap-2">
-                      <h3 className="text-lg font-semibold text-white">{item.name}</h3>
-                      <span className="rounded-full bg-white/10 px-3 py-1 text-sm font-semibold text-white">${item.price.toFixed(2)}</span>
+                      <div className="flex-1">
+                        <h3 className="text-lg font-semibold text-white">{item.name}</h3>
+                        {(item as any).timeSpecificLabel && (
+                          <span className="mt-1 inline-block rounded-full bg-gradient-to-r from-[#FFD700] to-[#FFA500] px-2 py-0.5 text-xs font-bold text-black">
+                            {(item as any).timeSpecificLabel}
+                          </span>
+                        )}
+                      </div>
+                      <div className="flex flex-col items-end">
+                        {(item as any).isTimeSpecific && (item as any).timeSpecificPrice && (item as any).timeSpecificPrice !== item.price && (
+                          <span className="text-xs text-white/50 line-through">${((item as any).displayPrice || item.price).toFixed(2)}</span>
+                        )}
+                        <span className="rounded-full bg-white/10 px-3 py-1 text-sm font-semibold text-white">${((item as any).displayPrice || item.price).toFixed(2)}</span>
+                      </div>
                     </div>
                     <p className="mt-2 text-sm text-white/70">{item.description}</p>
                     {item.displayGallery && item.displayGallery.length > 1 && (
@@ -1848,16 +1891,23 @@ export default function OrderPageClient({
                       data-section-button={section.id}
                       className={`flex-shrink-0 px-5 py-2.5 rounded-full text-sm font-semibold transition-all duration-300 relative ${
                         isActive
-                          ? 'bg-gradient-to-r from-[#C41E3A] to-[#FF6B6B] text-white shadow-lg shadow-[#C41E3A]/30 scale-105'
+                          ? 'bg-gradient-to-r from-[#C41E3A] to-[#FF6B6B] text-white shadow-lg shadow-[#C41E3A]/30 scale-105 ring-2 ring-[#FF6B6B]/50'
                           : 'text-white/60 hover:text-white hover:bg-white/10'
                       }`}
                     >
                       <span className="relative z-10 flex items-center gap-2">
                         {isActive && (
-                          <span className="w-2 h-2 rounded-full bg-white animate-pulse" />
+                          <>
+                            <span className="w-2 h-2 rounded-full bg-white animate-pulse" />
+                            <span className="absolute -top-1 -right-1 w-3 h-3 rounded-full bg-[#FFD700] border-2 border-white" />
+                          </>
                         )}
                         {section.name}
                       </span>
+                      {/* Active indicator line */}
+                      {isActive && (
+                        <span className="absolute bottom-0 left-1/2 -translate-x-1/2 w-3/4 h-0.5 bg-white rounded-full" />
+                      )}
                     </button>
                   );
                 })}
@@ -2170,80 +2220,140 @@ export default function OrderPageClient({
         {/* Menu Sections with Promotional Banners Between */}
         {enrichedSections.map((section, sectionIndex) => (
           <div key={section.id}>
-            {/* Promotional Billboard Banner - After first section */}
-            {sectionIndex === 1 && (
-              <div className="mb-10 relative overflow-hidden rounded-3xl bg-gradient-to-r from-[#8B0000] via-[#B22222] to-[#6B0F0F] p-1">
-                <div className="relative overflow-hidden rounded-[22px] bg-gradient-to-br from-[#1a0a0a] to-[#2a1515] p-6 md:p-8">
-                  {/* Texture overlay */}
-                  <div className="absolute inset-0 opacity-20" style={{
-                    backgroundImage: `url("data:image/svg+xml,%3Csvg viewBox='0 0 400 400' xmlns='http://www.w3.org/2000/svg'%3E%3Cfilter id='noiseFilter'%3E%3CfeTurbulence type='fractalNoise' baseFrequency='0.9' numOctaves='3' stitchTiles='stitch'/%3E%3C/filter%3E%3Crect width='100%25' height='100%25' filter='url(%23noiseFilter)'/%3E%3C/svg%3E")`,
-                  }} />
+            {/* Promotional Billboard Banner - After first section - Dynamic from Bundles */}
+            {sectionIndex === 1 && (() => {
+              // Get first bundle with category='bundle' or 'popular' that should be featured
+              const featuredBundle = popularPackages.find(pkg => 
+                (pkg.category === 'bundle' || pkg.category === 'popular') && pkg.available
+              ) || popularPackages[0];
+              
+              if (!featuredBundle) return null;
+              
+              const originalPrice = (featuredBundle as any).originalPrice || null;
+              const savings = originalPrice && featuredBundle.price 
+                ? originalPrice - featuredBundle.price 
+                : null;
+              
+              return (
+                <div className="mb-10 relative overflow-hidden rounded-3xl bg-gradient-to-r from-[#8B0000] via-[#B22222] to-[#6B0F0F] p-1">
+                  <div className="relative overflow-hidden rounded-[22px] bg-gradient-to-br from-[#1a0a0a] to-[#2a1515] p-6 md:p-8">
+                    {/* Texture overlay */}
+                    <div className="absolute inset-0 opacity-20" style={{
+                      backgroundImage: `url("data:image/svg+xml,%3Csvg viewBox='0 0 400 400' xmlns='http://www.w3.org/2000/svg'%3E%3Cfilter id='noiseFilter'%3E%3CfeTurbulence type='fractalNoise' baseFrequency='0.9' numOctaves='3' stitchTiles='stitch'/%3E%3C/filter%3E%3Crect width='100%25' height='100%25' filter='url(%23noiseFilter)'/%3E%3C/svg%3E")`,
+                    }} />
 
-                  {/* Sparkle decorations */}
-                  <div className="absolute top-4 left-4 text-2xl animate-pulse">✨</div>
-                  <div className="absolute top-6 right-8 text-xl animate-pulse" style={{ animationDelay: '0.5s' }}>⭐</div>
-                  <div className="absolute bottom-4 right-4 text-2xl animate-pulse" style={{ animationDelay: '1s' }}>✨</div>
+                    {/* Sparkle decorations */}
+                    <div className="absolute top-4 left-4 text-2xl animate-pulse">✨</div>
+                    <div className="absolute top-6 right-8 text-xl animate-pulse" style={{ animationDelay: '0.5s' }}>⭐</div>
+                    <div className="absolute bottom-4 right-4 text-2xl animate-pulse" style={{ animationDelay: '1s' }}>✨</div>
 
-                  <div className="relative grid md:grid-cols-2 gap-6 items-center">
-                    <div>
-                      <span className="inline-block px-4 py-1.5 rounded-full bg-[#FFD700]/20 text-[#FFD700] text-xs font-bold uppercase tracking-wider mb-4">
-                        🔥 Best Value
-                      </span>
-                      <h3 className="text-3xl md:text-4xl font-black text-white mb-3">
-                        Family Fiesta Bundle
-                      </h3>
-                      <p className="text-white/70 mb-4">
-                        Feed the whole crew! Get 12 tacos, rice, beans, chips & salsa for one amazing price.
-                      </p>
-                      <div className="flex items-center gap-4">
-                        <span className="text-4xl font-black text-[#FFD700]">$39.99</span>
-                        <span className="text-lg text-white/50 line-through">$52.00</span>
-                        <span className="px-3 py-1 rounded-full bg-[#FF4444] text-white text-sm font-bold">
-                          Save $12!
-                        </span>
-                      </div>
-                      <button
-                        onClick={() => setShowCateringPanel(true)}
-                        className="mt-6 inline-flex items-center gap-2 px-8 py-4 rounded-full bg-gradient-to-r from-[#FFD700] to-[#FFA500] text-[#8B0000] font-black text-lg shadow-xl hover:scale-105 transition-transform"
-                      >
-                        Order Bundle
-                        <svg className="w-5 h-5" fill="none" viewBox="0 0 24 24" stroke="currentColor">
-                          <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M13 7l5 5m0 0l-5 5m5-5H6" />
-                        </svg>
-                      </button>
-                    </div>
-                    <div className="relative h-48 md:h-64 rounded-2xl overflow-hidden bg-gradient-to-br from-[#2a1515] to-[#1a0a0a]">
-                      {/* Animated concentric circles */}
-                      <div className="absolute inset-0 flex items-center justify-center">
-                        <div className="absolute w-40 h-40 rounded-full border-2 border-[#FFD700]/20 animate-ping" style={{ animationDuration: '3s' }} />
-                        <div className="absolute w-32 h-32 rounded-full border-2 border-[#FFD700]/30 animate-ping" style={{ animationDuration: '2.5s', animationDelay: '0.5s' }} />
-                        <div className="absolute w-24 h-24 rounded-full border-2 border-[#FFD700]/40 animate-pulse" />
-                        <div className="absolute w-16 h-16 rounded-full bg-gradient-to-br from-[#FFD700] to-[#FF6B00] shadow-lg shadow-[#FFD700]/50 flex items-center justify-center">
-                          <svg className="w-8 h-8 text-[#8B0000]" fill="currentColor" viewBox="0 0 20 20">
-                            <path d="M3 1a1 1 0 000 2h1.22l.305 1.222a.997.997 0 00.01.042l1.358 5.43-.893.892C3.74 11.846 4.632 14 6.414 14H15a1 1 0 000-2H6.414l1-1H14a1 1 0 00.894-.553l3-6A1 1 0 0017 3H6.28l-.31-1.243A1 1 0 005 1H3zM16 16.5a1.5 1.5 0 11-3 0 1.5 1.5 0 013 0zM6.5 18a1.5 1.5 0 100-3 1.5 1.5 0 000 3z" />
-                          </svg>
+                    <div className="relative grid md:grid-cols-2 gap-6 items-center">
+                      <div>
+                        {featuredBundle.badge && (
+                          <span className="inline-block px-4 py-1.5 rounded-full bg-[#FFD700]/20 text-[#FFD700] text-xs font-bold uppercase tracking-wider mb-4">
+                            {featuredBundle.badge}
+                          </span>
+                        )}
+                        <h3 className="text-3xl md:text-4xl font-black text-white mb-3">
+                          {featuredBundle.name}
+                        </h3>
+                        <p className="text-white/70 mb-4">
+                          {featuredBundle.description}
+                        </p>
+                        <div className="flex items-center gap-4">
+                          <span className="text-4xl font-black text-[#FFD700]">
+                            ${featuredBundle.price ? featuredBundle.price.toFixed(2) : featuredBundle.pricePerGuest.toFixed(2)}
+                          </span>
+                          {originalPrice && (
+                            <>
+                              <span className="text-lg text-white/50 line-through">
+                                ${originalPrice.toFixed(2)}
+                              </span>
+                              {savings && savings > 0 && (
+                                <span className="px-3 py-1 rounded-full bg-[#FF4444] text-white text-sm font-bold">
+                                  Save ${savings.toFixed(2)}!
+                                </span>
+                              )}
+                            </>
+                          )}
                         </div>
-                      </div>
-                      {/* Floating particles */}
-                      {[...Array(6)].map((_, i) => (
-                        <div
-                          key={i}
-                          className="absolute w-2 h-2 rounded-full bg-[#FFD700]/60 animate-bounce"
-                          style={{
-                            left: `${20 + i * 12}%`,
-                            top: `${30 + (i % 2) * 40}%`,
-                            animationDuration: `${1.5 + i * 0.2}s`,
-                            animationDelay: `${i * 0.15}s`,
+                        <button
+                          onClick={() => {
+                            setShowCateringPanel(false);
+                            setCustomModal({
+                              item: {
+                                id: featuredBundle.id,
+                                name: featuredBundle.name,
+                                description: featuredBundle.description,
+                                price: featuredBundle.price || featuredBundle.pricePerGuest,
+                                category: 'bundle',
+                                available: featuredBundle.available,
+                                displayImage: featuredBundle.image || cycleFallbackImage(40),
+                                sectionType: 'SPECIAL',
+                                displayGallery: featuredBundle.gallery && featuredBundle.gallery.length > 0 
+                                  ? featuredBundle.gallery 
+                                  : [featuredBundle.image || cycleFallbackImage(40)],
+                              },
+                              config: {
+                                removals: featuredBundle.customizationRemovals || [],
+                                addons: featuredBundle.customizationAddons || [],
+                              },
+                            });
                           }}
-                        />
-                      ))}
-                      {/* Gradient overlay */}
-                      <div className="absolute inset-0 bg-[radial-gradient(circle_at_center,rgba(255,215,0,0.15)_0%,transparent_70%)]" />
+                          className="mt-6 inline-flex items-center gap-2 px-8 py-4 rounded-full bg-gradient-to-r from-[#FFD700] to-[#FFA500] text-[#8B0000] font-black text-lg shadow-xl hover:scale-105 transition-transform"
+                        >
+                          Order Bundle
+                          <svg className="w-5 h-5" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                            <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M13 7l5 5m0 0l-5 5m5-5H6" />
+                          </svg>
+                        </button>
+                      </div>
+                      <div className="relative h-48 md:h-64 rounded-2xl overflow-hidden bg-gradient-to-br from-[#2a1515] to-[#1a0a0a]">
+                        {featuredBundle.image ? (
+                          <Image
+                            src={featuredBundle.image}
+                            alt={featuredBundle.name}
+                            fill
+                            className="object-cover"
+                            sizes="(max-width: 768px) 100vw, 50vw"
+                            unoptimized={featuredBundle.image?.startsWith('http') || featuredBundle.image?.startsWith('/tenant/')}
+                          />
+                        ) : (
+                          <>
+                            {/* Animated concentric circles */}
+                            <div className="absolute inset-0 flex items-center justify-center">
+                              <div className="absolute w-40 h-40 rounded-full border-2 border-[#FFD700]/20 animate-ping" style={{ animationDuration: '3s' }} />
+                              <div className="absolute w-32 h-32 rounded-full border-2 border-[#FFD700]/30 animate-ping" style={{ animationDuration: '2.5s', animationDelay: '0.5s' }} />
+                              <div className="absolute w-24 h-24 rounded-full border-2 border-[#FFD700]/40 animate-pulse" />
+                              <div className="absolute w-16 h-16 rounded-full bg-gradient-to-br from-[#FFD700] to-[#FF6B00] shadow-lg shadow-[#FFD700]/50 flex items-center justify-center">
+                                <svg className="w-8 h-8 text-[#8B0000]" fill="currentColor" viewBox="0 0 20 20">
+                                  <path d="M3 1a1 1 0 000 2h1.22l.305 1.222a.997.997 0 00.01.042l1.358 5.43-.893.892C3.74 11.846 4.632 14 6.414 14H15a1 1 0 000-2H6.414l1-1H14a1 1 0 00.894-.553l3-6A1 1 0 0017 3H6.28l-.31-1.243A1 1 0 005 1H3zM16 16.5a1.5 1.5 0 11-3 0 1.5 1.5 0 013 0zM6.5 18a1.5 1.5 0 100-3 1.5 1.5 0 000 3z" />
+                                </svg>
+                              </div>
+                            </div>
+                            {/* Floating particles */}
+                            {[...Array(6)].map((_, i) => (
+                              <div
+                                key={i}
+                                className="absolute w-2 h-2 rounded-full bg-[#FFD700]/60 animate-bounce"
+                                style={{
+                                  left: `${20 + i * 12}%`,
+                                  top: `${30 + (i % 2) * 40}%`,
+                                  animationDuration: `${1.5 + i * 0.2}s`,
+                                  animationDelay: `${i * 0.15}s`,
+                                }}
+                              />
+                            ))}
+                          </>
+                        )}
+                        {/* Gradient overlay */}
+                        <div className="absolute inset-0 bg-[radial-gradient(circle_at_center,rgba(255,215,0,0.15)_0%,transparent_70%)]" />
+                      </div>
                     </div>
                   </div>
                 </div>
-              </div>
-            )}
+              );
+            })()}
 
             {/* "WE WOK FOR YOU" Style Banner - After third section */}
             {sectionIndex === 3 && (

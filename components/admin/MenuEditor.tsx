@@ -87,7 +87,13 @@ export default function MenuEditor() {
       image: '',
       tags: [],
       gallery: [],
-    };
+      timeSpecificEnabled: false,
+      timeSpecificDays: [],
+      timeSpecificStartTime: null,
+      timeSpecificEndTime: null,
+      timeSpecificPrice: null,
+      timeSpecificLabel: null,
+    } as any;
     setUploadError(null);
     setUploadingImage(false);
     setUploadingGallery(false);
@@ -541,6 +547,102 @@ export default function MenuEditor() {
               <div className="flex items-center">
                 <label className="flex items-center text-sm font-medium text-gray-700"><input type="checkbox" checked={editingItem.isFeatured || false} onChange={e => setEditingItem({ ...editingItem, isFeatured: e.target.checked })} className="mr-2 h-4 w-4 text-blue-600 focus:ring-blue-500 border-gray-300 rounded" />Featured (appears in &quot;Chef Recommends&quot;)</label>
               </div>
+
+              {/* Time-Specific Availability Section */}
+              <div className="border-t pt-4 mt-4">
+                <h3 className="text-lg font-semibold mb-3">⏰ Time-Specific Availability</h3>
+                
+                <div className="space-y-4">
+                  <label className="flex items-center">
+                    <input
+                      type="checkbox"
+                      checked={(editingItem as any).timeSpecificEnabled || false}
+                      onChange={(e) => setEditingItem({ ...editingItem, timeSpecificEnabled: e.target.checked } as any)}
+                      className="mr-2 h-4 w-4 text-blue-600 focus:ring-blue-500 border-gray-300 rounded"
+                    />
+                    <span className="text-sm font-medium text-gray-700">Enable time-specific availability (e.g., Taco Tuesday)</span>
+                  </label>
+
+                  {(editingItem as any).timeSpecificEnabled && (
+                    <>
+                      {/* Days of week */}
+                      <div>
+                        <label className="block text-sm font-medium text-gray-700 mb-2">Available on days:</label>
+                        <div className="flex flex-wrap gap-2">
+                          {['Sunday', 'Monday', 'Tuesday', 'Wednesday', 'Thursday', 'Friday', 'Saturday'].map((day, index) => (
+                            <label key={day} className="flex items-center">
+                              <input
+                                type="checkbox"
+                                checked={((editingItem as any).timeSpecificDays || []).includes(index)}
+                                onChange={(e) => {
+                                  const currentDays = (editingItem as any).timeSpecificDays || [];
+                                  const newDays = e.target.checked
+                                    ? [...currentDays, index]
+                                    : currentDays.filter((d: number) => d !== index);
+                                  setEditingItem({ ...editingItem, timeSpecificDays: newDays } as any);
+                                }}
+                                className="mr-1 h-4 w-4 text-blue-600 focus:ring-blue-500 border-gray-300 rounded"
+                              />
+                              <span className="text-sm text-gray-700">{day.slice(0, 3)}</span>
+                            </label>
+                          ))}
+                        </div>
+                      </div>
+
+                      {/* Time window */}
+                      <div className="grid grid-cols-2 gap-4">
+                        <div>
+                          <label className="block text-sm font-medium text-gray-700 mb-1">Start Time</label>
+                          <input
+                            type="time"
+                            value={(editingItem as any).timeSpecificStartTime || ''}
+                            onChange={(e) => setEditingItem({ ...editingItem, timeSpecificStartTime: e.target.value } as any)}
+                            className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-blue-500"
+                          />
+                        </div>
+                        <div>
+                          <label className="block text-sm font-medium text-gray-700 mb-1">End Time</label>
+                          <input
+                            type="time"
+                            value={(editingItem as any).timeSpecificEndTime || ''}
+                            onChange={(e) => setEditingItem({ ...editingItem, timeSpecificEndTime: e.target.value } as any)}
+                            className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-blue-500"
+                          />
+                        </div>
+                      </div>
+
+                      {/* Special price */}
+                      <div>
+                        <label className="block text-sm font-medium text-gray-700 mb-1">Special Price (optional)</label>
+                        <input
+                          type="number"
+                          step="0.01"
+                          min="0"
+                          value={(editingItem as any).timeSpecificPrice || ''}
+                          onChange={(e) => setEditingItem({ ...editingItem, timeSpecificPrice: e.target.value ? parseFloat(e.target.value) : null } as any)}
+                          placeholder="Leave empty to use regular price"
+                          className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-blue-500"
+                        />
+                        <p className="text-xs text-gray-500 mt-1">If set, this price will override the regular price during the time window</p>
+                      </div>
+
+                      {/* Special label */}
+                      <div>
+                        <label className="block text-sm font-medium text-gray-700 mb-1">Special Label (e.g., &quot;Taco Tuesday Special&quot;)</label>
+                        <input
+                          type="text"
+                          value={(editingItem as any).timeSpecificLabel || ''}
+                          onChange={(e) => setEditingItem({ ...editingItem, timeSpecificLabel: e.target.value } as any)}
+                          placeholder="Taco Tuesday Special"
+                          className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-blue-500"
+                        />
+                        <p className="text-xs text-gray-500 mt-1">This label will appear on the menu when the special is active</p>
+                      </div>
+                    </>
+                  )}
+                </div>
+              </div>
+
               <div className="flex justify-end space-x-3">
                   <button
                     type="button"

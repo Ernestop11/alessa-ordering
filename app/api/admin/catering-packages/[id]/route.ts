@@ -46,6 +46,13 @@ export async function PATCH(
     customizationAddons: body.customizationAddons !== undefined ? body.customizationAddons : existing.customizationAddons,
     available: body.available !== undefined ? Boolean(body.available) : existing.available,
     displayOrder: body.displayOrder !== undefined ? Number(body.displayOrder) : existing.displayOrder,
+    // Time-specific fields
+    timeSpecificEnabled: body.timeSpecificEnabled !== undefined ? Boolean(body.timeSpecificEnabled) : (existing as any).timeSpecificEnabled ?? false,
+    timeSpecificDays: Array.isArray(body.timeSpecificDays) ? body.timeSpecificDays : (existing as any).timeSpecificDays ?? [],
+    timeSpecificStartTime: body.timeSpecificStartTime !== undefined ? body.timeSpecificStartTime : (existing as any).timeSpecificStartTime ?? null,
+    timeSpecificEndTime: body.timeSpecificEndTime !== undefined ? body.timeSpecificEndTime : (existing as any).timeSpecificEndTime ?? null,
+    timeSpecificPrice: body.timeSpecificPrice !== undefined ? (body.timeSpecificPrice ? parseFloat(String(body.timeSpecificPrice)) : null) : (existing as any).timeSpecificPrice ?? null,
+    timeSpecificLabel: body.timeSpecificLabel !== undefined ? body.timeSpecificLabel : (existing as any).timeSpecificLabel ?? null,
   };
 
   const updated = await prisma.cateringPackage.update({

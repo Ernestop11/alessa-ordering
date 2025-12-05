@@ -4,6 +4,7 @@ import { getServerSession } from 'next-auth'
 import { authOptions } from '@/lib/auth/options'
 import prisma from '@/lib/prisma'
 import { requireTenant } from '@/lib/tenant'
+import { emitMenuUpdate } from '@/lib/ecosystem/communication'
 
 export async function GET(req: Request, { params }: { params: Promise<{ id: string }> | { id: string } }) {
   try {
@@ -66,12 +67,26 @@ export async function PATCH(req: Request, { params }: { params: Promise<{ id: st
       menuSectionId: body.menuSectionId !== undefined ? body.menuSectionId : existing.menuSectionId,
       customizationRemovals: Array.isArray(body.customizationRemovals) ? body.customizationRemovals : existing.customizationRemovals,
       customizationAddons: body.customizationAddons !== undefined ? body.customizationAddons : (existing as any).customizationAddons,
+      // Time-specific fields
+      timeSpecificEnabled: body.timeSpecificEnabled !== undefined ? Boolean(body.timeSpecificEnabled) : (existing as any).timeSpecificEnabled ?? false,
+      timeSpecificDays: Array.isArray(body.timeSpecificDays) ? body.timeSpecificDays : (existing as any).timeSpecificDays ?? [],
+      timeSpecificStartTime: body.timeSpecificStartTime !== undefined ? body.timeSpecificStartTime : (existing as any).timeSpecificStartTime ?? null,
+      timeSpecificEndTime: body.timeSpecificEndTime !== undefined ? body.timeSpecificEndTime : (existing as any).timeSpecificEndTime ?? null,
+      timeSpecificPrice: body.timeSpecificPrice !== undefined ? (body.timeSpecificPrice ? parseFloat(String(body.timeSpecificPrice)) : null) : (existing as any).timeSpecificPrice ?? null,
+      timeSpecificLabel: body.timeSpecificLabel !== undefined ? body.timeSpecificLabel : (existing as any).timeSpecificLabel ?? null,
     }
 
     const updated = await prisma.menuItem.update({
       where: { id },
       data: updatableFields,
     })
+
+    // Emit ecosystem event for SMP sync
+    try {
+      await emitMenuUpdate(tenant.id, 'updated', updated.id, updated.name)
+    } catch (err) {
+      console.error('[Menu API] Error emitting ecosystem event:', err)
+    }
 
     // Revalidate customer-facing pages so menu changes reflect immediately
     revalidatePath('/')
@@ -109,6 +124,13 @@ export async function DELETE(req: Request, { params }: { params: Promise<{ id: s
     }
 
     await prisma.menuItem.delete({ where: { id } })
+
+    // Emit ecosystem event for SMP sync
+    try {
+      await emitMenuUpdate(tenant.id, 'deleted', existing.id, existing.name)
+    } catch (err) {
+      console.error('[Menu API] Error emitting ecosystem event:', err)
+    }
 
     // Revalidate customer-facing pages so menu changes reflect immediately
     revalidatePath('/')

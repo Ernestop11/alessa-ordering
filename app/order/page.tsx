@@ -81,6 +81,13 @@ async function getMenuSections(tenantId: string): Promise<OrderMenuSection[]> {
         tags: item.tags || [],
         customizationRemovals: item.customizationRemovals || [],
         customizationAddons: (item.customizationAddons as any) || [],
+        // Time-specific fields
+        timeSpecificEnabled: (item as any).timeSpecificEnabled || false,
+        timeSpecificDays: (item as any).timeSpecificDays || [],
+        timeSpecificStartTime: (item as any).timeSpecificStartTime || null,
+        timeSpecificEndTime: (item as any).timeSpecificEndTime || null,
+        timeSpecificPrice: (item as any).timeSpecificPrice || null,
+        timeSpecificLabel: (item as any).timeSpecificLabel || null,
       };
     }),
   }));
@@ -110,6 +117,13 @@ async function getMenuSections(tenantId: string): Promise<OrderMenuSection[]> {
           tags: item.tags || [],
           customizationRemovals: (item as any).customizationRemovals || [],
           customizationAddons: (item as any).customizationAddons || [],
+          // Time-specific fields
+          timeSpecificEnabled: (item as any).timeSpecificEnabled || false,
+          timeSpecificDays: (item as any).timeSpecificDays || [],
+          timeSpecificStartTime: (item as any).timeSpecificStartTime || null,
+          timeSpecificEndTime: (item as any).timeSpecificEndTime || null,
+          timeSpecificPrice: (item as any).timeSpecificPrice || null,
+          timeSpecificLabel: (item as any).timeSpecificLabel || null,
         };
       }),
     });
@@ -153,6 +167,13 @@ async function getFeaturedItems(tenantId: string): Promise<OrderMenuItem[]> {
       tags: item.tags || [],
       customizationRemovals: (item as any).customizationRemovals || [],
       customizationAddons: (item as any).customizationAddons || [],
+      // Time-specific fields
+      timeSpecificEnabled: (item as any).timeSpecificEnabled || false,
+      timeSpecificDays: (item as any).timeSpecificDays || [],
+      timeSpecificStartTime: (item as any).timeSpecificStartTime || null,
+      timeSpecificEndTime: (item as any).timeSpecificEndTime || null,
+      timeSpecificPrice: (item as any).timeSpecificPrice || null,
+      timeSpecificLabel: (item as any).timeSpecificLabel || null,
     };
   });
 }

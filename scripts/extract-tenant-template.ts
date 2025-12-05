@@ -70,6 +70,11 @@ interface TenantTemplate {
     rewardsGallery: string[];
     isOpen: boolean | null;
   };
+  orderingPageConfig: {
+    categoryNavSticky: boolean;
+    categoryNavHighlight: boolean;
+    bundleDisplayMode: string;
+  };
   integrations: {
     platformPercentFee: number | null;
     platformFlatFee: number | null;
@@ -88,38 +93,50 @@ interface TenantTemplate {
     position: number;
     hero: boolean;
     imageUrl: string | null;
-    menuItems: Array<{
-      name: string;
-      description: string;
-      price: number;
-      category: string;
-      image: string | null;
-      gallery: any;
-      available: boolean;
-      isFeatured: boolean;
-      tags: string[];
-      customizationRemovals: string[];
-      customizationAddons: any;
-    }>;
+      menuItems: Array<{
+        name: string;
+        description: string;
+        price: number;
+        category: string;
+        image: string | null;
+        gallery: any;
+        available: boolean;
+        isFeatured: boolean;
+        tags: string[];
+        customizationRemovals: string[];
+        customizationAddons: any;
+        timeSpecificEnabled: boolean;
+        timeSpecificDays: number[];
+        timeSpecificStartTime: string | null;
+        timeSpecificEndTime: string | null;
+        timeSpecificPrice: number | null;
+        timeSpecificLabel: string | null;
+      }>;
   }>;
   cateringSections: Array<{
     name: string;
     description: string | null;
     position: number;
-    cateringPackages: Array<{
-      name: string;
-      description: string;
-      pricePerGuest: number | null;
-      price: number | null;
-      category: string;
-      image: string | null;
-      gallery: any;
-      badge: string | null;
-      customizationRemovals: string[];
-      customizationAddons: any;
-      available: boolean;
-      displayOrder: number;
-    }>;
+      cateringPackages: Array<{
+        name: string;
+        description: string;
+        pricePerGuest: number | null;
+        price: number | null;
+        category: string;
+        image: string | null;
+        gallery: any;
+        badge: string | null;
+        customizationRemovals: string[];
+        customizationAddons: any;
+        available: boolean;
+        displayOrder: number;
+        timeSpecificEnabled: boolean;
+        timeSpecificDays: number[];
+        timeSpecificStartTime: string | null;
+        timeSpecificEndTime: string | null;
+        timeSpecificPrice: number | null;
+        timeSpecificLabel: string | null;
+      }>;
   }>;
 }
 
@@ -273,6 +290,12 @@ async function extractTenantTemplate(tenantSlug: string) {
           tags: item.tags,
           customizationRemovals: item.customizationRemovals,
           customizationAddons: item.customizationAddons,
+          timeSpecificEnabled: (item as any).timeSpecificEnabled || false,
+          timeSpecificDays: (item as any).timeSpecificDays || [],
+          timeSpecificStartTime: (item as any).timeSpecificStartTime || null,
+          timeSpecificEndTime: (item as any).timeSpecificEndTime || null,
+          timeSpecificPrice: (item as any).timeSpecificPrice || null,
+          timeSpecificLabel: (item as any).timeSpecificLabel || null,
         })),
       })),
       cateringSections: tenant.cateringSections.map((section) => ({
@@ -292,8 +315,19 @@ async function extractTenantTemplate(tenantSlug: string) {
           customizationAddons: pkg.customizationAddons,
           available: pkg.available,
           displayOrder: pkg.displayOrder,
+          timeSpecificEnabled: (pkg as any).timeSpecificEnabled || false,
+          timeSpecificDays: (pkg as any).timeSpecificDays || [],
+          timeSpecificStartTime: (pkg as any).timeSpecificStartTime || null,
+          timeSpecificEndTime: (pkg as any).timeSpecificEndTime || null,
+          timeSpecificPrice: (pkg as any).timeSpecificPrice || null,
+          timeSpecificLabel: (pkg as any).timeSpecificLabel || null,
         })),
       })),
+      orderingPageConfig: {
+        categoryNavSticky: true,
+        categoryNavHighlight: true,
+        bundleDisplayMode: 'catering-style', // Bundles displayed via CateringPackage with category='bundle' or 'popular'
+      },
     };
 
     // Create templates directory if it doesn't exist

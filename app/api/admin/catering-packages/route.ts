@@ -12,7 +12,7 @@ function unauthorized() {
   });
 }
 
-export async function GET() {
+export async function GET(req: Request) {
   const session = await getServerSession(authOptions);
   const role = (session?.user as { role?: string } | undefined)?.role;
   if (!session || role !== 'admin') {
@@ -20,12 +20,21 @@ export async function GET() {
   }
 
   const tenant = await requireTenant();
+  const { searchParams } = new URL(req.url);
+  const categoryFilter = searchParams.get('category');
+  
+  let where: any = { tenantId: tenant.id };
+  if (categoryFilter) {
+    const categories = categoryFilter.split(',');
+    where.category = { in: categories };
+  }
+
   const packages = await prisma.cateringPackage.findMany({
-    where: { tenantId: tenant.id },
+    where,
     orderBy: { displayOrder: 'asc' },
   });
 
-  const response = NextResponse.json(packages);
+  const response = NextResponse.json({ packages });
   // Prevent caching to ensure fresh data
   response.headers.set('Cache-Control', 'no-store, no-cache, must-revalidate, proxy-revalidate');
   response.headers.set('Pragma', 'no-cache');
@@ -58,6 +67,13 @@ export async function POST(req: Request) {
     customizationAddons: body.customizationAddons || null,
     available: body.available === undefined ? true : Boolean(body.available),
     displayOrder: body.displayOrder !== undefined ? Number(body.displayOrder) : 0,
+    // Time-specific fields
+    timeSpecificEnabled: body.timeSpecificEnabled === undefined ? false : Boolean(body.timeSpecificEnabled),
+    timeSpecificDays: Array.isArray(body.timeSpecificDays) ? body.timeSpecificDays : [],
+    timeSpecificStartTime: body.timeSpecificStartTime || null,
+    timeSpecificEndTime: body.timeSpecificEndTime || null,
+    timeSpecificPrice: body.timeSpecificPrice !== undefined ? (body.timeSpecificPrice ? parseFloat(String(body.timeSpecificPrice)) : null) : null,
+    timeSpecificLabel: body.timeSpecificLabel || null,
   };
 
   const created = await prisma.cateringPackage.create({ data });
