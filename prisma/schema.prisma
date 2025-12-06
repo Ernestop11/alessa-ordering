@@ -216,6 +216,8 @@ model Tenant {
   ecosystemEvents        EcosystemEvent[]
   crmActivities          CRMActivity[]
   crmNotes               CRMNote[]
+  convertedFromLead      Lead?              @relation("LeadToTenant")
+  productSubscriptions   TenantProduct[]     @relation("TenantProducts")
 
   @@index([status])
 }
@@ -795,6 +797,73 @@ model EcosystemEvent {
   @@index([source])
   @@index([processed])
   @@index([createdAt])
+}
+
+// CRM - Leads & Deals Pipeline
+model Lead {
+  id                String    @id @default(uuid())
+  companyName       String
+  contactName       String
+  contactEmail      String
+  contactPhone      String?
+  status            String    @default("new") // 'new', 'in_progress', 'closing', 'converted', 'lost'
+  dealValue         Float?
+  probability       Int       @default(50) // 0-100
+  nextAction        DateTime?
+  nextActionNote    String?
+  notes             String?
+  tags              String[]  @default([])
+  proposals         Json?     // Array of {name, url, date, version}
+  prototypes        Json?     // Array of {name, url, description}
+  convertedToTenantId String? @unique
+  convertedAt       DateTime?
+  createdAt         DateTime  @default(now())
+  updatedAt         DateTime  @updatedAt
+  convertedToTenant Tenant?   @relation("LeadToTenant", fields: [convertedToTenantId], references: [id], onDelete: SetNull)
+
+  @@index([status])
+  @@index([createdAt])
+  @@index([nextAction])
+}
+
+// Product Catalog
+model Product {
+  id            String          @id @default(uuid())
+  name          String
+  slug          String          @unique
+  type          ProductType
+  description   String?
+  status        String          @default("active") // 'active', 'beta', 'coming_soon', 'deprecated'
+  monthlyPrice  Float?
+  setupFee      Float?
+  features      String[]        @default([])
+  icon          String?         // Emoji or icon name
+  color         String?         // Hex color for UI
+  order         Int             @default(0) // Display order
+  createdAt     DateTime        @default(now())
+  updatedAt     DateTime        @updatedAt
+  subscriptions TenantProduct[]
+
+  @@index([type])
+  @@index([status])
+}
+
+// Tenant Product Subscriptions
+model TenantProduct {
+  id            String    @id @default(uuid())
+  tenantId      String
+  productId     String
+  status        String    @default("active") // 'active', 'paused', 'cancelled', 'trial'
+  subscribedAt DateTime  @default(now())
+  cancelledAt   DateTime?
+  trialEndsAt   DateTime?
+  tenant        Tenant    @relation("TenantProducts", fields: [tenantId], references: [id], onDelete: Cascade)
+  product       Product   @relation(fields: [productId], references: [id], onDelete: Cascade)
+
+  @@unique([tenantId, productId])
+  @@index([tenantId])
+  @@index([productId])
+  @@index([status])
 }
 
 model CRMActivity {

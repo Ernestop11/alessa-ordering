@@ -5,6 +5,12 @@ import { useCallback, useEffect, useMemo, useState } from 'react';
 import OnboardingWizard from './OnboardingWizard';
 import MLMAdminPanel from '../mlm/MLMAdminPanel';
 import CRMPanel from './CRMPanel';
+import TopMetricsBar from './dashboard/TopMetricsBar';
+import TenantsServicesPanel from './dashboard/TenantsServicesPanel';
+import PipelinePanel from './dashboard/PipelinePanel';
+import ProductsEcosystemPanel from './dashboard/ProductsEcosystemPanel';
+import RevenueProjection from './dashboard/RevenueProjection';
+import MLMCompanyTree from './dashboard/MLMCompanyTree';
 
 type TenantLifecycleStatus =
   | 'PENDING_REVIEW'
@@ -467,7 +473,29 @@ export default function SuperAdminDashboard({ initialTenants, initialMetrics, ro
     } else {
       setEditForm(null);
     }
-  }, [selectedTenant]);
+  }, [selectedTenant?.id]); // Fix: Use selectedTenant.id instead of selectedTenant object
+
+  // Load dashboard data
+  useEffect(() => {
+    if (activeTab === 'dashboard') {
+      loadDashboardData();
+    }
+  }, [activeTab]);
+
+  const loadDashboardData = async () => {
+    setDashboardLoading(true);
+    try {
+      const res = await fetch('/api/super/dashboard', { cache: 'no-store' });
+      if (res.ok) {
+        const data = await res.json();
+        setDashboardData(data);
+      }
+    } catch (error) {
+      console.error('Error loading dashboard data:', error);
+    } finally {
+      setDashboardLoading(false);
+    }
+  };
 
   const refreshMetrics = useCallback(async () => {
     const res = await fetch('/api/super/metrics', { cache: 'no-store' });
@@ -925,105 +953,86 @@ export default function SuperAdminDashboard({ initialTenants, initialMetrics, ro
         {/* Tab Content */}
         {activeTab === 'dashboard' && (
           <>
-            {/* Metrics Cards */}
-            <section className="grid gap-6 sm:grid-cols-2 lg:grid-cols-4">
-          <div className="group relative overflow-hidden rounded-2xl border border-gray-200 bg-gradient-to-br from-white to-blue-50 p-6 shadow-lg shadow-blue-500/10 transition hover:scale-105 hover:shadow-xl hover:shadow-blue-500/20">
-            <div className="absolute right-4 top-4 text-4xl opacity-20">👥</div>
-            <p className="text-xs font-semibold uppercase tracking-wider text-gray-500">Total Tenants</p>
-            <p className="mt-3 text-4xl font-black text-gray-900">{metrics.totalTenants}</p>
-            <p className="mt-2 text-sm text-gray-600">Active restaurants</p>
-          </div>
-          <div className="group relative overflow-hidden rounded-2xl border border-gray-200 bg-gradient-to-br from-white to-purple-50 p-6 shadow-lg shadow-purple-500/10 transition hover:scale-105 hover:shadow-xl hover:shadow-purple-500/20">
-            <div className="absolute right-4 top-4 text-4xl opacity-20">📦</div>
-            <p className="text-xs font-semibold uppercase tracking-wider text-gray-500">Total Orders</p>
-            <p className="mt-3 text-4xl font-black text-gray-900">{metrics.totalOrders.toLocaleString()}</p>
-            <p className="mt-2 text-sm text-gray-600">All-time orders</p>
-          </div>
-          <div className="group relative overflow-hidden rounded-2xl border border-gray-200 bg-gradient-to-br from-white to-green-50 p-6 shadow-lg shadow-green-500/10 transition hover:scale-105 hover:shadow-xl hover:shadow-green-500/20">
-            <div className="absolute right-4 top-4 text-4xl opacity-20">💰</div>
-            <p className="text-xs font-semibold uppercase tracking-wider text-gray-500">7-day Volume</p>
-            <p className="mt-3 text-3xl font-black text-gray-900">
-              {formatCurrency(metrics.sevenDayVolume.reduce((sum, row) => sum + row.gross, 0))}
-            </p>
-            <p className="mt-2 text-sm text-gray-600">This week</p>
-          </div>
-          <div className="group relative overflow-hidden rounded-2xl border border-gray-200 bg-gradient-to-br from-white to-amber-50 p-6 shadow-lg shadow-amber-500/10 transition hover:scale-105 hover:shadow-xl hover:shadow-amber-500/20">
-            <div className="absolute right-4 top-4 text-4xl opacity-20">💳</div>
-            <p className="text-xs font-semibold uppercase tracking-wider text-gray-500">Est. Stripe Volume</p>
-            <p className="mt-3 text-3xl font-black text-gray-900">{formatCurrency(metrics.estimatedStripeVolume)}</p>
-            <p className="mt-2 text-sm text-gray-600">All-time payouts</p>
-          </div>
-        </section>
+            {dashboardLoading ? (
+              <div className="flex h-96 items-center justify-center">
+                <p className="text-gray-500">Loading dashboard...</p>
+              </div>
+            ) : dashboardData ? (
+              <>
+                {/* Top Metrics Bar */}
+                <TopMetricsBar
+                  totalTenants={dashboardData.metrics.totalTenants}
+                  liveTenants={dashboardData.metrics.liveTenants}
+                  pendingTenants={dashboardData.metrics.pendingTenants}
+                  newLeads={dashboardData.metrics.newLeads}
+                  inProgressLeads={dashboardData.metrics.inProgressLeads}
+                  closingLeads={dashboardData.metrics.closingLeads}
+                  totalMRR={dashboardData.metrics.totalMRR}
+                  projectedMRR={dashboardData.metrics.projectedMRR}
+                  totalAssociates={dashboardData.metrics.totalAssociates}
+                  activeRecruits={dashboardData.metrics.activeRecruits}
+                  onTenantsClick={() => setActiveTab('tenants')}
+                  onPipelineClick={() => {
+                    // Scroll to pipeline section
+                    document.getElementById('pipeline-section')?.scrollIntoView({ behavior: 'smooth' });
+                  }}
+                  onRevenueClick={() => {
+                    // Scroll to revenue section
+                    document.getElementById('revenue-section')?.scrollIntoView({ behavior: 'smooth' });
+                  }}
+                  onMLMClick={() => {
+                    // Scroll to MLM section
+                    document.getElementById('mlm-section')?.scrollIntoView({ behavior: 'smooth' });
+                  }}
+                />
 
-            <section className="rounded-3xl border border-gray-200 bg-white p-8 shadow-xl shadow-gray-500/10">
-        <div className="flex items-center justify-between">
-          <div>
-            <h2 className="text-2xl font-bold text-gray-900">Performance Highlights</h2>
-            <p className="mt-1 text-sm text-gray-600">Top performers and recent activity</p>
-          </div>
-          <button
-            type="button"
-            onClick={refreshMetrics}
-            className="rounded-full border border-gray-200 bg-white px-4 py-2 text-sm font-semibold text-gray-700 shadow-sm transition hover:border-gray-300 hover:bg-gray-50 hover:shadow-md"
-          >
-            🔄 Refresh
-          </button>
-        </div>
-        <div className="mt-6 grid gap-6 md:grid-cols-2">
-          <div className="rounded-2xl border border-gray-200 bg-gradient-to-br from-white to-blue-50 p-6 shadow-lg">
-            <div className="flex items-center gap-3">
-              <div className="rounded-full bg-blue-100 p-2">
-                <span className="text-2xl">🏆</span>
-              </div>
-              <h3 className="text-lg font-bold text-gray-900">Top Volume (7 Days)</h3>
-            </div>
-            <ul className="mt-4 space-y-3">
-              {topPerformers.length === 0 ? (
-                <li className="text-sm text-gray-500">No recent orders</li>
-              ) : (
-                topPerformers.map((tenant, index) => (
-                  <li
-                    key={tenant.id}
-                    className="flex items-center justify-between rounded-xl border border-gray-100 bg-white p-3 shadow-sm transition hover:shadow-md"
-                  >
-                    <div className="flex items-center gap-3">
-                      <span className="flex h-8 w-8 items-center justify-center rounded-full bg-gradient-to-br from-blue-500 to-purple-500 text-xs font-bold text-white">
-                        {index + 1}
-                      </span>
-                      <span className="font-semibold text-gray-900">{tenant.name}</span>
-                    </div>
-                    <span className="font-bold text-blue-600">{formatCurrency(tenant.grossLastSevenDays)}</span>
-                  </li>
-                ))
-              )}
-            </ul>
-          </div>
-          <div className="rounded-2xl border border-gray-200 bg-gradient-to-br from-white to-purple-50 p-6 shadow-lg">
-            <div className="flex items-center gap-3">
-              <div className="rounded-full bg-purple-100 p-2">
-                <span className="text-2xl">⚡</span>
-              </div>
-              <h3 className="text-lg font-bold text-gray-900">Latest Activity</h3>
-            </div>
-            <ul className="mt-4 space-y-3">
-              {metrics.tenantActivity.slice(0, 5).map((activity) => (
-                <li
-                  key={activity.tenantId}
-                  className="flex items-center justify-between rounded-xl border border-gray-100 bg-white p-3 shadow-sm transition hover:shadow-md"
-                >
-                  <div>
-                    <span className="font-semibold text-gray-900">{activity.tenantName}</span>
-                    <p className="text-xs text-gray-500">{formatDateTime(activity.lastOrderAt)}</p>
+                {/* Main Content - 3 Column Grid */}
+                <div className="mt-8 grid gap-6 lg:grid-cols-3">
+                  {/* Left Column */}
+                  <div className="space-y-6">
+                    <TenantsServicesPanel
+                      tenants={dashboardData.tenants}
+                      tenantProducts={dashboardData.tenantProducts}
+                      products={dashboardData.products}
+                      onTenantClick={(tenantId) => {
+                        setSelectedTenantId(tenantId);
+                        setActiveTab('tenants');
+                      }}
+                    />
                   </div>
-                  {activity.lastOrderAmount && (
-                    <span className="font-bold text-purple-600">{formatCurrency(activity.lastOrderAmount)}</span>
-                  )}
-                </li>
-              ))}
-            </ul>
-          </div>
-        </div>
-        </section>
+
+                  {/* Middle Column */}
+                  <div className="space-y-6">
+                    <div id="pipeline-section">
+                      <PipelinePanel initialLeads={dashboardData.leads} />
+                    </div>
+                    <div id="revenue-section">
+                      <RevenueProjection
+                        currentMRR={dashboardData.metrics.totalMRR}
+                        projectedMRR={dashboardData.metrics.projectedMRR}
+                      />
+                    </div>
+                  </div>
+
+                  {/* Right Column */}
+                  <div className="space-y-6">
+                    <ProductsEcosystemPanel products={dashboardData.products} />
+                  </div>
+                </div>
+
+                {/* MLM Tree Section */}
+                <div id="mlm-section" className="mt-8">
+                  <MLMCompanyTree
+                    initialTree={dashboardData.mlmTree}
+                    stats={dashboardData.mlmStats}
+                  />
+                </div>
+              </>
+            ) : (
+              <div className="flex h-96 items-center justify-center">
+                <p className="text-gray-500">No dashboard data available</p>
+              </div>
+            )}
           </>
         )}
 
