@@ -88,8 +88,9 @@ export async function GET() {
       prisma.associate.findMany({
         select: {
           id: true,
-          userId: true,
-          uplineId: true,
+          name: true,
+          email: true,
+          sponsorId: true,
           rank: true,
           totalRecruits: true,
         },
@@ -101,12 +102,13 @@ export async function GET() {
           createdAt: true,
         },
       }),
-      // MLM Tree data - simplified query
+      // MLM Tree data - same as associates for now
       prisma.associate.findMany({
         select: {
           id: true,
-          userId: true,
-          uplineId: true,
+          name: true,
+          email: true,
+          sponsorId: true,
           rank: true,
           totalRecruits: true,
         },
