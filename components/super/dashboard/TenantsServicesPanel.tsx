@@ -67,8 +67,13 @@ export default function TenantsServicesPanel({ tenants, tenantProducts, products
     <div className="space-y-6">
       {/* Active Tenants List */}
       <div className="rounded-2xl border border-gray-200 bg-white p-6 shadow-sm">
-        <h3 className="mb-4 text-lg font-bold text-gray-900">Active Tenants</h3>
-        <div className="space-y-2">
+        <div className="mb-4 flex items-center justify-between">
+          <h3 className="text-lg font-bold text-gray-900">Active Tenants</h3>
+          <span className="rounded-full bg-blue-50 px-3 py-1 text-xs font-semibold text-blue-700">
+            {tenants.length} total
+          </span>
+        </div>
+        <div className="max-h-96 space-y-2 overflow-y-auto">
           {tenants.map((tenant) => {
             const tenantServices = getTenantProducts(tenant.id);
             return (
