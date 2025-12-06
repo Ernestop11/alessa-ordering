@@ -450,6 +450,8 @@ export default function SuperAdminDashboard({ initialTenants, initialMetrics, ro
   const [createLoading, setCreateLoading] = useState(false);
   const [selectedTemplate, setSelectedTemplate] = useState<BusinessTemplate | null>(null);
   const [onboardingStep, setOnboardingStep] = useState(1);
+  const [dashboardData, setDashboardData] = useState<any>(null);
+  const [dashboardLoading, setDashboardLoading] = useState(true);
 
   const [selectedTenantId, setSelectedTenantId] = useState<string | null>(initialTenants[0]?.id ?? null);
   const selectedTenant = useMemo(
@@ -476,13 +478,7 @@ export default function SuperAdminDashboard({ initialTenants, initialMetrics, ro
   }, [selectedTenant?.id]); // Fix: Use selectedTenant.id instead of selectedTenant object
 
   // Load dashboard data
-  useEffect(() => {
-    if (activeTab === 'dashboard') {
-      loadDashboardData();
-    }
-  }, [activeTab]);
-
-  const loadDashboardData = async () => {
+  const loadDashboardData = useCallback(async () => {
     setDashboardLoading(true);
     try {
       const res = await fetch('/api/super/dashboard', { cache: 'no-store' });
@@ -495,7 +491,13 @@ export default function SuperAdminDashboard({ initialTenants, initialMetrics, ro
     } finally {
       setDashboardLoading(false);
     }
-  };
+  }, []);
+
+  useEffect(() => {
+    if (activeTab === 'dashboard') {
+      loadDashboardData();
+    }
+  }, [activeTab, loadDashboardData]);
 
   const refreshMetrics = useCallback(async () => {
     const res = await fetch('/api/super/metrics', { cache: 'no-store' });
