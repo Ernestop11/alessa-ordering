@@ -190,7 +190,12 @@ export async function GET() {
         slug: t.slug,
         status: t.status,
         monthlyFee: t.subscriptionMonthlyFee || 0,
-      })),
+      })).sort((a, b) => {
+        // Sort: LIVE first, then by name
+        if (a.status === 'LIVE' && b.status !== 'LIVE') return -1;
+        if (a.status !== 'LIVE' && b.status === 'LIVE') return 1;
+        return a.name.localeCompare(b.name);
+      }),
       leads,
       products: products.map((p) => ({
         id: p.id,
