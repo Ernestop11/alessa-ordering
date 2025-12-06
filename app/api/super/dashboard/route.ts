@@ -89,6 +89,7 @@ export async function GET() {
         select: {
           id: true,
           userId: true,
+          uplineId: true,
           rank: true,
           totalRecruits: true,
         },
@@ -100,21 +101,19 @@ export async function GET() {
           createdAt: true,
         },
       }),
-      // MLM Tree data
+      // MLM Tree data - simplified query
       prisma.associate.findMany({
-        include: {
-          user: {
-            select: {
-              id: true,
-              name: true,
-              email: true,
-            },
-          },
+        select: {
+          id: true,
+          userId: true,
+          uplineId: true,
+          rank: true,
+          totalRecruits: true,
         },
       }),
     ]);
 
-    // Build MLM tree (simplified - need user data)
+    // Build MLM tree (simplified)
     const mlmTree = null; // Will be populated by MLM tree endpoint
 
     const rankValues = associates.map((a) => {
