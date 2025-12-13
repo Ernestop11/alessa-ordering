@@ -2454,6 +2454,72 @@ export default function OrderPageClient({
               </div>
             )}
 
+            {/* Grocery Store Banner - After 5th section */}
+            {sectionIndex === 5 && (
+              <div className="mb-10 relative overflow-hidden rounded-3xl bg-gradient-to-r from-green-700 via-green-600 to-green-700 p-1">
+                <div className="relative overflow-hidden rounded-[22px] bg-gradient-to-br from-green-950 to-green-900 p-6 md:p-8">
+                  {/* Decorative elements */}
+                  <div className="absolute top-4 right-4 text-4xl animate-bounce" style={{ animationDuration: '2s' }}>
+                    🛒
+                  </div>
+                  <div className="absolute bottom-4 left-4 text-3xl animate-pulse">🥬</div>
+                  <div className="absolute top-1/2 left-1/3 text-2xl opacity-30">🥕</div>
+
+                  <div className="relative grid md:grid-cols-2 gap-6 items-center">
+                    <div>
+                      <div className="inline-block px-4 py-1.5 rounded-full bg-green-400/20 text-green-300 text-xs font-bold uppercase tracking-wider mb-3">
+                        ✨ Now Available
+                      </div>
+                      <h3 className="text-3xl md:text-4xl font-black text-white mb-3">
+                        Order Your <span className="text-green-400">Groceries</span> Too!
+                      </h3>
+                      <p className="text-white/80 mb-6 text-lg">
+                        Fresh produce, pantry staples, and more delivered with your meal order. Save time, shop smart!
+                      </p>
+                      <div className="flex flex-wrap gap-3">
+                        <Link
+                          href="/grocery"
+                          className="inline-flex items-center gap-2 px-6 py-3 rounded-full bg-gradient-to-r from-green-500 to-green-600 text-white font-bold shadow-lg hover:scale-105 transition-transform"
+                        >
+                          Browse Grocery Store
+                          <svg className="w-5 h-5" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                            <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M13 7l5 5m0 0l-5 5m5-5H6" />
+                          </svg>
+                        </Link>
+                        <div className="inline-flex items-center gap-2 px-4 py-3 rounded-full bg-white/10 text-white/70 text-sm">
+                          <svg className="w-4 h-4 text-green-400" fill="currentColor" viewBox="0 0 20 20">
+                            <path fillRule="evenodd" d="M10 18a8 8 0 100-16 8 8 0 000 16zm3.707-9.293a1 1 0 00-1.414-1.414L9 10.586 7.707 9.293a1 1 0 00-1.414 1.414l2 2a1 1 0 001.414 0l4-4z" clipRule="evenodd" />
+                          </svg>
+                          Same-day delivery
+                        </div>
+                      </div>
+                    </div>
+                    <div className="relative">
+                      <div className="grid grid-cols-2 gap-3">
+                        {/* Sample grocery category badges */}
+                        <div className="bg-white/10 backdrop-blur-sm rounded-xl p-4 text-center border border-white/20">
+                          <div className="text-3xl mb-2">🍎</div>
+                          <p className="text-white font-semibold text-sm">Fresh Produce</p>
+                        </div>
+                        <div className="bg-white/10 backdrop-blur-sm rounded-xl p-4 text-center border border-white/20">
+                          <div className="text-3xl mb-2">🥛</div>
+                          <p className="text-white font-semibold text-sm">Dairy</p>
+                        </div>
+                        <div className="bg-white/10 backdrop-blur-sm rounded-xl p-4 text-center border border-white/20">
+                          <div className="text-3xl mb-2">🍞</div>
+                          <p className="text-white font-semibold text-sm">Bakery</p>
+                        </div>
+                        <div className="bg-white/10 backdrop-blur-sm rounded-xl p-4 text-center border border-white/20">
+                          <div className="text-3xl mb-2">🥫</div>
+                          <p className="text-white font-semibold text-sm">Pantry</p>
+                        </div>
+                      </div>
+                    </div>
+                  </div>
+                </div>
+              </div>
+            )}
+
             {/* Fresh Quality Banner - After 7th section */}
             {sectionIndex === 7 && (
               <div className="mb-10 relative overflow-hidden rounded-3xl">
