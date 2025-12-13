@@ -2267,17 +2267,20 @@ export default function OrderPageClient({
             {/* Promotional Billboard Banner - After first section - Dynamic from Bundles */}
             {sectionIndex === 1 && (() => {
               // Get first bundle with category='bundle' or 'popular' that should be featured
-              const featuredBundle = popularPackages.find(pkg => 
+              const featuredBundle = popularPackages.find(pkg =>
                 (pkg.category === 'bundle' || pkg.category === 'popular') && pkg.available
               ) || popularPackages[0];
-              
+
               if (!featuredBundle) return null;
-              
+
+              // Use fallback image pattern like other sections
+              const displayImage = featuredBundle.image || cycleFallbackImage(40);
+
               const originalPrice = (featuredBundle as any).originalPrice || null;
-              const savings = originalPrice && featuredBundle.price 
-                ? originalPrice - featuredBundle.price 
+              const savings = originalPrice && featuredBundle.price
+                ? originalPrice - featuredBundle.price
                 : null;
-              
+
               return (
                 <div className="mb-10 relative overflow-hidden rounded-3xl bg-gradient-to-r from-[#8B0000] via-[#B22222] to-[#6B0F0F] p-1">
                   <div className="relative overflow-hidden rounded-[22px] bg-gradient-to-br from-[#1a0a0a] to-[#2a1515] p-6 md:p-8">
@@ -2332,11 +2335,11 @@ export default function OrderPageClient({
                                 price: featuredBundle.price || featuredBundle.pricePerGuest,
                                 category: 'bundle',
                                 available: featuredBundle.available,
-                                displayImage: featuredBundle.image || cycleFallbackImage(40),
+                                displayImage: displayImage,
                                 sectionType: 'SPECIAL',
-                                displayGallery: featuredBundle.gallery && featuredBundle.gallery.length > 0 
-                                  ? featuredBundle.gallery 
-                                  : [featuredBundle.image || cycleFallbackImage(40)],
+                                displayGallery: featuredBundle.gallery && featuredBundle.gallery.length > 0
+                                  ? featuredBundle.gallery
+                                  : [displayImage],
                               },
                               config: {
                                 removals: featuredBundle.customizationRemovals || [],
@@ -2353,43 +2356,15 @@ export default function OrderPageClient({
                         </button>
                       </div>
                       <div className="relative h-48 md:h-64 rounded-2xl overflow-hidden bg-gradient-to-br from-[#2a1515] to-[#1a0a0a]">
-                        {featuredBundle.image ? (
-                          <Image
-                            src={featuredBundle.image}
-                            alt={featuredBundle.name}
-                            fill
-                            className="object-cover"
-                            sizes="(max-width: 768px) 100vw, 50vw"
-                            unoptimized={featuredBundle.image?.startsWith('http') || featuredBundle.image?.startsWith('/tenant/')}
-                          />
-                        ) : (
-                          <>
-                            {/* Animated concentric circles */}
-                            <div className="absolute inset-0 flex items-center justify-center">
-                              <div className="absolute w-40 h-40 rounded-full border-2 border-[#FFD700]/20 animate-ping" style={{ animationDuration: '3s' }} />
-                              <div className="absolute w-32 h-32 rounded-full border-2 border-[#FFD700]/30 animate-ping" style={{ animationDuration: '2.5s', animationDelay: '0.5s' }} />
-                              <div className="absolute w-24 h-24 rounded-full border-2 border-[#FFD700]/40 animate-pulse" />
-                              <div className="absolute w-16 h-16 rounded-full bg-gradient-to-br from-[#FFD700] to-[#FF6B00] shadow-lg shadow-[#FFD700]/50 flex items-center justify-center">
-                                <svg className="w-8 h-8 text-[#8B0000]" fill="currentColor" viewBox="0 0 20 20">
-                                  <path d="M3 1a1 1 0 000 2h1.22l.305 1.222a.997.997 0 00.01.042l1.358 5.43-.893.892C3.74 11.846 4.632 14 6.414 14H15a1 1 0 000-2H6.414l1-1H14a1 1 0 00.894-.553l3-6A1 1 0 0017 3H6.28l-.31-1.243A1 1 0 005 1H3zM16 16.5a1.5 1.5 0 11-3 0 1.5 1.5 0 013 0zM6.5 18a1.5 1.5 0 100-3 1.5 1.5 0 000 3z" />
-                                </svg>
-                              </div>
-                            </div>
-                            {/* Floating particles */}
-                            {[...Array(6)].map((_, i) => (
-                              <div
-                                key={i}
-                                className="absolute w-2 h-2 rounded-full bg-[#FFD700]/60 animate-bounce"
-                                style={{
-                                  left: `${20 + i * 12}%`,
-                                  top: `${30 + (i % 2) * 40}%`,
-                                  animationDuration: `${1.5 + i * 0.2}s`,
-                                  animationDelay: `${i * 0.15}s`,
-                                }}
-                              />
-                            ))}
-                          </>
-                        )}
+                        <img
+                          src={displayImage}
+                          alt={featuredBundle.name}
+                          className="w-full h-full object-cover"
+                          onError={(e) => {
+                            const target = e.target as HTMLImageElement;
+                            target.src = cycleFallbackImage(40);
+                          }}
+                        />
                         {/* Gradient overlay */}
                         <div className="absolute inset-0 bg-[radial-gradient(circle_at_center,rgba(255,215,0,0.15)_0%,transparent_70%)]" />
                       </div>
