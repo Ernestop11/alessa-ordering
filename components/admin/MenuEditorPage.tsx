@@ -25,6 +25,7 @@ interface MenuItem {
   price: number;
   category: string;
   available: boolean;
+  isFeatured?: boolean;
   image: string | null;
   menuSectionId: string | null;
   displayOrder: number | null;
@@ -81,6 +82,22 @@ export default function MenuEditorPage() {
     featuredCarousel: {
       title: 'Chef Recommends',
       subtitle: 'Handpicked favorites from our kitchen',
+    },
+    heroSection: {
+      subtitle: 'Authentic flavors crafted with passion',
+      primaryCTA: 'ORDER NOW',
+      secondaryCTA: 'VIEW MENU',
+    },
+    qualitySection: {
+      title: 'WE COOK FOR YOU',
+      description: 'Fresh ingredients, authentic recipes, made with passion every single day',
+    },
+    cateringPanel: {
+      title: '🎉 Catering Services',
+    },
+    rewardsPanel: {
+      title: '⭐ Rewards Program',
+      subtitle: 'Unlock Exclusive Benefits',
     },
   });
   const [savingFrontendConfig, setSavingFrontendConfig] = useState(false);
@@ -182,6 +199,7 @@ export default function MenuEditorPage() {
       price: 0,
       category: '',
       available: true,
+      isFeatured: false,
       image: null,
       menuSectionId: selectedSection || null,
       displayOrder: items.filter(i => i.menuSectionId === selectedSection).length,
@@ -1028,6 +1046,203 @@ export default function MenuEditorPage() {
                     </div>
                   </div>
 
+                  {/* Hero Section */}
+                  <div className="border-b border-gray-200 pb-6">
+                    <h3 className="text-lg font-semibold text-gray-900 mb-4 flex items-center gap-2">
+                      <span className="text-blue-500">🏠</span>
+                      Hero Section
+                    </h3>
+                    <p className="text-sm text-gray-500 mb-4">Main hero section at the top of your order page</p>
+
+                    <div className="space-y-4">
+                      <div>
+                        <label className="block text-sm font-medium text-gray-700 mb-2">
+                          Hero Subtitle
+                        </label>
+                        <input
+                          type="text"
+                          value={frontendConfig.heroSection.subtitle}
+                          onChange={(e) => setFrontendConfig({
+                            ...frontendConfig,
+                            heroSection: {
+                              ...frontendConfig.heroSection,
+                              subtitle: e.target.value,
+                            },
+                          })}
+                          className="w-full px-4 py-2 border border-gray-300 rounded-md shadow-sm focus:ring-blue-500 focus:border-blue-500"
+                          placeholder="e.g., Authentic flavors crafted with passion"
+                        />
+                        <p className="mt-1 text-sm text-gray-500">Tagline shown below your restaurant name</p>
+                      </div>
+
+                      <div className="grid grid-cols-2 gap-4">
+                        <div>
+                          <label className="block text-sm font-medium text-gray-700 mb-2">
+                            Primary CTA Button
+                          </label>
+                          <input
+                            type="text"
+                            value={frontendConfig.heroSection.primaryCTA}
+                            onChange={(e) => setFrontendConfig({
+                              ...frontendConfig,
+                              heroSection: {
+                                ...frontendConfig.heroSection,
+                                primaryCTA: e.target.value,
+                              },
+                            })}
+                            className="w-full px-4 py-2 border border-gray-300 rounded-md shadow-sm focus:ring-blue-500 focus:border-blue-500"
+                            placeholder="e.g., ORDER NOW"
+                          />
+                        </div>
+
+                        <div>
+                          <label className="block text-sm font-medium text-gray-700 mb-2">
+                            Secondary CTA Button
+                          </label>
+                          <input
+                            type="text"
+                            value={frontendConfig.heroSection.secondaryCTA}
+                            onChange={(e) => setFrontendConfig({
+                              ...frontendConfig,
+                              heroSection: {
+                                ...frontendConfig.heroSection,
+                                secondaryCTA: e.target.value,
+                              },
+                            })}
+                            className="w-full px-4 py-2 border border-gray-300 rounded-md shadow-sm focus:ring-blue-500 focus:border-blue-500"
+                            placeholder="e.g., VIEW MENU"
+                          />
+                        </div>
+                      </div>
+                    </div>
+                  </div>
+
+                  {/* Quality Section */}
+                  <div className="border-b border-gray-200 pb-6">
+                    <h3 className="text-lg font-semibold text-gray-900 mb-4 flex items-center gap-2">
+                      <span className="text-green-500">✨</span>
+                      Quality/About Section
+                    </h3>
+                    <p className="text-sm text-gray-500 mb-4">&quot;WE COOK FOR YOU&quot; section that highlights your quality and values</p>
+
+                    <div className="space-y-4">
+                      <div>
+                        <label className="block text-sm font-medium text-gray-700 mb-2">
+                          Section Title
+                        </label>
+                        <input
+                          type="text"
+                          value={frontendConfig.qualitySection.title}
+                          onChange={(e) => setFrontendConfig({
+                            ...frontendConfig,
+                            qualitySection: {
+                              ...frontendConfig.qualitySection,
+                              title: e.target.value,
+                            },
+                          })}
+                          className="w-full px-4 py-2 border border-gray-300 rounded-md shadow-sm focus:ring-blue-500 focus:border-blue-500"
+                          placeholder="e.g., WE COOK FOR YOU, OUR STORY"
+                        />
+                      </div>
+
+                      <div>
+                        <label className="block text-sm font-medium text-gray-700 mb-2">
+                          Description
+                        </label>
+                        <textarea
+                          value={frontendConfig.qualitySection.description}
+                          onChange={(e) => setFrontendConfig({
+                            ...frontendConfig,
+                            qualitySection: {
+                              ...frontendConfig.qualitySection,
+                              description: e.target.value,
+                            },
+                          })}
+                          rows={2}
+                          className="w-full px-4 py-2 border border-gray-300 rounded-md shadow-sm focus:ring-blue-500 focus:border-blue-500"
+                          placeholder="e.g., Fresh ingredients, authentic recipes, made with passion every single day"
+                        />
+                      </div>
+                    </div>
+                  </div>
+
+                  {/* Catering Panel */}
+                  <div className="border-b border-gray-200 pb-6">
+                    <h3 className="text-lg font-semibold text-gray-900 mb-4 flex items-center gap-2">
+                      <span className="text-orange-500">🎉</span>
+                      Catering Panel
+                    </h3>
+                    <p className="text-sm text-gray-500 mb-4">Title shown on the catering services panel</p>
+
+                    <div>
+                      <label className="block text-sm font-medium text-gray-700 mb-2">
+                        Panel Title
+                      </label>
+                      <input
+                        type="text"
+                        value={frontendConfig.cateringPanel.title}
+                        onChange={(e) => setFrontendConfig({
+                          ...frontendConfig,
+                          cateringPanel: {
+                            ...frontendConfig.cateringPanel,
+                            title: e.target.value,
+                          },
+                        })}
+                        className="w-full px-4 py-2 border border-gray-300 rounded-md shadow-sm focus:ring-blue-500 focus:border-blue-500"
+                        placeholder="e.g., 🎉 Catering Services, Event Catering, Party Packages"
+                      />
+                    </div>
+                  </div>
+
+                  {/* Rewards Panel */}
+                  <div className="border-b border-gray-200 pb-6">
+                    <h3 className="text-lg font-semibold text-gray-900 mb-4 flex items-center gap-2">
+                      <span className="text-purple-500">⭐</span>
+                      Rewards Program Panel
+                    </h3>
+                    <p className="text-sm text-gray-500 mb-4">Text shown on the rewards/membership panel</p>
+
+                    <div className="space-y-4">
+                      <div>
+                        <label className="block text-sm font-medium text-gray-700 mb-2">
+                          Panel Title
+                        </label>
+                        <input
+                          type="text"
+                          value={frontendConfig.rewardsPanel.title}
+                          onChange={(e) => setFrontendConfig({
+                            ...frontendConfig,
+                            rewardsPanel: {
+                              ...frontendConfig.rewardsPanel,
+                              title: e.target.value,
+                            },
+                          })}
+                          className="w-full px-4 py-2 border border-gray-300 rounded-md shadow-sm focus:ring-blue-500 focus:border-blue-500"
+                          placeholder="e.g., ⭐ Rewards Program, VIP Club, Member Perks"
+                        />
+                      </div>
+
+                      <div>
+                        <label className="block text-sm font-medium text-gray-700 mb-2">
+                          Panel Subtitle
+                        </label>
+                        <input
+                          type="text"
+                          value={frontendConfig.rewardsPanel.subtitle}
+                          onChange={(e) => setFrontendConfig({
+                            ...frontendConfig,
+                            rewardsPanel: {
+                              ...frontendConfig.rewardsPanel,
+                              subtitle: e.target.value,
+                            },
+                          })}
+                          className="w-full px-4 py-2 border border-gray-300 rounded-md shadow-sm focus:ring-blue-500 focus:border-blue-500"
+                          placeholder="e.g., Unlock Exclusive Benefits, Join the Club"
+                        />
+                      </div>
+                    </div>
+                  </div>
+
                   {/* Save Button */}
                   <div className="flex justify-end gap-3 pt-4">
                     <button
@@ -1038,6 +1253,22 @@ export default function MenuEditorPage() {
                           featuredCarousel: {
                             title: 'Chef Recommends',
                             subtitle: 'Handpicked favorites from our kitchen',
+                          },
+                          heroSection: {
+                            subtitle: 'Authentic flavors crafted with passion',
+                            primaryCTA: 'ORDER NOW',
+                            secondaryCTA: 'VIEW MENU',
+                          },
+                          qualitySection: {
+                            title: 'WE COOK FOR YOU',
+                            description: 'Fresh ingredients, authentic recipes, made with passion every single day',
+                          },
+                          cateringPanel: {
+                            title: '🎉 Catering Services',
+                          },
+                          rewardsPanel: {
+                            title: '⭐ Rewards Program',
+                            subtitle: 'Unlock Exclusive Benefits',
                           },
                         });
                       }}
@@ -1418,14 +1649,25 @@ export default function MenuEditorPage() {
                   </div>
                 </div>
 
-                <div className="flex items-center">
-                  <input
-                    type="checkbox"
-                    checked={editingItem.available}
-                    onChange={(e) => setEditingItem({ ...editingItem, available: e.target.checked })}
-                    className="h-4 w-4 text-blue-600 focus:ring-blue-500 border-gray-300 rounded"
-                  />
-                  <label className="ml-2 block text-sm text-gray-700">Available</label>
+                <div className="flex items-center gap-4">
+                  <div className="flex items-center">
+                    <input
+                      type="checkbox"
+                      checked={editingItem.available}
+                      onChange={(e) => setEditingItem({ ...editingItem, available: e.target.checked })}
+                      className="h-4 w-4 text-blue-600 focus:ring-blue-500 border-gray-300 rounded"
+                    />
+                    <label className="ml-2 block text-sm text-gray-700">Available</label>
+                  </div>
+                  <div className="flex items-center">
+                    <input
+                      type="checkbox"
+                      checked={editingItem.isFeatured || false}
+                      onChange={(e) => setEditingItem({ ...editingItem, isFeatured: e.target.checked })}
+                      className="h-4 w-4 text-amber-600 focus:ring-amber-500 border-gray-300 rounded"
+                    />
+                    <label className="ml-2 block text-sm text-gray-700">⭐ Featured (Chef Recommends)</label>
+                  </div>
                 </div>
                 </div>
 
