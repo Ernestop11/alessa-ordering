@@ -3,7 +3,7 @@
  * Provides offline support and caching
  */
 
-const CACHE_NAME = 'alessa-ordering-v1';
+const CACHE_NAME = 'alessa-ordering-v2-no-order-cache';
 const OFFLINE_PAGE = '/offline.html';
 
 // Install event - cache essential files
@@ -49,6 +49,14 @@ self.addEventListener('fetch', (event) => {
   // Skip API requests (always use network) - CRITICAL for real-time updates
   if (event.request.url.includes('/api/')) {
     return;
+  }
+
+  // Skip dynamic pages that need fresh data (order, admin, checkout)
+  const url = new URL(event.request.url);
+  if (url.pathname.startsWith('/order') ||
+      url.pathname.startsWith('/admin') ||
+      url.pathname.startsWith('/checkout')) {
+    return; // Always fetch fresh from network
   }
 
   // Skip EventSource/Server-Sent Events (always use network)
