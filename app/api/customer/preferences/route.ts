@@ -4,37 +4,49 @@ import { requireTenant } from '@/lib/tenant';
 import { getCustomerFromCookie } from '../../../../lib/auth/customer';
 
 export async function GET() {
-  const tenant = await requireTenant();
-  const customer = await getCustomerFromCookie(tenant.id);
+  try {
+    const tenant = await requireTenant();
+    const customer = await getCustomerFromCookie(tenant.id);
 
-  if (!customer) {
+    if (!customer) {
+      return NextResponse.json({ accessibility: null, loyaltyPoints: 0, membershipTier: null }, { status: 200 });
+    }
+
+    return NextResponse.json({
+      accessibility: customer.accessibilityPreferences ?? null,
+      loyaltyPoints: customer.loyaltyPoints ?? 0,
+      membershipTier: customer.membershipTier ?? null,
+    });
+  } catch (error) {
+    // If tenant resolution fails or any other error occurs, return default values
+    // This prevents 401/500 errors when tenant is not found or other issues occur
+    console.error('[customer/preferences] GET error:', error);
     return NextResponse.json({ accessibility: null, loyaltyPoints: 0, membershipTier: null }, { status: 200 });
   }
-
-  return NextResponse.json({
-    accessibility: customer.accessibilityPreferences ?? null,
-    loyaltyPoints: customer.loyaltyPoints ?? 0,
-    membershipTier: customer.membershipTier ?? null,
-  });
 }
 
 export async function PATCH(req: Request) {
-  const tenant = await requireTenant();
-  const customer = await getCustomerFromCookie(tenant.id);
+  try {
+    const tenant = await requireTenant();
+    const customer = await getCustomerFromCookie(tenant.id);
 
-  if (!customer) {
-    return NextResponse.json({ error: 'No active customer session' }, { status: 401 });
+    if (!customer) {
+      return NextResponse.json({ error: 'No active customer session' }, { status: 401 });
+    }
+
+    const body = await req.json();
+    const accessibility = body?.accessibility ?? null;
+
+    await prisma.customer.update({
+      where: { id: customer.id },
+      data: {
+        accessibilityPreferences: accessibility,
+      },
+    });
+
+    return NextResponse.json({ ok: true });
+  } catch (error) {
+    console.error('[customer/preferences] PATCH error:', error);
+    return NextResponse.json({ error: 'Failed to update preferences' }, { status: 500 });
   }
-
-  const body = await req.json();
-  const accessibility = body?.accessibility ?? null;
-
-  await prisma.customer.update({
-    where: { id: customer.id },
-    data: {
-      accessibilityPreferences: accessibility,
-    },
-  });
-
-  return NextResponse.json({ ok: true });
 }
