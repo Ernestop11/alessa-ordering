@@ -248,9 +248,12 @@ export default function MenuEditorPage() {
         },
       });
       const data = await res.json();
-      setCateringPackages(data || []);
+      // Ensure it's always an array
+      const packagesArray = Array.isArray(data) ? data : [];
+      setCateringPackages(packagesArray);
     } catch (err) {
       console.error('Failed to fetch catering packages', err);
+      setCateringPackages([]); // Set empty array on error
     } finally {
       setLoading(false);
     }
@@ -309,7 +312,7 @@ export default function MenuEditorPage() {
     try {
       // Add cache-busting timestamp to prevent browser caching
       const timestamp = Date.now();
-      const res = await fetch(`/api/admin/tenant-settings?t=${timestamp}`, {
+      const res = await fetch(`/api/admin/catering/gallery?t=${timestamp}`, {
         cache: 'no-store',
         headers: {
           'Cache-Control': 'no-cache',
@@ -317,11 +320,14 @@ export default function MenuEditorPage() {
         },
       });
       const data = await res.json();
-      // Fix: cateringGallery is inside data.settings, not data directly
-      setCateringGallery(data.settings?.cateringGallery || []);
-      console.log('Fetched catering gallery:', data.settings?.cateringGallery || []);
+      // The API returns { gallery: [...] }
+      const gallery = data.gallery;
+      const galleryArray = Array.isArray(gallery) ? gallery : [];
+      setCateringGallery(galleryArray);
+      console.log('Fetched catering gallery:', galleryArray);
     } catch (err) {
       console.error('Failed to fetch catering gallery', err);
+      setCateringGallery([]); // Set empty array on error
     }
   };
 
@@ -339,7 +345,8 @@ export default function MenuEditorPage() {
       });
       const data = await res.json();
       if (data.url) {
-        const newGallery = [...cateringGallery, data.url];
+        const galleryArray = Array.isArray(cateringGallery) ? cateringGallery : [];
+        const newGallery = [...galleryArray, data.url];
         await saveCateringGallery(newGallery);
       }
     } catch (err) {
@@ -349,16 +356,18 @@ export default function MenuEditorPage() {
   };
 
   const handleRemoveGalleryImage = async (url: string) => {
-    const newGallery = cateringGallery.filter(img => img !== url);
+    // Ensure cateringGallery is an array before filtering
+    const galleryArray = Array.isArray(cateringGallery) ? cateringGallery : [];
+    const newGallery = galleryArray.filter(img => img !== url);
     await saveCateringGallery(newGallery);
   };
 
   const saveCateringGallery = async (gallery: string[]) => {
     try {
-      const res = await fetch('/api/admin/tenant-settings', {
-        method: 'PATCH',
+      const res = await fetch('/api/admin/catering/gallery', {
+        method: 'POST',
         headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ cateringGallery: gallery }),
+        body: JSON.stringify({ gallery }),
       });
       if (!res.ok) throw new Error('Failed to save gallery');
       setCateringGallery(gallery);
@@ -385,7 +394,7 @@ export default function MenuEditorPage() {
       customizationRemovals: [],
       customizationAddons: [],
       available: true,
-      displayOrder: cateringPackages.length,
+      displayOrder: (Array.isArray(cateringPackages) ? cateringPackages : []).length,
     };
     setEditingPackage(newPackage);
   };
@@ -782,11 +791,11 @@ export default function MenuEditorPage() {
                     <div className="text-center py-8 text-gray-500">Loading...</div>
                   ) : !selectedCateringSection ? (
                     <div className="text-center py-8 text-gray-500">Select a section to view packages</div>
-                  ) : cateringPackages.filter(pkg => pkg.cateringSectionId === selectedCateringSection).length === 0 ? (
+                  ) : (Array.isArray(cateringPackages) ? cateringPackages : []).filter(pkg => pkg.cateringSectionId === selectedCateringSection).length === 0 ? (
                     <div className="text-center py-8 text-gray-500">No packages in this section</div>
                   ) : (
                     <div className="space-y-3">
-                      {cateringPackages
+                      {(Array.isArray(cateringPackages) ? cateringPackages : [])
                         .filter(pkg => pkg.cateringSectionId === selectedCateringSection)
                         .sort((a, b) => a.displayOrder - b.displayOrder)
                         .map((pkg) => (
