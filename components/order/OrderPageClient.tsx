@@ -115,6 +115,12 @@ interface OrderPageClientProps {
   customerRewardsData?: CustomerRewardsData | null;
   isOpen?: boolean;
   closedMessage?: string;
+  frontendConfig?: {
+    featuredCarousel?: {
+      title?: string;
+      subtitle?: string;
+    };
+  };
 }
 
 type LayoutView = 'grid' | 'list' | 'cards';
@@ -230,7 +236,8 @@ export default function OrderPageClient({
   rewardsData,
   customerRewardsData,
   isOpen = true,
-  closedMessage
+  closedMessage,
+  frontendConfig,
 }: OrderPageClientProps) {
   const searchParams = useSearchParams();
   const router = useRouter();
@@ -2249,6 +2256,8 @@ export default function OrderPageClient({
           <FeaturedCarousel
             items={carouselItems}
             onAddToCart={handleCarouselAddToCart}
+            title={frontendConfig?.featuredCarousel?.title}
+            subtitle={frontendConfig?.featuredCarousel?.subtitle}
           />
         )}
 

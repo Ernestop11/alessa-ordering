@@ -59,7 +59,7 @@ interface CateringPackage {
 }
 
 export default function MenuEditorPage() {
-  const [activeTab, setActiveTab] = useState<'menu' | 'catering'>('menu');
+  const [activeTab, setActiveTab] = useState<'menu' | 'catering' | 'frontend'>('menu');
   const [sections, setSections] = useState<MenuSection[]>([]);
   const [items, setItems] = useState<MenuItem[]>([]);
   const [cateringSections, setCateringSections] = useState<CateringSection[]>([]);
@@ -76,6 +76,15 @@ export default function MenuEditorPage() {
   const [isAcceptingOrders, setIsAcceptingOrders] = useState(true);
   const [loadingStatus, setLoadingStatus] = useState(false);
 
+  // Frontend customization state
+  const [frontendConfig, setFrontendConfig] = useState({
+    featuredCarousel: {
+      title: 'Chef Recommends',
+      subtitle: 'Handpicked favorites from our kitchen',
+    },
+  });
+  const [savingFrontendConfig, setSavingFrontendConfig] = useState(false);
+
   useEffect(() => {
     fetchSections();
     fetchItems();
@@ -83,6 +92,7 @@ export default function MenuEditorPage() {
     fetchCateringPackages();
     fetchCateringGallery();
     fetchOrderingStatus();
+    fetchFrontendConfig();
   }, []);
 
   const fetchSections = async () => {
@@ -426,6 +436,38 @@ export default function MenuEditorPage() {
     }
   };
 
+  const fetchFrontendConfig = async () => {
+    try {
+      const res = await fetch('/api/admin/tenant-settings');
+      const data = await res.json();
+      if (data.settings?.frontendConfig) {
+        setFrontendConfig(data.settings.frontendConfig);
+      }
+    } catch (err) {
+      console.error('Failed to fetch frontend config', err);
+    }
+  };
+
+  const saveFrontendConfig = async () => {
+    setSavingFrontendConfig(true);
+    try {
+      const res = await fetch('/api/admin/tenant-settings', {
+        method: 'PUT',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({
+          frontendConfig,
+        }),
+      });
+      if (!res.ok) throw new Error('Failed to save frontend config');
+      alert('Frontend settings saved successfully!');
+    } catch (err) {
+      console.error('Failed to save frontend config', err);
+      alert('Failed to save frontend settings');
+    } finally {
+      setSavingFrontendConfig(false);
+    }
+  };
+
   const handleAddPackage = () => {
     const newPackage: CateringPackage = {
       id: '',
@@ -616,6 +658,16 @@ export default function MenuEditorPage() {
                 >
                   Catering Packages
                 </button>
+                <button
+                  onClick={() => setActiveTab('frontend')}
+                  className={`whitespace-nowrap py-4 px-1 border-b-2 font-medium text-sm ${
+                    activeTab === 'frontend'
+                      ? 'border-blue-500 text-blue-600'
+                      : 'border-transparent text-gray-500 hover:text-gray-700 hover:border-gray-300'
+                  }`}
+                >
+                  Frontend Sections
+                </button>
               </nav>
             </div>
           </div>
@@ -732,7 +784,7 @@ export default function MenuEditorPage() {
               </div>
             </div>
             </div>
-          ) : (
+          ) : activeTab === 'catering' ? (
             /* Catering Packages View */
             <div className="space-y-6">
               {/* Catering Gallery Manager */}
@@ -903,7 +955,122 @@ export default function MenuEditorPage() {
               </div>
             </div>
             </div>
-          )}
+          ) : activeTab === 'frontend' ? (
+            <div className="max-w-4xl mx-auto">
+              <div className="bg-white rounded-lg shadow-md p-6">
+                <h2 className="text-2xl font-semibold text-gray-900 mb-6">Frontend Section Customization</h2>
+                <p className="text-gray-600 mb-6">Customize the text displayed in various sections on your customer-facing order page. Changes sync automatically when you save.</p>
+
+                {/* Featured Carousel Section */}
+                <div className="space-y-6">
+                  <div className="border-b border-gray-200 pb-6">
+                    <h3 className="text-lg font-semibold text-gray-900 mb-4 flex items-center gap-2">
+                      <span className="text-amber-500">⭐</span>
+                      Featured Items Carousel
+                    </h3>
+                    <p className="text-sm text-gray-500 mb-4">This section appears at the top of your order page and displays menu items marked as &quot;Featured&quot; in the Menu Items tab.</p>
+
+                    <div className="space-y-4">
+                      <div>
+                        <label className="block text-sm font-medium text-gray-700 mb-2">
+                          Section Title
+                        </label>
+                        <input
+                          type="text"
+                          value={frontendConfig.featuredCarousel.title}
+                          onChange={(e) => setFrontendConfig({
+                            ...frontendConfig,
+                            featuredCarousel: {
+                              ...frontendConfig.featuredCarousel,
+                              title: e.target.value,
+                            },
+                          })}
+                          className="w-full px-4 py-2 border border-gray-300 rounded-md shadow-sm focus:ring-blue-500 focus:border-blue-500"
+                          placeholder="e.g., Chef Recommends, Featured Specials, Today's Picks"
+                        />
+                        <p className="mt-1 text-sm text-gray-500">Main heading shown above the carousel</p>
+                      </div>
+
+                      <div>
+                        <label className="block text-sm font-medium text-gray-700 mb-2">
+                          Section Subtitle
+                        </label>
+                        <input
+                          type="text"
+                          value={frontendConfig.featuredCarousel.subtitle}
+                          onChange={(e) => setFrontendConfig({
+                            ...frontendConfig,
+                            featuredCarousel: {
+                              ...frontendConfig.featuredCarousel,
+                              subtitle: e.target.value,
+                            },
+                          })}
+                          className="w-full px-4 py-2 border border-gray-300 rounded-md shadow-sm focus:ring-blue-500 focus:border-blue-500"
+                          placeholder="e.g., Handpicked favorites from our kitchen"
+                        />
+                        <p className="mt-1 text-sm text-gray-500">Description shown below the title</p>
+                      </div>
+
+                      {/* Preview Box */}
+                      <div className="mt-6 border border-gray-200 rounded-lg p-4 bg-gradient-to-br from-gray-900 to-gray-800">
+                        <div className="mb-2">
+                          <h4 className="text-2xl font-semibold text-white">
+                            {frontendConfig.featuredCarousel.title || 'Chef Recommends'}
+                          </h4>
+                          <p className="text-sm text-white/60">
+                            {frontendConfig.featuredCarousel.subtitle || 'Handpicked favorites from our kitchen'}
+                          </p>
+                        </div>
+                        <div className="text-xs text-gray-400 mt-4">
+                          ↑ Live Preview - This is how it will appear on your order page
+                        </div>
+                      </div>
+                    </div>
+                  </div>
+
+                  {/* Save Button */}
+                  <div className="flex justify-end gap-3 pt-4">
+                    <button
+                      type="button"
+                      onClick={() => {
+                        // Reset to defaults
+                        setFrontendConfig({
+                          featuredCarousel: {
+                            title: 'Chef Recommends',
+                            subtitle: 'Handpicked favorites from our kitchen',
+                          },
+                        });
+                      }}
+                      className="px-6 py-2 border border-gray-300 rounded-md shadow-sm text-sm font-medium text-gray-700 bg-white hover:bg-gray-50"
+                    >
+                      Reset to Defaults
+                    </button>
+                    <button
+                      onClick={saveFrontendConfig}
+                      disabled={savingFrontendConfig}
+                      className="px-6 py-2 border border-transparent rounded-md shadow-sm text-sm font-medium text-white bg-blue-600 hover:bg-blue-700 disabled:opacity-50 disabled:cursor-not-allowed"
+                    >
+                      {savingFrontendConfig ? 'Saving...' : 'Save Changes'}
+                    </button>
+                  </div>
+
+                  {/* Info Box */}
+                  <div className="mt-6 bg-blue-50 border border-blue-200 rounded-lg p-4">
+                    <h4 className="text-sm font-semibold text-blue-900 mb-2">How to add featured items:</h4>
+                    <ol className="text-sm text-blue-800 space-y-1 list-decimal list-inside">
+                      <li>Go to the &quot;Menu Items&quot; tab</li>
+                      <li>Edit any menu item</li>
+                      <li>Check the &quot;Featured&quot; checkbox</li>
+                      <li>Save the item - it will now appear in this carousel!</li>
+                    </ol>
+                    <p className="text-sm text-blue-700 mt-3">
+                      💡 <strong>Tip:</strong> Changes sync automatically when customers refresh the page (Cmd+R / F5)
+                    </p>
+                  </div>
+                </div>
+              </div>
+            </div>
+          ) : null}
         </div>
 
         {/* Edit Section Modal */}

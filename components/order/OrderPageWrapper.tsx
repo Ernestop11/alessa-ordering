@@ -64,6 +64,12 @@ interface OrderPageWrapperProps {
   customerRewardsData?: CustomerRewardsData | null;
   isOpen?: boolean;
   closedMessage?: string;
+  frontendConfig?: {
+    featuredCarousel?: {
+      title?: string;
+      subtitle?: string;
+    };
+  };
 }
 
 // UI Version Toggle - Set to 'polished' for new UI, 'classic' for original

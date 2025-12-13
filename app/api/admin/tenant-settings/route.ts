@@ -70,6 +70,7 @@ export async function GET() {
           rewards: (tenant.settings as any).rewards ?? [],
           emailOffers: (tenant.settings as any).emailOffers ?? [],
           cateringTabConfig: (tenant.settings as any).cateringTabConfig ?? null,
+          frontendConfig: (tenant.settings as any).frontendConfig ?? null,
         }
       : null,
     integrations: tenant.integrations
@@ -180,6 +181,10 @@ export async function PUT(req: Request) {
 
   if (body.cateringTabConfig !== undefined) {
     settingsData.cateringTabConfig = body.cateringTabConfig || null;
+  }
+
+  if (body.frontendConfig !== undefined) {
+    settingsData.frontendConfig = body.frontendConfig || null;
   }
 
   if (body.branding !== undefined) {
@@ -359,6 +364,7 @@ export async function PUT(req: Request) {
           branding: updatedTenant.settings.branding ?? null,
           cateringGallery: updatedTenant.settings.cateringGallery ?? [],
           rewardsGallery: (updatedTenant.settings as any).rewardsGallery ?? [],
+          frontendConfig: (updatedTenant.settings as any).frontendConfig ?? null,
         }
       : null,
     integrations: updatedTenant.integrations

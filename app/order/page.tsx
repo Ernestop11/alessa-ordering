@@ -383,7 +383,7 @@ export default async function OrderPage() {
   // Check if restaurant is open
   const tenantSettings = await prisma.tenantSettings.findUnique({
     where: { tenantId: tenant.id },
-    select: { operatingHours: true, isOpen: true },
+    select: { operatingHours: true, isOpen: true, frontendConfig: true },
   });
 
   const hoursValidation = validateOperatingHours(
@@ -410,6 +410,7 @@ export default async function OrderPage() {
         customerRewardsData={customerRewardsData}
         isOpen={hoursValidation.isOpen}
         closedMessage={hoursValidation.message}
+        frontendConfig={tenantSettings?.frontendConfig as any}
       />
     </Suspense>
   );

@@ -19,12 +19,16 @@ interface FeaturedCarouselProps {
   items: FeaturedItem[];
   onAddToCart?: (item: FeaturedItem) => void;
   onViewDetails?: (item: FeaturedItem) => void;
+  title?: string;
+  subtitle?: string;
 }
 
 export default function FeaturedCarousel({
   items,
   onAddToCart,
-  onViewDetails
+  onViewDetails,
+  title = 'Chef Recommends',
+  subtitle = 'Handpicked favorites from our kitchen',
 }: FeaturedCarouselProps) {
   const [currentIndex, setCurrentIndex] = useState(0);
   const [direction, setDirection] = useState(0);
@@ -93,9 +97,9 @@ export default function FeaturedCarousel({
     <section className="rounded-3xl border border-white/10 bg-white/5 p-6 shadow-lg shadow-black/20">
       <header className="mb-4 flex flex-col gap-3 md:flex-row md:items-center md:justify-between">
         <div>
-          <h3 className="text-2xl font-semibold text-white">Chef Recommends</h3>
+          <h3 className="text-2xl font-semibold text-white">{title}</h3>
           <p className="text-sm text-white/60">
-            Handpicked favorites from our kitchen
+            {subtitle}
           </p>
         </div>
         {featuredItems.length > 1 && (
