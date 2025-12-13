@@ -49,7 +49,7 @@ export default function SettingsPage({ tenant }: SettingsPageProps) {
   const [hours, setHours] = useState<Record<string, DayHours>>(() => {
     const defaultHours: Record<string, DayHours> = {};
     DAYS.forEach(day => {
-      defaultHours[day] = tenant.settings?.operatingHours?.[day] || {
+      defaultHours[day] = tenant.settings?.operatingHours?.storeHours?.[day] || tenant.settings?.operatingHours?.[day] || {
         open: '09:00',
         close: '21:00',
         closed: false,
@@ -57,6 +57,14 @@ export default function SettingsPage({ tenant }: SettingsPageProps) {
     });
     return defaultHours;
   });
+
+  const [isOpen, setIsOpen] = useState(tenant.settings?.isOpen !== false);
+  const [temporarilyClosed, setTemporarilyClosed] = useState(tenant.settings?.operatingHours?.temporarilyClosed || false);
+  const [closedMessage, setClosedMessage] = useState(tenant.settings?.operatingHours?.closedMessage || '');
+  const [holidays, setHolidays] = useState<Array<{ id: string; date: string; name: string }>>(
+    tenant.settings?.operatingHours?.holidays || []
+  );
+  const [timezone, setTimezone] = useState(tenant.settings?.operatingHours?.timezone || 'America/Los_Angeles');
 
   const [saving, setSaving] = useState(false);
   const [saved, setSaved] = useState(false);
@@ -92,7 +100,14 @@ export default function SettingsPage({ tenant }: SettingsPageProps) {
           deliveryRadiusMi: parseFloat(formData.deliveryRadiusMi.toString()),
           minimumOrderValue: parseFloat(formData.minimumOrderValue.toString()),
           defaultTaxRate: parseFloat(formData.defaultTaxRate.toString()),
-          operatingHours: hours,
+          isOpen,
+          operatingHours: {
+            timezone,
+            storeHours: hours,
+            temporarilyClosed,
+            closedMessage,
+            holidays,
+          },
           clover: cloverCredentials,
           davo: davoCredentials,
         }),
@@ -267,9 +282,147 @@ export default function SettingsPage({ tenant }: SettingsPageProps) {
               </div>
             </div>
 
+            {/* Operating Status */}
+            <div className="bg-white rounded-lg shadow p-6">
+              <h2 className="text-lg font-semibold text-gray-900 mb-4">Operating Status</h2>
+              <div className="space-y-4">
+                {/* Master On/Off Toggle */}
+                <div className="flex items-start">
+                  <div className="flex items-center h-5">
+                    <input
+                      type="checkbox"
+                      checked={isOpen}
+                      onChange={(e) => setIsOpen(e.target.checked)}
+                      className="h-4 w-4 text-blue-600 focus:ring-blue-500 border-gray-300 rounded"
+                    />
+                  </div>
+                  <div className="ml-3">
+                    <label className="font-medium text-gray-700">Accepting Orders</label>
+                    <p className="text-sm text-gray-500">
+                      Master switch to enable/disable all online ordering
+                    </p>
+                  </div>
+                </div>
+
+                {/* Temporary Closure */}
+                <div className="border-t pt-4">
+                  <div className="flex items-start mb-2">
+                    <div className="flex items-center h-5">
+                      <input
+                        type="checkbox"
+                        checked={temporarilyClosed}
+                        onChange={(e) => setTemporarilyClosed(e.target.checked)}
+                        className="h-4 w-4 text-red-600 focus:ring-red-500 border-gray-300 rounded"
+                      />
+                    </div>
+                    <div className="ml-3">
+                      <label className="font-medium text-gray-700">Temporary Closure</label>
+                      <p className="text-sm text-gray-500">
+                        Override hours for emergencies or special closures
+                      </p>
+                    </div>
+                  </div>
+                  {temporarilyClosed && (
+                    <div className="mt-2">
+                      <label className="block text-sm font-medium text-gray-700 mb-1">
+                        Closure Message
+                      </label>
+                      <input
+                        type="text"
+                        value={closedMessage}
+                        onChange={(e) => setClosedMessage(e.target.value)}
+                        placeholder="We are temporarily closed. Check back soon!"
+                        className="block w-full border-gray-300 rounded-md shadow-sm focus:ring-red-500 focus:border-red-500"
+                      />
+                    </div>
+                  )}
+                </div>
+
+                {/* Timezone */}
+                <div className="border-t pt-4">
+                  <label className="block text-sm font-medium text-gray-700 mb-1">
+                    Timezone
+                  </label>
+                  <select
+                    value={timezone}
+                    onChange={(e) => setTimezone(e.target.value)}
+                    className="block w-full border-gray-300 rounded-md shadow-sm focus:ring-blue-500 focus:border-blue-500"
+                  >
+                    <option value="America/Los_Angeles">Pacific (Los Angeles)</option>
+                    <option value="America/Denver">Mountain (Denver)</option>
+                    <option value="America/Chicago">Central (Chicago)</option>
+                    <option value="America/New_York">Eastern (New York)</option>
+                    <option value="America/Phoenix">Arizona (Phoenix)</option>
+                    <option value="America/Anchorage">Alaska (Anchorage)</option>
+                    <option value="Pacific/Honolulu">Hawaii (Honolulu)</option>
+                  </select>
+                </div>
+              </div>
+            </div>
+
+            {/* Holiday Closures */}
+            <div className="bg-white rounded-lg shadow p-6">
+              <h2 className="text-lg font-semibold text-gray-900 mb-4">Holiday Closures</h2>
+              <p className="text-sm text-gray-500 mb-4">
+                Set specific dates when your restaurant will be closed (overrides regular hours)
+              </p>
+              <div className="space-y-3">
+                {holidays.map((holiday, index) => (
+                  <div key={holiday.id} className="flex items-center gap-3">
+                    <input
+                      type="date"
+                      value={holiday.date}
+                      onChange={(e) => {
+                        const updated = [...holidays];
+                        updated[index].date = e.target.value;
+                        setHolidays(updated);
+                      }}
+                      className="border-gray-300 rounded-md shadow-sm focus:ring-blue-500 focus:border-blue-500"
+                    />
+                    <input
+                      type="text"
+                      value={holiday.name}
+                      onChange={(e) => {
+                        const updated = [...holidays];
+                        updated[index].name = e.target.value;
+                        setHolidays(updated);
+                      }}
+                      placeholder="Holiday name (e.g., Christmas Day)"
+                      className="flex-1 border-gray-300 rounded-md shadow-sm focus:ring-blue-500 focus:border-blue-500"
+                    />
+                    <button
+                      type="button"
+                      onClick={() => {
+                        setHolidays(holidays.filter((_, i) => i !== index));
+                      }}
+                      className="px-3 py-2 text-sm text-red-600 hover:bg-red-50 rounded"
+                    >
+                      Remove
+                    </button>
+                  </div>
+                ))}
+                <button
+                  type="button"
+                  onClick={() => {
+                    setHolidays([
+                      ...holidays,
+                      {
+                        id: `holiday-${Date.now()}`,
+                        date: new Date().toISOString().split('T')[0],
+                        name: '',
+                      },
+                    ]);
+                  }}
+                  className="px-4 py-2 text-sm font-medium text-blue-600 hover:bg-blue-50 rounded border border-blue-300"
+                >
+                  + Add Holiday
+                </button>
+              </div>
+            </div>
+
             {/* Operating Hours */}
             <div className="bg-white rounded-lg shadow p-6">
-              <h2 className="text-lg font-semibold text-gray-900 mb-4">Operating Hours</h2>
+              <h2 className="text-lg font-semibold text-gray-900 mb-4">Regular Operating Hours</h2>
               <div className="space-y-3">
                 {DAYS.map((day) => (
                   <div key={day} className="flex items-center gap-4">
