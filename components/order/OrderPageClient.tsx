@@ -1268,8 +1268,8 @@ export default function OrderPageClient({
   // 2. Catering tab config says it's enabled, OR
   // 3. There are catering packages available
   const cateringEnabled = 
-    tenant.featureFlags?.includes('catering') ?? false ||
-    cateringTabConfig?.enabled !== false ||
+    (tenant.featureFlags?.includes('catering') ?? false) ||
+    (cateringTabConfig?.enabled !== false) ||
     (initialCateringPackages && initialCateringPackages.length > 0);
 
   const handleCateringSubmit = useCallback(async (e: React.FormEvent) => {
