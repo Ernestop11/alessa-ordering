@@ -34,7 +34,7 @@ export async function GET(req: Request) {
     orderBy: { displayOrder: 'asc' },
   });
 
-  const response = NextResponse.json({ packages });
+  const response = NextResponse.json(packages);
   // Prevent caching to ensure fresh data
   response.headers.set('Cache-Control', 'no-store, no-cache, must-revalidate, proxy-revalidate');
   response.headers.set('Pragma', 'no-cache');
