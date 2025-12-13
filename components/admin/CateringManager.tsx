@@ -1,6 +1,6 @@
 'use client';
 
-import { useState, useEffect } from 'react';
+import { useState, useEffect, useCallback } from 'react';
 import { Plus, Edit2, Trash2, Save, X } from 'lucide-react';
 
 export interface CateringOption {
@@ -32,8 +32,27 @@ export default function CateringManager() {
   const [galleryInput, setGalleryInput] = useState('');
 
   useEffect(() => {
-    fetchCateringOptions();
-    fetchCateringGallery();
+    let mounted = true;
+    
+    const loadData = async () => {
+      try {
+        await Promise.all([
+          fetchCateringOptions(),
+          fetchCateringGallery()
+        ]);
+      } catch (error) {
+        console.error('Error loading catering data:', error);
+        if (mounted) {
+          setLoading(false);
+        }
+      }
+    };
+
+    loadData();
+
+    return () => {
+      mounted = false;
+    };
   }, []);
 
   const fetchCateringOptions = async () => {
@@ -41,9 +60,12 @@ export default function CateringManager() {
       const response = await fetch('/api/admin/catering');
       if (!response.ok) throw new Error('Failed to fetch catering options');
       const data = await response.json();
-      setOptions(data.options || []);
+      // Ensure options is always an array
+      const optionsArray = Array.isArray(data.options) ? data.options : [];
+      setOptions(optionsArray);
     } catch (error) {
       console.error('Error fetching catering options:', error);
+      setOptions([]); // Set empty array on error
     } finally {
       setLoading(false);
     }
@@ -54,9 +76,12 @@ export default function CateringManager() {
       const response = await fetch('/api/admin/catering/gallery');
       if (!response.ok) throw new Error('Failed to fetch gallery');
       const data = await response.json();
-      setGallery(data.gallery || []);
+      // Ensure gallery is always an array
+      const galleryArray = Array.isArray(data.gallery) ? data.gallery : [];
+      setGallery(galleryArray);
     } catch (error) {
       console.error('Error fetching gallery:', error);
+      setGallery([]); // Set empty array on error
     }
   };
 

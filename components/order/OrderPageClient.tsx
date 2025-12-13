@@ -51,6 +51,8 @@ interface CateringTabConfig {
   label: string;
   icon?: string;
   description?: string;
+  modalTagline?: string;
+  modalHeading?: string;
 }
 
 interface CateringPackage {
@@ -345,7 +347,9 @@ export default function OrderPageClient({
     if (typeof window === 'undefined') return;
     const sectionEl = document.getElementById(`section-${activeSectionId}`);
     if (sectionEl) {
-      sectionEl.scrollIntoView({ behavior: 'smooth', block: 'start' });
+      const headerHeight = 140; // Account for fixed header and nav
+      const elementPosition = sectionEl.getBoundingClientRect().top + window.pageYOffset;
+      window.scrollTo({ top: elementPosition - headerHeight, behavior: 'smooth' });
     }
   }, [activeSectionId]);
 
@@ -645,8 +649,8 @@ export default function OrderPageClient({
         }
       },
       {
-        rootMargin: '-120px 0px -50%',
-        threshold: [0.25, 0.5, 0.75],
+        rootMargin: '-140px 0px -40%',
+        threshold: [0.1, 0.3, 0.5, 0.7],
       },
     );
 
@@ -2659,38 +2663,46 @@ export default function OrderPageClient({
                 />
                 <div className="absolute inset-0 bg-gradient-to-t from-black/80 via-black/20 to-transparent" />
                 <div className="absolute bottom-4 left-4 right-4">
-                  <p className="text-sm font-semibold uppercase tracking-wide text-amber-300">Authentic Puebla Cuisine</p>
-                  <h3 className="text-2xl font-black text-white">Catering for Every Occasion</h3>
+                  <p className="text-sm font-semibold uppercase tracking-wide text-amber-300">
+                    {cateringTabConfig?.modalTagline || tenant.name}
+                  </p>
+                  <h3 className="text-2xl font-black text-white">
+                    {cateringTabConfig?.modalHeading || 'Catering for Every Occasion'}
+                  </h3>
                 </div>
               </div>
               {/* Gallery navigation */}
-              <div className="absolute bottom-4 right-4 flex gap-2">
-                <button
-                  onClick={() => setCateringGalleryIndex((prev) => (prev - 1 + cateringGallery.length) % cateringGallery.length)}
-                  className="rounded-full bg-black/60 p-2 text-white backdrop-blur-sm transition hover:bg-black/80"
-                >
-                  ←
-                </button>
-                <button
-                  onClick={() => setCateringGalleryIndex((prev) => (prev + 1) % cateringGallery.length)}
-                  className="rounded-full bg-black/60 p-2 text-white backdrop-blur-sm transition hover:bg-black/80"
-                >
-                  →
-                </button>
-              </div>
-              {/* Gallery indicators */}
-              <div className="absolute bottom-4 left-1/2 flex -translate-x-1/2 gap-2">
-                {cateringGallery.map((_, index) => (
-                  <button
-                    key={index}
-                    onClick={() => setCateringGalleryIndex(index)}
-                    className={`h-2 rounded-full transition-all ${
-                      index === cateringGalleryIndex ? 'w-8 bg-amber-400' : 'w-2 bg-white/40'
-                    }`}
-                    aria-label={`Go to image ${index + 1}`}
-                  />
-                ))}
-              </div>
+              {cateringGallery.length > 1 && (
+                <>
+                  <div className="absolute bottom-4 right-4 flex gap-2">
+                    <button
+                      onClick={() => setCateringGalleryIndex((prev) => (prev - 1 + cateringGallery.length) % cateringGallery.length)}
+                      className="rounded-full bg-black/60 p-2 text-white backdrop-blur-sm transition hover:bg-black/80"
+                    >
+                      ←
+                    </button>
+                    <button
+                      onClick={() => setCateringGalleryIndex((prev) => (prev + 1) % cateringGallery.length)}
+                      className="rounded-full bg-black/60 p-2 text-white backdrop-blur-sm transition hover:bg-black/80"
+                    >
+                      →
+                    </button>
+                  </div>
+                  {/* Gallery indicators - only show if more than 1 image */}
+                  <div className="absolute bottom-2 left-1/2 flex -translate-x-1/2 gap-1.5">
+                    {cateringGallery.map((_, index) => (
+                      <button
+                        key={index}
+                        onClick={() => setCateringGalleryIndex(index)}
+                        className={`h-1.5 rounded-full transition-all ${
+                          index === cateringGalleryIndex ? 'w-6 bg-white' : 'w-1.5 bg-white/50'
+                        }`}
+                        aria-label={`Go to image ${index + 1}`}
+                      />
+                    ))}
+                  </div>
+                </>
+              )}
             </div>
 
             {/* Menu Highlights - Clickable Catering Options (Database-driven) */}

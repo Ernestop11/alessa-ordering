@@ -1,7 +1,8 @@
 "use client";
 
 import Link from 'next/link';
-import { useState } from 'react';
+import { useState, useEffect, useCallback, Suspense } from 'react';
+import { useRouter, useSearchParams } from 'next/navigation';
 import DashboardLayout from './DashboardLayout';
 import OrderList from './OrderList';
 import MenuEditor from './MenuEditor';
@@ -11,13 +12,42 @@ import CustomerList from './CustomerList';
 import IntegrationLogs from './IntegrationLogs';
 import CateringManager from './CateringManager';
 import BundlesManager from './BundlesManager';
+import SubscriptionStatus from './SubscriptionStatus';
 // import CustomizeTab from './CustomizeTab'; // Not needed for tenant admin
 import { signOut } from 'next-auth/react';
 
 type Tab = 'orders' | 'customers' | 'logs' | 'sections' | 'menu' | 'catering' | 'bundles' | 'customize' | 'settings';
 
-export default function AdminDashboardClient() {
-  const [activeTab, setActiveTab] = useState<Tab>('orders');
+function AdminDashboardContent() {
+  const router = useRouter();
+  const searchParams = useSearchParams();
+  const tabFromUrl = searchParams?.get('tab') as Tab | null;
+  
+  // Initialize tab from URL or default to 'orders'
+  const [activeTab, setActiveTab] = useState<Tab>(() => {
+    if (tabFromUrl && ['orders', 'customers', 'logs', 'sections', 'menu', 'catering', 'bundles', 'customize', 'settings'].includes(tabFromUrl)) {
+      return tabFromUrl;
+    }
+    return 'orders';
+  });
+
+  // Sync tab state with URL
+  useEffect(() => {
+    if (tabFromUrl && tabFromUrl !== activeTab) {
+      setActiveTab(tabFromUrl);
+    }
+  }, [tabFromUrl, activeTab]);
+
+  // Update URL when tab changes (without page reload)
+  const handleTabChange = useCallback((tab: Tab) => {
+    setActiveTab(tab);
+    const params = new URLSearchParams(searchParams?.toString() || '');
+    params.set('tab', tab);
+    router.push(`?${params.toString()}`, { scroll: false });
+  }, [router, searchParams]);
+
+  // Prevent browser refresh confirmation dialogs
+  // We intentionally don't add beforeunload handler to allow free refresh
 
   const renderContent = () => {
     switch (activeTab) {
@@ -67,12 +97,13 @@ export default function AdminDashboardClient() {
                   ].map((tab) => (
                     <button
                       key={tab.key}
-                      onClick={() => setActiveTab(tab.key as Tab)}
+                      onClick={() => handleTabChange(tab.key as Tab)}
                       className={`${
                         activeTab === tab.key
                           ? 'border-blue-500 text-gray-900'
                           : 'border-transparent text-gray-500 hover:text-gray-700 hover:border-gray-300'
-                      } inline-flex items-center px-1 pt-1 border-b-2 text-sm font-medium`}
+                      } inline-flex items-center px-1 pt-1 border-b-2 text-sm font-medium transition-colors`}
+                      aria-current={activeTab === tab.key ? 'page' : undefined}
                     >
                       {tab.label}
                     </button>
@@ -98,9 +129,27 @@ export default function AdminDashboardClient() {
         </nav>
 
         <main className="max-w-7xl mx-auto py-6 sm:px-6 lg:px-8">
+          <SubscriptionStatus />
           {renderContent()}
         </main>
       </div>
     </DashboardLayout>
+  );
+}
+
+export default function AdminDashboardClient() {
+  return (
+    <Suspense fallback={
+      <DashboardLayout>
+        <div className="min-h-screen bg-gray-100 flex items-center justify-center">
+          <div className="text-center">
+            <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-blue-600 mx-auto"></div>
+            <p className="mt-4 text-gray-600">Loading dashboard...</p>
+          </div>
+        </div>
+      </DashboardLayout>
+    }>
+      <AdminDashboardContent />
+    </Suspense>
   );
 }

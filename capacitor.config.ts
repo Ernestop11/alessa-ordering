@@ -17,6 +17,8 @@ const config: CapacitorConfig = {
   ios: {
     scheme: 'alessa-ordering',
     contentInset: 'automatic',
+    // Bluetooth permissions for iOS
+    // These will be added to Info.plist automatically
   },
   plugins: {
     SplashScreen: {

@@ -59,6 +59,41 @@ export default function StripeCheckout({ clientSecret, successPath = "/order/suc
       requestPayerName: true,
       requestPayerEmail: true,
     });
+
+    // Handle Apple Pay merchant validation
+    pr.on('paymentmethod', async (event) => {
+      // For Apple Pay, we need to validate the merchant
+      if (event.paymentMethod.type === 'apple_pay') {
+        try {
+          const validationResponse = await fetch('/api/payments/apple/validate', {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify({
+              validationURL: event.paymentMethod.applePay?.validationURL,
+            }),
+          });
+
+          if (validationResponse.ok) {
+            const data = await validationResponse.json();
+            if (data.merchantSession) {
+              // Complete the payment method
+              event.complete('success');
+            } else {
+              event.complete('fail');
+            }
+          } else {
+            event.complete('fail');
+          }
+        } catch (error) {
+          console.error('[Apple Pay] Validation error:', error);
+          event.complete('fail');
+        }
+      } else {
+        // For other payment methods, complete normally
+        event.complete('success');
+      }
+    });
+
     pr.canMakePayment().then((result) => {
       if (result) {
         setPaymentRequest(pr);

@@ -156,6 +156,28 @@ model PaymentSession {
   @@index([status])
 }
 
+model TaxRemittance {
+  id                String   @id @default(uuid())
+  tenantId           String
+  periodStart        DateTime
+  periodEnd          DateTime
+  totalTaxCollected  Float
+  totalTaxRemitted   Float   @default(0)
+  status             String   @default("pending") // pending, processing, completed, failed
+  remittanceDate     DateTime?
+  remittanceMethod   String?  // automatic, manual
+  remittanceReference String? // Transaction ID or reference number
+  reportData         Json?    // Tax report details
+  notes              String?
+  createdAt          DateTime @default(now())
+  updatedAt          DateTime @updatedAt
+  tenant             Tenant   @relation(fields: [tenantId], references: [id], onDelete: Cascade)
+
+  @@index([tenantId])
+  @@index([status])
+  @@index([periodStart, periodEnd])
+}
+
 model OrderItem {
   id         String   @id @default(uuid())
   menuItemId String
@@ -218,6 +240,7 @@ model Tenant {
   crmNotes               CRMNote[]
   convertedFromLead      Lead?              @relation("LeadToTenant")
   productSubscriptions   TenantProduct[]     @relation("TenantProducts")
+  taxRemittances         TaxRemittance[]
 
   @@index([status])
 }
@@ -256,6 +279,9 @@ model TenantIntegration {
   tenantId                             String    @unique
   doorDashStoreId                      String?
   doorDashOAuthToken                   String?
+  uberClientId                         String?
+  uberClientSecret                     String?
+  uberSandbox                          Boolean?  @default(true)
   cloverMerchantId                     String?
   cloverApiKey                         String?
   stripeAccountId                      String?
@@ -269,6 +295,9 @@ model TenantIntegration {
   squareAccessToken                    String?
   taxProvider                          String?   @default("builtin")
   taxConfig                            Json?
+  taxRemittanceEnabled                 Boolean?  @default(false)
+  taxRemittanceSchedule                String?   @default("monthly") // monthly, quarterly
+  taxEscrowAccountId                   String?   // Stripe Connect account for tax escrow
   paymentProcessor                     String?   @default("stripe")
   paymentConfig                        Json?
   printerType                          String?   @default("bluetooth")
@@ -853,10 +882,11 @@ model TenantProduct {
   id            String    @id @default(uuid())
   tenantId      String
   productId     String
-  status        String    @default("active") // 'active', 'paused', 'cancelled', 'trial'
+  status        String    @default("active") // 'active', 'paused', 'cancelled', 'trial', 'prepaid'
   subscribedAt DateTime  @default(now())
   cancelledAt   DateTime?
   trialEndsAt   DateTime?
+  expiresAt     DateTime? // For prepaid subscriptions (e.g., Sept 9, 2027)
   tenant        Tenant    @relation("TenantProducts", fields: [tenantId], references: [id], onDelete: Cascade)
   product       Product   @relation(fields: [productId], references: [id], onDelete: Cascade)
 
@@ -864,6 +894,7 @@ model TenantProduct {
   @@index([tenantId])
   @@index([productId])
   @@index([status])
+  @@index([expiresAt])
 }
 
 model CRMActivity {

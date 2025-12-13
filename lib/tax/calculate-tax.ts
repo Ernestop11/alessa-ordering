@@ -1,4 +1,5 @@
 import type { Prisma } from '@prisma/client';
+import { createAvalaraClient, parseAvalaraConfig, type AvalaraAddress, type AvalaraLineItem } from './avalara-client';
 
 interface TaxLineItem {
   id: string;
@@ -55,6 +56,10 @@ export interface TaxCalculationResult {
 
 interface ParsedTaxConfig {
   apiKey?: string;
+  accountId?: string; // Avalara
+  licenseKey?: string; // Avalara
+  companyCode?: string; // Avalara
+  environment?: 'sandbox' | 'production'; // Avalara
   nexusAddresses?: Array<Record<string, unknown>>;
   defaultProductTaxCode?: string;
   shippingTaxable?: boolean;
@@ -72,6 +77,10 @@ function parseTaxConfig(value: Prisma.JsonValue | null | undefined): ParsedTaxCo
   const record = value as Record<string, unknown>;
   return {
     apiKey: typeof record.apiKey === 'string' ? record.apiKey : undefined,
+    accountId: typeof record.accountId === 'string' ? record.accountId : undefined,
+    licenseKey: typeof record.licenseKey === 'string' ? record.licenseKey : undefined,
+    companyCode: typeof record.companyCode === 'string' ? record.companyCode : undefined,
+    environment: (record.environment === 'sandbox' || record.environment === 'production') ? record.environment : undefined,
     nexusAddresses: Array.isArray(record.nexusAddresses)
       ? (record.nexusAddresses.filter((entry) => entry && typeof entry === 'object') as Array<Record<string, unknown>>)
       : undefined,
@@ -243,6 +252,111 @@ async function calculateWithTaxJar(
   };
 }
 
+async function calculateWithAvalara(
+  input: TaxCalculationInput,
+  config: ParsedTaxConfig,
+): Promise<TaxCalculationResult> {
+  const avalaraConfig = parseAvalaraConfig({
+    accountId: config.accountId || process.env.AVALARA_ACCOUNT_ID,
+    licenseKey: config.licenseKey || process.env.AVALARA_LICENSE_KEY,
+    companyCode: config.companyCode || process.env.AVALARA_COMPANY_CODE,
+    environment: config.environment || process.env.AVALARA_ENVIRONMENT || 'production',
+  });
+
+  if (!avalaraConfig) {
+    throw new Error('Missing Avalara configuration. Set accountId, licenseKey, and companyCode in taxConfig or environment variables.');
+  }
+
+  const client = createAvalaraClient(avalaraConfig);
+
+  // Build origin address (restaurant location)
+  const origin: AvalaraAddress = {
+    line1: input.tenant.addressLine1 || '',
+    line2: input.tenant.addressLine2 || undefined,
+    city: input.tenant.city || '',
+    region: input.tenant.state || '',
+    postalCode: input.tenant.postalCode || '',
+    country: input.tenant.country || 'US',
+  };
+
+  // Build destination address (customer delivery address)
+  const destination: AvalaraAddress = {
+    line1: input.destination?.line1 || origin.line1,
+    line2: input.destination?.line2 || origin.line2,
+    city: input.destination?.city || origin.city,
+    region: input.destination?.state || origin.region,
+    postalCode: input.destination?.postalCode || origin.postalCode,
+    country: input.destination?.country || origin.country,
+  };
+
+  if (!destination.postalCode) {
+    throw new Error('Destination postal code is required for Avalara tax calculations.');
+  }
+
+  // Build line items
+  const lines: AvalaraLineItem[] = input.items.map((item, index) => ({
+    number: item.id || `item-${index + 1}`,
+    quantity: item.quantity,
+    amount: item.unitPrice * item.quantity,
+    taxCode: item.taxCode || config.defaultProductTaxCode || undefined,
+    description: `Menu item ${index + 1}`,
+  }));
+
+  // Add shipping as a line item if taxable
+  if (config.shippingTaxable && input.shipping && input.shipping > 0) {
+    lines.push({
+      number: 'shipping',
+      quantity: 1,
+      amount: input.shipping,
+      taxCode: config.defaultProductTaxCode || 'FR',
+      description: 'Delivery fee',
+    });
+  }
+
+  // Add surcharge as a line item if taxable
+  if (config.surchargeTaxable && input.surcharge && input.surcharge > 0) {
+    lines.push({
+      number: 'surcharge',
+      quantity: 1,
+      amount: input.surcharge,
+      taxCode: config.defaultProductTaxCode || undefined,
+      description: 'Service fee',
+    });
+  }
+
+  const avalaraRequest = {
+    type: 'SalesOrder' as const,
+    date: new Date().toISOString().split('T')[0],
+    currencyCode: input.currency || 'USD',
+    addresses: {
+      ShipFrom: origin,
+      ShipTo: destination,
+    },
+    lines,
+    commit: false,
+  };
+
+  const result = await client.calculateTax(avalaraRequest);
+
+  // Calculate effective tax rate
+  const totalAmount = result.totalAmount || input.subtotal;
+  const effectiveRate = totalAmount > 0 ? result.totalTax / totalAmount : 0;
+
+  return {
+    amount: Number(result.totalTax.toFixed(2)),
+    rate: effectiveRate,
+    provider: 'avalara',
+    breakdown: {
+      totalTax: result.totalTax,
+      totalTaxable: result.totalTaxable,
+      totalExempt: result.totalExempt,
+      summary: result.summary,
+      taxLines: result.taxLines,
+    },
+    raw: result,
+  };
+}
+
 export async function calculateOrderTax(input: TaxCalculationInput): Promise<TaxCalculationResult> {
   const integration = input.tenant.integrations;
   const provider = (integration?.taxProvider ?? 'builtin').toLowerCase();
@@ -257,6 +371,27 @@ export async function calculateOrderTax(input: TaxCalculationInput): Promise<Tax
   const surcharge = toNumber(input.surcharge);
 
   const warnings: string[] = [];
+
+  if (provider === 'avalara' || provider === 'davo') {
+    try {
+      const result = await calculateWithAvalara(
+        {
+          ...input,
+          subtotal,
+          shipping,
+          surcharge,
+        },
+        config,
+      );
+      if (warnings.length > 0) {
+        result.warnings = warnings;
+      }
+      return result;
+    } catch (error) {
+      console.warn('[tax] Avalara calculation failed, falling back to default rate:', error);
+      warnings.push(`Avalara calculation failed: ${error instanceof Error ? error.message : 'Unknown error'}. Using default rate.`);
+    }
+  }
 
   if (provider === 'taxjar') {
     try {
@@ -275,6 +410,27 @@ export async function calculateOrderTax(input: TaxCalculationInput): Promise<Tax
       return result;
     } catch (error) {
       const message = error instanceof Error ? error.message : 'TaxJar calculation failed.';
+      warnings.push(message);
+    }
+  }
+
+  if (provider === 'avalara' || provider === 'davo') {
+    try {
+      const result = await calculateWithAvalara(
+        {
+          ...input,
+          subtotal,
+          shipping,
+          surcharge,
+        },
+        config,
+      );
+      if (warnings.length > 0) {
+        result.warnings = warnings;
+      }
+      return result;
+    } catch (error) {
+      const message = error instanceof Error ? error.message : 'Avalara calculation failed.';
       warnings.push(message);
     }
   }

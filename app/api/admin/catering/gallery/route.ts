@@ -20,7 +20,11 @@ export async function GET() {
       select: { cateringGallery: true },
     });
 
-    return NextResponse.json({ gallery: settings?.cateringGallery || [] });
+    // Ensure gallery is always an array
+    const gallery = settings?.cateringGallery;
+    const galleryArray = Array.isArray(gallery) ? gallery : [];
+    
+    return NextResponse.json({ gallery: galleryArray });
   } catch (error: any) {
     console.error('[catering-gallery] GET error:', error);
     return NextResponse.json({ error: error.message }, { status: 500 });

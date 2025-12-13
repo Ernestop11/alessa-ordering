@@ -7,6 +7,8 @@ import { useOrderFeed } from './useOrderFeed';
 import type { FulfillmentOrder } from './types';
 import CateringInquiriesTab from './CateringInquiriesTab';
 import PrinterSettings from './PrinterSettings';
+import { useAutoPrint } from './useAutoPrint';
+import { printOrderClientSide, isBluetoothPrintingAvailable, type PrinterConfig } from '@/lib/client-printer';
 
 interface Props {
   initialOrders: FulfillmentOrder[];
@@ -193,6 +195,63 @@ export default function FulfillmentDashboard({ initialOrders, feedUrl, scope }: 
   const lastNotifiedIdRef = useRef<string | null>(null);
   const isClient = typeof window !== 'undefined';
 
+  // Get tenant info from first order (all orders have same tenant)
+  const tenantInfo = useMemo(() => {
+    const firstOrder = orders[0] || initialOrders[0];
+    if (!firstOrder?.tenant) {
+      // Fallback: fetch tenant info if not in order
+      return null;
+    }
+    return {
+      id: firstOrder.tenant.id,
+      name: firstOrder.tenant.name,
+      addressLine1: null,
+      addressLine2: null,
+      city: null,
+      state: null,
+      postalCode: null,
+      contactPhone: null,
+    };
+  }, [orders, initialOrders]);
+
+  // Load tenant details (address, phone) from API
+  const [tenantDetails, setTenantDetails] = useState<any>(null);
+  useEffect(() => {
+    if (!tenantInfo) return;
+    async function loadTenantDetails() {
+      try {
+        const res = await fetch('/api/admin/tenant-settings');
+        if (res.ok) {
+          const data = await res.json();
+          setTenantDetails({
+            ...tenantInfo,
+            addressLine1: data.tenant?.addressLine1 || null,
+            addressLine2: data.tenant?.addressLine2 || null,
+            city: data.tenant?.city || null,
+            state: data.tenant?.state || null,
+            postalCode: data.tenant?.postalCode || null,
+            contactPhone: data.tenant?.contactPhone || null,
+          });
+        }
+      } catch (err) {
+        console.error('Failed to load tenant details:', err);
+        setTenantDetails(tenantInfo);
+      }
+    }
+    loadTenantDetails();
+  }, [tenantInfo]);
+
+  // Auto-print hook for client-side Bluetooth printing
+  useAutoPrint({
+    enabled: autoPrintEnabled && printerConfig?.type === 'bluetooth',
+    printerConfig: printerConfig as PrinterConfig | null,
+    newOrder: lastCreatedOrder,
+    tenant: tenantDetails || tenantInfo || {
+      id: '',
+      name: 'Restaurant',
+    },
+  });
+
   // Note: Alarm is now handled by NewOrderAlerts component automatically
   // This hook is kept for backwards compatibility but won't play duplicate sounds
   useEffect(() => {
@@ -279,11 +338,17 @@ export default function FulfillmentDashboard({ initialOrders, feedUrl, scope }: 
     loadPrinterConfig();
   }, []);
 
-  // Auto-print when new orders arrive
+  // Auto-print when new orders arrive (for non-Bluetooth printers)
+  // Bluetooth printers are handled by useAutoPrint hook above
   useEffect(() => {
     if (!lastCreatedOrder) return;
     if (lastNotifiedIdRef.current === lastCreatedOrder.id) return;
     if (!autoPrintEnabled || !printerConfig || printerConfig.type === 'none') return;
+
+    // Skip if Bluetooth printer (handled by useAutoPrint hook)
+    if (printerConfig.type === 'bluetooth' && isBluetoothPrintingAvailable()) {
+      return;
+    }
 
     lastNotifiedIdRef.current = lastCreatedOrder.id;
 
@@ -429,7 +494,24 @@ export default function FulfillmentDashboard({ initialOrders, feedUrl, scope }: 
 
   const handlePrint = async (order: FulfillmentOrder) => {
     try {
-      // Try auto-dispatch first
+      // If Bluetooth printer configured and available, use client-side printing
+      if (
+        printerConfig?.type === 'bluetooth' &&
+        printerConfig?.deviceId &&
+        isBluetoothPrintingAvailable() &&
+        tenantDetails
+      ) {
+        console.log('[Print] Using client-side Bluetooth printing');
+        const result = await printOrderClientSide(order, tenantDetails, printerConfig as PrinterConfig);
+        if (result.success) {
+          console.log('[Print] Order printed successfully via Bluetooth');
+          return;
+        } else {
+          console.warn('[Print] Client-side print failed, falling back to server:', result.error);
+        }
+      }
+
+      // Try server-side auto-dispatch
       const response = await fetch('/api/fulfillment/print', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },

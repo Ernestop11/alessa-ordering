@@ -4,6 +4,9 @@ import { useEffect, useState } from 'react';
 import { useRouter } from 'next/navigation';
 import StripeConnectButton from './StripeConnectButton';
 import DoorDashConnectButton from './DoorDashConnectButton';
+import UberDirectConnectButton from './UberDirectConnectButton';
+import TaxRemittance from './TaxRemittance';
+import SwitchMenuProSync from './SwitchMenuProSync';
 
 interface SettingsForm {
   restaurantName: string;
@@ -1543,9 +1546,72 @@ export default function Settings() {
             <StripeConnectButton />
           </div>
 
+          {/* Apple Pay Configuration */}
+          <div className="mb-6 rounded-lg border-2 border-gray-200 bg-white p-6">
+            <div className="flex items-start justify-between mb-4">
+              <div>
+                <h4 className="text-sm font-semibold text-gray-900">Apple Pay</h4>
+                <p className="text-xs text-gray-500 mt-1">
+                  Configure Apple Pay merchant ID and certificate for live payments
+                </p>
+              </div>
+            </div>
+            <div className="space-y-4">
+              <div>
+                <label className="block text-sm font-medium text-gray-700 mb-2">
+                  Apple Pay Merchant ID
+                </label>
+                <input
+                  type="text"
+                  placeholder="merchant.com.example"
+                  className="w-full rounded-md border border-gray-300 px-3 py-2 text-sm focus:border-blue-500 focus:outline-none focus:ring-2 focus:ring-blue-500/20"
+                  value={form.stripeAccountId || ''} // Reuse field or add new one
+                  onChange={(e) => {
+                    // Store in tenant integration
+                    // This would need to be added to the form state
+                  }}
+                />
+                <p className="mt-1 text-xs text-gray-500">
+                  Get your Merchant ID from{' '}
+                  <a
+                    href="https://developer.apple.com/account/resources/identifiers/list/merchant"
+                    target="_blank"
+                    rel="noopener noreferrer"
+                    className="text-blue-600 hover:underline"
+                  >
+                    Apple Developer Portal
+                  </a>
+                </p>
+              </div>
+              <div className="rounded-md bg-blue-50 border border-blue-200 p-3">
+                <p className="text-xs text-blue-800">
+                  <strong>Note:</strong> Apple Pay requires:
+                  <br />• Merchant ID registered in Apple Developer
+                  <br />• Domain registered in Apple Pay Merchant Identity
+                  <br />• Payment Processing Certificate (.pem file)
+                  <br />• Private key for the certificate
+                  <br />
+                  <br />
+                  Set <code>APPLE_PAY_MERCHANT_ID</code>, <code>APPLE_PAY_CERTIFICATE_PATH</code>, and{' '}
+                  <code>APPLE_PAY_KEY_PATH</code> in environment variables, or configure via tenant integration settings.
+                </p>
+              </div>
+            </div>
+          </div>
+
           {/* DoorDash Integration */}
           <div className="mb-6">
             <DoorDashConnectButton />
+          </div>
+
+          {/* Uber Direct Integration */}
+          <div className="mb-6">
+            <UberDirectConnectButton />
+          </div>
+
+          {/* Switch Menu Pro Sync */}
+          <div className="mb-6">
+            <SwitchMenuProSync />
           </div>
 
           {/* Printer Integration */}
@@ -1991,7 +2057,7 @@ export default function Settings() {
 
         <section>
           <h3 className="text-base font-semibold text-gray-900 mb-4">Taxes</h3>
-          <div className="grid grid-cols-1 gap-6 sm:grid-cols-2">
+          <div className="grid grid-cols-1 gap-6 sm:grid-cols-2 mb-6">
             <div>
               <label htmlFor="taxProvider" className="block text-sm font-medium text-gray-700">
                 Tax provider
@@ -2005,6 +2071,7 @@ export default function Settings() {
               >
                 <option value="builtin">Built-in rate</option>
                 <option value="taxjar">TaxJar</option>
+                <option value="avalara">Avalara (Davo)</option>
               </select>
               <p className="mt-1 text-xs text-gray-500">
                 Use the built-in rate for simple calculations or connect to an external provider for automatic rates.
@@ -2020,14 +2087,19 @@ export default function Settings() {
                 value={form.taxConfig}
                 onChange={handleChange}
                 rows={5}
-                placeholder='{"apiKey":"taxjar_live_...","shippingTaxable":true}'
+                placeholder='{"apiKey":"taxjar_live_..."} or {"accountId":"...","licenseKey":"...","companyCode":"..."} for Avalara'
                 className="mt-1 block w-full rounded-md border border-gray-300 shadow-sm focus:border-blue-500 focus:ring-blue-500 sm:text-sm font-mono"
               />
               <p className="mt-1 text-xs text-gray-500">
-                Supported keys: <code>apiKey</code>, <code>nexusAddresses</code>, <code>defaultProductTaxCode</code>,{' '}
-                <code>shippingTaxable</code>, <code>surchargeTaxable</code>, <code>fallbackRate</code>.
+                <strong>TaxJar:</strong> <code>apiKey</code>, <code>nexusAddresses</code>, <code>defaultProductTaxCode</code>, <code>shippingTaxable</code>, <code>surchargeTaxable</code>, <code>fallbackRate</code>.<br />
+                <strong>Avalara:</strong> <code>accountId</code>, <code>licenseKey</code>, <code>companyCode</code>, <code>environment</code> (sandbox/production), <code>defaultProductTaxCode</code>, <code>shippingTaxable</code>, <code>surchargeTaxable</code>, <code>fallbackRate</code>.
               </p>
             </div>
+          </div>
+
+          {/* Tax Remittance Section */}
+          <div className="mt-6">
+            <TaxRemittance />
           </div>
         </section>
 

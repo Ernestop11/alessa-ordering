@@ -184,12 +184,22 @@ async function getCateringTabConfig(tenantId: string) {
     select: { cateringTabConfig: true },
   });
 
-  return (settings?.cateringTabConfig as any) || {
+  const config = (settings?.cateringTabConfig as any) || {
     enabled: true,
     label: 'Catering',
     icon: 'ChefHat',
     description: 'Full-service events, delivered',
   };
+
+  // Add default modal text if not set
+  if (!config.modalTagline) {
+    config.modalTagline = 'Authentic Mexican Cuisine';
+  }
+  if (!config.modalHeading) {
+    config.modalHeading = 'Catering for Every Occasion';
+  }
+
+  return config;
 }
 
 async function getCateringPackages(tenantId: string) {

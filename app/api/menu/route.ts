@@ -4,7 +4,7 @@ import { getServerSession } from 'next-auth'
 import { authOptions } from '@/lib/auth/options'
 import prisma from '@/lib/prisma'
 import { requireTenant } from '@/lib/tenant'
-import { emitMenuUpdate } from '@/lib/ecosystem/communication'
+import { emitMenuUpdate, triggerSMPSync } from '@/lib/ecosystem/communication'
 
 export async function GET() {
   try {
@@ -65,6 +65,8 @@ export async function POST(req: Request) {
     // Emit ecosystem event for SMP sync
     try {
       await emitMenuUpdate(tenant.id, 'added', created.id, created.name)
+      // Trigger SMP sync if tenant has subscription
+      await triggerSMPSync(tenant.id)
     } catch (err) {
       console.error('[Menu API] Error emitting ecosystem event:', err)
     }

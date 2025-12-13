@@ -4,7 +4,7 @@ import { getServerSession } from 'next-auth'
 import { authOptions } from '@/lib/auth/options'
 import prisma from '@/lib/prisma'
 import { requireTenant } from '@/lib/tenant'
-import { emitMenuUpdate } from '@/lib/ecosystem/communication'
+import { emitMenuUpdate, triggerSMPSync } from '@/lib/ecosystem/communication'
 
 export async function GET(req: Request, { params }: { params: Promise<{ id: string }> | { id: string } }) {
   try {
@@ -84,6 +84,8 @@ export async function PATCH(req: Request, { params }: { params: Promise<{ id: st
     // Emit ecosystem event for SMP sync
     try {
       await emitMenuUpdate(tenant.id, 'updated', updated.id, updated.name)
+      // Trigger SMP sync if tenant has subscription
+      await triggerSMPSync(tenant.id)
     } catch (err) {
       console.error('[Menu API] Error emitting ecosystem event:', err)
     }
@@ -128,6 +130,8 @@ export async function DELETE(req: Request, { params }: { params: Promise<{ id: s
     // Emit ecosystem event for SMP sync
     try {
       await emitMenuUpdate(tenant.id, 'deleted', existing.id, existing.name)
+      // Trigger SMP sync if tenant has subscription
+      await triggerSMPSync(tenant.id)
     } catch (err) {
       console.error('[Menu API] Error emitting ecosystem event:', err)
     }

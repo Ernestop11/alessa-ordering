@@ -45,6 +45,7 @@ export default function Cart() {
   const [deliveryAddress, setDeliveryAddress] = useState("");
   const [deliveryQuote, setDeliveryQuote] = useState<number | null>(null);
   const [deliveryQuoteId, setDeliveryQuoteId] = useState<string | null>(null);
+  const [deliveryPartner, setDeliveryPartner] = useState<'doordash' | 'uber' | null>(null);
   const [deliveryLoading, setDeliveryLoading] = useState(false);
   const [deliveryError, setDeliveryError] = useState<string | null>(null);
   const [tipSelection, setTipSelection] = useState<TipOption>("15");
@@ -346,6 +347,7 @@ export default function Cart() {
       fulfillmentMethod,
       deliveryPartner: fulfillmentMethod === "delivery" ? "doordash" : undefined,
       deliveryQuoteId: fulfillmentMethod === "delivery" && deliveryQuoteId ? deliveryQuoteId : undefined,
+      deliveryPartner: fulfillmentMethod === "delivery" ? deliveryPartner || 'doordash' : undefined,
       customerName: customerName.trim() || undefined,
       customerEmail: customerEmail.trim() || undefined,
       customerPhone: customerPhone.trim() || undefined,
@@ -394,36 +396,67 @@ export default function Cart() {
       const postalCode = extractPostalCode(deliveryAddress);
       const addressParts = deliveryAddress.split(',').map(s => s.trim());
       
-      // Use DoorDash API for delivery quotes
-      const response = await fetch("/api/delivery/doordash/quote", {
+      const addressPayload = {
+        pickupAddress: {
+          street: tenant.addressLine1 || "",
+          city: tenant.city || "",
+          state: tenant.state || "",
+          zipCode: tenant.postalCode || "",
+        },
+        dropoffAddress: {
+          street: addressParts[0] || deliveryAddress,
+          city: addressParts[1] || tenant.city || "",
+          state: addressParts[2]?.split(' ')[0] || tenant.state || "",
+          zipCode: postalCode || tenant.postalCode || "",
+        },
+        orderValue: subtotal,
+      };
+
+      // Try Uber Direct first (if configured), then fallback to DoorDash
+      let response;
+      let partner: 'uber' | 'doordash' = 'doordash';
+      
+      try {
+        // Try Uber Direct
+        response = await fetch("/api/delivery/uber/quote", {
+          method: "POST",
+          headers: { "Content-Type": "application/json" },
+          body: JSON.stringify(addressPayload),
+        });
+        
+        if (response.ok) {
+          const data = await response.json();
+          if (data.mode !== 'mock' && data.mode !== 'placeholder') {
+            partner = 'uber';
+            setDeliveryPartner('uber');
+            setDeliveryQuote(Number(data.deliveryFee ?? defaultDeliveryFee));
+            setDeliveryQuoteId(data.quoteId || null);
+            return;
+          }
+        }
+      } catch (uberErr) {
+        console.log('[Cart] Uber Direct not available, trying DoorDash');
+      }
+
+      // Fallback to DoorDash
+      response = await fetch("/api/delivery/doordash/quote", {
         method: "POST",
         headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({
-          pickupAddress: {
-            street: tenant.addressLine1 || "",
-            city: tenant.city || "",
-            state: tenant.state || "",
-            zipCode: tenant.postalCode || "",
-          },
-          dropoffAddress: {
-            street: addressParts[0] || deliveryAddress,
-            city: addressParts[1] || tenant.city || "",
-            state: addressParts[2]?.split(' ')[0] || tenant.state || "",
-            zipCode: postalCode || tenant.postalCode || "",
-          },
-          orderValue: subtotal,
-        }),
+        body: JSON.stringify(addressPayload),
       });
+      
       const data = await response.json();
       if (!response.ok) {
         throw new Error(data.error || "Unable to fetch delivery quote.");
       }
+      setDeliveryPartner('doordash');
       setDeliveryQuote(Number(data.deliveryFee ?? defaultDeliveryFee));
       setDeliveryQuoteId(data.quoteId || null);
     } catch (err) {
       setDeliveryError(err instanceof Error ? err.message : "Failed to fetch delivery quote.");
       // Fallback to default fee
       setDeliveryQuote(defaultDeliveryFee);
+      setDeliveryPartner(null);
     } finally {
       setDeliveryLoading(false);
     }
@@ -711,7 +744,12 @@ export default function Cart() {
                 <div className="mt-3 space-y-3 rounded-xl border-2 border-amber-200 bg-gradient-to-br from-amber-50 to-yellow-50 p-4">
                   <div className="flex items-center gap-2">
                     <span className="text-lg">🚗</span>
-                    <span className="text-sm font-bold text-gray-800">DoorDash Delivery</span>
+                    <span className="text-sm font-bold text-gray-800">
+                      {deliveryPartner === 'uber' ? 'Uber Direct' : 'DoorDash'} Delivery
+                    </span>
+                    {!deliveryPartner && (
+                      <span className="text-xs text-gray-500">(Auto-select partner)</span>
+                    )}
                   </div>
                   <label className="text-sm font-medium text-gray-700">
                     Delivery address
@@ -730,7 +768,7 @@ export default function Cart() {
                       className="rounded-lg bg-gradient-to-r from-amber-500 to-yellow-500 px-4 py-2 text-sm font-bold text-white shadow-md transition hover:from-amber-600 hover:to-yellow-600 disabled:cursor-not-allowed disabled:opacity-50"
                       disabled={deliveryLoading || !deliveryAddress.trim()}
                     >
-                      {deliveryLoading ? "Getting quote..." : "Get DoorDash Quote"}
+                      {deliveryLoading ? "Getting quote..." : "Get Delivery Quote"}
                     </button>
                     {deliveryQuote !== null && (
                       <div className="flex items-center gap-2">
@@ -749,7 +787,7 @@ export default function Cart() {
                   {deliveryQuote !== null && !deliveryError && (
                     <div className="rounded-lg bg-green-50 border border-green-200 p-2">
                       <p className="text-xs text-green-700">
-                        ✓ DoorDash delivery quote ready. Estimated 35-45 minutes.
+                        ✓ {deliveryPartner === 'uber' ? 'Uber Direct' : 'DoorDash'} delivery quote ready. Estimated 30-45 minutes.
                       </p>
                     </div>
                   )}

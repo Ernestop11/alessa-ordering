@@ -157,6 +157,21 @@ export async function resolveTenant(options: TenantResolutionOptions = {}) {
     );
   }
 
+  // FIRST: Check x-tenant-slug header set by middleware (for custom domains)
+  const headerSlug = headerList?.get('x-tenant-slug');
+  if (headerSlug) {
+    try {
+      const slug = assertValidSlug(headerSlug, 'x-tenant-slug header');
+      const tenantFromHeader = await getTenantBySlug(slug);
+      if (tenantFromHeader) {
+        return tenantFromHeader;
+      }
+    } catch (err) {
+      // Fall through to other methods if header slug is invalid
+      console.error('Invalid x-tenant-slug header:', err);
+    }
+  }
+
   // Only try to use hostname as slug if it's a valid slug format (no dots)
   if (hostHeader && /^[a-z0-9-]+$/i.test(hostHeader)) {
     const tenantFromHost = await getTenantBySlug(hostHeader);

@@ -238,3 +238,51 @@ export async function emitOrderEvent(
   );
 }
 
+/**
+ * Helper: Trigger SMP sync for a tenant
+ * Checks if tenant has SMP subscription and triggers sync if needed
+ */
+export async function triggerSMPSync(tenantId: string) {
+  try {
+    // Check if tenant has active SMP subscription
+    const subscription = await prisma.tenantProduct.findFirst({
+      where: {
+        tenantId,
+        product: { slug: 'switchmenu-pro' },
+        status: { in: ['active', 'prepaid'] },
+      },
+    });
+
+    if (!subscription) {
+      // No active subscription, skip sync
+      return null;
+    }
+
+    // Trigger sync asynchronously
+    const baseUrl = process.env.NEXTAUTH_URL || 'https://alessacloud.com';
+    const apiKey = process.env.ALESSACLOUD_API_KEY;
+
+    if (!apiKey) {
+      console.warn('[SMP Sync] ALESSACLOUD_API_KEY not set, cannot trigger sync');
+      return null;
+    }
+
+    // Fire and forget - don't wait for response
+    fetch(`${baseUrl}/api/sync/smp/trigger`, {
+      method: 'POST',
+      headers: {
+        'Content-Type': 'application/json',
+        'X-API-Key': apiKey,
+      },
+      body: JSON.stringify({ tenantId }),
+    }).catch(err => {
+      console.error('[SMP Sync] Error triggering sync:', err);
+    });
+
+    return true;
+  } catch (error) {
+    console.error('[SMP Sync] Error checking subscription:', error);
+    return null;
+  }
+}
+

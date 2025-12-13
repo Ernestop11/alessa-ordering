@@ -19,7 +19,16 @@ export async function GET() {
       where: { tenantId: tenant.id },
     });
 
-    const cateringOptions = (settings?.upsellBundles as any)?.catering || [];
+    // Ensure we always return an array
+    const upsellBundles = settings?.upsellBundles as any;
+    let cateringOptions: any[] = [];
+    
+    if (upsellBundles && typeof upsellBundles === 'object' && upsellBundles.catering) {
+      // Ensure catering is an array
+      cateringOptions = Array.isArray(upsellBundles.catering) 
+        ? upsellBundles.catering 
+        : [];
+    }
 
     return NextResponse.json({ options: cateringOptions });
   } catch (error: any) {

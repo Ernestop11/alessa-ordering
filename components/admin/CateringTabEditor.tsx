@@ -8,6 +8,8 @@ interface CateringTabConfig {
   label: string;
   icon?: string;
   description?: string;
+  modalTagline?: string;
+  modalHeading?: string;
 }
 
 export default function CateringTabEditor() {
@@ -152,6 +154,36 @@ export default function CateringTabEditor() {
             placeholder="Full-service events, delivered"
           />
           <p className="mt-1 text-sm text-gray-500">Tagline shown in the catering modal header</p>
+        </div>
+
+        {/* Modal Tagline */}
+        <div>
+          <label className="block text-sm font-medium text-gray-700 mb-2">
+            Catering Modal Tagline
+          </label>
+          <input
+            type="text"
+            value={config.modalTagline || ''}
+            onChange={(e) => setConfig({ ...config, modalTagline: e.target.value })}
+            className="block w-full border-gray-300 rounded-md shadow-sm focus:ring-blue-500 focus:border-blue-500"
+            placeholder="Authentic Mexican Cuisine"
+          />
+          <p className="mt-1 text-sm text-gray-500">Small text shown at the top of catering modal image</p>
+        </div>
+
+        {/* Modal Heading */}
+        <div>
+          <label className="block text-sm font-medium text-gray-700 mb-2">
+            Catering Modal Heading
+          </label>
+          <input
+            type="text"
+            value={config.modalHeading || ''}
+            onChange={(e) => setConfig({ ...config, modalHeading: e.target.value })}
+            className="block w-full border-gray-300 rounded-md shadow-sm focus:ring-blue-500 focus:border-blue-500"
+            placeholder="Catering for Every Occasion"
+          />
+          <p className="mt-1 text-sm text-gray-500">Large heading shown on catering modal image</p>
         </div>
 
         {/* Live Preview */}
