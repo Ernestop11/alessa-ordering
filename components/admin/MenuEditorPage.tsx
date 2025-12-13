@@ -4,6 +4,7 @@ import { useEffect, useState } from 'react';
 import Link from 'next/link';
 import { Plus, Edit2, Trash2, GripVertical, ArrowLeft } from 'lucide-react';
 import DashboardLayout from './DashboardLayout';
+import { compressImage, formatFileSize } from '@/lib/imageCompression';
 
 interface MenuSection {
   id: string;
@@ -1835,22 +1836,44 @@ export default function MenuEditorPage() {
                           accept="image/*"
                           className="hidden"
                           onChange={async (e) => {
-                            const file = e.target.files?.[0];
+                            let file = e.target.files?.[0];
                             if (!file) return;
-                            const formData = new FormData();
-                            formData.append('file', file);
+
+                            const originalSize = file.size;
+                            console.log(`Original size: ${formatFileSize(originalSize)}`);
+
                             try {
+                              // Compress image if larger than 2MB
+                              if (file.size > 2 * 1024 * 1024) {
+                                console.log('Compressing image...');
+                                file = await compressImage(file, {
+                                  maxSizeMB: 2,
+                                  maxWidthOrHeight: 1920,
+                                  quality: 0.85,
+                                });
+                                console.log(`Compressed size: ${formatFileSize(file.size)}`);
+                              }
+
+                              const formData = new FormData();
+                              formData.append('file', file);
+
                               const res = await fetch('/api/admin/assets/upload', {
                                 method: 'POST',
                                 body: formData,
                               });
+
+                              if (!res.ok) {
+                                const error = await res.json();
+                                throw new Error(error.message || 'Upload failed');
+                              }
+
                               const data = await res.json();
                               if (data.url) {
                                 setEditingPackage((prev) => prev ? { ...prev, image: data.url } : prev);
                               }
-                            } catch (err) {
+                            } catch (err: any) {
                               console.error('Failed to upload image', err);
-                              alert('Failed to upload image');
+                              alert(err.message || 'Failed to upload image. Please try a smaller image.');
                             }
                           }}
                         />
@@ -1907,15 +1930,37 @@ export default function MenuEditorPage() {
                             accept="image/*"
                             className="hidden"
                             onChange={async (e) => {
-                              const file = e.target.files?.[0];
+                              let file = e.target.files?.[0];
                               if (!file) return;
-                              const formData = new FormData();
-                              formData.append('file', file);
+
+                              const originalSize = file.size;
+                              console.log(`Gallery upload - Original size: ${formatFileSize(originalSize)}`);
+
                               try {
+                                // Compress image if larger than 2MB
+                                if (file.size > 2 * 1024 * 1024) {
+                                  console.log('Compressing gallery image...');
+                                  file = await compressImage(file, {
+                                    maxSizeMB: 2,
+                                    maxWidthOrHeight: 1920,
+                                    quality: 0.85,
+                                  });
+                                  console.log(`Compressed size: ${formatFileSize(file.size)}`);
+                                }
+
+                                const formData = new FormData();
+                                formData.append('file', file);
+
                                 const res = await fetch('/api/admin/assets/upload', {
                                   method: 'POST',
                                   body: formData,
                                 });
+
+                                if (!res.ok) {
+                                  const error = await res.json();
+                                  throw new Error(error.message || 'Upload failed');
+                                }
+
                                 const data = await res.json();
                                 if (data.url) {
                                   setEditingPackage((prev) => {
@@ -1924,9 +1969,9 @@ export default function MenuEditorPage() {
                                     return { ...prev, gallery: [...currentGallery, data.url] };
                                   });
                                 }
-                              } catch (err) {
+                              } catch (err: any) {
                                 console.error('Failed to upload image', err);
-                                alert('Failed to upload image');
+                                alert(err.message || 'Failed to upload image. Please try a smaller image.');
                               }
                             }}
                           />
