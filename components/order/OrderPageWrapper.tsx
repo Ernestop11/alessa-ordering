@@ -72,15 +72,17 @@ const UI_VERSION: 'polished' | 'classic' = 'classic';
 
 export default function OrderPageWrapper(props: OrderPageWrapperProps) {
   // Allow URL override for testing: ?ui=classic or ?ui=polished
+  // Start with default, then sync with URL on client-side to avoid hydration mismatch
   const [uiVersion, setUiVersion] = useState<'polished' | 'classic'>(UI_VERSION);
+  const [isMounted, setIsMounted] = useState(false);
 
   useEffect(() => {
-    if (typeof window !== 'undefined') {
-      const params = new URLSearchParams(window.location.search);
-      const uiParam = params.get('ui');
-      if (uiParam === 'classic' || uiParam === 'polished') {
-        setUiVersion(uiParam);
-      }
+    setIsMounted(true);
+    // Sync with URL param after mount (client-side only)
+    const params = new URLSearchParams(window.location.search);
+    const uiParam = params.get('ui');
+    if (uiParam === 'classic' || uiParam === 'polished') {
+      setUiVersion(uiParam);
     }
   }, []);
 
