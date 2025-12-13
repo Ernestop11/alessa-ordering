@@ -1263,7 +1263,14 @@ export default function OrderPageClient({
     ];
   }, [cateringGalleryImages]);
 
-  const cateringEnabled = tenant.featureFlags?.includes('catering') ?? false;
+  // Catering is enabled if:
+  // 1. Feature flag is set, OR
+  // 2. Catering tab config says it's enabled, OR
+  // 3. There are catering packages available
+  const cateringEnabled = 
+    tenant.featureFlags?.includes('catering') ?? false ||
+    cateringTabConfig?.enabled !== false ||
+    (initialCateringPackages && initialCateringPackages.length > 0);
 
   const handleCateringSubmit = useCallback(async (e: React.FormEvent) => {
     e.preventDefault();
@@ -2607,7 +2614,7 @@ export default function OrderPageClient({
             onClick={() => setShowCateringPanel(false)}
           />
           {/* Side Panel */}
-          <div className="fixed right-0 top-0 z-50 h-full w-full max-w-2xl overflow-y-auto bg-gradient-to-br from-[#2D1810] via-[#1A0F08] to-black p-8 shadow-2xl transition-transform">
+          <div className="fixed right-0 top-0 z-[60] h-full w-full max-w-2xl overflow-y-auto bg-gradient-to-br from-[#2D1810] via-[#1A0F08] to-black p-8 shadow-2xl transform transition-transform duration-300 ease-out animate-in slide-in-from-right">
             <div className="mb-6 flex items-center justify-between">
               <h2 className="text-3xl font-black text-amber-100">🎉 Catering Services</h2>
               <button
