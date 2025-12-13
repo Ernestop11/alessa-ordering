@@ -244,8 +244,14 @@ export default function OrderPageClient({
   }, [safeSections]);
   const [activeLayout, setActiveLayout] = useState<LayoutView>(() => {
     const paramView = searchParams.get('view') as LayoutView | null;
-    const storedView =
-      typeof window !== 'undefined' ? (window.localStorage.getItem('alessa_view_mode') as LayoutView | null) : null;
+    let storedView: LayoutView | null = null;
+    if (typeof window !== 'undefined') {
+      try {
+        storedView = window.localStorage.getItem('alessa_view_mode') as LayoutView | null;
+      } catch {
+        // localStorage may be unavailable in private mode
+      }
+    }
     if (paramView && ['grid', 'list', 'cards'].includes(paramView)) return paramView;
     if (storedView && ['grid', 'list', 'cards'].includes(storedView)) return storedView;
     if (typeof window !== 'undefined' && window.innerWidth < 768) return 'cards';
@@ -328,7 +334,11 @@ export default function OrderPageClient({
 
   useEffect(() => {
     if (typeof window === 'undefined') return;
-    window.localStorage.setItem('alessa_view_mode', activeLayout);
+    try {
+      window.localStorage.setItem('alessa_view_mode', activeLayout);
+    } catch {
+      // localStorage may be unavailable in private mode - ignore
+    }
   }, [activeLayout]);
 
   useEffect(() => {
@@ -365,7 +375,11 @@ export default function OrderPageClient({
 
   useEffect(() => {
     if (!hasHydratedAccessibility || typeof window === 'undefined') return;
-    window.localStorage.setItem(accessibilityStorageKey, JSON.stringify(accessibilityState));
+    try {
+      window.localStorage.setItem(accessibilityStorageKey, JSON.stringify(accessibilityState));
+    } catch {
+      // localStorage may be unavailable in private mode - ignore
+    }
     if (skipPersistAccessibilityRef.current) {
       skipPersistAccessibilityRef.current = false;
       return;
@@ -1159,11 +1173,19 @@ export default function OrderPageClient({
           value: reward.discountPercent || reward.discountAmount || 0,
           name: reward.name,
         };
-        localStorage.setItem('activeRewardDiscount', JSON.stringify(discount));
+        try {
+          localStorage.setItem('activeRewardDiscount', JSON.stringify(discount));
+        } catch {
+          // localStorage may be unavailable in private mode - ignore
+        }
         showNotification(`🎉 ${reward.name} discount applied! Will be applied at checkout.`);
       } else if (reward.type === 'free_shipping') {
         // Store free shipping flag
-        localStorage.setItem('activeRewardFreeShipping', 'true');
+        try {
+          localStorage.setItem('activeRewardFreeShipping', 'true');
+        } catch {
+          // localStorage may be unavailable in private mode - ignore
+        }
         showNotification(`🎉 ${reward.name} - Free shipping will be applied at checkout!`);
       } else if (reward.type === 'points_bonus') {
         // Points bonus is handled server-side on order completion
