@@ -61,17 +61,19 @@ interface CateringPackage {
 }
 
 export default function MenuEditorPage() {
-  const [activeTab, setActiveTab] = useState<'menu' | 'catering' | 'frontend'>('menu');
+  const [activeTab, setActiveTab] = useState<'menu' | 'catering' | 'grocery' | 'frontend'>('menu');
   const [sections, setSections] = useState<MenuSection[]>([]);
   const [items, setItems] = useState<MenuItem[]>([]);
   const [cateringSections, setCateringSections] = useState<CateringSection[]>([]);
   const [cateringPackages, setCateringPackages] = useState<CateringPackage[]>([]);
+  const [groceryItems, setGroceryItems] = useState<any[]>([]);
   const [selectedSection, setSelectedSection] = useState<string | null>(null);
   const [selectedCateringSection, setSelectedCateringSection] = useState<string | null>(null);
   const [editingItem, setEditingItem] = useState<MenuItem | null>(null);
   const [editingSection, setEditingSection] = useState<MenuSection | null>(null);
   const [editingCateringSection, setEditingCateringSection] = useState<CateringSection | null>(null);
   const [editingPackage, setEditingPackage] = useState<CateringPackage | null>(null);
+  const [editingGroceryItem, setEditingGroceryItem] = useState<any | null>(null);
   const [loading, setLoading] = useState(true);
   const [draggedItem, setDraggedItem] = useState<string | null>(null);
   const [cateringGallery, setCateringGallery] = useState<string[]>([]);
@@ -108,6 +110,7 @@ export default function MenuEditorPage() {
     fetchItems();
     fetchCateringSections();
     fetchCateringPackages();
+    fetchGroceryItems();
     fetchCateringGallery();
     fetchOrderingStatus();
     fetchFrontendConfig();
@@ -288,6 +291,84 @@ export default function MenuEditorPage() {
       setCateringPackages([]); // Set empty array on error
     } finally {
       setLoading(false);
+    }
+  };
+
+  const fetchGroceryItems = async () => {
+    setLoading(true);
+    try {
+      const timestamp = Date.now();
+      const res = await fetch(`/api/admin/grocery-items?t=${timestamp}`, {
+        cache: 'no-store',
+        headers: {
+          'Cache-Control': 'no-cache',
+          'Pragma': 'no-cache',
+        },
+      });
+      const data = await res.json();
+      const itemsArray = Array.isArray(data) ? data : [];
+      setGroceryItems(itemsArray);
+    } catch (err) {
+      console.error('Failed to fetch grocery items', err);
+      setGroceryItems([]);
+    } finally {
+      setLoading(false);
+    }
+  };
+
+  const handleAddGroceryItem = () => {
+    const newItem: any = {
+      id: '',
+      name: '',
+      description: '',
+      price: 0,
+      category: 'general',
+      unit: 'each',
+      image: null,
+      gallery: [],
+      available: true,
+      stockQuantity: null,
+      tags: [],
+      displayOrder: groceryItems.length,
+    };
+    setEditingGroceryItem(newItem);
+  };
+
+  const handleSaveGroceryItem = async (e: React.FormEvent) => {
+    e.preventDefault();
+    if (!editingGroceryItem) return;
+
+    try {
+      const method = editingGroceryItem.id ? 'PATCH' : 'POST';
+      const url = editingGroceryItem.id
+        ? `/api/admin/grocery-items/${editingGroceryItem.id}`
+        : '/api/admin/grocery-items';
+
+      const res = await fetch(url, {
+        method,
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify(editingGroceryItem),
+      });
+
+      if (!res.ok) throw new Error('Failed to save grocery item');
+      await fetchGroceryItems();
+      setEditingGroceryItem(null);
+    } catch (err) {
+      console.error('Failed to save grocery item', err);
+      alert('Failed to save grocery item');
+    }
+  };
+
+  const handleDeleteGroceryItem = async (id: string) => {
+    if (!confirm('Are you sure you want to delete this grocery item?')) return;
+
+    try {
+      const res = await fetch(`/api/admin/grocery-items/${id}`, { method: 'DELETE' });
+      if (!res.ok) throw new Error('Failed to delete');
+      await fetchGroceryItems();
+    } catch (err) {
+      console.error('Failed to delete grocery item', err);
+      alert('Failed to delete grocery item');
     }
   };
 
@@ -678,6 +759,16 @@ export default function MenuEditorPage() {
                   Catering Packages
                 </button>
                 <button
+                  onClick={() => setActiveTab('grocery')}
+                  className={`whitespace-nowrap py-4 px-1 border-b-2 font-medium text-sm ${
+                    activeTab === 'grocery'
+                      ? 'border-blue-500 text-blue-600'
+                      : 'border-transparent text-gray-500 hover:text-gray-700 hover:border-gray-300'
+                  }`}
+                >
+                  Grocery Items
+                </button>
+                <button
                   onClick={() => setActiveTab('frontend')}
                   className={`whitespace-nowrap py-4 px-1 border-b-2 font-medium text-sm ${
                     activeTab === 'frontend'
@@ -973,6 +1064,76 @@ export default function MenuEditorPage() {
                 </div>
               </div>
             </div>
+            </div>
+          ) : activeTab === 'grocery' ? (
+            /* Grocery Items View */
+            <div className="space-y-6">
+              <div className="flex justify-between items-center mb-4">
+                <h2 className="text-2xl font-semibold text-gray-900">Grocery Items</h2>
+                <button
+                  onClick={handleAddGroceryItem}
+                  className="inline-flex items-center px-4 py-2 border border-transparent rounded-md shadow-sm text-sm font-medium text-white bg-green-600 hover:bg-green-700"
+                >
+                  <Plus className="h-4 w-4 mr-2" />
+                  Add Grocery Item
+                </button>
+              </div>
+
+              {loading ? (
+                <div className="text-center py-12">Loading grocery items...</div>
+              ) : groceryItems.length === 0 ? (
+                <div className="text-center py-12 bg-white rounded-lg shadow">
+                  <p className="text-gray-500">No grocery items yet. Add your first item to get started!</p>
+                </div>
+              ) : (
+                <div className="grid gap-4 sm:grid-cols-2 lg:grid-cols-3">
+                  {groceryItems.map((item) => (
+                    <div key={item.id} className="bg-white rounded-lg shadow hover:shadow-md transition-shadow p-4">
+                      {item.image && (
+                        <img
+                          src={item.image}
+                          alt={item.name}
+                          className="w-full h-32 object-cover rounded mb-3"
+                        />
+                      )}
+                      <div className="flex justify-between items-start mb-2">
+                        <h3 className="font-medium text-gray-900">{item.name}</h3>
+                        {!item.available && (
+                          <span className="px-2 py-1 text-xs bg-red-100 text-red-800 rounded">
+                            Unavailable
+                          </span>
+                        )}
+                      </div>
+                      <p className="text-sm text-gray-600 mb-2">{item.description}</p>
+                      <div className="flex justify-between items-center mb-3">
+                        <span className="text-lg font-bold text-green-600">
+                          ${item.price.toFixed(2)} {item.unit && `/ ${item.unit}`}
+                        </span>
+                        <span className="text-xs text-gray-500 bg-gray-100 px-2 py-1 rounded">
+                          {item.category}
+                        </span>
+                      </div>
+                      {item.stockQuantity !== null && (
+                        <p className="text-xs text-gray-500 mb-3">Stock: {item.stockQuantity}</p>
+                      )}
+                      <div className="flex gap-2">
+                        <button
+                          onClick={() => setEditingGroceryItem(item)}
+                          className="flex-1 px-3 py-1.5 bg-blue-50 text-blue-600 hover:bg-blue-100 rounded text-sm font-medium"
+                        >
+                          Edit
+                        </button>
+                        <button
+                          onClick={() => handleDeleteGroceryItem(item.id)}
+                          className="flex-1 px-3 py-1.5 bg-red-50 text-red-600 hover:bg-red-100 rounded text-sm font-medium"
+                        >
+                          Delete
+                        </button>
+                      </div>
+                    </div>
+                  ))}
+                </div>
+              )}
             </div>
           ) : activeTab === 'frontend' ? (
             <div className="max-w-4xl mx-auto">
