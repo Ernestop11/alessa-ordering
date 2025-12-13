@@ -1693,18 +1693,6 @@ export default function OrderPageClient({
 
       {/* Main content wrapper */}
       <div className="relative z-10">
-      {/* Closed State Banner */}
-      {!isOpen && (
-        <div className="sticky top-0 z-50 bg-red-700 text-white">
-          <div className="mx-auto max-w-6xl px-4 py-3 text-center">
-            <p className="font-semibold text-sm flex items-center justify-center gap-2">
-              <span>🚫</span>
-              {closedMessage || 'We are currently closed'}
-            </p>
-          </div>
-        </div>
-      )}
-
       {/* Warm Header - Panda Express Style */}
       <header className="sticky top-0 z-40 bg-[#8B2323] shadow-lg">
         <div className="mx-auto max-w-7xl px-4">

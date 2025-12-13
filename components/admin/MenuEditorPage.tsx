@@ -398,12 +398,20 @@ export default function MenuEditorPage() {
     setLoadingStatus(true);
     try {
       const newStatus = !isAcceptingOrders;
+
+      // First, get current settings to merge properly
+      const currentRes = await fetch('/api/admin/tenant-settings');
+      const currentData = await currentRes.json();
+      const currentHours = currentData.settings?.operatingHours || {};
+
+      // Update with merged operating hours
       const res = await fetch('/api/admin/tenant-settings', {
         method: 'PUT',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({
           isOpen: newStatus,
           operatingHours: {
+            ...currentHours,
             temporarilyClosed: false, // Clear temporary closure when toggling
           },
         }),
