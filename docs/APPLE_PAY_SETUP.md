@@ -128,3 +128,4 @@ You can also configure Apple Pay per-tenant via the database:
 - [Stripe Payment Request API](https://stripe.com/docs/stripe-js/elements/payment-request-button)
 - [Apple Developer Portal](https://developer.apple.com/account)
 
+

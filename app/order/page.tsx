@@ -214,6 +214,13 @@ async function getCateringPackages(tenantId: string) {
     ],
   });
 
+  // Add cache-busting timestamp to images
+  const timestamp = Date.now();
+  const addCacheBuster = (url: string | null) => {
+    if (!url) return null;
+    return url.includes('?') ? `${url}&t=${timestamp}` : `${url}?t=${timestamp}`;
+  };
+
   return packages.map((pkg) => {
     // Handle gallery - it's stored as JSON in the database
     let gallery: string[] | null = null;
@@ -261,8 +268,8 @@ async function getCateringPackages(tenantId: string) {
       pricePerGuest: pkg.pricePerGuest,
       price: pkg.price,
       category: category,
-      image: pkg.image,
-      gallery: gallery && gallery.length > 0 ? gallery : null,
+      image: addCacheBuster(pkg.image),
+      gallery: gallery && gallery.length > 0 ? gallery.map(url => addCacheBuster(url) || url) : null,
       badge: pkg.badge,
       customizationRemovals: pkg.customizationRemovals || [],
       customizationAddons: customizationAddons,
@@ -364,6 +371,8 @@ async function getCustomerRewardsData(tenantId: string) {
 
 export default async function OrderPage() {
   const tenant = await requireTenant();
+
+  // Force fresh data on every request
   const sections = await getMenuSections(tenant.id);
   const featuredItems = await getFeaturedItems(tenant.id);
   const cateringTabConfig = await getCateringTabConfig(tenant.id);

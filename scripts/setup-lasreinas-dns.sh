@@ -120,3 +120,4 @@ echo "4. Test the domain:"
 echo "   curl -I http://lasreinascolusa.com"
 echo ""
 
+

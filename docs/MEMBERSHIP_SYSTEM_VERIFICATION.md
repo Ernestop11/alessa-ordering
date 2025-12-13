@@ -85,3 +85,4 @@ Points redemption (using points to pay for orders) is **not currently implemente
    - Implement automatic discounts for tier members
    - Add tier-specific menu items or promotions
 
+
