@@ -3,6 +3,7 @@ import { getServerSession } from 'next-auth';
 import { authOptions } from '@/lib/auth/options';
 import prisma from '@/lib/prisma';
 import { requireTenant } from '@/lib/tenant';
+import { revalidatePath } from 'next/cache';
 
 function unauthorized() {
   return new NextResponse(JSON.stringify({ error: 'Unauthorized' }), {
@@ -43,6 +44,7 @@ export async function PATCH(
     data: updatableFields,
   });
 
+  revalidatePath('/order');
   return NextResponse.json(updated);
 }
 
@@ -66,5 +68,6 @@ export async function DELETE(
   }
 
   await prisma.cateringSection.delete({ where: { id } });
+  revalidatePath('/order');
   return NextResponse.json({ ok: true });
 }

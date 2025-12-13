@@ -3,6 +3,7 @@ import { getServerSession } from 'next-auth';
 import { authOptions } from '@/lib/auth/options';
 import prisma from '@/lib/prisma';
 import { requireTenant } from '@/lib/tenant';
+import { revalidatePath } from 'next/cache';
 
 function unauthorized() {
   return new NextResponse(JSON.stringify({ error: 'Unauthorized' }), {
@@ -56,5 +57,6 @@ export async function POST(req: Request) {
   };
 
   const created = await prisma.cateringSection.create({ data });
+  revalidatePath('/order');
   return NextResponse.json(created, { status: 201 });
 }

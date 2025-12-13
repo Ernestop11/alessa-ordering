@@ -3,6 +3,7 @@ import { getServerSession } from 'next-auth';
 import { authOptions } from '@/lib/auth/options';
 import prisma from '@/lib/prisma';
 import { requireTenant } from '@/lib/tenant';
+import { revalidatePath } from 'next/cache';
 
 function unauthorized() {
   return NextResponse.json({ error: 'Unauthorized' }, { status: 401 });
@@ -64,6 +65,7 @@ export async function POST(req: Request) {
       });
     }
 
+    revalidatePath('/order');
     return NextResponse.json({ success: true, gallery: settings.cateringGallery });
   } catch (error: any) {
     console.error('[catering-gallery] POST error:', error);

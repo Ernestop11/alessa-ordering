@@ -69,6 +69,7 @@ export async function GET() {
           rewardsGallery: (tenant.settings as any).rewardsGallery ?? [],
           rewards: (tenant.settings as any).rewards ?? [],
           emailOffers: (tenant.settings as any).emailOffers ?? [],
+          cateringTabConfig: (tenant.settings as any).cateringTabConfig ?? null,
         }
       : null,
     integrations: tenant.integrations
@@ -175,6 +176,10 @@ export async function PUT(req: Request) {
 
   if (body.emailOffers !== undefined) {
     settingsData.emailOffers = Array.isArray(body.emailOffers) ? body.emailOffers : [];
+  }
+
+  if (body.cateringTabConfig !== undefined) {
+    settingsData.cateringTabConfig = body.cateringTabConfig || null;
   }
 
   if (body.branding !== undefined) {
