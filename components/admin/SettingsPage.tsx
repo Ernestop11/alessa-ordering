@@ -291,15 +291,22 @@ export default function SettingsPage({ tenant }: SettingsPageProps) {
                   <div className="flex items-center h-5">
                     <input
                       type="checkbox"
-                      checked={isOpen}
-                      onChange={(e) => setIsOpen(e.target.checked)}
-                      className="h-4 w-4 text-blue-600 focus:ring-blue-500 border-gray-300 rounded"
+                      checked={isOpen && !temporarilyClosed}
+                      onChange={(e) => {
+                        if (e.target.checked) {
+                          setIsOpen(true);
+                          setTemporarilyClosed(false);
+                        } else {
+                          setIsOpen(false);
+                        }
+                      }}
+                      className="h-4 w-4 text-green-600 focus:ring-green-500 border-gray-300 rounded"
                     />
                   </div>
                   <div className="ml-3">
                     <label className="font-medium text-gray-700">Accepting Orders</label>
                     <p className="text-sm text-gray-500">
-                      Master switch to enable/disable all online ordering
+                      Enable online ordering (respects operating hours)
                     </p>
                   </div>
                 </div>
@@ -311,14 +318,19 @@ export default function SettingsPage({ tenant }: SettingsPageProps) {
                       <input
                         type="checkbox"
                         checked={temporarilyClosed}
-                        onChange={(e) => setTemporarilyClosed(e.target.checked)}
+                        onChange={(e) => {
+                          setTemporarilyClosed(e.target.checked);
+                          if (e.target.checked) {
+                            setIsOpen(false);
+                          }
+                        }}
                         className="h-4 w-4 text-red-600 focus:ring-red-500 border-gray-300 rounded"
                       />
                     </div>
                     <div className="ml-3">
                       <label className="font-medium text-gray-700">Temporary Closure</label>
                       <p className="text-sm text-gray-500">
-                        Override hours for emergencies or special closures
+                        Override everything - closes ordering immediately
                       </p>
                     </div>
                   </div>

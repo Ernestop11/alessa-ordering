@@ -73,6 +73,8 @@ export default function MenuEditorPage() {
   const [loading, setLoading] = useState(true);
   const [draggedItem, setDraggedItem] = useState<string | null>(null);
   const [cateringGallery, setCateringGallery] = useState<string[]>([]);
+  const [isAcceptingOrders, setIsAcceptingOrders] = useState(true);
+  const [loadingStatus, setLoadingStatus] = useState(false);
 
   useEffect(() => {
     fetchSections();
@@ -80,6 +82,7 @@ export default function MenuEditorPage() {
     fetchCateringSections();
     fetchCateringPackages();
     fetchCateringGallery();
+    fetchOrderingStatus();
   }, []);
 
   const fetchSections = async () => {
@@ -379,6 +382,42 @@ export default function MenuEditorPage() {
     }
   };
 
+  const fetchOrderingStatus = async () => {
+    try {
+      const res = await fetch('/api/admin/tenant-settings');
+      const data = await res.json();
+      const isOpen = data.settings?.isOpen !== false;
+      const temporarilyClosed = data.settings?.operatingHours?.temporarilyClosed || false;
+      setIsAcceptingOrders(isOpen && !temporarilyClosed);
+    } catch (err) {
+      console.error('Failed to fetch ordering status', err);
+    }
+  };
+
+  const toggleAcceptingOrders = async () => {
+    setLoadingStatus(true);
+    try {
+      const newStatus = !isAcceptingOrders;
+      const res = await fetch('/api/admin/tenant-settings', {
+        method: 'PUT',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({
+          isOpen: newStatus,
+          operatingHours: {
+            temporarilyClosed: false, // Clear temporary closure when toggling
+          },
+        }),
+      });
+      if (!res.ok) throw new Error('Failed to update status');
+      setIsAcceptingOrders(newStatus);
+    } catch (err) {
+      console.error('Failed to toggle ordering status', err);
+      alert('Failed to update ordering status');
+    } finally {
+      setLoadingStatus(false);
+    }
+  };
+
   const handleAddPackage = () => {
     const newPackage: CateringPackage = {
       id: '',
@@ -514,6 +553,19 @@ export default function MenuEditorPage() {
                   <ArrowLeft className="h-5 w-5" />
                 </Link>
                 <h1 className="text-2xl font-bold text-gray-900">Menu Editor</h1>
+                {/* Accepting Orders Toggle */}
+                <button
+                  onClick={toggleAcceptingOrders}
+                  disabled={loadingStatus}
+                  className={`inline-flex items-center px-3 py-1.5 rounded-full text-xs font-semibold transition-colors ${
+                    isAcceptingOrders
+                      ? 'bg-green-100 text-green-800 hover:bg-green-200'
+                      : 'bg-red-100 text-red-800 hover:bg-red-200'
+                  } ${loadingStatus ? 'opacity-50 cursor-not-allowed' : ''}`}
+                >
+                  <span className={`w-2 h-2 rounded-full mr-2 ${isAcceptingOrders ? 'bg-green-600' : 'bg-red-600'}`}></span>
+                  {loadingStatus ? 'Updating...' : isAcceptingOrders ? 'Accepting Orders' : 'Orders Closed'}
+                </button>
               </div>
               {activeTab === 'menu' ? (
                 <button

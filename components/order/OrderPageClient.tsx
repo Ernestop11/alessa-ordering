@@ -1887,11 +1887,25 @@ export default function OrderPageClient({
         </div>
 
         {/* Promotional Banner */}
-        <div className="bg-[#6B1C1C] border-t border-white/10">
+        <div className={`border-t border-white/10 ${isOpen ? 'bg-[#6B1C1C]' : 'bg-red-900'}`}>
           <div className="mx-auto max-w-7xl px-4 py-2 flex items-center justify-center gap-4">
-            <span className="text-amber-300 font-semibold text-sm">🎉 Order online for pickup or delivery</span>
-            <span className="text-white/50">•</span>
-            <span className="text-white/80 text-sm">{hoursDisplay || 'Open Daily'}</span>
+            {isOpen ? (
+              <>
+                <span className="text-amber-300 font-semibold text-sm">🎉 Order online for pickup or delivery</span>
+                <span className="text-white/50">•</span>
+                <span className="text-white/80 text-sm">{hoursDisplay || 'Open Daily'}</span>
+              </>
+            ) : (
+              <>
+                <span className="text-red-200 font-semibold text-sm">🚫 {closedMessage || 'Ordering is currently closed'}</span>
+                {hoursDisplay && (
+                  <>
+                    <span className="text-white/50">•</span>
+                    <span className="text-white/80 text-sm">{hoursDisplay}</span>
+                  </>
+                )}
+              </>
+            )}
           </div>
         </div>
       </header>
