@@ -10,7 +10,7 @@ export default async function GroceryPage() {
   const tenant = await requireTenant();
 
   // Fetch grocery items - fresh data on every request
-  const groceryItems = await prisma.groceryItem.findMany({
+  const rawItems = await prisma.groceryItem.findMany({
     where: {
       tenantId: tenant.id,
       available: true,
@@ -19,6 +19,20 @@ export default async function GroceryPage() {
       { displayOrder: 'asc' },
       { createdAt: 'asc' },
     ],
+  });
+
+  // Add cache-busting timestamps to images (matches order page pattern)
+  const groceryItems = rawItems.map((item) => {
+    const timestamp = new Date(item.updatedAt).getTime();
+    const addCacheBuster = (url: string | null) => {
+      if (!url) return null;
+      return url.includes('?') ? `${url}&t=${timestamp}` : `${url}?t=${timestamp}`;
+    };
+
+    return {
+      ...item,
+      image: addCacheBuster(item.image),
+    };
   });
 
   console.log('[grocery-page] 🛒 Rendering with', groceryItems.length, 'items for tenant:', tenant.slug);
