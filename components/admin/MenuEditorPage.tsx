@@ -114,6 +114,7 @@ export default function MenuEditorPage() {
     fetchCateringSections();
     fetchCateringPackages();
     fetchGroceryItems();
+    fetchGroceryBundles();
     fetchCateringGallery();
     fetchOrderingStatus();
     fetchFrontendConfig();
@@ -319,6 +320,28 @@ export default function MenuEditorPage() {
     }
   };
 
+  const fetchGroceryBundles = async () => {
+    setLoading(true);
+    try {
+      const timestamp = Date.now();
+      const res = await fetch(`/api/admin/grocery-bundles?t=${timestamp}`, {
+        cache: 'no-store',
+        headers: {
+          'Cache-Control': 'no-cache',
+          'Pragma': 'no-cache',
+        },
+      });
+      const data = await res.json();
+      const bundlesArray = Array.isArray(data) ? data : [];
+      setGroceryBundles(bundlesArray);
+    } catch (err) {
+      console.error('Failed to fetch grocery bundles', err);
+      setGroceryBundles([]);
+    } finally {
+      setLoading(false);
+    }
+  };
+
   const handleAddGroceryItem = () => {
     const newItem: any = {
       id: '',
@@ -371,6 +394,30 @@ export default function MenuEditorPage() {
     } catch (err) {
       console.error('Failed to delete grocery item', err);
       alert('Failed to delete grocery item');
+    }
+  };
+
+  const handleSaveGroceryBundle = async () => {
+    if (!editingGroceryBundle) return;
+
+    try {
+      const method = editingGroceryBundle.id ? 'PATCH' : 'POST';
+      const url = editingGroceryBundle.id
+        ? `/api/admin/grocery-bundles/${editingGroceryBundle.id}`
+        : '/api/admin/grocery-bundles';
+
+      const res = await fetch(url, {
+        method,
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify(editingGroceryBundle),
+      });
+
+      if (!res.ok) throw new Error('Failed to save grocery bundle');
+      await fetchGroceryBundles();
+      setEditingGroceryBundle(null);
+    } catch (err) {
+      console.error('Failed to save grocery bundle', err);
+      alert('Failed to save grocery bundle');
     }
   };
 
@@ -2643,6 +2690,124 @@ export default function MenuEditorPage() {
                     <button
                       type="button"
                       onClick={() => setEditingGroceryItem(null)}
+                      className="flex-1 px-4 py-2 border border-gray-300 rounded-md shadow-sm text-sm font-medium text-gray-700 bg-white hover:bg-gray-50"
+                    >
+                      Cancel
+                    </button>
+                  </div>
+                </form>
+              </div>
+            </div>
+          </div>
+        )}
+
+        {/* Grocery Bundle Edit Modal */}
+        {editingGroceryBundle && (
+          <div className="fixed inset-0 z-50 overflow-y-auto">
+            <div className="flex items-center justify-center min-h-screen px-4 pt-4 pb-20 text-center sm:block sm:p-0">
+              <div className="fixed inset-0 transition-opacity bg-gray-500 bg-opacity-75" onClick={() => setEditingGroceryBundle(null)} />
+              <div className="inline-block align-bottom bg-white rounded-lg text-left overflow-hidden shadow-xl transform transition-all sm:my-8 sm:align-middle sm:max-w-2xl sm:w-full">
+                <form onSubmit={(e) => { e.preventDefault(); handleSaveGroceryBundle(); }} className="space-y-4">
+                  <div className="bg-white px-4 pt-5 pb-4 sm:p-6 sm:pb-4">
+                    <h3 className="text-lg font-medium text-gray-900 mb-4">
+                      {editingGroceryBundle.id ? 'Edit' : 'Create'} Grocery Bundle
+                    </h3>
+
+                    <div className="grid grid-cols-2 gap-4">
+                      <div className="col-span-2">
+                        <label className="block text-sm font-medium text-gray-700 mb-1">Bundle Name</label>
+                        <input
+                          type="text"
+                          required
+                          value={editingGroceryBundle.name || ''}
+                          onChange={(e) => setEditingGroceryBundle({ ...editingGroceryBundle, name: e.target.value })}
+                          className="w-full px-3 py-2 border border-gray-300 rounded-md"
+                          placeholder="e.g., Pozole Special Kit"
+                        />
+                      </div>
+
+                      <div className="col-span-2">
+                        <label className="block text-sm font-medium text-gray-700 mb-1">Description</label>
+                        <textarea
+                          required
+                          value={editingGroceryBundle.description || ''}
+                          onChange={(e) => setEditingGroceryBundle({ ...editingGroceryBundle, description: e.target.value })}
+                          className="w-full px-3 py-2 border border-gray-300 rounded-md"
+                          rows={3}
+                          placeholder="e.g., Everything you need to make authentic pozole: hominy, chiles, pork"
+                        />
+                      </div>
+
+                      <div>
+                        <label className="block text-sm font-medium text-gray-700 mb-1">Price ($)</label>
+                        <input
+                          type="number"
+                          step="0.01"
+                          required
+                          value={editingGroceryBundle.price || 0}
+                          onChange={(e) => setEditingGroceryBundle({ ...editingGroceryBundle, price: parseFloat(e.target.value) || 0 })}
+                          className="w-full px-3 py-2 border border-gray-300 rounded-md"
+                        />
+                      </div>
+
+                      <div>
+                        <label className="block text-sm font-medium text-gray-700 mb-1">Badge (optional)</label>
+                        <input
+                          type="text"
+                          value={editingGroceryBundle.badge || ''}
+                          onChange={(e) => setEditingGroceryBundle({ ...editingGroceryBundle, badge: e.target.value })}
+                          className="w-full px-3 py-2 border border-gray-300 rounded-md"
+                          placeholder="e.g., Popular, Best Value"
+                        />
+                      </div>
+
+                      <div>
+                        <label className="block text-sm font-medium text-gray-700 mb-1">Category</label>
+                        <select
+                          value={editingGroceryBundle.category || 'combo'}
+                          onChange={(e) => setEditingGroceryBundle({ ...editingGroceryBundle, category: e.target.value })}
+                          className="w-full px-3 py-2 border border-gray-300 rounded-md"
+                        >
+                          <option value="combo">Combo</option>
+                          <option value="meal-kit">Meal Kit</option>
+                          <option value="special">Special</option>
+                        </select>
+                      </div>
+
+                      <div>
+                        <label className="block text-sm font-medium text-gray-700 mb-1">Display Order</label>
+                        <input
+                          type="number"
+                          value={editingGroceryBundle.displayOrder || 0}
+                          onChange={(e) => setEditingGroceryBundle({ ...editingGroceryBundle, displayOrder: parseInt(e.target.value) || 0 })}
+                          className="w-full px-3 py-2 border border-gray-300 rounded-md"
+                        />
+                      </div>
+
+                      <div className="col-span-2">
+                        <label className="flex items-center">
+                          <input
+                            type="checkbox"
+                            checked={editingGroceryBundle.available !== false}
+                            onChange={(e) => setEditingGroceryBundle({ ...editingGroceryBundle, available: e.target.checked })}
+                            className="mr-2"
+                          />
+                          <span className="text-sm font-medium text-gray-700">Available for purchase</span>
+                        </label>
+                      </div>
+                    </div>
+                  </div>
+
+                  <div className="bg-gray-50 px-4 py-3 sm:px-6 sm:flex sm:flex-row-reverse gap-3">
+                    <button
+                      type="submit"
+                      className="flex-1 px-4 py-2 bg-green-600 text-white rounded-md shadow-sm hover:bg-green-700 font-medium"
+                    >
+                      Save Bundle
+                    </button>
+                    <button
+                      type="button"
+                      onClick={() => setEditingGroceryBundle(null)}
                       className="flex-1 px-4 py-2 border border-gray-300 rounded-md shadow-sm text-sm font-medium text-gray-700 bg-white hover:bg-gray-50"
                     >
                       Cancel
