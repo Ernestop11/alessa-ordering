@@ -368,23 +368,39 @@ export default function OrderPageClient({
     }
   }, [accessibilityStorageKey, tenant.accessibilityDefaults]);
 
+  // Debounced URL update to prevent flashing in Safari
   useEffect(() => {
     if (typeof window === 'undefined') return;
-    const params = new URLSearchParams(window.location.search);
-    if (activeLayout !== 'grid') {
-      params.set('view', activeLayout);
-    } else {
-      params.delete('view');
-    }
-    if (activeSectionId) {
-      params.set('category', activeSectionId);
-    }
-    if (tenantSlug) {
-      params.set('tenant', tenantSlug);
-    }
-    const query = params.toString();
-    const newUrl = query ? `${window.location.pathname}?${query}` : window.location.pathname;
-    router.replace(newUrl, { scroll: false });
+    
+    const updateUrl = () => {
+      const params = new URLSearchParams(window.location.search);
+      if (activeLayout !== 'grid') {
+        params.set('view', activeLayout);
+      } else {
+        params.delete('view');
+      }
+      if (activeSectionId) {
+        params.set('category', activeSectionId);
+      } else {
+        params.delete('category');
+      }
+      if (tenantSlug) {
+        params.set('tenant', tenantSlug);
+      } else {
+        params.delete('tenant');
+      }
+      const query = params.toString();
+      const newUrl = query ? `${window.location.pathname}?${query}` : window.location.pathname;
+      
+      // Only update if URL actually changed to prevent unnecessary navigation
+      if (newUrl !== window.location.pathname + window.location.search) {
+        router.replace(newUrl, { scroll: false });
+      }
+    };
+
+    // Debounce URL updates to prevent rapid changes that cause flashing
+    const timeoutId = setTimeout(updateUrl, 300);
+    return () => clearTimeout(timeoutId);
   }, [activeLayout, activeSectionId, tenantSlug, router]);
 
   useEffect(() => {
@@ -1056,35 +1072,29 @@ export default function OrderPageClient({
     };
 
     // Refresh server components when page becomes visible (user returns to tab)
+    // Disabled router.refresh to prevent URL flashing in Safari - only refresh gallery
     const handleVisibilityChange = () => {
       if (document.visibilityState === 'visible') {
         const now = Date.now();
-        // Only refresh if enough time has passed since last refresh
+        // Only refresh gallery, skip router.refresh to prevent URL flashing
         if (now - lastRefresh >= minRefreshInterval) {
-          // Debounce the refresh to prevent flashing
-          if (refreshTimeout) clearTimeout(refreshTimeout);
-          refreshTimeout = setTimeout(() => {
-            router.refresh();
-            refreshGallery();
-            lastRefresh = Date.now();
-          }, 1000); // Wait 1 second after visibility change
+          // Just refresh gallery without router.refresh to avoid URL flashing
+          refreshGallery();
+          lastRefresh = Date.now();
         } else {
-          // Still refresh gallery even if we skip router.refresh
           refreshGallery();
         }
       }
     };
 
     // Refresh on page focus (user clicks back into the window)
+    // Disabled router.refresh to prevent URL flashing in Safari - only refresh gallery
     const handleFocus = () => {
       const now = Date.now();
       if (now - lastRefresh >= minRefreshInterval) {
-        if (refreshTimeout) clearTimeout(refreshTimeout);
-        refreshTimeout = setTimeout(() => {
-          router.refresh();
-          refreshGallery();
-          lastRefresh = Date.now();
-        }, 1000);
+        // Just refresh gallery without router.refresh to avoid URL flashing
+        refreshGallery();
+        lastRefresh = Date.now();
       } else {
         refreshGallery();
       }
