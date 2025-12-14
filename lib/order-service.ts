@@ -91,7 +91,7 @@ export async function createOrderFromPayload({
 
   const hoursValidation = validateOperatingHours(
     tenantSettings?.operatingHours as any,
-    tenantSettings?.isOpen ?? true
+    tenantSettings?.isOpen ?? false // Default to closed if not set
   );
 
   if (!hoursValidation.isOpen) {

@@ -214,12 +214,12 @@ export function validateOperatingHours(
   isOpenFlag: boolean | null | undefined = true,
   currentDate: Date = new Date()
 ): HoursValidationResult {
-  // Default to open if no hours configured
+  // Default to closed if no hours configured (unless explicitly open)
   if (!operatingHours) {
     return {
-      isOpen: isOpenFlag !== false,
-      reason: isOpenFlag === false ? 'isOpen flag is false' : undefined,
-      message: isOpenFlag === false ? 'Restaurant is currently closed.' : undefined,
+      isOpen: isOpenFlag === true, // Only open if explicitly true
+      reason: isOpenFlag !== true ? 'isOpen flag is not set to true' : undefined,
+      message: isOpenFlag !== true ? 'Restaurant is currently closed.' : undefined,
     };
   }
 
@@ -232,8 +232,8 @@ export function validateOperatingHours(
     };
   }
 
-  // Check isOpen flag
-  if (isOpenFlag === false) {
+  // Check isOpen flag - must be explicitly true to be open
+  if (isOpenFlag !== true) {
     return {
       isOpen: false,
       reason: 'isOpen_flag',
@@ -263,7 +263,8 @@ export function validateOperatingHours(
   const activeHours = getActiveHours(operatingHours, localDate);
   
   if (!activeHours) {
-    // No hours configured, default to open (isOpenFlag === false was already handled above)
+    // No hours configured, but isOpenFlag check already handled above
+    // If we reach here, isOpenFlag must be true, so we're open
     return {
       isOpen: true,
       reason: undefined,

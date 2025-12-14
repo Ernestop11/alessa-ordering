@@ -12,6 +12,9 @@ export const dynamic = 'force-dynamic'
 export const revalidate = 0 // Disable all caching
 export const fetchCache = 'force-no-store' // Disable fetch caching
 
+// Add cache headers to prevent any caching
+export const runtime = 'nodejs'
+
 export async function generateMetadata(): Promise<Metadata> {
   const tenant = await requireTenant();
 
@@ -388,7 +391,7 @@ export default async function OrderPage() {
 
   const hoursValidation = validateOperatingHours(
     tenantSettings?.operatingHours as any,
-    tenantSettings?.isOpen ?? true
+    tenantSettings?.isOpen ?? false // Default to closed if not set
   );
 
   return (

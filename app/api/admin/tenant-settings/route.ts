@@ -29,7 +29,7 @@ export async function GET() {
 
   const tenant = await requireTenant();
 
-  return json({
+  const response = json({
     tenant: {
       name: tenant.name,
       slug: tenant.slug,
@@ -63,7 +63,7 @@ export async function GET() {
           upsellBundles: tenant.settings.upsellBundles,
           accessibilityDefaults: tenant.settings.accessibilityDefaults,
           operatingHours: tenant.settings.operatingHours ?? null,
-          isOpen: tenant.settings.isOpen ?? true,
+          isOpen: tenant.settings.isOpen ?? false, // Default to closed if not set
           branding: tenant.settings.branding ?? null,
           cateringGallery: tenant.settings.cateringGallery ?? [],
           rewardsGallery: (tenant.settings as any).rewardsGallery ?? [],
@@ -91,6 +91,14 @@ export async function GET() {
         }
       : null,
   });
+  
+  // Add cache headers to prevent any caching
+  response.headers.set('Cache-Control', 'no-store, no-cache, must-revalidate, proxy-revalidate');
+  response.headers.set('Pragma', 'no-cache');
+  response.headers.set('Expires', '0');
+  response.headers.set('Surrogate-Control', 'no-store');
+  
+  return response;
 }
 
 export async function PUT(req: Request) {
@@ -148,7 +156,9 @@ export async function PUT(req: Request) {
   }
 
   if (body.isOpen !== undefined) {
-    settingsData.isOpen = Boolean(body.isOpen);
+    // Explicitly store true or false - never null/undefined
+    // This ensures the database has a clear state
+    settingsData.isOpen = body.isOpen === true;
   }
 
   if (body.membershipProgram !== undefined) {
@@ -319,14 +329,18 @@ export async function PUT(req: Request) {
   // Revalidate all paths that use tenant data
   // The root layout is shared across all pages and contains tenant data
   // Revalidating the root will invalidate all pages that use the layout
-  revalidatePath('/');
-  revalidatePath('/order');
-  // Also revalidate any other routes that might display tenant data
-  revalidatePath('/order/success');
+  revalidatePath('/', 'layout');
+  revalidatePath('/order', 'page');
+  revalidatePath('/order/success', 'page');
+  // Revalidate tenant-specific routes if slug exists
+  if (tenant.slug) {
+    revalidatePath(`/${tenant.slug}`, 'page');
+    revalidatePath(`/${tenant.slug}/order`, 'page');
+  }
 
   const updatedTenant = await requireTenant();
 
-  return json({
+  const response = json({
     tenant: {
       name: updatedTenant.name,
       slug: updatedTenant.slug,
@@ -360,7 +374,7 @@ export async function PUT(req: Request) {
           upsellBundles: updatedTenant.settings.upsellBundles,
           accessibilityDefaults: updatedTenant.settings.accessibilityDefaults,
           operatingHours: updatedTenant.settings.operatingHours ?? null,
-          isOpen: updatedTenant.settings.isOpen ?? true,
+          isOpen: updatedTenant.settings.isOpen ?? false, // Default to closed if not set
           branding: updatedTenant.settings.branding ?? null,
           cateringGallery: updatedTenant.settings.cateringGallery ?? [],
           rewardsGallery: (updatedTenant.settings as any).rewardsGallery ?? [],
@@ -385,6 +399,14 @@ export async function PUT(req: Request) {
         }
       : null,
   });
+  
+  // Add cache headers to prevent any caching
+  response.headers.set('Cache-Control', 'no-store, no-cache, must-revalidate, proxy-revalidate');
+  response.headers.set('Pragma', 'no-cache');
+  response.headers.set('Expires', '0');
+  response.headers.set('Surrogate-Control', 'no-store');
+  
+  return response;
 }
 
 export const PATCH = PUT;

@@ -1,6 +1,6 @@
 'use client';
 
-import { useEffect, useState } from 'react';
+import { useEffect, useState, useCallback } from 'react';
 import Link from 'next/link';
 import { Plus, Edit2, Trash2, GripVertical, ArrowLeft } from 'lucide-react';
 import DashboardLayout from './DashboardLayout';
@@ -98,7 +98,7 @@ export default function MenuEditorPage() {
   const [loading, setLoading] = useState(true);
   const [draggedItem, setDraggedItem] = useState<string | null>(null);
   const [cateringGallery, setCateringGallery] = useState<string[]>([]);
-  const [isAcceptingOrders, setIsAcceptingOrders] = useState(true);
+  const [isAcceptingOrders, setIsAcceptingOrders] = useState(false); // Default to closed until status is fetched
   const [loadingStatus, setLoadingStatus] = useState(false);
 
   // Frontend sections state
@@ -132,19 +132,16 @@ export default function MenuEditorPage() {
   const [savingFrontendConfig, setSavingFrontendConfig] = useState(false);
 
   useEffect(() => {
-    // Force cache refresh if version doesn't match
+    // Update version without causing redirects or clearing storage
+    // This prevents breaking sessions and causing infinite redirect loops
     const cachedVersion = localStorage.getItem('menu-editor-version');
     if (cachedVersion !== MENU_EDITOR_VERSION) {
-      console.log('[MenuEditor] Version mismatch - forcing hard reload', { cached: cachedVersion, current: MENU_EDITOR_VERSION });
-      localStorage.clear(); // Clear all localStorage to force fresh state
-      sessionStorage.clear(); // Clear session storage too
+      console.log('[MenuEditor] Version updated:', { cached: cachedVersion, current: MENU_EDITOR_VERSION });
       localStorage.setItem('menu-editor-version', MENU_EDITOR_VERSION);
-      // Force hard reload bypassing cache
-      window.location.href = window.location.href + '?v=' + Date.now();
-      return;
+      // Don't clear storage or redirect - just update version for tracking
     }
 
-    console.log('[MenuEditor] Version check passed:', MENU_EDITOR_VERSION);
+    console.log('[MenuEditor] Initializing...');
 
     fetchSections();
     fetchItems();
@@ -157,13 +154,24 @@ export default function MenuEditorPage() {
     fetchFrontendConfig();
     fetchFrontendSections();
 
-    // Re-check operating hours every minute to keep toggle synced
+    // Re-check operating hours every 30 seconds to keep toggle synced with business hours
+    // This ensures the status updates automatically when hours change or time passes
     const statusInterval = setInterval(() => {
       fetchOrderingStatus();
-    }, 60000); // 60 seconds
+    }, 30000); // 30 seconds - more frequent to catch hour changes
 
-    return () => clearInterval(statusInterval);
-  }, []);
+    // Listen for operating hours updates from Settings page
+    const handleHoursUpdate = () => {
+      console.log('[MenuEditor] Operating hours updated, refreshing status...');
+      fetchOrderingStatus();
+    };
+    window.addEventListener('operatingHoursUpdated', handleHoursUpdate);
+
+    return () => {
+      clearInterval(statusInterval);
+      window.removeEventListener('operatingHoursUpdated', handleHoursUpdate);
+    };
+  }, [fetchOrderingStatus]);
 
   const fetchSections = async () => {
     try {
@@ -586,11 +594,24 @@ export default function MenuEditorPage() {
     }
   };
 
-  const fetchOrderingStatus = async () => {
+  const fetchOrderingStatus = useCallback(async () => {
     try {
-      const res = await fetch('/api/admin/tenant-settings');
+      // Aggressive cache busting
+      const timestamp = Date.now();
+      const res = await fetch(`/api/admin/tenant-settings?t=${timestamp}`, { 
+        cache: 'no-store',
+        headers: {
+          'Cache-Control': 'no-cache, no-store, must-revalidate',
+          'Pragma': 'no-cache',
+          'Expires': '0',
+        },
+      });
+      if (!res.ok) {
+        console.error('Failed to fetch ordering status:', res.status, res.statusText);
+        return;
+      }
       const data = await res.json();
-      const isOpenFlag = data.settings?.isOpen !== false;
+      const isOpenFlag = data.settings?.isOpen === true; // Only true if explicitly true, null/undefined = closed
       const operatingHours = data.settings?.operatingHours;
 
       // Use the same validation logic as the front-end
@@ -600,40 +621,74 @@ export default function MenuEditorPage() {
       console.log('[MenuEditor] Operating status:', {
         isOpenFlag,
         validationResult: validation,
-        actuallyAccepting: validation.isOpen
+        actuallyAccepting: validation.isOpen,
+        reason: validation.reason,
+        message: validation.message,
       });
     } catch (err) {
       console.error('Failed to fetch ordering status', err);
     }
-  };
+  }, []);
 
   const toggleAcceptingOrders = async () => {
     setLoadingStatus(true);
     try {
-      const newStatus = !isAcceptingOrders;
-
-      // First, get current settings to merge properly
-      const currentRes = await fetch('/api/admin/tenant-settings');
+      // Get current status to determine what to toggle (with aggressive cache busting)
+      const timestamp = Date.now();
+      const currentRes = await fetch(`/api/admin/tenant-settings?t=${timestamp}`, { 
+        cache: 'no-store',
+        headers: {
+          'Cache-Control': 'no-cache, no-store, must-revalidate',
+          'Pragma': 'no-cache',
+        },
+      });
+      if (!currentRes.ok) throw new Error('Failed to fetch current settings');
       const currentData = await currentRes.json();
       const currentHours = currentData.settings?.operatingHours || {};
+      const currentIsOpen = currentData.settings?.isOpen === true; // Only true if explicitly true
+      
+      // Get the actual validation result to see current state
+      const currentValidation = validateOperatingHours(currentHours, currentIsOpen);
+      const currentlyOpen = currentValidation.isOpen;
+      
+      // Toggle: if currently open (based on hours), set isOpen to false to close
+      // If currently closed (based on hours), set isOpen to true to open (if hours allow)
+      const newIsOpen = !currentlyOpen;
 
-      // Update with merged operating hours
-      const res = await fetch('/api/admin/tenant-settings', {
+      // Update with merged operating hours (with aggressive cache busting)
+      const res = await fetch(`/api/admin/tenant-settings?t=${Date.now()}`, {
         method: 'PUT',
-        headers: { 'Content-Type': 'application/json' },
+        headers: { 
+          'Content-Type': 'application/json',
+          'Cache-Control': 'no-cache, no-store, must-revalidate',
+        },
         body: JSON.stringify({
-          isOpen: newStatus,
+          isOpen: newIsOpen, // Explicitly set true or false
           operatingHours: {
             ...currentHours,
             temporarilyClosed: false, // Clear temporary closure when toggling
           },
         }),
       });
-      if (!res.ok) throw new Error('Failed to update status');
-      setIsAcceptingOrders(newStatus);
+      if (!res.ok) {
+        const errorText = await res.text();
+        console.error('[MenuEditor] Failed to update status:', res.status, errorText);
+        throw new Error(`Failed to update status: ${res.status} ${errorText}`);
+      }
+      
+      const updatedData = await res.json();
+      console.log('[MenuEditor] Status updated:', {
+        requestedIsOpen: newIsOpen,
+        serverResponse: updatedData.settings?.isOpen,
+      });
+      
+      // Refetch status from server to ensure sync (this will recalculate based on hours + isOpen)
+      await fetchOrderingStatus();
     } catch (err) {
       console.error('Failed to toggle ordering status', err);
-      alert('Failed to update ordering status');
+      alert('Failed to update ordering status. Please refresh the page.');
+      // Refetch to restore correct state
+      await fetchOrderingStatus();
     } finally {
       setLoadingStatus(false);
     }
@@ -1686,7 +1741,6 @@ export default function MenuEditorPage() {
                   </button>
                   <button
                     onClick={() => {
-                      console.log('[MenuEditor] Switching to sections tab');
                       setFrontendSubTab('sections');
                     }}
                     className={`whitespace-nowrap py-4 px-1 border-b-2 font-medium text-sm ${
@@ -1702,7 +1756,6 @@ export default function MenuEditorPage() {
 
               {frontendSubTab === 'text' ? (
                 <div className="bg-white rounded-lg shadow-md p-6">
-                  {console.log('[MenuEditor] Rendering TEXT tab')}
                   <h2 className="text-2xl font-semibold text-gray-900 mb-6">Frontend Text Customization</h2>
                   <p className="text-gray-600 mb-6">Customize the text displayed in various sections on your customer-facing order page. Changes sync automatically when you save.</p>
 
@@ -2030,7 +2083,6 @@ export default function MenuEditorPage() {
               ) : (
                 // Promotional Sections Management
                 <div>
-                  {console.log('[MenuEditor] Rendering SECTIONS tab, frontendSections:', frontendSections.length)}
                   <div className="mb-6 flex items-center justify-between">
                     <div>
                       <h2 className="text-2xl font-semibold text-gray-900">Promotional Sections</h2>

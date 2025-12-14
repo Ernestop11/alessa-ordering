@@ -235,7 +235,7 @@ export default function OrderPageClient({
   cateringPackages: initialCateringPackages = [],
   rewardsData,
   customerRewardsData,
-  isOpen = true,
+  isOpen = false, // Default to closed - server should always pass explicit value
   closedMessage,
   frontendConfig,
 }: OrderPageClientProps) {
@@ -997,45 +997,20 @@ export default function OrderPageClient({
   // Group packages by category
   const popularPackages = useMemo(() => {
     if (!Array.isArray(cateringPackages)) {
-      console.log('[OrderPageClient] ⚠️ popularPackages: cateringPackages is not an array');
       return [];
-    }
-    console.log('[OrderPageClient] 📋 All cateringPackages received:', cateringPackages.length, 'total');
-    if (cateringPackages.length > 0) {
-      console.log('[OrderPageClient] 📦 Package details:', cateringPackages.map(p => ({ 
-        name: p?.name, 
-        category: p?.category, 
-        available: p?.available,
-        id: p?.id
-      })));
-    } else {
-      console.log('[OrderPageClient] ⚠️ WARNING: No packages received from API! Check server logs.');
     }
     const popular = cateringPackages.filter(pkg => {
       if (!pkg) return false;
       // Accept 'popular' category or default to popular if category is missing/empty
       const category = (pkg.category && pkg.category.trim()) || 'popular';
-      const matches = category === 'popular';
-      if (!matches) {
-        console.log('[OrderPageClient] 🔍 Package filtered out:', pkg.name, 'category:', pkg.category, 'expected: popular');
-      }
-      return matches;
+      return category === 'popular';
     });
-    console.log('[OrderPageClient] ✅ popularPackages after filter:', popular.length, 'packages');
-    if (popular.length > 0) {
-      console.log('[OrderPageClient] 📦 Popular packages:', popular.map(p => ({ name: p.name, category: p.category })));
-    } else if (cateringPackages.length > 0) {
-      console.log('[OrderPageClient] ⚠️ WARNING: Packages received but NONE have category="popular"!');
-      const categories = Array.from(new Set(cateringPackages.map(p => p?.category || 'null')));
-      console.log('[OrderPageClient] 🔍 All categories found:', categories);
-    }
     return popular;
   }, [cateringPackages]);
+  
   const holidayPackages = useMemo(() => {
     if (!Array.isArray(cateringPackages)) return [];
-    const holiday = cateringPackages.filter(pkg => pkg && pkg.category === 'holiday');
-    console.log('[OrderPageClient] holidayPackages:', holiday.length, 'packages');
-    return holiday;
+    return cateringPackages.filter(pkg => pkg && pkg.category === 'holiday');
   }, [cateringPackages]);
 
   // Rewards gallery - use server-side data, with client-side refresh for real-time updates
