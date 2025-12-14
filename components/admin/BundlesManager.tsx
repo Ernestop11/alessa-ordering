@@ -275,7 +275,7 @@ export default function BundlesManager() {
               </div>
               <div>
                 <label className="block text-sm font-medium text-gray-700 mb-1">
-                  Original Price (for "Save $X" display)
+                  Original Price (for &quot;Save $X&quot; display)
                 </label>
                 <input
                   type="number"
@@ -318,7 +318,7 @@ export default function BundlesManager() {
 
             <div>
               <label className="block text-sm font-medium text-gray-700 mb-1">
-                Badge Text (e.g., "Best Value", "Limited Time")
+                Badge Text (e.g., &quot;Best Value&quot;, &quot;Limited Time&quot;)
               </label>
               <input
                 type="text"
@@ -530,7 +530,7 @@ export default function BundlesManager() {
       <div className="bg-white shadow overflow-hidden sm:rounded-md">
         {bundles.length === 0 ? (
           <div className="p-6 text-center text-gray-500">
-            No bundles yet. Click "Add Bundle" to create one.
+            No bundles yet. Click &quot;Add Bundle&quot; to create one.
           </div>
         ) : (
           <ul className="divide-y divide-gray-200">
@@ -599,7 +599,4 @@ export default function BundlesManager() {
     </div>
   );
 }
-
-
-
 

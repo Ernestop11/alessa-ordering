@@ -623,7 +623,7 @@ export default function MenuEditorImproved() {
             </div>
           ) : menuItems.length === 0 ? (
             <div className="p-12 text-center">
-              <p className="text-gray-600">No menu items yet. Click "Add New Item" to get started.</p>
+              <p className="text-gray-600">No menu items yet. Click &quot;Add New Item&quot; to get started.</p>
             </div>
           ) : (
             <div className="overflow-x-auto">
@@ -726,4 +726,3 @@ export default function MenuEditorImproved() {
     </div>
   );
 }
-

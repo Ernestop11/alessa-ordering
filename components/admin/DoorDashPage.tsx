@@ -46,7 +46,7 @@ export default function DoorDashPage({ tenant }: DoorDashPageProps) {
             <h2 className="text-lg font-semibold text-blue-900 mb-2">Demo Mode</h2>
             <p className="text-sm text-blue-700">
               DoorDash integration is currently in demo mode. Test buttons are available in the connection card above.
-              Use the "Test $7.99 Quote" button to simulate delivery quotes and "Test Webhook" to verify integration connectivity.
+              Use the &quot;Test $7.99 Quote&quot; button to simulate delivery quotes and &quot;Test Webhook&quot; to verify integration connectivity.
             </p>
           </div>
         </div>
@@ -54,4 +54,3 @@ export default function DoorDashPage({ tenant }: DoorDashPageProps) {
     </DashboardLayout>
   );
 }
-

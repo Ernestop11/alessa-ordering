@@ -311,7 +311,7 @@ export default function EmailOffersManager() {
             {offers.length === 0 ? (
               <tr>
                 <td colSpan={5} className="px-6 py-8 text-center text-sm text-gray-500">
-                  No email offers created yet. Click "Create Email Offer" to get started.
+                  No email offers created yet. Click &quot;Create Email Offer&quot; to get started.
                 </td>
               </tr>
             ) : (
@@ -392,4 +392,3 @@ export default function EmailOffersManager() {
     </div>
   );
 }
-

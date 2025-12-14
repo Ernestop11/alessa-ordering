@@ -155,7 +155,7 @@ export default function CateringEditorPage() {
 
         {packages.length === 0 && (
           <div className="mt-8 text-center text-gray-500">
-            No catering packages yet. Click "Add Package" to create one.
+            No catering packages yet. Click &quot;Add Package&quot; to create one.
           </div>
         )}
 

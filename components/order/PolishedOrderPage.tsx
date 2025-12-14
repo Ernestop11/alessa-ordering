@@ -583,7 +583,7 @@ export default function PolishedOrderPage({
           <div className="text-center py-16">
             <div className="text-4xl mb-4">🍽️</div>
             <h3 className="text-xl font-semibold text-white/80">Menu Coming Soon</h3>
-            <p className="mt-2 text-sm text-white/50">We're preparing something delicious for you.</p>
+            <p className="mt-2 text-sm text-white/50">We&apos;re preparing something delicious for you.</p>
           </div>
         )}
       </main>

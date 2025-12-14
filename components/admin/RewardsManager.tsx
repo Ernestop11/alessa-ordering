@@ -421,7 +421,7 @@ export default function RewardsManager() {
             {rewards.length === 0 ? (
               <tr>
                 <td colSpan={7} className="px-6 py-8 text-center text-sm text-gray-500">
-                  No rewards created yet. Click "Create Reward" to get started.
+                  No rewards created yet. Click &quot;Create Reward&quot; to get started.
                 </td>
               </tr>
             ) : (
@@ -502,4 +502,3 @@ export default function RewardsManager() {
     </div>
   );
 }
-

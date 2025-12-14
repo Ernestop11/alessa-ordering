@@ -1491,7 +1491,7 @@ export default function MenuEditorPage() {
                   <div className="flex justify-between items-center mb-4">
                     <div>
                       <h3 className="text-xl font-medium text-gray-900">Grocery Bundles & Combos</h3>
-                      <p className="text-sm text-gray-500 mt-1">Create special combos like "Pozole Kit" with multiple grocery items bundled together</p>
+                      <p className="text-sm text-gray-500 mt-1">Create special combos like &quot;Pozole Kit&quot; with multiple grocery items bundled together</p>
                     </div>
                     <button
                       onClick={() => setEditingGroceryBundle({ id: null, name: '', description: '', price: 0, category: 'combo', items: [], available: true, displayOrder: 0 })}
@@ -1507,7 +1507,7 @@ export default function MenuEditorPage() {
                   ) : groceryBundles.length === 0 ? (
                     <div className="text-center py-12 bg-white rounded-lg shadow">
                       <p className="text-gray-500">No bundles yet. Create your first combo to get started!</p>
-                      <p className="text-sm text-gray-400 mt-2">Example: "Pozole Special" with hominy, chiles, and pork</p>
+                      <p className="text-sm text-gray-400 mt-2">Example: &quot;Pozole Special&quot; with hominy, chiles, and pork</p>
                     </div>
                   ) : (
                     <div className="grid gap-4 sm:grid-cols-2 lg:grid-cols-3">
@@ -3346,5 +3346,4 @@ export default function MenuEditorPage() {
     </DashboardLayout>
   );
 }
-
 

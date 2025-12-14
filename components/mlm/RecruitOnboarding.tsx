@@ -104,7 +104,7 @@ export default function RecruitOnboarding({ sponsorId, onSuccess }: Props) {
           &quot;The only way to do great work is to love what you do.&quot; - <span className="font-semibold">Steve Jobs</span>
         </p>
         <p className="text-sm text-gray-600">
-          Help someone start their journey. They'll be automatically invited to their first meeting within 48 hours.
+          Help someone start their journey. They&apos;ll be automatically invited to their first meeting within 48 hours.
         </p>
       </div>
 
@@ -202,4 +202,3 @@ export default function RecruitOnboarding({ sponsorId, onSuccess }: Props) {
     </div>
   );
 }
-

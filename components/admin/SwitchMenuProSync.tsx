@@ -232,12 +232,11 @@ export default function SwitchMenuProSync() {
           <li>• Syncs all menu products from Alessa Ordering to Switch Menu Pro</li>
           <li>• Updates product information, pricing, and availability</li>
           <li>• Maintains product relationships and categories</li>
-          <li>• Sync runs automatically on product changes, or manually via "Sync Now"</li>
+          <li>• Sync runs automatically on product changes, or manually via &quot;Sync Now&quot;</li>
         </ul>
       </div>
     </div>
   );
 }
-
 
 

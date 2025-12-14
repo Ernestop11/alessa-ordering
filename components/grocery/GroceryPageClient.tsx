@@ -316,7 +316,7 @@ export default function GroceryPageClient({
         >
           <div className="flex items-center justify-between">
             <div>
-              <h3 className="text-xl font-bold mb-2">🌮 Don't forget to order food!</h3>
+              <h3 className="text-xl font-bold mb-2">🌮 Don&apos;t forget to order food!</h3>
               <p className="text-white/90">Browse our authentic Mexican menu - your groceries ship together with your meal</p>
             </div>
             <ArrowLeft className="h-8 w-8 rotate-180 group-hover:translate-x-2 transition" />

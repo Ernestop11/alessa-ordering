@@ -331,12 +331,11 @@ export default function UberDirectConnectButton() {
           >
             Uber Developer Portal
           </a>
-          . After approval, you'll receive your Client ID and Client Secret.
+          . After approval, you&apos;ll receive your Client ID and Client Secret.
         </p>
       </div>
     </div>
   );
 }
-
 
 
