@@ -665,22 +665,30 @@ export default function OrderPageClient({
 
     if (sectionsToObserve.length === 0) return;
 
+    // Throttle updates to prevent excessive re-renders
+    let lastUpdate = 0;
+    const throttleDelay = 100; // Update at most every 100ms
+
     const observer = new IntersectionObserver(
       (entries) => {
+        const now = Date.now();
+        if (now - lastUpdate < throttleDelay) return;
+        lastUpdate = now;
+
         const visibleSection = entries
           .filter((entry) => entry.isIntersecting)
           .sort((a, b) => b.intersectionRatio - a.intersectionRatio)[0];
 
         if (visibleSection) {
           const targetId = sectionsToObserve.find((section) => section.el === visibleSection.target)?.id;
-          if (targetId) {
+          if (targetId && targetId !== activeSectionId) {
             setActiveSectionId(targetId);
           }
         }
       },
       {
         rootMargin: '-140px 0px -40%',
-        threshold: [0.1, 0.3, 0.5, 0.7],
+        threshold: 0.3, // Single threshold to reduce callbacks
       },
     );
 
@@ -689,29 +697,42 @@ export default function OrderPageClient({
     });
 
     return () => observer.disconnect();
-  }, [navSections.length, sections]);
+  }, [navSections.length, sections, activeSectionId]);
 
   // Auto-scroll category nav to show active section button
+  // Use requestAnimationFrame to prevent scroll conflicts
   useEffect(() => {
     if (!activeSectionId || !categoryNavRef.current) return;
 
-    const activeButton = categoryNavRef.current.querySelector(`[data-section-button="${activeSectionId}"]`) as HTMLElement;
-    if (activeButton) {
-      const navContainer = categoryNavRef.current;
-      const buttonLeft = activeButton.offsetLeft;
-      const buttonWidth = activeButton.offsetWidth;
-      const containerWidth = navContainer.offsetWidth;
-      const scrollLeft = navContainer.scrollLeft;
+    // Use requestAnimationFrame to batch DOM reads/writes and prevent scroll jank
+    requestAnimationFrame(() => {
+      if (!categoryNavRef.current) return;
+      const activeButton = categoryNavRef.current.querySelector(`[data-section-button="${activeSectionId}"]`) as HTMLElement;
+      if (activeButton) {
+        const navContainer = categoryNavRef.current;
+        const buttonLeft = activeButton.offsetLeft;
+        const buttonWidth = activeButton.offsetWidth;
+        const containerWidth = navContainer.offsetWidth;
+        const scrollLeft = navContainer.scrollLeft;
 
-      // Calculate center position
-      const targetScroll = buttonLeft - (containerWidth / 2) + (buttonWidth / 2);
+        // Calculate center position
+        const targetScroll = buttonLeft - (containerWidth / 2) + (buttonWidth / 2);
 
-      // Smooth scroll to center the active button
-      navContainer.scrollTo({
-        left: Math.max(0, targetScroll),
-        behavior: 'smooth'
-      });
-    }
+        // Only scroll if button is not already visible
+        const buttonRight = buttonLeft + buttonWidth;
+        const visibleLeft = scrollLeft;
+        const visibleRight = scrollLeft + containerWidth;
+        
+        if (buttonLeft < visibleLeft || buttonRight > visibleRight) {
+          // Use instant scroll on Safari for better performance, smooth on others
+          const isSafari = /^((?!chrome|android).)*safari/i.test(navigator.userAgent);
+          navContainer.scrollTo({
+            left: Math.max(0, targetScroll),
+            behavior: isSafari ? 'auto' : 'smooth'
+          });
+        }
+      }
+    });
   }, [activeSectionId]);
 
   const addressParts = useMemo(() => {
@@ -965,32 +986,13 @@ export default function OrderPageClient({
   }, []);
 
   // Refresh server components when page becomes visible or gets focus
-  // This ensures fresh data when user returns to the page or refreshes normally
+  // Debounced to prevent excessive refreshes that cause flashing
   useEffect(() => {
-    // Refresh server components when page becomes visible (user returns to tab)
-    const handleVisibilityChange = () => {
-      if (document.visibilityState === 'visible') {
-        router.refresh(); // Refresh server components to get latest data from database
-        // Also refresh gallery images
-        const timestamp = Date.now();
-        fetch(`/api/catering-packages/gallery?t=${timestamp}`, {
-          cache: 'no-store',
-          headers: {
-            'Cache-Control': 'no-cache',
-            'Pragma': 'no-cache',
-          },
-        })
-          .then(res => res.json())
-          .then(data => {
-            setCateringGalleryImages(Array.isArray(data.gallery) ? data.gallery : []);
-          })
-          .catch(err => console.error('Failed to refresh gallery:', err));
-      }
-    };
+    let refreshTimeout: NodeJS.Timeout | null = null;
+    let lastRefresh = 0;
+    const minRefreshInterval = 5000; // Minimum 5 seconds between refreshes
 
-    // Refresh on page focus (user clicks back into the window)
-    const handleFocus = () => {
-      router.refresh();
+    const refreshGallery = () => {
       const timestamp = Date.now();
       fetch(`/api/catering-packages/gallery?t=${timestamp}`, {
         cache: 'no-store',
@@ -1003,13 +1005,51 @@ export default function OrderPageClient({
         .then(data => {
           setCateringGalleryImages(Array.isArray(data.gallery) ? data.gallery : []);
         })
-        .catch(err => console.error('Failed to refresh gallery:', err));
+        .catch(() => {
+          // Silently fail - don't spam console
+        });
+    };
+
+    // Refresh server components when page becomes visible (user returns to tab)
+    const handleVisibilityChange = () => {
+      if (document.visibilityState === 'visible') {
+        const now = Date.now();
+        // Only refresh if enough time has passed since last refresh
+        if (now - lastRefresh >= minRefreshInterval) {
+          // Debounce the refresh to prevent flashing
+          if (refreshTimeout) clearTimeout(refreshTimeout);
+          refreshTimeout = setTimeout(() => {
+            router.refresh();
+            refreshGallery();
+            lastRefresh = Date.now();
+          }, 1000); // Wait 1 second after visibility change
+        } else {
+          // Still refresh gallery even if we skip router.refresh
+          refreshGallery();
+        }
+      }
+    };
+
+    // Refresh on page focus (user clicks back into the window)
+    const handleFocus = () => {
+      const now = Date.now();
+      if (now - lastRefresh >= minRefreshInterval) {
+        if (refreshTimeout) clearTimeout(refreshTimeout);
+        refreshTimeout = setTimeout(() => {
+          router.refresh();
+          refreshGallery();
+          lastRefresh = Date.now();
+        }, 1000);
+      } else {
+        refreshGallery();
+      }
     };
 
     document.addEventListener('visibilitychange', handleVisibilityChange);
     window.addEventListener('focus', handleFocus);
 
     return () => {
+      if (refreshTimeout) clearTimeout(refreshTimeout);
       document.removeEventListener('visibilitychange', handleVisibilityChange);
       window.removeEventListener('focus', handleFocus);
     };
