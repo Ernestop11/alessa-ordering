@@ -3,7 +3,7 @@
  * Provides offline support and caching
  */
 
-const CACHE_NAME = 'alessa-ordering-v2';
+const CACHE_NAME = 'alessa-ordering-v3-2025-12-13';
 const OFFLINE_PAGE = '/offline.html';
 
 // Install event - cache essential files
@@ -20,7 +20,7 @@ self.addEventListener('install', (event) => {
   self.skipWaiting();
 });
 
-// Activate event - clean up old caches
+// Activate event - clean up old caches and force refresh
 self.addEventListener('activate', (event) => {
   event.waitUntil(
     caches.keys().then((cacheNames) => {
@@ -29,6 +29,13 @@ self.addEventListener('activate', (event) => {
           .filter((name) => name !== CACHE_NAME)
           .map((name) => caches.delete(name))
       );
+    }).then(() => {
+      // Force all clients to reload with fresh cache
+      return self.clients.matchAll({ type: 'window' }).then((clients) => {
+        clients.forEach((client) => {
+          client.postMessage({ type: 'CACHE_UPDATED', action: 'reload' });
+        });
+      });
     })
   );
   self.clients.claim();
@@ -57,14 +64,24 @@ self.addEventListener('fetch', (event) => {
     url.pathname.startsWith('/order') ||
     url.pathname.startsWith('/grocery') ||
     url.pathname.startsWith('/admin') ||
-    url.pathname.startsWith('/checkout')
+    url.pathname.startsWith('/checkout') ||
+    url.pathname.includes('/_next/static/chunks/pages/admin')
   ) {
-    return fetch(event.request).catch(() => {
-      // If fetch fails and it's a navigation request, return offline page
-      if (event.request.mode === 'navigate') {
-        return caches.match(OFFLINE_PAGE);
-      }
-    });
+    event.respondWith(
+      fetch(event.request, {
+        cache: 'no-store',
+        headers: {
+          'Cache-Control': 'no-cache, no-store, must-revalidate',
+          'Pragma': 'no-cache'
+        }
+      }).catch(() => {
+        // If fetch fails and it's a navigation request, return offline page
+        if (event.request.mode === 'navigate') {
+          return caches.match(OFFLINE_PAGE);
+        }
+      })
+    );
+    return;
   }
 
   // Skip EventSource/Server-Sent Events (always use network)
