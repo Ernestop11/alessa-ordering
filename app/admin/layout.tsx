@@ -9,19 +9,19 @@ export default function AdminLayout({ children }: { children: React.ReactNode })
 
   useEffect(() => {
     // One-time cache clear for admin pages
-    const cacheCleared = sessionStorage.getItem('admin-cache-cleared-v5');
+    const cacheCleared = sessionStorage.getItem('admin-cache-cleared-v6');
     if (!cacheCleared && 'caches' in window) {
       caches.keys().then((names) => {
         // Delete all old cache versions
         Promise.all(
           names
-            .filter((name) => name.startsWith('alessa-ordering') && !name.includes('v5-2025-12-14'))
+            .filter((name) => name.startsWith('alessa-ordering') && !name.includes('v6-2025-12-14'))
             .map((name) => {
               console.log('[Cache] Deleting old cache:', name);
               return caches.delete(name);
             })
         ).then(() => {
-          sessionStorage.setItem('admin-cache-cleared-v5', 'true');
+          sessionStorage.setItem('admin-cache-cleared-v6', 'true');
           console.log('[Cache] Old caches cleared successfully');
         });
       });
