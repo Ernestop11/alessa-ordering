@@ -12,6 +12,8 @@ function getStripeClient() {
 }
 import prisma from '@/lib/prisma';
 
+export const dynamic = 'force-dynamic';
+
 /**
  * GET /api/stripe/callback?tenant=lasreinas
  *
@@ -99,4 +101,3 @@ export async function GET(request: Request) {
     return NextResponse.redirect(`${baseUrl}/admin/payments?tenant=${tenantSlug}&error=${encodeURIComponent(error.message || 'Unknown error')}`);
   }
 }
-

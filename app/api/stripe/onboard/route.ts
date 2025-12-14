@@ -18,6 +18,8 @@ import prisma from '@/lib/prisma';
  * Creates or retrieves a Stripe Connect Express account for the tenant
  * and generates an onboarding link.
  */
+export const dynamic = 'force-dynamic';
+
 export async function GET(request: Request) {
   try {
     const { searchParams } = new URL(request.url);
@@ -107,4 +109,3 @@ export async function GET(request: Request) {
     );
   }
 }
-

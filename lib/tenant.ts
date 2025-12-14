@@ -144,11 +144,14 @@ export async function resolveTenant(options: TenantResolutionOptions = {}) {
   const queryCandidate = extractQueryTenant(options, headerList);
   const path = extractPath(options, headerList);
 
-  console.error('Tenant resolver input:', {
-    host: hostHeader || null,
-    query: queryCandidate || null,
-    path: path || null,
-  });
+  // During build/static generation host can be missing; fall back to default tenant
+  if (!hostHeader && !queryCandidate) {
+    const fallback = await getTenantBySlug(DEFAULT_TENANT_SLUG);
+    if (fallback) {
+      console.warn('Tenant resolver missing host/query - using default tenant:', DEFAULT_TENANT_SLUG);
+      return fallback;
+    }
+  }
 
   // Skip tenant resolution for root domain - should show landing page
   if (hostHeader === ROOT_DOMAIN || hostHeader === `www.${ROOT_DOMAIN}`) {

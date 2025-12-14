@@ -4,6 +4,8 @@ import { authOptions } from '@/lib/auth/options'
 import prisma from '@/lib/prisma'
 import { requireTenant } from '@/lib/tenant'
 
+export const dynamic = 'force-dynamic'
+
 export async function GET() {
   try {
     // Check authentication

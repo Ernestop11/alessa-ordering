@@ -6,6 +6,8 @@ import prisma from '@/lib/prisma';
  *
  * Redirects to Stripe Dashboard for the tenant's Connect account.
  */
+export const dynamic = 'force-dynamic';
+
 export async function GET(request: Request) {
   try {
     const { searchParams } = new URL(request.url);
@@ -43,4 +45,3 @@ export async function GET(request: Request) {
     );
   }
 }
-
