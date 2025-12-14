@@ -303,6 +303,9 @@ export default function OrderPageClient({
   
   // Initialize activeSectionId after navSections is computed
   const [activeSectionId, setActiveSectionId] = useState('');
+  // Track if scroll is user-initiated (clicking category button) vs observer-initiated (scrolling)
+  const isUserScrollingRef = useRef(false);
+  const scrollTimeoutRef = useRef<NodeJS.Timeout | null>(null);
   
   // Set activeSectionId based on URL param or first section after navSections is available
   useEffect(() => {
@@ -415,8 +418,21 @@ export default function OrderPageClient({
   // Detect Safari for scroll optimization
   const isSafariBrowser = typeof window !== 'undefined' && /^((?!chrome|android).)*safari/i.test(navigator.userAgent);
   
+  // Only auto-scroll when user clicks a category button, NOT when IntersectionObserver updates
+  // This prevents the page from jumping back during manual scrolling
   useEffect(() => {
     if (typeof window === 'undefined' || !activeSectionId) return;
+    
+    // Only scroll if this is user-initiated (category button click)
+    // Skip auto-scroll if IntersectionObserver updated the section (user is manually scrolling)
+    if (!isUserScrollingRef.current) {
+      return; // Don't auto-scroll - let IntersectionObserver handle it naturally
+    }
+    
+    // Clear any pending scroll timeout
+    if (scrollTimeoutRef.current) {
+      clearTimeout(scrollTimeoutRef.current);
+    }
     
     // Use requestAnimationFrame to prevent scroll conflicts
     requestAnimationFrame(() => {
@@ -429,8 +445,20 @@ export default function OrderPageClient({
           top: elementPosition - headerHeight, 
           behavior: isSafariBrowser ? 'auto' : 'smooth' 
         });
+        
+        // Reset the flag after scrolling completes
+        scrollTimeoutRef.current = setTimeout(() => {
+          isUserScrollingRef.current = false;
+        }, isSafariBrowser ? 2000 : 1500);
       }
     });
+    
+    // Cleanup timeout on unmount
+    return () => {
+      if (scrollTimeoutRef.current) {
+        clearTimeout(scrollTimeoutRef.current);
+      }
+    };
   }, [activeSectionId, isSafariBrowser]);
 
   useEffect(() => {
@@ -734,8 +762,12 @@ export default function OrderPageClient({
           if (visibleSection) {
             const targetId = sectionsToObserve.find((section) => section.el === visibleSection.target)?.id;
             if (targetId && targetId !== activeSectionId) {
-              // Batch state update to prevent flashing
-              setActiveSectionId(targetId);
+              // Only update if user is NOT manually scrolling (clicking category button)
+              // This prevents conflicts with manual scrolling
+              if (!isUserScrollingRef.current) {
+                // Batch state update to prevent flashing
+                setActiveSectionId(targetId);
+              }
             }
           }
         });
@@ -2015,12 +2047,29 @@ export default function OrderPageClient({
                     <button
                       key={section.id}
                       onClick={() => {
+                        // Mark as user-initiated scroll to prevent IntersectionObserver conflicts
+                        isUserScrollingRef.current = true;
+                        
+                        // Clear any pending timeout
+                        if (scrollTimeoutRef.current) {
+                          clearTimeout(scrollTimeoutRef.current);
+                        }
+                        
                         setActiveSectionId(section.id);
                         const element = document.getElementById(`section-${section.id}`);
                         if (element) {
                           const headerHeight = 160;
                           const elementPosition = element.getBoundingClientRect().top + window.pageYOffset;
                           window.scrollTo({ top: elementPosition - headerHeight, behavior: isSafariBrowser ? 'auto' : 'smooth' });
+                          
+                          // Reset flag after scroll completes (Safari needs more time)
+                          scrollTimeoutRef.current = setTimeout(() => {
+                            isUserScrollingRef.current = false;
+                          }, isSafariBrowser ? 2000 : 1500);
+                        } else {
+                          // If element not found, reset flag immediately
+                          console.warn(`Section element not found: section-${section.id}`);
+                          isUserScrollingRef.current = false;
                         }
                       }}
                       data-section-button={section.id}
