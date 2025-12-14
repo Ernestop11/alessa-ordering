@@ -179,9 +179,38 @@ export default async function RootLayout({
     '--tenant-theme-color': tenantTheme.themeColor || tenantTheme.primaryColor,
   } as CSSProperties
 
+  // Force cache clear script - runs once per session to ensure fresh content
+  const cacheCleanupScript = `
+    (function() {
+      var cleared = sessionStorage.getItem('sw-cleared-v5');
+      if (!cleared && 'serviceWorker' in navigator) {
+        // Clear all caches
+        if ('caches' in window) {
+          caches.keys().then(function(names) {
+            names.forEach(function(name) {
+              if (name.indexOf('v5-2025-12-14') === -1) {
+                console.log('[Cleanup] Deleting cache:', name);
+                caches.delete(name);
+              }
+            });
+          });
+        }
+        // Force service worker update
+        navigator.serviceWorker.getRegistrations().then(function(registrations) {
+          registrations.forEach(function(reg) {
+            reg.update();
+          });
+        });
+        sessionStorage.setItem('sw-cleared-v5', 'true');
+        console.log('[Cleanup] Cache cleanup complete');
+      }
+    })();
+  `;
+
   return (
     <html lang="en">
       <head>
+        <script dangerouslySetInnerHTML={{ __html: cacheCleanupScript }} />
         <link rel="manifest" href="/manifest.json" />
         <meta name="theme-color" content={tenantTheme.themeColor || tenantTheme.primaryColor} />
         <meta name="mobile-web-app-capable" content="yes" />
