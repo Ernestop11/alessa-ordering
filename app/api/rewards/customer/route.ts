@@ -3,6 +3,8 @@ import prisma from '@/lib/prisma';
 import { requireTenant } from '@/lib/tenant';
 import { cookies } from 'next/headers';
 
+export const dynamic = 'force-dynamic';
+
 export async function GET() {
   try {
     const tenant = await requireTenant();
@@ -92,7 +94,6 @@ export async function GET() {
     return errorResponse;
   }
 }
-
 
 
 

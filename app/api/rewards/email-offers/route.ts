@@ -3,6 +3,8 @@ import prisma from '@/lib/prisma';
 import { requireTenant } from '@/lib/tenant';
 import { cookies } from 'next/headers';
 
+export const dynamic = 'force-dynamic';
+
 async function getCustomerFromCookie(tenantId: string) {
   const token = cookies().get('customer_session')?.value;
   if (!token) return null;
@@ -75,4 +77,3 @@ export async function GET() {
     return NextResponse.json({ error: 'Failed to fetch email offers' }, { status: 500 });
   }
 }
-
