@@ -3175,7 +3175,7 @@ export default function OrderPageClient({
             >
               {/* Section Header with varied styles based on index */}
               <header className="mb-6">
-                {sectionIndex % 4 === 0 ? (
+                {originalIndex % 4 === 0 ? (
                   // Style 1: Classic with underline accent
                   <div className="relative pb-4">
                     <div className="flex items-center gap-3 mb-2">
@@ -3187,7 +3187,7 @@ export default function OrderPageClient({
                     )}
                     <div className="absolute bottom-0 left-0 w-24 h-1 rounded-full bg-gradient-to-r from-[#C41E3A] to-[#FF6B6B]" />
                   </div>
-                ) : sectionIndex % 4 === 1 ? (
+                ) : originalIndex % 4 === 1 ? (
                   // Style 2: Centered with badge
                   <div className="text-center mb-8">
                     <span className="inline-block text-4xl mb-2">{SECTION_ICONS[section.type] || '🍽️'}</span>
@@ -3201,7 +3201,7 @@ export default function OrderPageClient({
                       ))}
                     </div>
                   </div>
-                ) : sectionIndex % 4 === 2 ? (
+                ) : originalIndex % 4 === 2 ? (
                   // Style 3: Card style with background
                   <div className="bg-white/[0.03] rounded-2xl p-4 mb-4 border border-white/[0.08]">
                     <div className="flex items-center gap-4">
