@@ -37,6 +37,20 @@ export default function GroceryPageClient({
   const [selectedCategory, setSelectedCategory] = useState<string>('all');
   const [mounted, setMounted] = useState(false);
 
+  // Get unique categories
+  const categories = useMemo(() =>
+    ['all', ...Array.from(new Set(groceryItems.map(item => item.category)))],
+    [groceryItems]
+  );
+
+  // Filter items by category
+  const filteredItems = useMemo(() =>
+    selectedCategory === 'all'
+      ? groceryItems
+      : groceryItems.filter(item => item.category === selectedCategory),
+    [groceryItems, selectedCategory]
+  );
+
   // Prevent hydration mismatch by only rendering after mount
   useEffect(() => {
     setMounted(true);
@@ -52,20 +66,6 @@ export default function GroceryPageClient({
       </div>
     );
   }
-
-  // Get unique categories
-  const categories = useMemo(() =>
-    ['all', ...Array.from(new Set(groceryItems.map(item => item.category)))],
-    [groceryItems]
-  );
-
-  // Filter items by category
-  const filteredItems = useMemo(() =>
-    selectedCategory === 'all'
-      ? groceryItems
-      : groceryItems.filter(item => item.category === selectedCategory),
-    [groceryItems, selectedCategory]
-  );
 
   // Get cart quantity for an item
   const getCartQuantity = (itemId: string) => {

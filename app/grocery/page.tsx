@@ -41,12 +41,8 @@ export default async function GroceryPage() {
 
   console.log('[grocery-page] 🛒 Rendering with', groceryItems.length, 'items for tenant:', tenant.slug);
 
-  // Generate unique key based on current timestamp to force full re-render
-  const pageKey = `grocery-${Date.now()}`;
-
   return (
     <GroceryPageClient
-      key={pageKey}
       groceryItems={groceryItems}
       tenantSlug={tenant.slug}
       tenantName={tenant.name}
