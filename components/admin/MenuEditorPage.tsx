@@ -136,10 +136,15 @@ export default function MenuEditorPage() {
     const cachedVersion = localStorage.getItem('menu-editor-version');
     if (cachedVersion !== MENU_EDITOR_VERSION) {
       console.log('[MenuEditor] Version mismatch - forcing hard reload', { cached: cachedVersion, current: MENU_EDITOR_VERSION });
+      localStorage.clear(); // Clear all localStorage to force fresh state
+      sessionStorage.clear(); // Clear session storage too
       localStorage.setItem('menu-editor-version', MENU_EDITOR_VERSION);
-      window.location.reload();
+      // Force hard reload bypassing cache
+      window.location.href = window.location.href + '?v=' + Date.now();
       return;
     }
+
+    console.log('[MenuEditor] Version check passed:', MENU_EDITOR_VERSION);
 
     fetchSections();
     fetchItems();
@@ -1680,7 +1685,10 @@ export default function MenuEditorPage() {
                     Text Customization
                   </button>
                   <button
-                    onClick={() => setFrontendSubTab('sections')}
+                    onClick={() => {
+                      console.log('[MenuEditor] Switching to sections tab');
+                      setFrontendSubTab('sections');
+                    }}
                     className={`whitespace-nowrap py-4 px-1 border-b-2 font-medium text-sm ${
                       frontendSubTab === 'sections'
                         ? 'border-blue-500 text-blue-600'
@@ -1694,6 +1702,7 @@ export default function MenuEditorPage() {
 
               {frontendSubTab === 'text' ? (
                 <div className="bg-white rounded-lg shadow-md p-6">
+                  {console.log('[MenuEditor] Rendering TEXT tab')}
                   <h2 className="text-2xl font-semibold text-gray-900 mb-6">Frontend Text Customization</h2>
                   <p className="text-gray-600 mb-6">Customize the text displayed in various sections on your customer-facing order page. Changes sync automatically when you save.</p>
 
@@ -2021,6 +2030,7 @@ export default function MenuEditorPage() {
               ) : (
                 // Promotional Sections Management
                 <div>
+                  {console.log('[MenuEditor] Rendering SECTIONS tab, frontendSections:', frontendSections.length)}
                   <div className="mb-6 flex items-center justify-between">
                     <div>
                       <h2 className="text-2xl font-semibold text-gray-900">Promotional Sections</h2>
