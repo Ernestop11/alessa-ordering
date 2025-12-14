@@ -7,6 +7,9 @@ import DashboardLayout from './DashboardLayout';
 import { compressImage, formatFileSize } from '@/lib/imageCompression';
 import { validateOperatingHours } from '@/lib/hours-validator';
 
+// Version constant - increment this to force cache refresh
+const MENU_EDITOR_VERSION = '2025-12-13-v2';
+
 interface MenuSection {
   id: string;
   name: string;
@@ -129,6 +132,15 @@ export default function MenuEditorPage() {
   const [savingFrontendConfig, setSavingFrontendConfig] = useState(false);
 
   useEffect(() => {
+    // Force cache refresh if version doesn't match
+    const cachedVersion = localStorage.getItem('menu-editor-version');
+    if (cachedVersion !== MENU_EDITOR_VERSION) {
+      console.log('[MenuEditor] Version mismatch - forcing hard reload', { cached: cachedVersion, current: MENU_EDITOR_VERSION });
+      localStorage.setItem('menu-editor-version', MENU_EDITOR_VERSION);
+      window.location.reload();
+      return;
+    }
+
     fetchSections();
     fetchItems();
     fetchCateringSections();
