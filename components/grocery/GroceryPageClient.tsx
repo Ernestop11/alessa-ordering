@@ -21,14 +21,27 @@ interface GroceryItem {
   displayOrder: number;
 }
 
+interface GroceryBundle {
+  id: string;
+  name: string;
+  description: string;
+  price: number;
+  category: string;
+  image: string | null;
+  badge: string | null;
+  items: any;
+}
+
 interface GroceryPageClientProps {
   groceryItems: GroceryItem[];
+  bundles: GroceryBundle[];
   tenantSlug: string;
   tenantName: string;
 }
 
 export default function GroceryPageClient({
   groceryItems,
+  bundles,
   tenantSlug,
   tenantName,
 }: GroceryPageClientProps) {
@@ -143,8 +156,104 @@ export default function GroceryPageClient({
         </Link>
       </div>
 
-      {/* Category Filter */}
+      {/* Grocery Bundles Section */}
+      {bundles.length > 0 && (
+        <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-6">
+          <div className="mb-6">
+            <h2 className="text-3xl font-bold text-white mb-2">🎁 Special Bundles & Combos</h2>
+            <p className="text-white/70">Save money with our curated meal kits and combo packages</p>
+          </div>
+          <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6 mb-8">
+            {bundles.map(bundle => {
+              const quantity = getCartQuantity(bundle.id);
+              return (
+                <div
+                  key={bundle.id}
+                  className="bg-gradient-to-br from-yellow-500/20 to-orange-500/20 backdrop-blur-sm rounded-3xl overflow-hidden border-3 border-yellow-400 hover:border-yellow-300 transition group shadow-2xl hover:shadow-yellow-500/50"
+                >
+                  {/* Image */}
+                  <div className="relative h-64 bg-gradient-to-br from-gray-800 to-gray-900 overflow-hidden">
+                    {bundle.image ? (
+                      <img
+                        src={bundle.image}
+                        alt={bundle.name}
+                        className="w-full h-full object-cover group-hover:scale-110 transition-transform duration-300"
+                      />
+                    ) : (
+                      <div className="absolute inset-0 flex items-center justify-center">
+                        <div className="text-center">
+                          <ShoppingCart className="h-24 w-24 text-yellow-500/40 mx-auto mb-2" />
+                          <p className="text-yellow-500/60 font-bold">Bundle Package</p>
+                        </div>
+                      </div>
+                    )}
+                    {bundle.badge && (
+                      <div className="absolute top-3 right-3 bg-yellow-500 text-gray-900 text-sm font-black px-4 py-2 rounded-full shadow-xl animate-pulse">
+                        {bundle.badge}
+                      </div>
+                    )}
+                    {/* Price badge */}
+                    <div className="absolute bottom-3 left-3 bg-green-600 text-white px-5 py-3 rounded-full shadow-xl">
+                      <span className="text-3xl font-black">${bundle.price.toFixed(2)}</span>
+                    </div>
+                  </div>
+
+                  {/* Content */}
+                  <div className="p-6 bg-gradient-to-b from-white/10 to-transparent">
+                    <h3 className="text-white font-black text-2xl mb-3">{bundle.name}</h3>
+                    <p className="text-white/80 text-base mb-4 line-clamp-3">{bundle.description}</p>
+
+                    {/* Add to Cart */}
+                    {quantity === 0 ? (
+                      <button
+                        onClick={() => addToCart({
+                          id: bundle.id,
+                          name: bundle.name,
+                          price: bundle.price,
+                          quantity: 1,
+                          image: bundle.image,
+                          description: bundle.description,
+                        })}
+                        className="w-full bg-gradient-to-r from-yellow-400 to-yellow-500 hover:from-yellow-500 hover:to-yellow-600 text-gray-900 font-black py-4 px-4 rounded-xl transition flex items-center justify-center gap-2 shadow-xl text-lg"
+                      >
+                        <Plus className="h-6 w-6" />
+                        Add Bundle to Cart
+                      </button>
+                    ) : (
+                      <div className="flex items-center gap-2">
+                        <button
+                          onClick={() => handleDecrement(bundle.id, quantity)}
+                          className="flex-1 bg-red-600 hover:bg-red-700 text-white font-bold py-4 px-4 rounded-xl transition flex items-center justify-center shadow-lg"
+                        >
+                          <Minus className="h-6 w-6" />
+                        </button>
+                        <div className="flex-1 bg-white/20 border-3 border-yellow-400 text-white font-black py-4 px-4 rounded-xl text-center text-2xl">
+                          {quantity}
+                        </div>
+                        <button
+                          onClick={() => handleIncrement(bundle.id, quantity)}
+                          className="flex-1 bg-gradient-to-r from-yellow-400 to-yellow-500 hover:from-yellow-500 hover:to-yellow-600 text-gray-900 font-bold py-4 px-4 rounded-xl transition flex items-center justify-center shadow-lg"
+                        >
+                          <Plus className="h-6 w-6" />
+                        </button>
+                      </div>
+                    )}
+                  </div>
+                </div>
+              );
+            })}
+          </div>
+        </div>
+      )}
+
+      {/* Individual Items Section */}
       <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-6">
+        <div className="mb-6">
+          <h2 className="text-3xl font-bold text-white mb-2">🥬 Individual Grocery Items</h2>
+          <p className="text-white/70">Fresh ingredients and specialty products</p>
+        </div>
+
+        {/* Category Filter */}
         <div className="flex gap-2 overflow-x-auto pb-2">
           {categories.map(category => (
             <button

@@ -35,11 +35,24 @@ export default async function GroceryPage() {
     };
   });
 
-  console.log('[grocery-page] 🛒 Rendering with', groceryItems.length, 'items for tenant:', tenant.slug);
+  // Fetch grocery bundles
+  const bundles = await prisma.groceryBundle.findMany({
+    where: {
+      tenantId: tenant.id,
+      available: true,
+    },
+    orderBy: [
+      { displayOrder: 'asc' },
+      { createdAt: 'asc' },
+    ],
+  });
+
+  console.log('[grocery-page] 🛒 Rendering with', groceryItems.length, 'items and', bundles.length, 'bundles for tenant:', tenant.slug);
 
   return (
     <GroceryPageClient
       groceryItems={groceryItems}
+      bundles={bundles}
       tenantSlug={tenant.slug}
       tenantName={tenant.name}
     />
