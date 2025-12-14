@@ -1722,13 +1722,15 @@ export default function OrderPageClient({
                     >
                       <span className="flex items-center justify-center gap-1.5">
                         {item.available ? (
-                      <>
-                        <svg className="h-4 w-4" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2}>
-                          <path strokeLinecap="round" strokeLinejoin="round" d="M3 3h2l.4 2M7 13h10l4-8H5.4M7 13L5.4 5M7 13l-2.293 2.293c-.63.63-.184 1.707.707 1.707H17m0 0a2 2 0 100 4 2 2 0 000-4zm-8 2a2 2 0 11-4 0 2 2 0 014 0z" />
-                        </svg>
-                        Add to Cart
-                      </>
-                    ) : 'Sold Out'}
+                          <>
+                            <svg className="h-4 w-4" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2}>
+                              <path strokeLinecap="round" strokeLinejoin="round" d="M3 3h2l.4 2M7 13h10l4-8H5.4M7 13L5.4 5M7 13l-2.293 2.293c-.63.63-.184 1.707.707 1.707H17m0 0a2 2 0 100 4 2 2 0 000-4zm-8 2a2 2 0 11-4 0 2 2 0 014 0z" />
+                            </svg>
+                            Add to Cart
+                          </>
+                        ) : (
+                          'Sold Out'
+                        )}
                       </span>
                     </button>
                     <button
@@ -2621,7 +2623,6 @@ export default function OrderPageClient({
               }
 
               // Fallback to original
-              return (
               // Get first bundle with category='bundle' or 'popular' that should be featured
               const featuredBundle = popularPackages.find(pkg =>
                 (pkg.category === 'bundle' || pkg.category === 'popular') && pkg.available
@@ -2724,61 +2725,6 @@ export default function OrderPageClient({
                         {/* Gradient overlay */}
                         <div className="absolute inset-0 bg-[radial-gradient(circle_at_center,rgba(255,215,0,0.15)_0%,transparent_70%)]" />
                       </div>
-                    </div>
-                  </div>
-                </div>
-              );
-            })()}
-
-            {/* "WE COOK FOR YOU" Style Banner - After third section */}
-            {sectionIndex === 3 && (() => {
-              const weCookBanner = getPromoBannerForIndex(3);
-              if (weCookBanner && weCookBanner.type === 'weCookBanner') {
-                const config = weCookBanner.content;
-                return (
-                  <div 
-                    className="mb-10 relative overflow-hidden rounded-3xl"
-                    style={{
-                      background: config.gradientFrom && config.gradientTo
-                        ? `linear-gradient(to right, ${config.gradientFrom}, ${config.gradientTo})`
-                        : config.backgroundColor || 'linear-gradient(to right, #1a1a1a, #2a2a2a, #1a1a1a)',
-                    }}
-                  >
-                    <div className="relative p-8 md:p-12">
-                      <div className="relative text-center">
-                        {config.title && (
-                          <h3 
-                            className="text-4xl md:text-6xl font-black mb-4 tracking-tight"
-                            style={{ color: config.textColor || '#ffffff' }}
-                          >
-                            {config.title}
-                          </h3>
-                        )}
-                        {(config.description || config.subtitle) && (
-                          <p 
-                            className="text-xl mb-6 max-w-2xl mx-auto"
-                            style={{ color: config.textColor ? `${config.textColor}CC` : 'rgba(255,255,255,0.7)' }}
-                          >
-                            {config.description || config.subtitle}
-                          </p>
-                        )}
-                      </div>
-                    </div>
-                  </div>
-                );
-              }
-
-              // Fallback to original
-              return (
-                <div className="mb-10 relative overflow-hidden rounded-3xl">
-                  <div className="relative bg-gradient-to-r from-[#1a1a1a] via-[#2a2a2a] to-[#1a1a1a] p-8 md:p-12">
-                    <div className="relative text-center">
-                      <h3 className="text-4xl md:text-6xl font-black text-white mb-4 tracking-tight">
-                        WE <span className="text-[#FF6B00]">COOK</span> FOR YOU
-                      </h3>
-                      <p className="text-xl text-white/70 mb-6 max-w-2xl mx-auto">
-                        Fresh ingredients, authentic recipes, made with passion every single day
-                      </p>
                     </div>
                   </div>
                 </div>
