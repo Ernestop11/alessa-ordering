@@ -2,6 +2,7 @@
 
 import { useEffect, useState, useCallback } from 'react';
 import Link from 'next/link';
+import { useRouter } from 'next/navigation';
 import { Plus, Edit2, Trash2, GripVertical, ArrowLeft } from 'lucide-react';
 import DashboardLayout from './DashboardLayout';
 import { compressImage, formatFileSize } from '@/lib/imageCompression';
@@ -64,20 +65,29 @@ interface CateringPackage {
   displayOrder: number;
 }
 
-interface FrontendSection {
+interface FrontendUISection {
   id: string;
-  tenantId: string;
   name: string;
-  type: 'HERO_BANNER' | 'PROMOTIONAL_BANNER' | 'GROCERY_BANNER' | 'BUNDLE_SHOWCASE' | 'CUSTOM_HTML';
+  type: 'hero' | 'quickInfo' | 'featuredCarousel' | 'menuSections' | 'promoBanner1' | 'groceryBanner' | 'weCookBanner' | 'dealStrip' | 'qualityBanner' | 'reviewsStrip';
   position: number;
   enabled: boolean;
-  content: any;
-  insertAfter: number | null;
-  createdAt: string;
-  updatedAt: string;
+  content: {
+    title?: string;
+    subtitle?: string;
+    description?: string;
+    buttonText?: string;
+    buttonLink?: string;
+    image?: string;
+    badge?: string;
+    backgroundColor?: string;
+    textColor?: string;
+    gradientFrom?: string;
+    gradientTo?: string;
+  };
 }
 
 export default function MenuEditorPage() {
+  const router = useRouter();
   const [activeTab, setActiveTab] = useState<'menu' | 'catering' | 'grocery' | 'frontend'>('menu');
   const [grocerySubTab, setGrocerySubTab] = useState<'items' | 'bundles' | 'weekend'>('items');
   const [sections, setSections] = useState<MenuSection[]>([]);
@@ -101,35 +111,10 @@ export default function MenuEditorPage() {
   const [isAcceptingOrders, setIsAcceptingOrders] = useState(false); // Default to closed until status is fetched
   const [loadingStatus, setLoadingStatus] = useState(false);
 
-  // Frontend sections state
-  const [frontendSections, setFrontendSections] = useState<FrontendSection[]>([]);
-  const [editingFrontendSection, setEditingFrontendSection] = useState<FrontendSection | null>(null);
-  const [frontendSubTab, setFrontendSubTab] = useState<'text' | 'sections'>('text');
-
-  // Frontend customization state
-  const [frontendConfig, setFrontendConfig] = useState({
-    featuredCarousel: {
-      title: 'Chef Recommends',
-      subtitle: 'Handpicked favorites from our kitchen',
-    },
-    heroSection: {
-      subtitle: 'Authentic flavors crafted with passion',
-      primaryCTA: 'ORDER NOW',
-      secondaryCTA: 'VIEW MENU',
-    },
-    qualitySection: {
-      title: 'WE COOK FOR YOU',
-      description: 'Fresh ingredients, authentic recipes, made with passion every single day',
-    },
-    cateringPanel: {
-      title: '🎉 Catering Services',
-    },
-    rewardsPanel: {
-      title: '⭐ Rewards Program',
-      subtitle: 'Unlock Exclusive Benefits',
-    },
-  });
-  const [savingFrontendConfig, setSavingFrontendConfig] = useState(false);
+  // Frontend UI sections state
+  const [frontendUISections, setFrontendUISections] = useState<FrontendUISection[]>([]);
+  const [editingFrontendSection, setEditingFrontendSection] = useState<FrontendUISection | null>(null);
+  const [savingFrontendSection, setSavingFrontendSection] = useState(false);
 
   const fetchSections = async () => {
     try {
@@ -607,8 +592,7 @@ export default function MenuEditorPage() {
     fetchGroceryBundles();
     fetchCateringGallery();
     fetchOrderingStatus();
-    fetchFrontendConfig();
-    fetchFrontendSections();
+    fetchFrontendUISections();
 
     // Re-check operating hours every 30 seconds to keep toggle synced
     const statusInterval = setInterval(() => {
@@ -692,120 +676,132 @@ export default function MenuEditorPage() {
     }
   };
 
-  const fetchFrontendConfig = async () => {
+  const fetchFrontendUISections = async () => {
     try {
-      const res = await fetch('/api/admin/tenant-settings');
+      const res = await fetch('/api/admin/frontend-ui-sections?t=' + Date.now(), { cache: 'no-store' });
+      if (!res.ok) throw new Error('Failed to fetch');
       const data = await res.json();
-      if (data.settings?.frontendConfig) {
-        setFrontendConfig(data.settings.frontendConfig);
+      // If no sections exist, initialize with defaults
+      if (!data || data.length === 0) {
+        const defaultSections: FrontendUISection[] = [
+          { id: 'hero', name: 'Hero Section', type: 'hero', position: 0, enabled: true, content: { title: '', subtitle: 'Authentic flavors crafted with passion', buttonText: 'ORDER NOW', buttonLink: '#menu' } },
+          { id: 'quickInfo', name: 'Quick Info Bar', type: 'quickInfo', position: 1, enabled: true, content: {} },
+          { id: 'featuredCarousel', name: 'Featured Carousel', type: 'featuredCarousel', position: 2, enabled: true, content: { title: 'Chef Recommends', subtitle: 'Handpicked favorites from our kitchen' } },
+          { id: 'menuSections', name: 'Menu Sections', type: 'menuSections', position: 3, enabled: true, content: {} },
+          { id: 'promoBanner1', name: 'Promotional Billboard', type: 'promoBanner1', position: 4, enabled: true, content: { title: '', subtitle: '', buttonText: 'Order Bundle', image: '' } },
+          { id: 'groceryBanner', name: 'Grocery Store Banner', type: 'groceryBanner', position: 5, enabled: true, content: { title: 'Order Your Groceries Too!', subtitle: 'Fresh produce, pantry staples, and more delivered with your meal order', buttonText: 'Browse Grocery Store', buttonLink: '/grocery' } },
+          { id: 'weCookBanner', name: 'WE COOK FOR YOU Banner', type: 'weCookBanner', position: 6, enabled: true, content: { title: 'WE COOK FOR YOU', description: 'Fresh ingredients, authentic recipes, made with passion every single day' } },
+          { id: 'dealStrip', name: 'Quick Deal Strip', type: 'dealStrip', position: 7, enabled: true, content: { title: 'LUNCH SPECIAL', subtitle: 'Any 2 tacos + drink for $8.99', buttonText: 'Get Deal' } },
+          { id: 'qualityBanner', name: 'Fresh Quality Banner', type: 'qualityBanner', position: 8, enabled: true, content: { title: 'Quality You Can Taste', subtitle: 'All ingredients sourced fresh daily from local suppliers', badge: 'Fresh Guarantee' } },
+          { id: 'reviewsStrip', name: 'Customer Reviews Strip', type: 'reviewsStrip', position: 9, enabled: true, content: { title: 'Best authentic Mexican food in town!', subtitle: 'Over 500+ 5-star reviews', buttonText: 'Read Reviews' } },
+        ];
+        setFrontendUISections(defaultSections);
+      } else {
+        setFrontendUISections(data);
       }
     } catch (err) {
-      console.error('Failed to fetch frontend config', err);
+      console.error('Failed to fetch frontend UI sections', err);
+      // Initialize with defaults on error
+      const defaultSections: FrontendUISection[] = [
+        { id: 'hero', name: 'Hero Section', type: 'hero', position: 0, enabled: true, content: { title: '', subtitle: 'Authentic flavors crafted with passion', buttonText: 'ORDER NOW', buttonLink: '#menu' } },
+        { id: 'quickInfo', name: 'Quick Info Bar', type: 'quickInfo', position: 1, enabled: true, content: {} },
+        { id: 'featuredCarousel', name: 'Featured Carousel', type: 'featuredCarousel', position: 2, enabled: true, content: { title: 'Chef Recommends', subtitle: 'Handpicked favorites from our kitchen' } },
+        { id: 'menuSections', name: 'Menu Sections', type: 'menuSections', position: 3, enabled: true, content: {} },
+        { id: 'promoBanner1', name: 'Promotional Billboard', type: 'promoBanner1', position: 4, enabled: true, content: { title: '', subtitle: '', buttonText: 'Order Bundle', image: '' } },
+        { id: 'groceryBanner', name: 'Grocery Store Banner', type: 'groceryBanner', position: 5, enabled: true, content: { title: 'Order Your Groceries Too!', subtitle: 'Fresh produce, pantry staples, and more delivered with your meal order', buttonText: 'Browse Grocery Store', buttonLink: '/grocery' } },
+        { id: 'weCookBanner', name: 'WE COOK FOR YOU Banner', type: 'weCookBanner', position: 6, enabled: true, content: { title: 'WE COOK FOR YOU', description: 'Fresh ingredients, authentic recipes, made with passion every single day' } },
+        { id: 'dealStrip', name: 'Quick Deal Strip', type: 'dealStrip', position: 7, enabled: true, content: { title: 'LUNCH SPECIAL', subtitle: 'Any 2 tacos + drink for $8.99', buttonText: 'Get Deal' } },
+        { id: 'qualityBanner', name: 'Fresh Quality Banner', type: 'qualityBanner', position: 8, enabled: true, content: { title: 'Quality You Can Taste', subtitle: 'All ingredients sourced fresh daily from local suppliers', badge: 'Fresh Guarantee' } },
+        { id: 'reviewsStrip', name: 'Customer Reviews Strip', type: 'reviewsStrip', position: 9, enabled: true, content: { title: 'Best authentic Mexican food in town!', subtitle: 'Over 500+ 5-star reviews', buttonText: 'Read Reviews' } },
+      ];
+      setFrontendUISections(defaultSections);
     }
-  };
-
-  const fetchFrontendSections = async () => {
-    try {
-      const res = await fetch('/api/admin/frontend-sections');
-      const data = await res.json();
-      setFrontendSections(data || []);
-    } catch (err) {
-      console.error('Failed to fetch frontend sections', err);
-    }
-  };
-
-  const handleAddFrontendSection = () => {
-    const newSection: FrontendSection = {
-      id: '',
-      tenantId: '',
-      name: '',
-      type: 'PROMOTIONAL_BANNER',
-      position: frontendSections.length,
-      enabled: true,
-      content: {
-        title: '',
-        subtitle: '',
-        buttonText: 'Learn More',
-        buttonLink: '#',
-        image: '',
-      },
-      insertAfter: null,
-      createdAt: '',
-      updatedAt: '',
-    };
-    setEditingFrontendSection(newSection);
   };
 
   const handleSaveFrontendSection = async () => {
     if (!editingFrontendSection) return;
+    setSavingFrontendSection(true);
 
     try {
-      const method = editingFrontendSection.id ? 'PATCH' : 'POST';
-      const url = editingFrontendSection.id
-        ? `/api/admin/frontend-sections/${editingFrontendSection.id}`
-        : '/api/admin/frontend-sections';
-
-      const res = await fetch(url, {
-        method,
+      const res = await fetch(`/api/admin/frontend-ui-sections/${editingFrontendSection.id}?t=${Date.now()}`, {
+        method: 'PUT',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify(editingFrontendSection),
+        cache: 'no-store',
       });
 
       if (!res.ok) throw new Error('Failed to save frontend section');
-      await fetchFrontendSections();
+      
+      // Cache busting: revalidate paths
+      await fetch('/api/admin/revalidate?path=/order&path=/', { method: 'POST' }).catch(() => {});
+      
+      await fetchFrontendUISections();
       setEditingFrontendSection(null);
+      
+      // Trigger router refresh for immediate UI update
+      router.refresh();
     } catch (err) {
       console.error('Failed to save frontend section', err);
       alert('Failed to save frontend section');
+    } finally {
+      setSavingFrontendSection(false);
     }
   };
 
   const handleDeleteFrontendSection = async (id: string) => {
-    if (!confirm('Are you sure you want to delete this section?')) return;
+    if (!confirm('Are you sure you want to delete this section? It will be removed from the frontend.')) return;
 
     try {
-      const res = await fetch(`/api/admin/frontend-sections/${id}`, { method: 'DELETE' });
+      const res = await fetch(`/api/admin/frontend-ui-sections/${id}?t=${Date.now()}`, { 
+        method: 'DELETE',
+        cache: 'no-store',
+      });
       if (!res.ok) throw new Error('Failed to delete');
-      await fetchFrontendSections();
+      
+      // Cache busting
+      await fetch('/api/admin/revalidate?path=/order&path=/', { method: 'POST' }).catch(() => {});
+      
+      await fetchFrontendUISections();
+      
+      // Trigger router refresh
+      router.refresh();
     } catch (err) {
       console.error('Failed to delete frontend section', err);
       alert('Failed to delete frontend section');
     }
   };
 
-  const handleReorderFrontendSection = async (sectionId: string, direction: 'up' | 'down') => {
+  const handleMoveSection = async (index: number, direction: -1 | 1) => {
+    const targetIndex = index + direction;
+    if (targetIndex < 0 || targetIndex >= frontendUISections.length) return;
+
+    const reordered = [...frontendUISections];
+    const [current] = reordered.splice(index, 1);
+    reordered.splice(targetIndex, 0, current);
+
+    // Update positions
+    const updated = reordered.map((section, position) => ({ ...section, position }));
+
     try {
-      const res = await fetch('/api/admin/frontend-sections/reorder', {
+      const res = await fetch('/api/admin/frontend-ui-sections/reorder?t=' + Date.now(), {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ sectionId, direction }),
+        body: JSON.stringify({ sections: updated.map(s => ({ id: s.id, position: s.position })) }),
+        cache: 'no-store',
       });
-
-      if (!res.ok) throw new Error('Failed to reorder section');
-      await fetchFrontendSections();
+      if (!res.ok) throw new Error('Failed to reorder');
+      
+      // Cache busting
+      await fetch('/api/admin/revalidate?path=/order&path=/', { method: 'POST' }).catch(() => {});
+      
+      setFrontendUISections(updated);
+      
+      // Trigger router refresh
+      router.refresh();
     } catch (err) {
-      console.error('Failed to reorder section', err);
-      alert('Failed to reorder section');
-    }
-  };
-
-  const saveFrontendConfig = async () => {
-    setSavingFrontendConfig(true);
-    try {
-      const res = await fetch('/api/admin/tenant-settings', {
-        method: 'PUT',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({
-          frontendConfig,
-        }),
-      });
-      if (!res.ok) throw new Error('Failed to save frontend config');
-      alert('Frontend settings saved successfully!');
-    } catch (err) {
-      console.error('Failed to save frontend config', err);
-      alert('Failed to save frontend settings');
-    } finally {
-      setSavingFrontendConfig(false);
+      console.error('Failed to reorder sections', err);
+      alert('Failed to reorder sections');
+      await fetchFrontendUISections();
     }
   };
 
@@ -1723,452 +1719,92 @@ export default function MenuEditorPage() {
               )}
             </div>
           ) : activeTab === 'frontend' ? (
-            <div className="max-w-6xl mx-auto">
-              {/* Sub-Tabs */}
-              <div className="mb-6 border-b border-gray-200">
-                <nav className="-mb-px flex space-x-8">
-                  <button
-                    onClick={() => setFrontendSubTab('text')}
-                    className={`whitespace-nowrap py-4 px-1 border-b-2 font-medium text-sm ${
-                      frontendSubTab === 'text'
-                        ? 'border-blue-500 text-blue-600'
-                        : 'border-transparent text-gray-500 hover:text-gray-700 hover:border-gray-300'
-                    }`}
-                  >
-                    Text Customization
-                  </button>
-                  <button
-                    onClick={() => {
-                      setFrontendSubTab('sections');
-                    }}
-                    className={`whitespace-nowrap py-4 px-1 border-b-2 font-medium text-sm ${
-                      frontendSubTab === 'sections'
-                        ? 'border-blue-500 text-blue-600'
-                        : 'border-transparent text-gray-500 hover:text-gray-700 hover:border-gray-300'
-                    }`}
-                  >
-                    Promotional Sections
-                  </button>
-                </nav>
-              </div>
-
-              {frontendSubTab === 'text' ? (
-                <div className="bg-white rounded-lg shadow-md p-6">
-                  <h2 className="text-2xl font-semibold text-gray-900 mb-6">Frontend Text Customization</h2>
-                  <p className="text-gray-600 mb-6">Customize the text displayed in various sections on your customer-facing order page. Changes sync automatically when you save.</p>
-
-                  {/* Featured Carousel Section */}
-                  <div className="space-y-6">
-                  <div className="border-b border-gray-200 pb-6">
-                    <h3 className="text-lg font-semibold text-gray-900 mb-4 flex items-center gap-2">
-                      <span className="text-amber-500">⭐</span>
-                      Featured Items Carousel
-                    </h3>
-                    <p className="text-sm text-gray-500 mb-4">This section appears at the top of your order page and displays menu items marked as &quot;Featured&quot; in the Menu Items tab.</p>
-
-                    <div className="space-y-4">
-                      <div>
-                        <label className="block text-sm font-medium text-gray-700 mb-2">
-                          Section Title
-                        </label>
-                        <input
-                          type="text"
-                          value={frontendConfig.featuredCarousel.title}
-                          onChange={(e) => setFrontendConfig({
-                            ...frontendConfig,
-                            featuredCarousel: {
-                              ...frontendConfig.featuredCarousel,
-                              title: e.target.value,
-                            },
-                          })}
-                          className="w-full px-4 py-2 border border-gray-300 rounded-md shadow-sm focus:ring-blue-500 focus:border-blue-500"
-                          placeholder="e.g., Chef Recommends, Featured Specials, Today's Picks"
-                        />
-                        <p className="mt-1 text-sm text-gray-500">Main heading shown above the carousel</p>
-                      </div>
-
-                      <div>
-                        <label className="block text-sm font-medium text-gray-700 mb-2">
-                          Section Subtitle
-                        </label>
-                        <input
-                          type="text"
-                          value={frontendConfig.featuredCarousel.subtitle}
-                          onChange={(e) => setFrontendConfig({
-                            ...frontendConfig,
-                            featuredCarousel: {
-                              ...frontendConfig.featuredCarousel,
-                              subtitle: e.target.value,
-                            },
-                          })}
-                          className="w-full px-4 py-2 border border-gray-300 rounded-md shadow-sm focus:ring-blue-500 focus:border-blue-500"
-                          placeholder="e.g., Handpicked favorites from our kitchen"
-                        />
-                        <p className="mt-1 text-sm text-gray-500">Description shown below the title</p>
-                      </div>
-
-                      {/* Preview Box */}
-                      <div className="mt-6 border border-gray-200 rounded-lg p-4 bg-gradient-to-br from-gray-900 to-gray-800">
-                        <div className="mb-2">
-                          <h4 className="text-2xl font-semibold text-white">
-                            {frontendConfig.featuredCarousel.title || 'Chef Recommends'}
-                          </h4>
-                          <p className="text-sm text-white/60">
-                            {frontendConfig.featuredCarousel.subtitle || 'Handpicked favorites from our kitchen'}
-                          </p>
-                        </div>
-                        <div className="text-xs text-gray-400 mt-4">
-                          ↑ Live Preview - This is how it will appear on your order page
-                        </div>
-                      </div>
-                    </div>
-                  </div>
-
-                  {/* Hero Section */}
-                  <div className="border-b border-gray-200 pb-6">
-                    <h3 className="text-lg font-semibold text-gray-900 mb-4 flex items-center gap-2">
-                      <span className="text-blue-500">🏠</span>
-                      Hero Section
-                    </h3>
-                    <p className="text-sm text-gray-500 mb-4">Main hero section at the top of your order page</p>
-
-                    <div className="space-y-4">
-                      <div>
-                        <label className="block text-sm font-medium text-gray-700 mb-2">
-                          Hero Subtitle
-                        </label>
-                        <input
-                          type="text"
-                          value={frontendConfig.heroSection.subtitle}
-                          onChange={(e) => setFrontendConfig({
-                            ...frontendConfig,
-                            heroSection: {
-                              ...frontendConfig.heroSection,
-                              subtitle: e.target.value,
-                            },
-                          })}
-                          className="w-full px-4 py-2 border border-gray-300 rounded-md shadow-sm focus:ring-blue-500 focus:border-blue-500"
-                          placeholder="e.g., Authentic flavors crafted with passion"
-                        />
-                        <p className="mt-1 text-sm text-gray-500">Tagline shown below your restaurant name</p>
-                      </div>
-
-                      <div className="grid grid-cols-2 gap-4">
-                        <div>
-                          <label className="block text-sm font-medium text-gray-700 mb-2">
-                            Primary CTA Button
-                          </label>
-                          <input
-                            type="text"
-                            value={frontendConfig.heroSection.primaryCTA}
-                            onChange={(e) => setFrontendConfig({
-                              ...frontendConfig,
-                              heroSection: {
-                                ...frontendConfig.heroSection,
-                                primaryCTA: e.target.value,
-                              },
-                            })}
-                            className="w-full px-4 py-2 border border-gray-300 rounded-md shadow-sm focus:ring-blue-500 focus:border-blue-500"
-                            placeholder="e.g., ORDER NOW"
-                          />
-                        </div>
-
-                        <div>
-                          <label className="block text-sm font-medium text-gray-700 mb-2">
-                            Secondary CTA Button
-                          </label>
-                          <input
-                            type="text"
-                            value={frontendConfig.heroSection.secondaryCTA}
-                            onChange={(e) => setFrontendConfig({
-                              ...frontendConfig,
-                              heroSection: {
-                                ...frontendConfig.heroSection,
-                                secondaryCTA: e.target.value,
-                              },
-                            })}
-                            className="w-full px-4 py-2 border border-gray-300 rounded-md shadow-sm focus:ring-blue-500 focus:border-blue-500"
-                            placeholder="e.g., VIEW MENU"
-                          />
-                        </div>
-                      </div>
-                    </div>
-                  </div>
-
-                  {/* Quality Section */}
-                  <div className="border-b border-gray-200 pb-6">
-                    <h3 className="text-lg font-semibold text-gray-900 mb-4 flex items-center gap-2">
-                      <span className="text-green-500">✨</span>
-                      Quality/About Section
-                    </h3>
-                    <p className="text-sm text-gray-500 mb-4">&quot;WE COOK FOR YOU&quot; section that highlights your quality and values</p>
-
-                    <div className="space-y-4">
-                      <div>
-                        <label className="block text-sm font-medium text-gray-700 mb-2">
-                          Section Title
-                        </label>
-                        <input
-                          type="text"
-                          value={frontendConfig.qualitySection.title}
-                          onChange={(e) => setFrontendConfig({
-                            ...frontendConfig,
-                            qualitySection: {
-                              ...frontendConfig.qualitySection,
-                              title: e.target.value,
-                            },
-                          })}
-                          className="w-full px-4 py-2 border border-gray-300 rounded-md shadow-sm focus:ring-blue-500 focus:border-blue-500"
-                          placeholder="e.g., WE COOK FOR YOU, OUR STORY"
-                        />
-                      </div>
-
-                      <div>
-                        <label className="block text-sm font-medium text-gray-700 mb-2">
-                          Description
-                        </label>
-                        <textarea
-                          value={frontendConfig.qualitySection.description}
-                          onChange={(e) => setFrontendConfig({
-                            ...frontendConfig,
-                            qualitySection: {
-                              ...frontendConfig.qualitySection,
-                              description: e.target.value,
-                            },
-                          })}
-                          rows={2}
-                          className="w-full px-4 py-2 border border-gray-300 rounded-md shadow-sm focus:ring-blue-500 focus:border-blue-500"
-                          placeholder="e.g., Fresh ingredients, authentic recipes, made with passion every single day"
-                        />
-                      </div>
-                    </div>
-                  </div>
-
-                  {/* Catering Panel */}
-                  <div className="border-b border-gray-200 pb-6">
-                    <h3 className="text-lg font-semibold text-gray-900 mb-4 flex items-center gap-2">
-                      <span className="text-orange-500">🎉</span>
-                      Catering Panel
-                    </h3>
-                    <p className="text-sm text-gray-500 mb-4">Title shown on the catering services panel</p>
-
-                    <div>
-                      <label className="block text-sm font-medium text-gray-700 mb-2">
-                        Panel Title
-                      </label>
-                      <input
-                        type="text"
-                        value={frontendConfig.cateringPanel.title}
-                        onChange={(e) => setFrontendConfig({
-                          ...frontendConfig,
-                          cateringPanel: {
-                            ...frontendConfig.cateringPanel,
-                            title: e.target.value,
-                          },
-                        })}
-                        className="w-full px-4 py-2 border border-gray-300 rounded-md shadow-sm focus:ring-blue-500 focus:border-blue-500"
-                        placeholder="e.g., 🎉 Catering Services, Event Catering, Party Packages"
-                      />
-                    </div>
-                  </div>
-
-                  {/* Rewards Panel */}
-                  <div className="border-b border-gray-200 pb-6">
-                    <h3 className="text-lg font-semibold text-gray-900 mb-4 flex items-center gap-2">
-                      <span className="text-purple-500">⭐</span>
-                      Rewards Program Panel
-                    </h3>
-                    <p className="text-sm text-gray-500 mb-4">Text shown on the rewards/membership panel</p>
-
-                    <div className="space-y-4">
-                      <div>
-                        <label className="block text-sm font-medium text-gray-700 mb-2">
-                          Panel Title
-                        </label>
-                        <input
-                          type="text"
-                          value={frontendConfig.rewardsPanel.title}
-                          onChange={(e) => setFrontendConfig({
-                            ...frontendConfig,
-                            rewardsPanel: {
-                              ...frontendConfig.rewardsPanel,
-                              title: e.target.value,
-                            },
-                          })}
-                          className="w-full px-4 py-2 border border-gray-300 rounded-md shadow-sm focus:ring-blue-500 focus:border-blue-500"
-                          placeholder="e.g., ⭐ Rewards Program, VIP Club, Member Perks"
-                        />
-                      </div>
-
-                      <div>
-                        <label className="block text-sm font-medium text-gray-700 mb-2">
-                          Panel Subtitle
-                        </label>
-                        <input
-                          type="text"
-                          value={frontendConfig.rewardsPanel.subtitle}
-                          onChange={(e) => setFrontendConfig({
-                            ...frontendConfig,
-                            rewardsPanel: {
-                              ...frontendConfig.rewardsPanel,
-                              subtitle: e.target.value,
-                            },
-                          })}
-                          className="w-full px-4 py-2 border border-gray-300 rounded-md shadow-sm focus:ring-blue-500 focus:border-blue-500"
-                          placeholder="e.g., Unlock Exclusive Benefits, Join the Club"
-                        />
-                      </div>
-                    </div>
-                  </div>
-
-                  {/* Save Button */}
-                  <div className="flex justify-end gap-3 pt-4">
-                    <button
-                      type="button"
-                      onClick={() => {
-                        // Reset to defaults
-                        setFrontendConfig({
-                          featuredCarousel: {
-                            title: 'Chef Recommends',
-                            subtitle: 'Handpicked favorites from our kitchen',
-                          },
-                          heroSection: {
-                            subtitle: 'Authentic flavors crafted with passion',
-                            primaryCTA: 'ORDER NOW',
-                            secondaryCTA: 'VIEW MENU',
-                          },
-                          qualitySection: {
-                            title: 'WE COOK FOR YOU',
-                            description: 'Fresh ingredients, authentic recipes, made with passion every single day',
-                          },
-                          cateringPanel: {
-                            title: '🎉 Catering Services',
-                          },
-                          rewardsPanel: {
-                            title: '⭐ Rewards Program',
-                            subtitle: 'Unlock Exclusive Benefits',
-                          },
-                        });
-                      }}
-                      className="px-6 py-2 border border-gray-300 rounded-md shadow-sm text-sm font-medium text-gray-700 bg-white hover:bg-gray-50"
-                    >
-                      Reset to Defaults
-                    </button>
-                    <button
-                      onClick={saveFrontendConfig}
-                      disabled={savingFrontendConfig}
-                      className="px-6 py-2 border border-transparent rounded-md shadow-sm text-sm font-medium text-white bg-blue-600 hover:bg-blue-700 disabled:opacity-50 disabled:cursor-not-allowed"
-                    >
-                      {savingFrontendConfig ? 'Saving...' : 'Save Changes'}
-                    </button>
-                  </div>
-
-                  {/* Info Box */}
-                  <div className="mt-6 bg-blue-50 border border-blue-200 rounded-lg p-4">
-                    <h4 className="text-sm font-semibold text-blue-900 mb-2">How to add featured items:</h4>
-                    <ol className="text-sm text-blue-800 space-y-1 list-decimal list-inside">
-                      <li>Go to the &quot;Menu Items&quot; tab</li>
-                      <li>Edit any menu item</li>
-                      <li>Check the &quot;Featured&quot; checkbox</li>
-                      <li>Save the item - it will now appear in this carousel!</li>
-                    </ol>
-                    <p className="text-sm text-blue-700 mt-3">
-                      💡 <strong>Tip:</strong> Changes sync automatically when customers refresh the page (Cmd+R / F5)
-                    </p>
-                  </div>
+            /* Frontend Sections Management - Grocery Bundle Style */
+            <div className="space-y-6">
+              <div className="flex justify-between items-center mb-4">
+                <div>
+                  <h2 className="text-2xl font-semibold text-gray-900">Frontend Section Order</h2>
+                  <p className="text-gray-600 mt-1">Reorder and customize sections that appear on your customer-facing order page. Drag sections up/down to change their display order.</p>
                 </div>
               </div>
+
+              {loading ? (
+                <div className="text-center py-12">Loading sections...</div>
+              ) : frontendUISections.length === 0 ? (
+                <div className="bg-white rounded-lg shadow p-8 text-center">
+                  <p className="text-gray-500">No sections configured yet. Sections will be initialized automatically.</p>
+                </div>
               ) : (
-                // Promotional Sections Management
-                <div>
-                  <div className="mb-6 flex items-center justify-between">
-                    <div>
-                      <h2 className="text-2xl font-semibold text-gray-900">Promotional Sections</h2>
-                      <p className="text-gray-600 mt-1">Manage promotional banners and sections that appear on the order page (grocery banner, promotional billboards, etc.)</p>
-                    </div>
-                    <button
-                      onClick={handleAddFrontendSection}
-                      className="px-4 py-2 bg-blue-600 text-white rounded-md hover:bg-blue-700 flex items-center gap-2"
-                    >
-                      <Plus className="h-4 w-4" />
-                      Add Section
-                    </button>
-                  </div>
-
-                  {frontendSections.length === 0 ? (
-                    <div className="bg-white rounded-lg shadow p-8 text-center">
-                      <p className="text-gray-500">No promotional sections yet. Click &quot;Add Section&quot; to create your first one!</p>
-                    </div>
-                  ) : (
-                    <div className="space-y-4">
-                      {frontendSections.map((section, index) => (
-                        <div
-                          key={section.id}
-                          className="bg-white rounded-lg shadow p-6 border-2 border-gray-200"
+                <div className="grid gap-4 sm:grid-cols-2 lg:grid-cols-3">
+                  {frontendUISections
+                    .sort((a, b) => a.position - b.position)
+                    .map((section, index) => (
+                    <div key={section.id} className="bg-white rounded-lg shadow hover:shadow-md transition-shadow p-4 border-2 border-blue-200">
+                      {section.content?.image && (
+                        <img
+                          src={section.content.image}
+                          alt={section.name}
+                          className="w-full h-32 object-cover rounded mb-3"
+                        />
+                      )}
+                      {section.content?.badge && (
+                        <span className="inline-block bg-yellow-100 text-yellow-800 text-xs px-2 py-1 rounded mb-2">
+                          {section.content.badge}
+                        </span>
+                      )}
+                      <div className="flex items-center gap-2 mb-2">
+                        <h4 className="font-semibold text-gray-900 flex-1">{section.name}</h4>
+                        <span className={`px-2 py-1 rounded-full text-xs font-medium ${
+                          section.enabled
+                            ? 'bg-green-100 text-green-800'
+                            : 'bg-gray-100 text-gray-600'
+                        }`}>
+                          {section.enabled ? 'On' : 'Off'}
+                        </span>
+                      </div>
+                      {section.content?.title && (
+                        <p className="text-sm text-gray-600 mb-2 line-clamp-2">{section.content.title}</p>
+                      )}
+                      {section.content?.subtitle && (
+                        <p className="text-xs text-gray-500 mb-2 line-clamp-1">{section.content.subtitle}</p>
+                      )}
+                      <div className="text-xs text-gray-500 mb-3">
+                        Position: {section.position + 1}
+                      </div>
+                      <div className="flex gap-2">
+                        <button
+                          onClick={() => handleMoveSection(index, -1)}
+                          disabled={index === 0}
+                          className="flex-1 text-sm px-3 py-2 bg-gray-100 text-gray-700 rounded hover:bg-gray-200 disabled:opacity-30 disabled:cursor-not-allowed"
+                          title="Move up"
                         >
-                          <div className="flex items-start justify-between">
-                            <div className="flex-1">
-                              <div className="flex items-center gap-3">
-                                <h3 className="text-lg font-semibold text-gray-900">{section.name || 'Untitled Section'}</h3>
-                                <span className={`px-3 py-1 rounded-full text-xs font-medium ${
-                                  section.enabled
-                                    ? 'bg-green-100 text-green-800'
-                                    : 'bg-gray-100 text-gray-600'
-                                }`}>
-                                  {section.enabled ? 'Enabled' : 'Disabled'}
-                                </span>
-                                <span className="px-3 py-1 rounded-full text-xs font-medium bg-blue-100 text-blue-800">
-                                  {section.type.replace(/_/g, ' ')}
-                                </span>
-                              </div>
-                              <p className="text-sm text-gray-500 mt-2">
-                                Position: {section.position + 1}
-                                {section.insertAfter !== null && ` • Inserts after menu section ${section.insertAfter + 1}`}
-                              </p>
-                              {section.content?.title && (
-                                <p className="text-sm text-gray-700 mt-2 font-medium">{section.content.title}</p>
-                              )}
-                            </div>
-
-                            <div className="flex items-center gap-2">
-                              {/* Reorder buttons */}
-                              <button
-                                onClick={() => handleReorderFrontendSection(section.id, 'up')}
-                                disabled={index === 0}
-                                className="p-2 text-gray-600 hover:text-blue-600 disabled:opacity-30 disabled:cursor-not-allowed"
-                                title="Move up"
-                              >
-                                ↑
-                              </button>
-                              <button
-                                onClick={() => handleReorderFrontendSection(section.id, 'down')}
-                                disabled={index === frontendSections.length - 1}
-                                className="p-2 text-gray-600 hover:text-blue-600 disabled:opacity-30 disabled:cursor-not-allowed"
-                                title="Move down"
-                              >
-                                ↓
-                              </button>
-
-                              <button
-                                onClick={() => setEditingFrontendSection(section)}
-                                className="p-2 text-blue-600 hover:text-blue-800"
-                                title="Edit"
-                              >
-                                <Edit2 className="h-4 w-4" />
-                              </button>
-                              <button
-                                onClick={() => handleDeleteFrontendSection(section.id)}
-                                className="p-2 text-red-600 hover:text-red-800"
-                                title="Delete"
-                              >
-                                <Trash2 className="h-4 w-4" />
-                              </button>
-                            </div>
-                          </div>
-                        </div>
-                      ))}
+                          ↑ Up
+                        </button>
+                        <button
+                          onClick={() => handleMoveSection(index, 1)}
+                          disabled={index === frontendUISections.length - 1}
+                          className="flex-1 text-sm px-3 py-2 bg-gray-100 text-gray-700 rounded hover:bg-gray-200 disabled:opacity-30 disabled:cursor-not-allowed"
+                          title="Move down"
+                        >
+                          ↓ Down
+                        </button>
+                      </div>
+                      <div className="flex gap-2 mt-2">
+                        <button
+                          onClick={() => setEditingFrontendSection(section)}
+                          className="flex-1 text-sm px-3 py-2 bg-blue-600 text-white rounded hover:bg-blue-700"
+                        >
+                          Edit
+                        </button>
+                        <button
+                          onClick={() => handleDeleteFrontendSection(section.id)}
+                          className="flex-1 text-sm px-3 py-2 bg-red-600 text-white rounded hover:bg-red-700"
+                        >
+                          Delete
+                        </button>
+                      </div>
                     </div>
-                  )}
+                  ))}
                 </div>
               )}
             </div>
@@ -3504,25 +3140,6 @@ export default function MenuEditorPage() {
                       </select>
                     </div>
 
-                    <div>
-                      <label className="block text-sm font-medium text-gray-700 mb-1">
-                        Insert After Menu Section #
-                      </label>
-                      <input
-                        type="number"
-                        min="0"
-                        value={editingFrontendSection.insertAfter ?? ''}
-                        onChange={(e) =>
-                          setEditingFrontendSection({
-                            ...editingFrontendSection,
-                            insertAfter: e.target.value ? parseInt(e.target.value) : null,
-                          })
-                        }
-                        className="w-full px-3 py-2 border border-gray-300 rounded-md"
-                        placeholder="Leave empty for default position"
-                      />
-                      <p className="text-xs text-gray-500 mt-1">Which menu section should this appear after? (0-based index)</p>
-                    </div>
 
                     <div className="col-span-2">
                       <label className="flex items-center">
@@ -3545,7 +3162,7 @@ export default function MenuEditorPage() {
                       <h4 className="font-medium text-gray-900 mb-3">Content Settings</h4>
 
                       <div className="space-y-3">
-                        <div>
+                        <div className="col-span-2">
                           <label className="block text-sm font-medium text-gray-700 mb-1">Title</label>
                           <input
                             type="text"
@@ -3558,6 +3175,22 @@ export default function MenuEditorPage() {
                             }
                             className="w-full px-3 py-2 border border-gray-300 rounded-md"
                             placeholder="Section title"
+                          />
+                        </div>
+
+                        <div className="col-span-2">
+                          <label className="block text-sm font-medium text-gray-700 mb-1">Description</label>
+                          <textarea
+                            value={editingFrontendSection.content?.description || ''}
+                            onChange={(e) =>
+                              setEditingFrontendSection({
+                                ...editingFrontendSection,
+                                content: { ...editingFrontendSection.content, description: e.target.value },
+                              })
+                            }
+                            className="w-full px-3 py-2 border border-gray-300 rounded-md"
+                            rows={3}
+                            placeholder="Section description"
                           />
                         </div>
 
@@ -3574,6 +3207,22 @@ export default function MenuEditorPage() {
                             }
                             className="w-full px-3 py-2 border border-gray-300 rounded-md"
                             placeholder="Section subtitle"
+                          />
+                        </div>
+
+                        <div>
+                          <label className="block text-sm font-medium text-gray-700 mb-1">Badge (optional)</label>
+                          <input
+                            type="text"
+                            value={editingFrontendSection.content?.badge || ''}
+                            onChange={(e) =>
+                              setEditingFrontendSection({
+                                ...editingFrontendSection,
+                                content: { ...editingFrontendSection.content, badge: e.target.value },
+                              })
+                            }
+                            className="w-full px-3 py-2 border border-gray-300 rounded-md"
+                            placeholder="e.g., Popular, Special, New"
                           />
                         </div>
 
@@ -3609,7 +3258,7 @@ export default function MenuEditorPage() {
                           />
                         </div>
 
-                        <div>
+                        <div className="col-span-2">
                           <label className="block text-sm font-medium text-gray-700 mb-1">Image URL</label>
                           <input
                             type="text"
@@ -3622,6 +3271,48 @@ export default function MenuEditorPage() {
                             }
                             className="w-full px-3 py-2 border border-gray-300 rounded-md"
                             placeholder="https://..."
+                          />
+                          {editingFrontendSection.content?.image && (
+                            <img
+                              src={editingFrontendSection.content.image}
+                              alt="Preview"
+                              className="mt-2 w-full h-32 object-cover rounded border border-gray-300"
+                              onError={(e) => {
+                                (e.target as HTMLImageElement).style.display = 'none';
+                              }}
+                            />
+                          )}
+                        </div>
+
+                        <div>
+                          <label className="block text-sm font-medium text-gray-700 mb-1">Background Color (optional)</label>
+                          <input
+                            type="text"
+                            value={editingFrontendSection.content?.backgroundColor || ''}
+                            onChange={(e) =>
+                              setEditingFrontendSection({
+                                ...editingFrontendSection,
+                                content: { ...editingFrontendSection.content, backgroundColor: e.target.value },
+                              })
+                            }
+                            className="w-full px-3 py-2 border border-gray-300 rounded-md"
+                            placeholder="#8B0000 or gradient-from"
+                          />
+                        </div>
+
+                        <div>
+                          <label className="block text-sm font-medium text-gray-700 mb-1">Text Color (optional)</label>
+                          <input
+                            type="text"
+                            value={editingFrontendSection.content?.textColor || ''}
+                            onChange={(e) =>
+                              setEditingFrontendSection({
+                                ...editingFrontendSection,
+                                content: { ...editingFrontendSection.content, textColor: e.target.value },
+                              })
+                            }
+                            className="w-full px-3 py-2 border border-gray-300 rounded-md"
+                            placeholder="#FFFFFF"
                           />
                         </div>
                       </div>
@@ -3652,4 +3343,5 @@ export default function MenuEditorPage() {
     </DashboardLayout>
   );
 }
+
 

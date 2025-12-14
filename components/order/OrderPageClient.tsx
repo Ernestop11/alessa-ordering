@@ -105,6 +105,27 @@ interface CustomerRewardsData {
   }>;
 }
 
+interface FrontendUISection {
+  id: string;
+  name: string;
+  type: 'hero' | 'quickInfo' | 'featuredCarousel' | 'menuSections' | 'promoBanner1' | 'groceryBanner' | 'weCookBanner' | 'dealStrip' | 'qualityBanner' | 'reviewsStrip';
+  position: number;
+  enabled: boolean;
+  content: {
+    title?: string;
+    subtitle?: string;
+    description?: string;
+    buttonText?: string;
+    buttonLink?: string;
+    image?: string;
+    badge?: string;
+    backgroundColor?: string;
+    textColor?: string;
+    gradientFrom?: string;
+    gradientTo?: string;
+  };
+}
+
 interface OrderPageClientProps {
   sections: OrderMenuSection[];
   featuredItems?: OrderMenuItem[];
@@ -121,6 +142,7 @@ interface OrderPageClientProps {
       subtitle?: string;
     };
   };
+  frontendUISections?: FrontendUISection[];
 }
 
 type LayoutView = 'grid' | 'list' | 'cards';
@@ -238,6 +260,7 @@ export default function OrderPageClient({
   isOpen = false, // Default to closed - server should always pass explicit value
   closedMessage,
   frontendConfig,
+  frontendUISections = [],
 }: OrderPageClientProps) {
   const searchParams = useSearchParams();
   const router = useRouter();
@@ -956,6 +979,13 @@ export default function OrderPageClient({
         .filter((item): item is NonNullable<typeof item> => item !== null), // Remove nulls
     }));
   }, [sections]);
+
+  // Build ordered render queue based on frontendUISections configuration
+  // This determines the order and which promotional banners to show
+  const getSectionConfig = useCallback((type: string) => {
+    if (!frontendUISections || frontendUISections.length === 0) return null;
+    return frontendUISections.find(s => s.type === type && s.enabled) || null;
+  }, [frontendUISections]);
 
   const [isHeroTransitioning, setIsHeroTransitioning] = useState(false);
   const [showMembershipPanel, setShowMembershipPanel] = useState(false);
@@ -2303,20 +2333,295 @@ export default function OrderPageClient({
         
         {/* Cart Launcher - Only rendered in root layout, header buttons trigger it */}
 
-        {carouselItems.length > 0 && (
-          <FeaturedCarousel
-            items={carouselItems}
-            onAddToCart={handleCarouselAddToCart}
-            title={frontendConfig?.featuredCarousel?.title}
-            subtitle={frontendConfig?.featuredCarousel?.subtitle}
-          />
-        )}
+        {carouselItems.length > 0 && (() => {
+          // Get featured carousel config from frontendUISections
+          const featuredCarouselConfig = getSectionConfig('featuredCarousel');
+          const carouselTitle = featuredCarouselConfig?.content?.title || frontendConfig?.featuredCarousel?.title || 'Chef Recommends';
+          const carouselSubtitle = featuredCarouselConfig?.content?.subtitle || frontendConfig?.featuredCarousel?.subtitle || 'Handpicked favorites from our kitchen';
+          
+          // Only show if enabled (default to enabled if no config)
+          if (featuredCarouselConfig && !featuredCarouselConfig.enabled) {
+            return null;
+          }
+
+          return (
+            <FeaturedCarousel
+              items={carouselItems}
+              onAddToCart={handleCarouselAddToCart}
+              title={carouselTitle}
+              subtitle={carouselSubtitle}
+            />
+          );
+        })()}
 
         {/* Menu Sections with Promotional Banners Between */}
-        {enrichedSections.map((section, sectionIndex) => (
+        {enrichedSections.map((section, sectionIndex) => {
+          // Get promotional banner config for this section index
+          const getPromoBannerForIndex = (index: number): FrontendUISection | null => {
+            if (!frontendUISections || frontendUISections.length === 0) return null;
+            // Map section indices to banner types (legacy mapping for backward compatibility)
+            const bannerMap: Record<number, string> = {
+              1: 'promoBanner1',
+              2: 'groceryBanner',
+              3: 'weCookBanner',
+              5: 'dealStrip',
+              7: 'qualityBanner',
+              9: 'reviewsStrip',
+            };
+            const bannerType = bannerMap[index];
+            if (!bannerType) return null;
+            return frontendUISections.find(s => s.type === bannerType && s.enabled) || null;
+          };
+
+          const promoBanner = getPromoBannerForIndex(sectionIndex);
+
+          return (
           <div key={section.id}>
             {/* Promotional Billboard Banner - After first section - Dynamic from Bundles */}
             {sectionIndex === 1 && (() => {
+              // Use saved config if available, otherwise fallback to bundle logic
+              if (promoBanner && promoBanner.type === 'promoBanner1') {
+                const config = promoBanner.content;
+                // Get first bundle for fallback
+                const featuredBundle = popularPackages.find(pkg =>
+                  (pkg.category === 'bundle' || pkg.category === 'popular') && pkg.available
+                ) || popularPackages[0];
+
+                if (!featuredBundle && !config.title) return null;
+
+                const displayImage = config.image || featuredBundle?.image || cycleFallbackImage(40);
+                const title = config.title || featuredBundle?.name || '';
+                const description = config.description || config.subtitle || featuredBundle?.description || '';
+                const buttonText = config.buttonText || 'Order Bundle';
+                const badge = config.badge || featuredBundle?.badge;
+
+                return (
+                  <div 
+                    className="mb-10 relative overflow-hidden rounded-3xl p-1"
+                    style={{
+                      background: config.gradientFrom && config.gradientTo
+                        ? `linear-gradient(to right, ${config.gradientFrom}, ${config.gradientTo})`
+                        : config.backgroundColor || 'linear-gradient(to right, #8B0000, #B22222, #6B0F0F)',
+                    }}
+                  >
+                    <div className="relative overflow-hidden rounded-[22px] bg-gradient-to-br from-[#1a0a0a] to-[#2a1515] p-6 md:p-8">
+                      <div className="relative grid md:grid-cols-2 gap-6 items-center">
+                        <div>
+                          {badge && (
+                            <span className="inline-block px-4 py-1.5 rounded-full bg-[#FFD700]/20 text-[#FFD700] text-xs font-bold uppercase tracking-wider mb-4">
+                              {badge}
+                            </span>
+                          )}
+                          {title && (
+                            <h3 className="text-3xl md:text-4xl font-black text-white mb-3">
+                              {title}
+                            </h3>
+                          )}
+                          {description && (
+                            <p className="text-white/70 mb-4">{description}</p>
+                          )}
+                          {buttonText && (
+                            <button
+                              onClick={() => {
+                                if (config.buttonLink) {
+                                  window.location.href = config.buttonLink;
+                                } else if (featuredBundle) {
+                                  setShowCateringPanel(false);
+                                  setCustomModal({
+                                    item: {
+                                      id: featuredBundle.id,
+                                      name: featuredBundle.name,
+                                      description: featuredBundle.description,
+                                      price: featuredBundle.price || featuredBundle.pricePerGuest,
+                                      category: 'bundle',
+                                      available: featuredBundle.available,
+                                      displayImage: displayImage,
+                                      sectionType: 'SPECIAL',
+                                      displayGallery: featuredBundle.gallery && featuredBundle.gallery.length > 0
+                                        ? featuredBundle.gallery
+                                        : [displayImage],
+                                    },
+                                    config: {
+                                      removals: featuredBundle.customizationRemovals || [],
+                                      addons: featuredBundle.customizationAddons || [],
+                                    },
+                                  });
+                                }
+                              }}
+                              className="mt-6 inline-flex items-center gap-2 px-8 py-4 rounded-full bg-gradient-to-r from-[#FFD700] to-[#FFA500] text-[#8B0000] font-black text-lg shadow-xl hover:scale-105 transition-transform"
+                            >
+                              {buttonText}
+                              <svg className="w-5 h-5" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M13 7l5 5m0 0l-5 5m5-5H6" />
+                              </svg>
+                            </button>
+                          )}
+                        </div>
+                        {displayImage && (
+                          <div className="relative h-48 md:h-64 rounded-2xl overflow-hidden bg-gradient-to-br from-[#2a1515] to-[#1a0a0a]">
+                            <img
+                              src={displayImage}
+                              alt={title}
+                              className="w-full h-full object-cover"
+                              onError={(e) => {
+                                const target = e.target as HTMLImageElement;
+                                target.src = cycleFallbackImage(40);
+                              }}
+                            />
+                          </div>
+                        )}
+                      </div>
+                    </div>
+                  </div>
+                );
+              }
+
+              // Fallback to original bundle logic
+              const featuredBundle = popularPackages.find(pkg =>
+                (pkg.category === 'bundle' || pkg.category === 'popular') && pkg.available
+              ) || popularPackages[0];
+
+              if (!featuredBundle) return null;
+
+              const displayImage = featuredBundle.image || cycleFallbackImage(40);
+              const originalPrice = (featuredBundle as any).originalPrice || null;
+              const savings = originalPrice && featuredBundle.price
+                ? originalPrice - featuredBundle.price
+                : null;
+
+              return (
+                <div className="mb-10 relative overflow-hidden rounded-3xl bg-gradient-to-r from-[#8B0000] via-[#B22222] to-[#6B0F0F] p-1">
+                  <div className="relative overflow-hidden rounded-[22px] bg-gradient-to-br from-[#1a0a0a] to-[#2a1515] p-6 md:p-8">
+                    {/* Texture overlay */}
+                    <div className="absolute inset-0 opacity-20" style={{
+                      backgroundImage: `url("data:image/svg+xml,%3Csvg viewBox='0 0 400 400' xmlns='http://www.w3.org/2000/svg'%3E%3Cfilter id='noiseFilter'%3E%3CfeTurbulence type='fractalNoise' baseFrequency='0.9' numOctaves='3' stitchTiles='stitch'/%3E%3C/filter%3E%3Crect width='100%25' height='100%25' filter='url(%23noiseFilter)'/%3E%3C/svg%3E")`,
+                    }} />
+
+                    {/* Sparkle decorations */}
+                    <div className="absolute top-4 left-4 text-2xl animate-pulse">✨</div>
+                    <div className="absolute top-6 right-8 text-xl animate-pulse" style={{ animationDelay: '0.5s' }}>⭐</div>
+                    <div className="absolute bottom-4 right-4 text-2xl animate-pulse" style={{ animationDelay: '1s' }}>✨</div>
+
+                    <div className="relative grid md:grid-cols-2 gap-6 items-center">
+                      <div>
+                        {featuredBundle.badge && (
+                          <span className="inline-block px-4 py-1.5 rounded-full bg-[#FFD700]/20 text-[#FFD700] text-xs font-bold uppercase tracking-wider mb-4">
+                            {featuredBundle.badge}
+                          </span>
+                        )}
+                        <h3 className="text-3xl md:text-4xl font-black text-white mb-3">
+                          {featuredBundle.name}
+                        </h3>
+                        <p className="text-white/70 mb-4">
+                          {featuredBundle.description}
+                        </p>
+                        <div className="flex items-center gap-4">
+                          <span className="text-4xl font-black text-[#FFD700]">
+                            ${featuredBundle.price ? featuredBundle.price.toFixed(2) : featuredBundle.pricePerGuest.toFixed(2)}
+                          </span>
+                          {originalPrice && (
+                            <>
+                              <span className="text-lg text-white/50 line-through">
+                                ${originalPrice.toFixed(2)}
+                              </span>
+                              {savings && savings > 0 && (
+                                <span className="px-3 py-1 rounded-full bg-[#FF4444] text-white text-sm font-bold">
+                                  Save ${savings.toFixed(2)}!
+                                </span>
+                              )}
+                            </>
+                          )}
+                        </div>
+                        <button
+                          onClick={() => {
+                            setShowCateringPanel(false);
+                            setCustomModal({
+                              item: {
+                                id: featuredBundle.id,
+                                name: featuredBundle.name,
+                                description: featuredBundle.description,
+                                price: featuredBundle.price || featuredBundle.pricePerGuest,
+                                category: 'bundle',
+                                available: featuredBundle.available,
+                                displayImage: displayImage,
+                                sectionType: 'SPECIAL',
+                                displayGallery: featuredBundle.gallery && featuredBundle.gallery.length > 0
+                                  ? featuredBundle.gallery
+                                  : [displayImage],
+                              },
+                              config: {
+                                removals: featuredBundle.customizationRemovals || [],
+                                addons: featuredBundle.customizationAddons || [],
+                              },
+                            });
+                          }}
+                          className="mt-6 inline-flex items-center gap-2 px-8 py-4 rounded-full bg-gradient-to-r from-[#FFD700] to-[#FFA500] text-[#8B0000] font-black text-lg shadow-xl hover:scale-105 transition-transform"
+                        >
+                          Order Bundle
+                          <svg className="w-5 h-5" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                            <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M13 7l5 5m0 0l-5 5m5-5H6" />
+                          </svg>
+                        </button>
+                      </div>
+                      <div className="relative h-48 md:h-64 rounded-2xl overflow-hidden bg-gradient-to-br from-[#2a1515] to-[#1a0a0a]">
+                        <img
+                          src={displayImage}
+                          alt={featuredBundle.name}
+                          className="w-full h-full object-cover"
+                          onError={(e) => {
+                            const target = e.target as HTMLImageElement;
+                            target.src = cycleFallbackImage(40);
+                          }}
+                        />
+                        {/* Gradient overlay */}
+                        <div className="absolute inset-0 bg-[radial-gradient(circle_at_center,rgba(255,215,0,0.15)_0%,transparent_70%)]" />
+                      </div>
+                    </div>
+                  </div>
+                </div>
+              );
+            })()}
+
+            {/* "WE COOK FOR YOU" Style Banner - After third section */}
+            {sectionIndex === 3 && (() => {
+              const weCookBanner = getPromoBannerForIndex(3);
+              if (weCookBanner && weCookBanner.type === 'weCookBanner') {
+                const config = weCookBanner.content;
+                return (
+                  <div 
+                    className="mb-10 relative overflow-hidden rounded-3xl"
+                    style={{
+                      background: config.gradientFrom && config.gradientTo
+                        ? `linear-gradient(to right, ${config.gradientFrom}, ${config.gradientTo})`
+                        : config.backgroundColor || 'linear-gradient(to right, #1a1a1a, #2a2a2a, #1a1a1a)',
+                    }}
+                  >
+                    <div className="relative p-8 md:p-12">
+                      <div className="relative text-center">
+                        {config.title && (
+                          <h3 
+                            className="text-4xl md:text-6xl font-black mb-4 tracking-tight"
+                            style={{ color: config.textColor || '#ffffff' }}
+                          >
+                            {config.title}
+                          </h3>
+                        )}
+                        {(config.description || config.subtitle) && (
+                          <p 
+                            className="text-xl mb-6 max-w-2xl mx-auto"
+                            style={{ color: config.textColor ? `${config.textColor}CC` : 'rgba(255,255,255,0.7)' }}
+                          >
+                            {config.description || config.subtitle}
+                          </p>
+                        )}
+                      </div>
+                    </div>
+                  </div>
+                );
+              }
+
+              // Fallback to original
+              return (
               // Get first bundle with category='bundle' or 'popular' that should be featured
               const featuredBundle = popularPackages.find(pkg =>
                 (pkg.category === 'bundle' || pkg.category === 'popular') && pkg.available
@@ -2425,109 +2730,241 @@ export default function OrderPageClient({
               );
             })()}
 
-            {/* "WE WOK FOR YOU" Style Banner - After third section */}
-            {sectionIndex === 3 && (
-              <div className="mb-10 relative overflow-hidden rounded-3xl">
-                <div className="relative bg-gradient-to-r from-[#1a1a1a] via-[#2a2a2a] to-[#1a1a1a] p-8 md:p-12">
-                  {/* Flame/Wok inspired background pattern */}
-                  <div className="absolute inset-0 opacity-30">
-                    <div className="absolute bottom-0 left-0 right-0 h-32 bg-gradient-to-t from-[#FF4444]/40 via-[#FF6B00]/20 to-transparent" />
-                    <div className="absolute bottom-0 left-1/4 w-1/2 h-48 bg-[radial-gradient(ellipse_at_bottom,rgba(255,100,0,0.3)_0%,transparent_70%)]" />
-                  </div>
-
-                  {/* Animated flames */}
-                  <div className="absolute bottom-2 left-1/3 text-4xl animate-bounce" style={{ animationDuration: '1.5s' }}>🔥</div>
-                  <div className="absolute bottom-4 left-1/2 text-3xl animate-bounce" style={{ animationDuration: '1.2s', animationDelay: '0.3s' }}>🔥</div>
-                  <div className="absolute bottom-2 right-1/3 text-4xl animate-bounce" style={{ animationDuration: '1.4s', animationDelay: '0.6s' }}>🔥</div>
-
-                  <div className="relative text-center">
-                    <h3 className="text-4xl md:text-6xl font-black text-white mb-4 tracking-tight">
-                      WE <span className="text-[#FF6B00]">COOK</span> FOR YOU
-                    </h3>
-                    <p className="text-xl text-white/70 mb-6 max-w-2xl mx-auto">
-                      Fresh ingredients, authentic recipes, made with passion every single day
-                    </p>
-                    <div className="flex flex-wrap justify-center gap-6 text-white/60">
-                      <div className="flex items-center gap-2">
-                        <span className="text-2xl">🌶️</span>
-                        <span className="font-medium">Fresh Daily</span>
-                      </div>
-                      <div className="flex items-center gap-2">
-                        <span className="text-2xl">👨‍🍳</span>
-                        <span className="font-medium">Family Recipes</span>
-                      </div>
-                      <div className="flex items-center gap-2">
-                        <span className="text-2xl">❤️</span>
-                        <span className="font-medium">Made with Love</span>
+            {/* "WE COOK FOR YOU" Style Banner - After third section */}
+            {sectionIndex === 3 && (() => {
+              const weCookBanner = getPromoBannerForIndex(3);
+              if (weCookBanner && weCookBanner.type === 'weCookBanner') {
+                const config = weCookBanner.content;
+                return (
+                  <div 
+                    className="mb-10 relative overflow-hidden rounded-3xl"
+                    style={{
+                      background: config.gradientFrom && config.gradientTo
+                        ? `linear-gradient(to right, ${config.gradientFrom}, ${config.gradientTo})`
+                        : config.backgroundColor || 'linear-gradient(to right, #1a1a1a, #2a2a2a, #1a1a1a)',
+                    }}
+                  >
+                    <div className="relative p-8 md:p-12">
+                      <div className="relative text-center">
+                        {config.title && (
+                          <h3 
+                            className="text-4xl md:text-6xl font-black mb-4 tracking-tight"
+                            style={{ color: config.textColor || '#ffffff' }}
+                          >
+                            {config.title}
+                          </h3>
+                        )}
+                        {(config.description || config.subtitle) && (
+                          <p 
+                            className="text-xl mb-6 max-w-2xl mx-auto"
+                            style={{ color: config.textColor ? `${config.textColor}CC` : 'rgba(255,255,255,0.7)' }}
+                          >
+                            {config.description || config.subtitle}
+                          </p>
+                        )}
                       </div>
                     </div>
                   </div>
+                );
+              }
+
+              // Fallback to original
+              return (
+                <div className="mb-10 relative overflow-hidden rounded-3xl">
+                  <div className="relative bg-gradient-to-r from-[#1a1a1a] via-[#2a2a2a] to-[#1a1a1a] p-8 md:p-12">
+                    <div className="relative text-center">
+                      <h3 className="text-4xl md:text-6xl font-black text-white mb-4 tracking-tight">
+                        WE <span className="text-[#FF6B00]">COOK</span> FOR YOU
+                      </h3>
+                      <p className="text-xl text-white/70 mb-6 max-w-2xl mx-auto">
+                        Fresh ingredients, authentic recipes, made with passion every single day
+                      </p>
+                    </div>
+                  </div>
                 </div>
-              </div>
-            )}
+              );
+            })()}
 
             {/* Quick Deal Strip - After 5th section */}
-            {sectionIndex === 5 && (
-              <div className="mb-10 relative overflow-hidden rounded-2xl bg-gradient-to-r from-[#FFD700] via-[#FFA500] to-[#FFD700] p-0.5">
-                <div className="bg-[#1a1a1a] rounded-[14px] px-6 py-4">
-                  <div className="flex flex-wrap items-center justify-between gap-4">
-                    <div className="flex items-center gap-4">
-                      {/* Animated sparkle instead of emoji */}
-                      <div className="relative w-10 h-10">
-                        <div className="absolute inset-0 bg-[#FFD700] rounded-full animate-ping opacity-30" />
-                        <div className="absolute inset-2 bg-gradient-to-br from-[#FFD700] to-[#FF6B00] rounded-full animate-pulse" />
-                        <svg className="absolute inset-0 w-full h-full text-white" viewBox="0 0 24 24" fill="currentColor">
-                          <path d="M12 2L9 9H2l5.5 4.5L5 22l7-5 7 5-2.5-8.5L22 9h-7L12 2z" />
-                        </svg>
-                      </div>
-                      <div>
-                        <p className="text-[#FFD700] font-black text-lg">LUNCH SPECIAL</p>
-                        <p className="text-white/60 text-sm">Any 2 tacos + drink for $8.99</p>
+            {sectionIndex === 5 && (() => {
+              const dealStrip = getPromoBannerForIndex(5);
+              if (dealStrip && dealStrip.type === 'dealStrip') {
+                const config = dealStrip.content;
+                return (
+                  <div 
+                    className="mb-10 relative overflow-hidden rounded-2xl p-0.5"
+                    style={{
+                      background: config.gradientFrom && config.gradientTo
+                        ? `linear-gradient(to right, ${config.gradientFrom}, ${config.gradientTo})`
+                        : config.backgroundColor || 'linear-gradient(to right, #FFD700, #FFA500, #FFD700)',
+                    }}
+                  >
+                    <div className="bg-[#1a1a1a] rounded-[14px] px-6 py-4">
+                      <div className="flex flex-wrap items-center justify-between gap-4">
+                        <div className="flex items-center gap-4">
+                          <div className="relative w-10 h-10">
+                            <div className="absolute inset-0 bg-[#FFD700] rounded-full animate-ping opacity-30" />
+                            <div className="absolute inset-2 bg-gradient-to-br from-[#FFD700] to-[#FF6B00] rounded-full animate-pulse" />
+                            <svg className="absolute inset-0 w-full h-full text-white" viewBox="0 0 24 24" fill="currentColor">
+                              <path d="M12 2L9 9H2l5.5 4.5L5 22l7-5 7 5-2.5-8.5L22 9h-7L12 2z" />
+                            </svg>
+                          </div>
+                          <div>
+                            {config.title && (
+                              <p 
+                                className="font-black text-lg"
+                                style={{ color: config.textColor || '#FFD700' }}
+                              >
+                                {config.title}
+                              </p>
+                            )}
+                            {(config.subtitle || config.description) && (
+                              <p 
+                                className="text-sm"
+                                style={{ color: config.textColor ? `${config.textColor}99` : 'rgba(255,255,255,0.6)' }}
+                              >
+                                {config.subtitle || config.description}
+                              </p>
+                            )}
+                          </div>
+                        </div>
+                        {config.buttonText && (
+                          <button
+                            onClick={() => {
+                              if (config.buttonLink) {
+                                window.location.href = config.buttonLink;
+                              } else {
+                                const firstSection = enrichedSections.find(s => s.name.toLowerCase().includes('taco'));
+                                if (firstSection) {
+                                  const element = document.getElementById(`section-${firstSection.id}`);
+                                  element?.scrollIntoView({ behavior: isSafariBrowser ? 'auto' : 'smooth' });
+                                }
+                              }
+                            }}
+                            className="px-6 py-2.5 rounded-full bg-[#FFD700] text-[#8B0000] font-bold hover:bg-white transition-colors"
+                          >
+                            {config.buttonText}
+                          </button>
+                        )}
                       </div>
                     </div>
-                    <div className="flex items-center gap-3">
-                      <span className="text-white/40 text-sm">11am - 3pm Daily</span>
-                      <button
-                        onClick={() => {
-                          const firstSection = enrichedSections.find(s => s.name.toLowerCase().includes('taco'));
-                          if (firstSection) {
-                            const element = document.getElementById(`section-${firstSection.id}`);
-                            element?.scrollIntoView({ behavior: isSafariBrowser ? 'auto' : 'smooth' });
-                          }
-                        }}
-                        className="px-6 py-2.5 rounded-full bg-[#FFD700] text-[#8B0000] font-bold hover:bg-white transition-colors"
-                      >
-                        Get Deal
-                      </button>
+                  </div>
+                );
+              }
+
+              // Fallback to original
+              return (
+                <div className="mb-10 relative overflow-hidden rounded-2xl bg-gradient-to-r from-[#FFD700] via-[#FFA500] to-[#FFD700] p-0.5">
+                  <div className="bg-[#1a1a1a] rounded-[14px] px-6 py-4">
+                    <div className="flex flex-wrap items-center justify-between gap-4">
+                      <div className="flex items-center gap-4">
+                        <div className="relative w-10 h-10">
+                          <div className="absolute inset-0 bg-[#FFD700] rounded-full animate-ping opacity-30" />
+                          <div className="absolute inset-2 bg-gradient-to-br from-[#FFD700] to-[#FF6B00] rounded-full animate-pulse" />
+                          <svg className="absolute inset-0 w-full h-full text-white" viewBox="0 0 24 24" fill="currentColor">
+                            <path d="M12 2L9 9H2l5.5 4.5L5 22l7-5 7 5-2.5-8.5L22 9h-7L12 2z" />
+                          </svg>
+                        </div>
+                        <div>
+                          <p className="text-[#FFD700] font-black text-lg">LUNCH SPECIAL</p>
+                          <p className="text-white/60 text-sm">Any 2 tacos + drink for $8.99</p>
+                        </div>
+                      </div>
+                      <div className="flex items-center gap-3">
+                        <span className="text-white/40 text-sm">11am - 3pm Daily</span>
+                        <button
+                          onClick={() => {
+                            const firstSection = enrichedSections.find(s => s.name.toLowerCase().includes('taco'));
+                            if (firstSection) {
+                              const element = document.getElementById(`section-${firstSection.id}`);
+                              element?.scrollIntoView({ behavior: isSafariBrowser ? 'auto' : 'smooth' });
+                            }
+                          }}
+                          className="px-6 py-2.5 rounded-full bg-[#FFD700] text-[#8B0000] font-bold hover:bg-white transition-colors"
+                        >
+                          Get Deal
+                        </button>
+                      </div>
                     </div>
                   </div>
                 </div>
-              </div>
-            )}
+              );
+            })()}
 
             {/* Grocery Store Banner - After 2nd section */}
-            {sectionIndex === 2 && (
-              <div className="mb-10 relative overflow-hidden rounded-3xl bg-gradient-to-r from-green-700 via-green-600 to-green-700 p-1">
-                <div className="relative overflow-hidden rounded-[22px] bg-gradient-to-br from-green-950 to-green-900 p-6 md:p-8">
-                  {/* Decorative elements */}
-                  <div className="absolute top-4 right-4 text-4xl animate-bounce" style={{ animationDuration: '2s' }}>
-                    🛒
-                  </div>
-                  <div className="absolute bottom-4 left-4 text-3xl animate-pulse">🥬</div>
-                  <div className="absolute top-1/2 left-1/3 text-2xl opacity-30">🥕</div>
-
-                  <div className="relative grid md:grid-cols-2 gap-6 items-center">
-                    <div>
-                      <div className="inline-block px-4 py-1.5 rounded-full bg-green-400/20 text-green-300 text-xs font-bold uppercase tracking-wider mb-3">
-                        ✨ Now Available
+            {sectionIndex === 2 && (() => {
+              const groceryBanner = getPromoBannerForIndex(2);
+              if (groceryBanner && groceryBanner.type === 'groceryBanner') {
+                const config = groceryBanner.content;
+                return (
+                  <div 
+                    className="mb-10 relative overflow-hidden rounded-3xl p-1"
+                    style={{
+                      background: config.gradientFrom && config.gradientTo
+                        ? `linear-gradient(to right, ${config.gradientFrom}, ${config.gradientTo})`
+                        : config.backgroundColor || 'linear-gradient(to right, #065f46, #059669, #047857)',
+                    }}
+                  >
+                    <div className="relative overflow-hidden rounded-[22px] bg-gradient-to-br from-green-950 to-green-900 p-6 md:p-8">
+                      <div className="relative grid md:grid-cols-2 gap-6 items-center">
+                        <div>
+                          {config.badge && (
+                            <div className="inline-block px-4 py-1.5 rounded-full bg-green-400/20 text-green-300 text-xs font-bold uppercase tracking-wider mb-3">
+                              {config.badge}
+                            </div>
+                          )}
+                          {config.title && (
+                            <h3 className="text-3xl md:text-4xl font-black text-white mb-3">
+                              {config.title}
+                            </h3>
+                          )}
+                          {(config.description || config.subtitle) && (
+                            <p className="text-white/80 mb-6 text-lg">
+                              {config.description || config.subtitle}
+                            </p>
+                          )}
+                          {config.buttonText && (
+                            <Link
+                              href={config.buttonLink || '/grocery'}
+                              className="inline-flex items-center gap-2 px-6 py-3 rounded-full bg-gradient-to-r from-green-500 to-green-600 text-white font-bold shadow-lg hover:scale-105 transition-transform"
+                            >
+                              {config.buttonText}
+                              <svg className="w-5 h-5" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M13 7l5 5m0 0l-5 5m5-5H6" />
+                              </svg>
+                            </Link>
+                          )}
+                        </div>
+                        {config.image && (
+                          <div className="relative h-48 md:h-64 rounded-2xl overflow-hidden">
+                            <img
+                              src={config.image}
+                              alt={config.title || 'Grocery'}
+                              className="w-full h-full object-cover"
+                            />
+                          </div>
+                        )}
                       </div>
-                      <h3 className="text-3xl md:text-4xl font-black text-white mb-3">
-                        Order Your <span className="text-green-400">Groceries</span> Too!
-                      </h3>
-                      <p className="text-white/80 mb-6 text-lg">
-                        Fresh produce, pantry staples, and more delivered with your meal order. Save time, shop smart!
-                      </p>
-                      <div className="flex flex-wrap gap-3">
+                    </div>
+                  </div>
+                );
+              }
+
+              // Fallback to original
+              return (
+                <div className="mb-10 relative overflow-hidden rounded-3xl bg-gradient-to-r from-green-700 via-green-600 to-green-700 p-1">
+                  <div className="relative overflow-hidden rounded-[22px] bg-gradient-to-br from-green-950 to-green-900 p-6 md:p-8">
+                    <div className="relative grid md:grid-cols-2 gap-6 items-center">
+                      <div>
+                        <div className="inline-block px-4 py-1.5 rounded-full bg-green-400/20 text-green-300 text-xs font-bold uppercase tracking-wider mb-3">
+                          ✨ Now Available
+                        </div>
+                        <h3 className="text-3xl md:text-4xl font-black text-white mb-3">
+                          Order Your <span className="text-green-400">Groceries</span> Too!
+                        </h3>
+                        <p className="text-white/80 mb-6 text-lg">
+                          Fresh produce, pantry staples, and more delivered with your meal order. Save time, shop smart!
+                        </p>
                         <Link
                           href="/grocery"
                           className="inline-flex items-center gap-2 px-6 py-3 rounded-full bg-gradient-to-r from-green-500 to-green-600 text-white font-bold shadow-lg hover:scale-105 transition-transform"
@@ -2537,122 +2974,187 @@ export default function OrderPageClient({
                             <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M13 7l5 5m0 0l-5 5m5-5H6" />
                           </svg>
                         </Link>
-                        <div className="inline-flex items-center gap-2 px-4 py-3 rounded-full bg-white/10 text-white/70 text-sm">
-                          <svg className="w-4 h-4 text-green-400" fill="currentColor" viewBox="0 0 20 20">
-                            <path fillRule="evenodd" d="M10 18a8 8 0 100-16 8 8 0 000 16zm3.707-9.293a1 1 0 00-1.414-1.414L9 10.586 7.707 9.293a1 1 0 00-1.414 1.414l2 2a1 1 0 001.414 0l4-4z" clipRule="evenodd" />
-                          </svg>
-                          Same-day delivery
-                        </div>
-                      </div>
-                    </div>
-                    <div className="relative">
-                      <div className="grid grid-cols-2 gap-3">
-                        {/* Sample grocery category badges */}
-                        <div className="bg-white/10 backdrop-blur-sm rounded-xl p-4 text-center border border-white/20">
-                          <div className="text-3xl mb-2">🍎</div>
-                          <p className="text-white font-semibold text-sm">Fresh Produce</p>
-                        </div>
-                        <div className="bg-white/10 backdrop-blur-sm rounded-xl p-4 text-center border border-white/20">
-                          <div className="text-3xl mb-2">🥛</div>
-                          <p className="text-white font-semibold text-sm">Dairy</p>
-                        </div>
-                        <div className="bg-white/10 backdrop-blur-sm rounded-xl p-4 text-center border border-white/20">
-                          <div className="text-3xl mb-2">🍞</div>
-                          <p className="text-white font-semibold text-sm">Bakery</p>
-                        </div>
-                        <div className="bg-white/10 backdrop-blur-sm rounded-xl p-4 text-center border border-white/20">
-                          <div className="text-3xl mb-2">🥫</div>
-                          <p className="text-white font-semibold text-sm">Pantry</p>
-                        </div>
                       </div>
                     </div>
                   </div>
                 </div>
-              </div>
-            )}
+              );
+            })()}
 
             {/* Fresh Quality Banner - After 7th section */}
-            {sectionIndex === 7 && (
-              <div className="mb-10 relative overflow-hidden rounded-3xl">
-                <div className="relative bg-gradient-to-r from-emerald-900/80 via-emerald-800/80 to-emerald-900/80 p-8 md:p-10 border border-emerald-500/20">
-                  {/* Animated gradient background */}
-                  <div className="absolute inset-0 bg-[linear-gradient(45deg,transparent_25%,rgba(16,185,129,0.1)_50%,transparent_75%)] bg-[length:250%_250%] animate-shimmer" style={{ animationDuration: '3s' }} />
-
-                  {/* Decorative leaf shapes */}
-                  <div className="absolute top-4 left-8 w-16 h-16 border-2 border-emerald-400/30 rounded-full" />
-                  <div className="absolute bottom-4 right-8 w-12 h-12 border-2 border-emerald-400/20 rounded-full" />
-                  <div className="absolute top-1/2 right-1/4 w-8 h-8 bg-emerald-400/10 rounded-full blur-sm" />
-
-                  <div className="relative flex flex-col md:flex-row items-center justify-between gap-6">
-                    <div className="text-center md:text-left">
-                      <div className="inline-flex items-center gap-2 px-4 py-1.5 rounded-full bg-emerald-400/20 text-emerald-300 text-xs font-bold uppercase tracking-wider mb-3">
-                        <svg className="w-4 h-4" fill="currentColor" viewBox="0 0 20 20">
-                          <path fillRule="evenodd" d="M6.267 3.455a3.066 3.066 0 001.745-.723 3.066 3.066 0 013.976 0 3.066 3.066 0 001.745.723 3.066 3.066 0 012.812 2.812c.051.643.304 1.254.723 1.745a3.066 3.066 0 010 3.976 3.066 3.066 0 00-.723 1.745 3.066 3.066 0 01-2.812 2.812 3.066 3.066 0 00-1.745.723 3.066 3.066 0 01-3.976 0 3.066 3.066 0 00-1.745-.723 3.066 3.066 0 01-2.812-2.812 3.066 3.066 0 00-.723-1.745 3.066 3.066 0 010-3.976 3.066 3.066 0 00.723-1.745 3.066 3.066 0 012.812-2.812zm7.44 5.252a1 1 0 00-1.414-1.414L9 10.586 7.707 9.293a1 1 0 00-1.414 1.414l2 2a1 1 0 001.414 0l4-4z" clipRule="evenodd" />
-                        </svg>
-                        Fresh Guarantee
+            {sectionIndex === 7 && (() => {
+              const qualityBanner = getPromoBannerForIndex(7);
+              if (qualityBanner && qualityBanner.type === 'qualityBanner') {
+                const config = qualityBanner.content;
+                return (
+                  <div 
+                    className="mb-10 relative overflow-hidden rounded-3xl p-8 md:p-10 border"
+                    style={{
+                      background: config.gradientFrom && config.gradientTo
+                        ? `linear-gradient(to right, ${config.gradientFrom}, ${config.gradientTo})`
+                        : config.backgroundColor || 'linear-gradient(to right, rgba(6,78,59,0.8), rgba(5,150,105,0.8), rgba(4,120,87,0.8))',
+                      borderColor: config.textColor ? `${config.textColor}33` : 'rgba(16,185,129,0.2)',
+                    }}
+                  >
+                    <div className="relative flex flex-col md:flex-row items-center justify-between gap-6">
+                      <div className="text-center md:text-left">
+                        {config.badge && (
+                          <div 
+                            className="inline-flex items-center gap-2 px-4 py-1.5 rounded-full text-xs font-bold uppercase tracking-wider mb-3"
+                            style={{
+                              backgroundColor: config.textColor ? `${config.textColor}20` : 'rgba(16,185,129,0.2)',
+                              color: config.textColor || '#6ee7b7',
+                            }}
+                          >
+                            {config.badge}
+                          </div>
+                        )}
+                        {config.title && (
+                          <h3 
+                            className="text-3xl md:text-4xl font-black mb-2"
+                            style={{ color: config.textColor || '#ffffff' }}
+                          >
+                            {config.title}
+                          </h3>
+                        )}
+                        {(config.description || config.subtitle) && (
+                          <p 
+                            className="max-w-md"
+                            style={{ color: config.textColor ? `${config.textColor}CC` : 'rgba(209,250,229,0.7)' }}
+                          >
+                            {config.description || config.subtitle}
+                          </p>
+                        )}
                       </div>
-                      <h3 className="text-3xl md:text-4xl font-black text-white mb-2">
-                        Quality You Can <span className="text-emerald-400">Taste</span>
-                      </h3>
-                      <p className="text-emerald-100/70 max-w-md">
-                        All ingredients sourced fresh daily from local suppliers
-                      </p>
+                      {config.image && (
+                        <div className="relative h-32 w-32 rounded-xl overflow-hidden">
+                          <img
+                            src={config.image}
+                            alt={config.title || 'Quality'}
+                            className="w-full h-full object-cover"
+                          />
+                        </div>
+                      )}
                     </div>
-                    <div className="flex gap-4">
-                      <div className="text-center p-4 rounded-xl bg-white/5 backdrop-blur-sm border border-white/10">
-                        <div className="text-3xl font-black text-emerald-400">100%</div>
-                        <div className="text-xs text-white/60 mt-1">Fresh Daily</div>
+                  </div>
+                );
+              }
+
+              // Fallback to original
+              return (
+                <div className="mb-10 relative overflow-hidden rounded-3xl">
+                  <div className="relative bg-gradient-to-r from-emerald-900/80 via-emerald-800/80 to-emerald-900/80 p-8 md:p-10 border border-emerald-500/20">
+                    <div className="relative flex flex-col md:flex-row items-center justify-between gap-6">
+                      <div className="text-center md:text-left">
+                        <div className="inline-flex items-center gap-2 px-4 py-1.5 rounded-full bg-emerald-400/20 text-emerald-300 text-xs font-bold uppercase tracking-wider mb-3">
+                          <svg className="w-4 h-4" fill="currentColor" viewBox="0 0 20 20">
+                            <path fillRule="evenodd" d="M6.267 3.455a3.066 3.066 0 001.745-.723 3.066 3.066 0 013.976 0 3.066 3.066 0 001.745.723 3.066 3.066 0 012.812 2.812c.051.643.304 1.254.723 1.745a3.066 3.066 0 010 3.976 3.066 3.066 0 00-.723 1.745 3.066 3.066 0 01-2.812 2.812 3.066 3.066 0 00-1.745.723 3.066 3.066 0 01-3.976 0 3.066 3.066 0 00-1.745-.723 3.066 3.066 0 01-2.812-2.812 3.066 3.066 0 00-.723-1.745 3.066 3.066 0 010-3.976 3.066 3.066 0 00.723-1.745 3.066 3.066 0 012.812-2.812zm7.44 5.252a1 1 0 00-1.414-1.414L9 10.586 7.707 9.293a1 1 0 00-1.414 1.414l2 2a1 1 0 001.414 0l4-4z" clipRule="evenodd" />
+                          </svg>
+                          Fresh Guarantee
+                        </div>
+                        <h3 className="text-3xl md:text-4xl font-black text-white mb-2">
+                          Quality You Can <span className="text-emerald-400">Taste</span>
+                        </h3>
+                        <p className="text-emerald-100/70 max-w-md">
+                          All ingredients sourced fresh daily from local suppliers
+                        </p>
                       </div>
-                      <div className="text-center p-4 rounded-xl bg-white/5 backdrop-blur-sm border border-white/10">
-                        <div className="text-3xl font-black text-emerald-400">Local</div>
-                        <div className="text-xs text-white/60 mt-1">Sourced</div>
+                      <div className="flex gap-4">
+                        <div className="text-center p-4 rounded-xl bg-white/5 backdrop-blur-sm border border-white/10">
+                          <div className="text-3xl font-black text-emerald-400">100%</div>
+                          <div className="text-xs text-white/60 mt-1">Fresh Daily</div>
+                        </div>
+                        <div className="text-center p-4 rounded-xl bg-white/5 backdrop-blur-sm border border-white/10">
+                          <div className="text-3xl font-black text-emerald-400">Local</div>
+                          <div className="text-xs text-white/60 mt-1">Sourced</div>
+                        </div>
                       </div>
                     </div>
                   </div>
                 </div>
-              </div>
-            )}
+              );
+            })()}
 
             {/* Customer Reviews Strip - After 9th section */}
-            {sectionIndex === 9 && (
-              <div className="mb-10 relative overflow-hidden rounded-2xl bg-gradient-to-r from-purple-900/50 via-pink-900/50 to-purple-900/50 border border-purple-500/20 p-6 md:p-8">
-                {/* Animated stars background */}
-                <div className="absolute inset-0 overflow-hidden">
-                  {[...Array(8)].map((_, i) => (
-                    <div
-                      key={i}
-                      className="absolute w-1 h-1 bg-purple-400/60 rounded-full animate-pulse"
-                      style={{
-                        left: `${10 + i * 12}%`,
-                        top: `${20 + (i % 3) * 25}%`,
-                        animationDelay: `${i * 0.2}s`,
-                      }}
-                    />
-                  ))}
-                </div>
-
-                <div className="relative flex flex-col md:flex-row items-center justify-between gap-6">
-                  <div className="text-center md:text-left">
-                    <div className="flex items-center gap-1 mb-2 justify-center md:justify-start">
-                      {[...Array(5)].map((_, i) => (
-                        <svg key={i} className="w-6 h-6 text-yellow-400" fill="currentColor" viewBox="0 0 20 20">
-                          <path d="M9.049 2.927c.3-.921 1.603-.921 1.902 0l1.07 3.292a1 1 0 00.95.69h3.462c.969 0 1.371 1.24.588 1.81l-2.8 2.034a1 1 0 00-.364 1.118l1.07 3.292c.3.921-.755 1.688-1.54 1.118l-2.8-2.034a1 1 0 00-1.175 0l-2.8 2.034c-.784.57-1.838-.197-1.539-1.118l1.07-3.292a1 1 0 00-.364-1.118L2.98 8.72c-.783-.57-.38-1.81.588-1.81h3.461a1 1 0 00.951-.69l1.07-3.292z" />
-                        </svg>
-                      ))}
-                      <span className="ml-2 text-white font-bold">4.9</span>
-                    </div>
-                    <p className="text-white/80 text-lg font-medium">&ldquo;Best authentic Mexican food in town!&rdquo;</p>
-                    <p className="text-purple-300/60 text-sm mt-1">— Over 500+ 5-star reviews</p>
-                  </div>
-                  <button
-                    onClick={() => window.open('https://www.google.com/maps', '_blank')}
-                    className="px-6 py-3 rounded-full bg-white/10 backdrop-blur-sm border border-white/20 text-white font-semibold hover:bg-white/20 transition-all"
+            {sectionIndex === 9 && (() => {
+              const reviewsStrip = getPromoBannerForIndex(9);
+              if (reviewsStrip && reviewsStrip.type === 'reviewsStrip') {
+                const config = reviewsStrip.content;
+                return (
+                  <div 
+                    className="mb-10 relative overflow-hidden rounded-2xl border p-6 md:p-8"
+                    style={{
+                      background: config.gradientFrom && config.gradientTo
+                        ? `linear-gradient(to right, ${config.gradientFrom}, ${config.gradientTo})`
+                        : config.backgroundColor || 'linear-gradient(to right, rgba(88,28,135,0.5), rgba(190,24,93,0.5), rgba(88,28,135,0.5))',
+                      borderColor: config.textColor ? `${config.textColor}33` : 'rgba(168,85,247,0.2)',
+                    }}
                   >
-                    Read Reviews
-                  </button>
+                    <div className="relative flex flex-col md:flex-row items-center justify-between gap-6">
+                      <div className="text-center md:text-left">
+                        {config.title && (
+                          <p 
+                            className="text-lg font-medium mb-2"
+                            style={{ color: config.textColor ? `${config.textColor}CC` : 'rgba(255,255,255,0.8)' }}
+                          >
+                            &ldquo;{config.title}&rdquo;
+                          </p>
+                        )}
+                        {(config.subtitle || config.description) && (
+                          <p 
+                            className="text-sm mt-1"
+                            style={{ color: config.textColor ? `${config.textColor}99` : 'rgba(196,181,253,0.6)' }}
+                          >
+                            — {config.subtitle || config.description}
+                          </p>
+                        )}
+                      </div>
+                      {config.buttonText && (
+                        <button
+                          onClick={() => {
+                            if (config.buttonLink) {
+                              window.open(config.buttonLink, '_blank');
+                            } else {
+                              window.open('https://www.google.com/maps', '_blank');
+                            }
+                          }}
+                          className="px-6 py-3 rounded-full bg-white/10 backdrop-blur-sm border border-white/20 font-semibold hover:bg-white/20 transition-all"
+                          style={{ color: config.textColor || '#ffffff' }}
+                        >
+                          {config.buttonText}
+                        </button>
+                      )}
+                    </div>
+                  </div>
+                );
+              }
+
+              // Fallback to original
+              return (
+                <div className="mb-10 relative overflow-hidden rounded-2xl bg-gradient-to-r from-purple-900/50 via-pink-900/50 to-purple-900/50 border border-purple-500/20 p-6 md:p-8">
+                  <div className="relative flex flex-col md:flex-row items-center justify-between gap-6">
+                    <div className="text-center md:text-left">
+                      <div className="flex items-center gap-1 mb-2 justify-center md:justify-start">
+                        {[...Array(5)].map((_, i) => (
+                          <svg key={i} className="w-6 h-6 text-yellow-400" fill="currentColor" viewBox="0 0 20 20">
+                            <path d="M9.049 2.927c.3-.921 1.603-.921 1.902 0l1.07 3.292a1 1 0 00.95.69h3.462c.969 0 1.371 1.24.588 1.81l-2.8 2.034a1 1 0 00-.364 1.118l1.07 3.292c.3.921-.755 1.688-1.54 1.118l-2.8-2.034a1 1 0 00-1.175 0l-2.8 2.034c-.784.57-1.838-.197-1.539-1.118l1.07-3.292a1 1 0 00-.364-1.118L2.98 8.72c-.783-.57-.38-1.81.588-1.81h3.461a1 1 0 00.951-.69l1.07-3.292z" />
+                          </svg>
+                        ))}
+                        <span className="ml-2 text-white font-bold">4.9</span>
+                      </div>
+                      <p className="text-white/80 text-lg font-medium">&ldquo;Best authentic Mexican food in town!&rdquo;</p>
+                      <p className="text-purple-300/60 text-sm mt-1">— Over 500+ 5-star reviews</p>
+                    </div>
+                    <button
+                      onClick={() => window.open('https://www.google.com/maps', '_blank')}
+                      className="px-6 py-3 rounded-full bg-white/10 backdrop-blur-sm border border-white/20 text-white font-semibold hover:bg-white/20 transition-all"
+                    >
+                      Read Reviews
+                    </button>
+                  </div>
                 </div>
-              </div>
-            )}
+              );
+            })()}
 
             <section
               id={`section-${section.id}`}
@@ -2731,7 +3233,8 @@ export default function OrderPageClient({
               />
             </section>
           </div>
-        ))}
+          );
+        })}
       </main>
 
       {/* Catering Slide-In Panel */}

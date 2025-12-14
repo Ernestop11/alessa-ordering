@@ -76,6 +76,27 @@ interface CustomerRewardsData {
   }>;
 }
 
+interface FrontendUISection {
+  id: string;
+  name: string;
+  type: 'hero' | 'quickInfo' | 'featuredCarousel' | 'menuSections' | 'promoBanner1' | 'groceryBanner' | 'weCookBanner' | 'dealStrip' | 'qualityBanner' | 'reviewsStrip';
+  position: number;
+  enabled: boolean;
+  content: {
+    title?: string;
+    subtitle?: string;
+    description?: string;
+    buttonText?: string;
+    buttonLink?: string;
+    image?: string;
+    badge?: string;
+    backgroundColor?: string;
+    textColor?: string;
+    gradientFrom?: string;
+    gradientTo?: string;
+  };
+}
+
 interface OrderPageWrapperProps {
   sections: OrderMenuSection[];
   featuredItems?: OrderMenuItem[];
@@ -92,6 +113,7 @@ interface OrderPageWrapperProps {
       subtitle?: string;
     };
   };
+  frontendUISections?: FrontendUISection[];
 }
 
 // UI Version Toggle - Set to 'polished' for new UI, 'classic' for original

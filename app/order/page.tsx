@@ -383,11 +383,21 @@ export default async function OrderPage() {
   const rewardsData = await getRewardsData(tenant.id);
   const customerRewardsData = await getCustomerRewardsData(tenant.id);
 
-  // Check if restaurant is open
+  // Check if restaurant is open and get frontend UI sections
+  const tenantData = await prisma.tenant.findUnique({
+    where: { id: tenant.id },
+    select: { 
+      settings: true,
+    },
+  });
+
   const tenantSettings = await prisma.tenantSettings.findUnique({
     where: { tenantId: tenant.id },
     select: { operatingHours: true, isOpen: true, frontendConfig: true },
   });
+
+  // Get frontend UI sections from tenant settings
+  const frontendUISections = (tenantData?.settings as any)?.frontendUISections || [];
 
   const hoursValidation = validateOperatingHours(
     tenantSettings?.operatingHours as any,
@@ -414,6 +424,7 @@ export default async function OrderPage() {
         isOpen={hoursValidation.isOpen}
         closedMessage={hoursValidation.message}
         frontendConfig={tenantSettings?.frontendConfig as any}
+        frontendUISections={frontendUISections}
       />
     </Suspense>
   );
