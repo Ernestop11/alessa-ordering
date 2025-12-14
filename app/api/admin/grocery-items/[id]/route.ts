@@ -44,6 +44,8 @@ export async function PATCH(
     stockQuantity: body.stockQuantity !== undefined ? (body.stockQuantity !== null ? Number(body.stockQuantity) : null) : existing.stockQuantity,
     tags: Array.isArray(body.tags) ? body.tags : existing.tags,
     displayOrder: body.displayOrder !== undefined ? Number(body.displayOrder) : existing.displayOrder,
+    taxPercentage: body.taxPercentage !== undefined ? (body.taxPercentage !== null ? parseFloat(String(body.taxPercentage)) : null) : existing.taxPercentage,
+    expirationDate: body.expirationDate !== undefined ? (body.expirationDate ? new Date(body.expirationDate) : null) : existing.expirationDate,
   };
 
   const updated = await prisma.groceryItem.update({

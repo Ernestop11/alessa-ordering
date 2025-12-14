@@ -64,6 +64,8 @@ export async function POST(req: Request) {
     stockQuantity: body.stockQuantity !== undefined && body.stockQuantity !== null ? Number(body.stockQuantity) : null,
     tags: Array.isArray(body.tags) ? body.tags : [],
     displayOrder: body.displayOrder !== undefined ? Number(body.displayOrder) : 0,
+    taxPercentage: body.taxPercentage !== undefined && body.taxPercentage !== null ? parseFloat(String(body.taxPercentage)) : null,
+    expirationDate: body.expirationDate ? new Date(body.expirationDate) : null,
   };
 
   const created = await prisma.groceryItem.create({ data });

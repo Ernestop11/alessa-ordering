@@ -334,8 +334,7 @@ export default function MenuEditorPage() {
     setEditingGroceryItem(newItem);
   };
 
-  const handleSaveGroceryItem = async (e: React.FormEvent) => {
-    e.preventDefault();
+  const handleSaveGroceryItem = async () => {
     if (!editingGroceryItem) return;
 
     try {
@@ -2417,17 +2416,54 @@ export default function MenuEditorPage() {
                     </div>
                   </div>
 
+                  <div className="grid grid-cols-2 gap-4">
+                    <div>
+                      <label className="block text-sm font-medium text-gray-700 mb-1">
+                        Tax Percentage (optional)
+                      </label>
+                      <input
+                        type="number"
+                        step="0.01"
+                        min="0"
+                        max="100"
+                        value={editingGroceryItem.taxPercentage ?? ''}
+                        onChange={(e) => setEditingGroceryItem({
+                          ...editingGroceryItem,
+                          taxPercentage: e.target.value === '' ? null : parseFloat(e.target.value)
+                        })}
+                        placeholder="e.g., 8.5 for 8.5%"
+                        className="w-full px-3 py-2 border border-gray-300 rounded-md focus:ring-green-500 focus:border-green-500"
+                      />
+                    </div>
+
+                    <div>
+                      <label className="block text-sm font-medium text-gray-700 mb-1">
+                        Display Order
+                      </label>
+                      <input
+                        type="number"
+                        min="0"
+                        value={editingGroceryItem.displayOrder ?? 0}
+                        onChange={(e) => setEditingGroceryItem({ ...editingGroceryItem, displayOrder: parseInt(e.target.value) || 0 })}
+                        className="w-full px-3 py-2 border border-gray-300 rounded-md focus:ring-green-500 focus:border-green-500"
+                      />
+                    </div>
+                  </div>
+
                   <div>
                     <label className="block text-sm font-medium text-gray-700 mb-1">
-                      Display Order
+                      Expiration Date (optional)
                     </label>
                     <input
-                      type="number"
-                      min="0"
-                      value={editingGroceryItem.displayOrder ?? 0}
-                      onChange={(e) => setEditingGroceryItem({ ...editingGroceryItem, displayOrder: parseInt(e.target.value) || 0 })}
+                      type="date"
+                      value={editingGroceryItem.expirationDate ? new Date(editingGroceryItem.expirationDate).toISOString().split('T')[0] : ''}
+                      onChange={(e) => setEditingGroceryItem({
+                        ...editingGroceryItem,
+                        expirationDate: e.target.value ? e.target.value : null
+                      })}
                       className="w-full px-3 py-2 border border-gray-300 rounded-md focus:ring-green-500 focus:border-green-500"
                     />
+                    <p className="text-xs text-gray-500 mt-1">For perishable items - helps track freshness</p>
                   </div>
 
                   <div>
