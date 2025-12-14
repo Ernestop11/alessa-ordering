@@ -1,8 +1,30 @@
 "use client";
 
-import { Suspense, useState, useEffect } from 'react';
-import OrderPageClient, { type OrderMenuSection, type OrderMenuItem } from './OrderPageClient';
-import PolishedOrderPage from './PolishedOrderPage';
+import { useState, useEffect } from 'react';
+import dynamic from 'next/dynamic';
+import type { OrderMenuSection, OrderMenuItem } from './OrderPageClient';
+
+// Dynamic import with SSR disabled to prevent hydration mismatches
+// The OrderPageClient uses window/localStorage during render which causes glitches
+const OrderPageClient = dynamic(
+  () => import('./OrderPageClient').then(mod => mod.default),
+  {
+    ssr: false,
+    loading: () => (
+      <div className="min-h-screen flex items-center justify-center bg-gradient-to-br from-neutral-950 via-neutral-900 to-neutral-950">
+        <div className="text-center">
+          <div className="animate-spin rounded-full h-10 w-10 border-2 border-white/20 border-t-white mx-auto mb-4"></div>
+          <p className="text-white/70 text-sm">Loading menu...</p>
+        </div>
+      </div>
+    )
+  }
+);
+
+const PolishedOrderPage = dynamic(
+  () => import('./PolishedOrderPage'),
+  { ssr: false }
+);
 
 interface CateringPackage {
   id: string;
@@ -78,12 +100,9 @@ const UI_VERSION: 'polished' | 'classic' = 'classic';
 
 export default function OrderPageWrapper(props: OrderPageWrapperProps) {
   // Allow URL override for testing: ?ui=classic or ?ui=polished
-  // Start with default, then sync with URL on client-side to avoid hydration mismatch
   const [uiVersion, setUiVersion] = useState<'polished' | 'classic'>(UI_VERSION);
-  const [isMounted, setIsMounted] = useState(false);
 
   useEffect(() => {
-    setIsMounted(true);
     // Sync with URL param after mount (client-side only)
     const params = new URLSearchParams(window.location.search);
     const uiParam = params.get('ui');
@@ -92,30 +111,12 @@ export default function OrderPageWrapper(props: OrderPageWrapperProps) {
     }
   }, []);
 
-  const LoadingFallback = (
-    <div className="min-h-screen flex items-center justify-center bg-gradient-to-br from-neutral-950 via-neutral-900 to-neutral-950">
-      <div className="text-center">
-        <div className="animate-spin rounded-full h-10 w-10 border-2 border-white/20 border-t-white mx-auto mb-4"></div>
-        <p className="text-white/70 text-sm">Loading menu...</p>
-      </div>
-    </div>
-  );
-
-  // Render the selected UI version
+  // Dynamic imports with ssr: false handle the loading state and prevent hydration issues
   if (uiVersion === 'polished') {
-    return (
-      <Suspense fallback={LoadingFallback}>
-        <PolishedOrderPage {...props} />
-      </Suspense>
-    );
+    return <PolishedOrderPage {...props} />;
   }
 
-  // Classic/Original UI
-  return (
-    <Suspense fallback={LoadingFallback}>
-      <OrderPageClient {...props} />
-    </Suspense>
-  );
+  return <OrderPageClient {...props} />;
 }
 
 
