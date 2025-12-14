@@ -1,10 +1,10 @@
 'use client';
 
-import { useState, useEffect } from 'react';
-import { useRouter } from 'next/navigation';
+import { useState, useMemo } from 'react';
 import Link from 'next/link';
-import Image from 'next/image';
-import { ShoppingCart, ArrowLeft } from 'lucide-react';
+import { ShoppingCart, ArrowLeft, Plus, Minus } from 'lucide-react';
+import { useCart } from '@/lib/store/cart';
+import { useRouter } from 'next/navigation';
 
 interface GroceryItem {
   id: string;
@@ -33,57 +33,69 @@ export default function GroceryPageClient({
   tenantName,
 }: GroceryPageClientProps) {
   const router = useRouter();
-  const [cart, setCart] = useState<{ [key: string]: number }>({});
+  const { items: cartItems, addToCart, updateQuantity } = useCart();
   const [selectedCategory, setSelectedCategory] = useState<string>('all');
 
-  // Force fresh data on mount (similar to order page pattern)
-  useEffect(() => {
-    router.refresh();
-  }, [router]);
-
   // Get unique categories
-  const categories = ['all', ...Array.from(new Set(groceryItems.map(item => item.category)))];
+  const categories = useMemo(() =>
+    ['all', ...Array.from(new Set(groceryItems.map(item => item.category)))],
+    [groceryItems]
+  );
 
   // Filter items by category
-  const filteredItems = selectedCategory === 'all'
-    ? groceryItems
-    : groceryItems.filter(item => item.category === selectedCategory);
+  const filteredItems = useMemo(() =>
+    selectedCategory === 'all'
+      ? groceryItems
+      : groceryItems.filter(item => item.category === selectedCategory),
+    [groceryItems, selectedCategory]
+  );
 
-  const handleAddToCart = (itemId: string) => {
-    setCart(prev => ({
-      ...prev,
-      [itemId]: (prev[itemId] || 0) + 1,
-    }));
+  // Get cart quantity for an item
+  const getCartQuantity = (itemId: string) => {
+    const cartItem = cartItems.find(item => item.id === itemId);
+    return cartItem?.quantity || 0;
   };
 
-  const handleRemoveFromCart = (itemId: string) => {
-    setCart(prev => {
-      const newCart = { ...prev };
-      if (newCart[itemId] > 1) {
-        newCart[itemId]--;
-      } else {
-        delete newCart[itemId];
-      }
-      return newCart;
+  // Handle add to cart
+  const handleAddToCart = (item: GroceryItem) => {
+    addToCart({
+      id: item.id,
+      name: item.name,
+      price: item.price,
+      quantity: 1,
+      image: item.image,
+      description: item.description,
     });
   };
 
-  const getTotalItems = () => {
-    return Object.values(cart).reduce((sum, qty) => sum + qty, 0);
+  // Handle increment quantity
+  const handleIncrement = (itemId: string, currentQuantity: number) => {
+    updateQuantity(itemId, currentQuantity + 1);
   };
 
-  const getTotalPrice = () => {
-    return Object.entries(cart).reduce((sum, [itemId, qty]) => {
-      const item = groceryItems.find(i => i.id === itemId);
-      return sum + (item ? item.price * qty : 0);
-    }, 0);
+  // Handle decrement quantity
+  const handleDecrement = (itemId: string, currentQuantity: number) => {
+    if (currentQuantity > 0) {
+      updateQuantity(itemId, currentQuantity - 1);
+    }
   };
+
+  // Calculate cart total
+  const cartTotal = useMemo(() =>
+    cartItems.reduce((sum, item) => sum + (item.price * item.quantity), 0),
+    [cartItems]
+  );
+
+  const totalItems = useMemo(() =>
+    cartItems.reduce((sum, item) => sum + item.quantity, 0),
+    [cartItems]
+  );
 
   return (
-    <div className="min-h-screen bg-gradient-to-br from-neutral-950 via-neutral-900 to-neutral-950">
+    <div className="min-h-screen bg-gradient-to-br from-red-900 via-red-800 to-orange-900">
       {/* Header */}
-      <div className="sticky top-0 z-50 bg-neutral-900/95 backdrop-blur-sm border-b border-white/10">
-        <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-4">
+      <div className="bg-gradient-to-r from-red-800 to-orange-800 border-b border-white/20 sticky top-0 z-40 backdrop-blur-sm bg-opacity-95">
+        <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-6">
           <div className="flex items-center justify-between">
             <div className="flex items-center gap-4">
               <Link
@@ -98,9 +110,15 @@ export default function GroceryPageClient({
               </h1>
             </div>
             <div className="flex items-center gap-4">
-              <div className="px-4 py-2 bg-green-600 rounded-full text-white font-semibold">
-                {getTotalItems()} items • ${getTotalPrice().toFixed(2)}
-              </div>
+              {totalItems > 0 && (
+                <button
+                  onClick={() => router.push('/checkout')}
+                  className="px-6 py-3 bg-green-600 hover:bg-green-700 rounded-full text-white font-semibold transition shadow-lg flex items-center gap-2"
+                >
+                  <ShoppingCart className="h-5 w-5" />
+                  <span>{totalItems} items • ${cartTotal.toFixed(2)}</span>
+                </button>
+              )}
             </div>
           </div>
         </div>
@@ -126,7 +144,7 @@ export default function GroceryPageClient({
       </div>
 
       {/* Grocery Items Grid */}
-      <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-6">
+      <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-6 pb-32">
         {filteredItems.length === 0 ? (
           <div className="text-center py-12 bg-white/5 rounded-3xl">
             <p className="text-white/70 text-lg">No items available in this category</p>
@@ -134,7 +152,7 @@ export default function GroceryPageClient({
         ) : (
           <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-6">
             {filteredItems.map(item => {
-              const quantity = cart[item.id] || 0;
+              const quantity = getCartQuantity(item.id);
               return (
                 <div
                   key={item.id}
@@ -177,27 +195,28 @@ export default function GroceryPageClient({
                     {/* Add to Cart Controls */}
                     {quantity === 0 ? (
                       <button
-                        onClick={() => handleAddToCart(item.id)}
-                        className="w-full bg-green-600 hover:bg-green-700 text-white font-semibold py-2 px-4 rounded-lg transition"
+                        onClick={() => handleAddToCart(item)}
+                        className="w-full bg-green-600 hover:bg-green-700 text-white font-semibold py-2 px-4 rounded-lg transition flex items-center justify-center gap-2"
                       >
+                        <Plus className="h-4 w-4" />
                         Add to Cart
                       </button>
                     ) : (
                       <div className="flex items-center gap-2">
                         <button
-                          onClick={() => handleRemoveFromCart(item.id)}
-                          className="flex-1 bg-red-600 hover:bg-red-700 text-white font-semibold py-2 px-4 rounded-lg transition"
+                          onClick={() => handleDecrement(item.id, quantity)}
+                          className="flex-1 bg-red-600 hover:bg-red-700 text-white font-semibold py-2 px-4 rounded-lg transition flex items-center justify-center"
                         >
-                          −
+                          <Minus className="h-4 w-4" />
                         </button>
-                        <span className="px-4 py-2 bg-white/10 text-white font-semibold rounded-lg">
+                        <div className="flex-1 bg-white/10 text-white font-bold py-2 px-4 rounded-lg text-center">
                           {quantity}
-                        </span>
+                        </div>
                         <button
-                          onClick={() => handleAddToCart(item.id)}
-                          className="flex-1 bg-green-600 hover:bg-green-700 text-white font-semibold py-2 px-4 rounded-lg transition"
+                          onClick={() => handleIncrement(item.id, quantity)}
+                          className="flex-1 bg-green-600 hover:bg-green-700 text-white font-semibold py-2 px-4 rounded-lg transition flex items-center justify-center"
                         >
-                          +
+                          <Plus className="h-4 w-4" />
                         </button>
                       </div>
                     )}
@@ -209,21 +228,16 @@ export default function GroceryPageClient({
         )}
       </div>
 
-      {/* Cart Summary (Sticky Bottom) */}
-      {getTotalItems() > 0 && (
-        <div className="fixed bottom-0 left-0 right-0 bg-neutral-900/95 backdrop-blur-sm border-t border-white/10 p-4 z-50">
-          <div className="max-w-7xl mx-auto flex items-center justify-between">
-            <div className="text-white">
-              <p className="text-sm text-white/70">{getTotalItems()} items</p>
-              <p className="text-2xl font-bold">${getTotalPrice().toFixed(2)}</p>
-            </div>
-            <Link
-              href="/checkout"
-              className="bg-green-600 hover:bg-green-700 text-white font-bold py-3 px-8 rounded-full transition"
-            >
-              Proceed to Checkout
-            </Link>
-          </div>
+      {/* Floating Checkout Button (Mobile) */}
+      {totalItems > 0 && (
+        <div className="fixed bottom-0 left-0 right-0 p-4 bg-gradient-to-t from-black to-transparent z-50 md:hidden">
+          <button
+            onClick={() => router.push('/checkout')}
+            className="w-full bg-green-600 hover:bg-green-700 text-white font-bold py-4 rounded-full shadow-2xl flex items-center justify-center gap-3"
+          >
+            <ShoppingCart className="h-6 w-6" />
+            <span>Checkout • {totalItems} items • ${cartTotal.toFixed(2)}</span>
+          </button>
         </div>
       )}
     </div>
