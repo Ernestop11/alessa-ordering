@@ -1,6 +1,7 @@
 'use client';
 
-import { useState } from 'react';
+import { useState, useEffect } from 'react';
+import { useRouter } from 'next/navigation';
 import Link from 'next/link';
 import Image from 'next/image';
 import { ShoppingCart, ArrowLeft } from 'lucide-react';
@@ -31,8 +32,14 @@ export default function GroceryPageClient({
   tenantSlug,
   tenantName,
 }: GroceryPageClientProps) {
+  const router = useRouter();
   const [cart, setCart] = useState<{ [key: string]: number }>({});
   const [selectedCategory, setSelectedCategory] = useState<string>('all');
+
+  // Force fresh data on mount (similar to order page pattern)
+  useEffect(() => {
+    router.refresh();
+  }, [router]);
 
   // Get unique categories
   const categories = ['all', ...Array.from(new Set(groceryItems.map(item => item.category)))];
