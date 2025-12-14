@@ -251,21 +251,32 @@ export default function OrderPageClient({
     if (!Array.isArray(safeSections)) return [];
     return safeSections.filter((section) => section && Array.isArray(section.items) && section.items.length > 0);
   }, [safeSections]);
-  const [activeLayout, setActiveLayout] = useState<LayoutView>(() => {
+  // Initialize with a consistent default for SSR to prevent hydration mismatch
+  // Client-side layout preference will be applied in useEffect after mount
+  const [activeLayout, setActiveLayout] = useState<LayoutView>('grid');
+  const [hasHydratedLayout, setHasHydratedLayout] = useState(false);
+
+  // Apply stored/URL layout preference after hydration
+  useEffect(() => {
+    if (hasHydratedLayout) return;
     const paramView = searchParams.get('view') as LayoutView | null;
     let storedView: LayoutView | null = null;
-    if (typeof window !== 'undefined') {
-      try {
-        storedView = window.localStorage.getItem('alessa_view_mode') as LayoutView | null;
-      } catch {
-        // localStorage may be unavailable in private mode
-      }
+    try {
+      storedView = window.localStorage.getItem('alessa_view_mode') as LayoutView | null;
+    } catch {
+      // localStorage may be unavailable in private mode
     }
-    if (paramView && ['grid', 'list', 'cards'].includes(paramView)) return paramView;
-    if (storedView && ['grid', 'list', 'cards'].includes(storedView)) return storedView;
-    if (typeof window !== 'undefined' && window.innerWidth < 768) return 'cards';
-    return 'grid';
-  });
+    let newLayout: LayoutView = 'grid';
+    if (paramView && ['grid', 'list', 'cards'].includes(paramView)) {
+      newLayout = paramView;
+    } else if (storedView && ['grid', 'list', 'cards'].includes(storedView)) {
+      newLayout = storedView;
+    } else if (window.innerWidth < 768) {
+      newLayout = 'cards';
+    }
+    setActiveLayout(newLayout);
+    setHasHydratedLayout(true);
+  }, [searchParams, hasHydratedLayout]);
   
   // Initialize activeSectionId after navSections is computed
   const [activeSectionId, setActiveSectionId] = useState('');

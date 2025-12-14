@@ -31,7 +31,9 @@ export async function PATCH(req: Request) {
     const customer = await getCustomerFromCookie(tenant.id);
 
     if (!customer) {
-      return NextResponse.json({ error: 'No active customer session' }, { status: 401 });
+      // Return 200 OK with no action - this prevents 401 errors in console for anonymous users
+      // Accessibility preferences are still saved in localStorage for non-authenticated users
+      return NextResponse.json({ ok: true, message: 'No customer session - preferences saved locally only' }, { status: 200 });
     }
 
     const body = await req.json();
