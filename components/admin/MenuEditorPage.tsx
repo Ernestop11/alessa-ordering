@@ -2311,6 +2311,200 @@ export default function MenuEditorPage() {
             </div>
           </div>
         )}
+
+        {/* Grocery Item Edit Modal */}
+        {editingGroceryItem && (
+          <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50 p-4 overflow-y-auto">
+            <div className="bg-white rounded-lg max-w-2xl w-full max-h-[90vh] overflow-y-auto">
+              <div className="p-6">
+                <h3 className="text-xl font-semibold mb-4 text-gray-900">
+                  {editingGroceryItem.id ? 'Edit Grocery Item' : 'Add Grocery Item'}
+                </h3>
+                <form onSubmit={(e) => { e.preventDefault(); handleSaveGroceryItem(); }} className="space-y-4">
+                  <div>
+                    <label className="block text-sm font-medium text-gray-700 mb-1">
+                      Item Name *
+                    </label>
+                    <input
+                      type="text"
+                      value={editingGroceryItem.name || ''}
+                      onChange={(e) => setEditingGroceryItem({ ...editingGroceryItem, name: e.target.value })}
+                      className="w-full px-3 py-2 border border-gray-300 rounded-md focus:ring-green-500 focus:border-green-500"
+                      required
+                    />
+                  </div>
+
+                  <div>
+                    <label className="block text-sm font-medium text-gray-700 mb-1">
+                      Description
+                    </label>
+                    <textarea
+                      value={editingGroceryItem.description || ''}
+                      onChange={(e) => setEditingGroceryItem({ ...editingGroceryItem, description: e.target.value })}
+                      rows={3}
+                      className="w-full px-3 py-2 border border-gray-300 rounded-md focus:ring-green-500 focus:border-green-500"
+                    />
+                  </div>
+
+                  <div className="grid grid-cols-2 gap-4">
+                    <div>
+                      <label className="block text-sm font-medium text-gray-700 mb-1">
+                        Price ($) *
+                      </label>
+                      <input
+                        type="number"
+                        step="0.01"
+                        min="0"
+                        value={editingGroceryItem.price || ''}
+                        onChange={(e) => setEditingGroceryItem({ ...editingGroceryItem, price: e.target.value })}
+                        className="w-full px-3 py-2 border border-gray-300 rounded-md focus:ring-green-500 focus:border-green-500"
+                        required
+                      />
+                    </div>
+
+                    <div>
+                      <label className="block text-sm font-medium text-gray-700 mb-1">
+                        Unit (optional)
+                      </label>
+                      <input
+                        type="text"
+                        value={editingGroceryItem.unit || ''}
+                        onChange={(e) => setEditingGroceryItem({ ...editingGroceryItem, unit: e.target.value })}
+                        placeholder="e.g., lb, each, dozen"
+                        className="w-full px-3 py-2 border border-gray-300 rounded-md focus:ring-green-500 focus:border-green-500"
+                      />
+                    </div>
+                  </div>
+
+                  <div className="grid grid-cols-2 gap-4">
+                    <div>
+                      <label className="block text-sm font-medium text-gray-700 mb-1">
+                        Category *
+                      </label>
+                      <select
+                        value={editingGroceryItem.category || 'general'}
+                        onChange={(e) => setEditingGroceryItem({ ...editingGroceryItem, category: e.target.value })}
+                        className="w-full px-3 py-2 border border-gray-300 rounded-md focus:ring-green-500 focus:border-green-500"
+                        required
+                      >
+                        <option value="general">General</option>
+                        <option value="produce">Produce</option>
+                        <option value="dairy">Dairy & Eggs</option>
+                        <option value="meat">Meat & Seafood</option>
+                        <option value="bakery">Bakery</option>
+                        <option value="pantry">Pantry Staples</option>
+                        <option value="beverages">Beverages</option>
+                        <option value="snacks">Snacks</option>
+                        <option value="frozen">Frozen Foods</option>
+                      </select>
+                    </div>
+
+                    <div>
+                      <label className="block text-sm font-medium text-gray-700 mb-1">
+                        Stock Quantity (optional)
+                      </label>
+                      <input
+                        type="number"
+                        min="0"
+                        value={editingGroceryItem.stockQuantity ?? ''}
+                        onChange={(e) => setEditingGroceryItem({
+                          ...editingGroceryItem,
+                          stockQuantity: e.target.value === '' ? null : parseInt(e.target.value)
+                        })}
+                        placeholder="Leave empty for unlimited"
+                        className="w-full px-3 py-2 border border-gray-300 rounded-md focus:ring-green-500 focus:border-green-500"
+                      />
+                    </div>
+                  </div>
+
+                  <div>
+                    <label className="block text-sm font-medium text-gray-700 mb-1">
+                      Display Order
+                    </label>
+                    <input
+                      type="number"
+                      min="0"
+                      value={editingGroceryItem.displayOrder ?? 0}
+                      onChange={(e) => setEditingGroceryItem({ ...editingGroceryItem, displayOrder: parseInt(e.target.value) || 0 })}
+                      className="w-full px-3 py-2 border border-gray-300 rounded-md focus:ring-green-500 focus:border-green-500"
+                    />
+                  </div>
+
+                  <div>
+                    <label className="block text-sm font-medium text-gray-700 mb-1">
+                      Item Image
+                    </label>
+                    <input
+                      type="file"
+                      accept="image/*"
+                      onChange={async (e) => {
+                        const file = e.target.files?.[0];
+                        if (!file) return;
+
+                        try {
+                          const compressed = await compressImage(file, { maxSizeMB: 2, maxWidthOrHeight: 1920 });
+                          const fd = new FormData();
+                          fd.append('file', compressed);
+                          const res = await fetch('/api/admin/assets/upload', { method: 'POST', body: fd });
+                          if (!res.ok) {
+                            const err = await res.json();
+                            throw new Error(err.message || 'Upload failed');
+                          }
+                          const data = await res.json();
+                          setEditingGroceryItem({ ...editingGroceryItem, image: data.url });
+                          alert('Image uploaded successfully!');
+                        } catch (err: any) {
+                          console.error(err);
+                          alert('Upload failed: ' + err.message);
+                        }
+                      }}
+                      className="w-full px-3 py-2 border border-gray-300 rounded-md focus:ring-green-500 focus:border-green-500"
+                    />
+                    {editingGroceryItem.image && (
+                      <div className="mt-2">
+                        <img
+                          src={editingGroceryItem.image}
+                          alt="Preview"
+                          className="w-32 h-32 object-cover rounded border border-gray-200"
+                        />
+                      </div>
+                    )}
+                  </div>
+
+                  <div className="flex items-center">
+                    <input
+                      type="checkbox"
+                      id="grocery-available"
+                      checked={editingGroceryItem.available !== false}
+                      onChange={(e) => setEditingGroceryItem({ ...editingGroceryItem, available: e.target.checked })}
+                      className="h-4 w-4 text-green-600 focus:ring-green-500 border-gray-300 rounded"
+                    />
+                    <label htmlFor="grocery-available" className="ml-2 block text-sm text-gray-900">
+                      Available for purchase
+                    </label>
+                  </div>
+
+                  <div className="flex gap-3 pt-4">
+                    <button
+                      type="submit"
+                      disabled={isLoading}
+                      className="flex-1 px-4 py-2 bg-green-600 text-white rounded-md hover:bg-green-700 disabled:bg-gray-300 disabled:cursor-not-allowed font-medium"
+                    >
+                      {isLoading ? 'Saving...' : 'Save'}
+                    </button>
+                    <button
+                      type="button"
+                      onClick={() => setEditingGroceryItem(null)}
+                      className="flex-1 px-4 py-2 border border-gray-300 rounded-md shadow-sm text-sm font-medium text-gray-700 bg-white hover:bg-gray-50"
+                    >
+                      Cancel
+                    </button>
+                  </div>
+                </form>
+              </div>
+            </div>
+          </div>
+        )}
       </div>
     </DashboardLayout>
   );

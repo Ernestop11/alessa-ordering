@@ -2454,8 +2454,8 @@ export default function OrderPageClient({
               </div>
             )}
 
-            {/* Grocery Store Banner - After 5th section */}
-            {sectionIndex === 5 && (
+            {/* Grocery Store Banner - After 2nd section */}
+            {sectionIndex === 2 && (
               <div className="mb-10 relative overflow-hidden rounded-3xl bg-gradient-to-r from-green-700 via-green-600 to-green-700 p-1">
                 <div className="relative overflow-hidden rounded-[22px] bg-gradient-to-br from-green-950 to-green-900 p-6 md:p-8">
                   {/* Decorative elements */}
