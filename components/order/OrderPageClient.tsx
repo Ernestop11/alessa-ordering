@@ -1066,7 +1066,15 @@ export default function OrderPageClient({
         });
         if (res.ok) {
           const data = await res.json();
-          setCateringPackages(Array.isArray(data) ? data : []);
+          // API now returns { sections: [...], gallery: [...] }
+          // Extract packages from sections and flatten into array
+          if (data.sections && Array.isArray(data.sections)) {
+            const allPackages = data.sections.flatMap((section: { packages: CateringPackage[] }) => section.packages || []);
+            setCateringPackages(allPackages);
+          } else if (Array.isArray(data)) {
+            // Fallback for old API format (flat array)
+            setCateringPackages(data);
+          }
         }
       } catch (err) {
         console.error('Failed to refresh catering packages', err);
