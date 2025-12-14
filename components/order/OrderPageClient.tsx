@@ -373,15 +373,26 @@ export default function OrderPageClient({
     }
   }, [activeLayout]);
 
+  // Detect Safari for scroll optimization
+  const isSafariBrowser = typeof window !== 'undefined' && /^((?!chrome|android).)*safari/i.test(navigator.userAgent);
+  
   useEffect(() => {
-    if (typeof window === 'undefined') return;
-    const sectionEl = document.getElementById(`section-${activeSectionId}`);
-    if (sectionEl) {
-      const headerHeight = 140; // Account for fixed header and nav
-      const elementPosition = sectionEl.getBoundingClientRect().top + window.pageYOffset;
-      window.scrollTo({ top: elementPosition - headerHeight, behavior: 'smooth' });
-    }
-  }, [activeSectionId]);
+    if (typeof window === 'undefined' || !activeSectionId) return;
+    
+    // Use requestAnimationFrame to prevent scroll conflicts
+    requestAnimationFrame(() => {
+      const sectionEl = document.getElementById(`section-${activeSectionId}`);
+      if (sectionEl) {
+        const headerHeight = 140; // Account for fixed header and nav
+        const elementPosition = sectionEl.getBoundingClientRect().top + window.pageYOffset;
+        // Use instant scroll on Safari for better performance, smooth on others
+        window.scrollTo({ 
+          top: elementPosition - headerHeight, 
+          behavior: isSafariBrowser ? 'auto' : 'smooth' 
+        });
+      }
+    });
+  }, [activeSectionId, isSafariBrowser]);
 
   useEffect(() => {
     let canceled = false;
@@ -665,26 +676,30 @@ export default function OrderPageClient({
 
     if (sectionsToObserve.length === 0) return;
 
-    // Throttle updates to prevent excessive re-renders
+    // Throttle updates to prevent excessive re-renders (especially important for Chrome)
     let lastUpdate = 0;
-    const throttleDelay = 100; // Update at most every 100ms
+    const throttleDelay = 150; // Increased to 150ms for better Chrome stability
 
     const observer = new IntersectionObserver(
       (entries) => {
-        const now = Date.now();
-        if (now - lastUpdate < throttleDelay) return;
-        lastUpdate = now;
+        // Use requestAnimationFrame to batch DOM reads and prevent Chrome flashing
+        requestAnimationFrame(() => {
+          const now = Date.now();
+          if (now - lastUpdate < throttleDelay) return;
+          lastUpdate = now;
 
-        const visibleSection = entries
-          .filter((entry) => entry.isIntersecting)
-          .sort((a, b) => b.intersectionRatio - a.intersectionRatio)[0];
+          const visibleSection = entries
+            .filter((entry) => entry.isIntersecting)
+            .sort((a, b) => b.intersectionRatio - a.intersectionRatio)[0];
 
-        if (visibleSection) {
-          const targetId = sectionsToObserve.find((section) => section.el === visibleSection.target)?.id;
-          if (targetId && targetId !== activeSectionId) {
-            setActiveSectionId(targetId);
+          if (visibleSection) {
+            const targetId = sectionsToObserve.find((section) => section.el === visibleSection.target)?.id;
+            if (targetId && targetId !== activeSectionId) {
+              // Batch state update to prevent flashing
+              setActiveSectionId(targetId);
+            }
           }
-        }
+        });
       },
       {
         rootMargin: '-140px 0px -40%',
@@ -1963,7 +1978,7 @@ export default function OrderPageClient({
                         if (element) {
                           const headerHeight = 160;
                           const elementPosition = element.getBoundingClientRect().top + window.pageYOffset;
-                          window.scrollTo({ top: elementPosition - headerHeight, behavior: 'smooth' });
+                          window.scrollTo({ top: elementPosition - headerHeight, behavior: isSafariBrowser ? 'auto' : 'smooth' });
                         }
                       }}
                       data-section-button={section.id}
@@ -2133,7 +2148,7 @@ export default function OrderPageClient({
                 <button
                   onClick={() => {
                     const menuEl = document.getElementById('menu');
-                    if (menuEl) menuEl.scrollIntoView({ behavior: 'smooth' });
+                    if (menuEl) menuEl.scrollIntoView({ behavior: isSafariBrowser ? 'auto' : 'smooth' });
                   }}
                   className="inline-flex items-center gap-2 rounded-full border-2 border-white/60 bg-white/10 backdrop-blur-md px-10 py-5 text-lg font-bold text-white hover:bg-white/25 hover:border-white transition-all"
                 >
@@ -2477,7 +2492,7 @@ export default function OrderPageClient({
                           const firstSection = enrichedSections.find(s => s.name.toLowerCase().includes('taco'));
                           if (firstSection) {
                             const element = document.getElementById(`section-${firstSection.id}`);
-                            element?.scrollIntoView({ behavior: 'smooth' });
+                            element?.scrollIntoView({ behavior: isSafariBrowser ? 'auto' : 'smooth' });
                           }
                         }}
                         className="px-6 py-2.5 rounded-full bg-[#FFD700] text-[#8B0000] font-bold hover:bg-white transition-colors"
