@@ -2487,10 +2487,9 @@ export default function MenuEditorPage() {
                   <div className="flex gap-3 pt-4">
                     <button
                       type="submit"
-                      disabled={isLoading}
-                      className="flex-1 px-4 py-2 bg-green-600 text-white rounded-md hover:bg-green-700 disabled:bg-gray-300 disabled:cursor-not-allowed font-medium"
+                      className="flex-1 px-4 py-2 bg-green-600 text-white rounded-md hover:bg-green-700 font-medium"
                     >
-                      {isLoading ? 'Saving...' : 'Save'}
+                      Save
                     </button>
                     <button
                       type="button"
