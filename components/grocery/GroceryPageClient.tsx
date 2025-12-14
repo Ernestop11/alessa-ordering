@@ -1,6 +1,6 @@
 'use client';
 
-import { useState, useMemo, useEffect } from 'react';
+import { useState, useMemo } from 'react';
 import Link from 'next/link';
 import { ShoppingCart, ArrowLeft, Plus, Minus } from 'lucide-react';
 import { useCart } from '@/lib/store/cart';
@@ -35,7 +35,6 @@ export default function GroceryPageClient({
   const router = useRouter();
   const { items: cartItems, addToCart, updateQuantity } = useCart();
   const [selectedCategory, setSelectedCategory] = useState<string>('all');
-  const [mounted, setMounted] = useState(false);
 
   // Get unique categories
   const categories = useMemo(() =>
@@ -50,22 +49,6 @@ export default function GroceryPageClient({
       : groceryItems.filter(item => item.category === selectedCategory),
     [groceryItems, selectedCategory]
   );
-
-  // Prevent hydration mismatch by only rendering after mount
-  useEffect(() => {
-    setMounted(true);
-  }, []);
-
-  if (!mounted) {
-    return (
-      <div className="min-h-screen bg-gradient-to-br from-red-900 via-red-800 to-orange-900 flex items-center justify-center">
-        <div className="text-center">
-          <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-white mx-auto mb-4"></div>
-          <p className="text-white text-lg">Loading grocery store...</p>
-        </div>
-      </div>
-    );
-  }
 
   // Get cart quantity for an item
   const getCartQuantity = (itemId: string) => {
