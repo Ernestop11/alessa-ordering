@@ -61,6 +61,19 @@ interface CateringPackage {
   displayOrder: number;
 }
 
+interface FrontendSection {
+  id: string;
+  tenantId: string;
+  name: string;
+  type: 'HERO_BANNER' | 'PROMOTIONAL_BANNER' | 'GROCERY_BANNER' | 'BUNDLE_SHOWCASE' | 'CUSTOM_HTML';
+  position: number;
+  enabled: boolean;
+  content: any;
+  insertAfter: number | null;
+  createdAt: string;
+  updatedAt: string;
+}
+
 export default function MenuEditorPage() {
   const [activeTab, setActiveTab] = useState<'menu' | 'catering' | 'grocery' | 'frontend'>('menu');
   const [grocerySubTab, setGrocerySubTab] = useState<'items' | 'bundles' | 'weekend'>('items');
@@ -84,6 +97,11 @@ export default function MenuEditorPage() {
   const [cateringGallery, setCateringGallery] = useState<string[]>([]);
   const [isAcceptingOrders, setIsAcceptingOrders] = useState(true);
   const [loadingStatus, setLoadingStatus] = useState(false);
+
+  // Frontend sections state
+  const [frontendSections, setFrontendSections] = useState<FrontendSection[]>([]);
+  const [editingFrontendSection, setEditingFrontendSection] = useState<FrontendSection | null>(null);
+  const [frontendSubTab, setFrontendSubTab] = useState<'text' | 'sections'>('text');
 
   // Frontend customization state
   const [frontendConfig, setFrontendConfig] = useState({
@@ -120,6 +138,7 @@ export default function MenuEditorPage() {
     fetchCateringGallery();
     fetchOrderingStatus();
     fetchFrontendConfig();
+    fetchFrontendSections();
 
     // Re-check operating hours every minute to keep toggle synced
     const statusInterval = setInterval(() => {
@@ -612,6 +631,91 @@ export default function MenuEditorPage() {
       }
     } catch (err) {
       console.error('Failed to fetch frontend config', err);
+    }
+  };
+
+  const fetchFrontendSections = async () => {
+    try {
+      const res = await fetch('/api/admin/frontend-sections');
+      const data = await res.json();
+      setFrontendSections(data || []);
+    } catch (err) {
+      console.error('Failed to fetch frontend sections', err);
+    }
+  };
+
+  const handleAddFrontendSection = () => {
+    const newSection: FrontendSection = {
+      id: '',
+      tenantId: '',
+      name: '',
+      type: 'PROMOTIONAL_BANNER',
+      position: frontendSections.length,
+      enabled: true,
+      content: {
+        title: '',
+        subtitle: '',
+        buttonText: 'Learn More',
+        buttonLink: '#',
+        image: '',
+      },
+      insertAfter: null,
+      createdAt: '',
+      updatedAt: '',
+    };
+    setEditingFrontendSection(newSection);
+  };
+
+  const handleSaveFrontendSection = async () => {
+    if (!editingFrontendSection) return;
+
+    try {
+      const method = editingFrontendSection.id ? 'PATCH' : 'POST';
+      const url = editingFrontendSection.id
+        ? `/api/admin/frontend-sections/${editingFrontendSection.id}`
+        : '/api/admin/frontend-sections';
+
+      const res = await fetch(url, {
+        method,
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify(editingFrontendSection),
+      });
+
+      if (!res.ok) throw new Error('Failed to save frontend section');
+      await fetchFrontendSections();
+      setEditingFrontendSection(null);
+    } catch (err) {
+      console.error('Failed to save frontend section', err);
+      alert('Failed to save frontend section');
+    }
+  };
+
+  const handleDeleteFrontendSection = async (id: string) => {
+    if (!confirm('Are you sure you want to delete this section?')) return;
+
+    try {
+      const res = await fetch(`/api/admin/frontend-sections/${id}`, { method: 'DELETE' });
+      if (!res.ok) throw new Error('Failed to delete');
+      await fetchFrontendSections();
+    } catch (err) {
+      console.error('Failed to delete frontend section', err);
+      alert('Failed to delete frontend section');
+    }
+  };
+
+  const handleReorderFrontendSection = async (sectionId: string, direction: 'up' | 'down') => {
+    try {
+      const res = await fetch('/api/admin/frontend-sections/reorder', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ sectionId, direction }),
+      });
+
+      if (!res.ok) throw new Error('Failed to reorder section');
+      await fetchFrontendSections();
+    } catch (err) {
+      console.error('Failed to reorder section', err);
+      alert('Failed to reorder section');
     }
   };
 
@@ -1549,13 +1653,40 @@ export default function MenuEditorPage() {
               )}
             </div>
           ) : activeTab === 'frontend' ? (
-            <div className="max-w-4xl mx-auto">
-              <div className="bg-white rounded-lg shadow-md p-6">
-                <h2 className="text-2xl font-semibold text-gray-900 mb-6">Frontend Section Customization</h2>
-                <p className="text-gray-600 mb-6">Customize the text displayed in various sections on your customer-facing order page. Changes sync automatically when you save.</p>
+            <div className="max-w-6xl mx-auto">
+              {/* Sub-Tabs */}
+              <div className="mb-6 border-b border-gray-200">
+                <nav className="-mb-px flex space-x-8">
+                  <button
+                    onClick={() => setFrontendSubTab('text')}
+                    className={`whitespace-nowrap py-4 px-1 border-b-2 font-medium text-sm ${
+                      frontendSubTab === 'text'
+                        ? 'border-blue-500 text-blue-600'
+                        : 'border-transparent text-gray-500 hover:text-gray-700 hover:border-gray-300'
+                    }`}
+                  >
+                    Text Customization
+                  </button>
+                  <button
+                    onClick={() => setFrontendSubTab('sections')}
+                    className={`whitespace-nowrap py-4 px-1 border-b-2 font-medium text-sm ${
+                      frontendSubTab === 'sections'
+                        ? 'border-blue-500 text-blue-600'
+                        : 'border-transparent text-gray-500 hover:text-gray-700 hover:border-gray-300'
+                    }`}
+                  >
+                    Promotional Sections
+                  </button>
+                </nav>
+              </div>
 
-                {/* Featured Carousel Section */}
-                <div className="space-y-6">
+              {frontendSubTab === 'text' ? (
+                <div className="bg-white rounded-lg shadow-md p-6">
+                  <h2 className="text-2xl font-semibold text-gray-900 mb-6">Frontend Text Customization</h2>
+                  <p className="text-gray-600 mb-6">Customize the text displayed in various sections on your customer-facing order page. Changes sync automatically when you save.</p>
+
+                  {/* Featured Carousel Section */}
+                  <div className="space-y-6">
                   <div className="border-b border-gray-200 pb-6">
                     <h3 className="text-lg font-semibold text-gray-900 mb-4 flex items-center gap-2">
                       <span className="text-amber-500">⭐</span>
@@ -1875,6 +2006,99 @@ export default function MenuEditorPage() {
                   </div>
                 </div>
               </div>
+              ) : (
+                // Promotional Sections Management
+                <div>
+                  <div className="mb-6 flex items-center justify-between">
+                    <div>
+                      <h2 className="text-2xl font-semibold text-gray-900">Promotional Sections</h2>
+                      <p className="text-gray-600 mt-1">Manage promotional banners and sections that appear on the order page (grocery banner, promotional billboards, etc.)</p>
+                    </div>
+                    <button
+                      onClick={handleAddFrontendSection}
+                      className="px-4 py-2 bg-blue-600 text-white rounded-md hover:bg-blue-700 flex items-center gap-2"
+                    >
+                      <Plus className="h-4 w-4" />
+                      Add Section
+                    </button>
+                  </div>
+
+                  {frontendSections.length === 0 ? (
+                    <div className="bg-white rounded-lg shadow p-8 text-center">
+                      <p className="text-gray-500">No promotional sections yet. Click &quot;Add Section&quot; to create your first one!</p>
+                    </div>
+                  ) : (
+                    <div className="space-y-4">
+                      {frontendSections.map((section, index) => (
+                        <div
+                          key={section.id}
+                          className="bg-white rounded-lg shadow p-6 border-2 border-gray-200"
+                        >
+                          <div className="flex items-start justify-between">
+                            <div className="flex-1">
+                              <div className="flex items-center gap-3">
+                                <h3 className="text-lg font-semibold text-gray-900">{section.name || 'Untitled Section'}</h3>
+                                <span className={`px-3 py-1 rounded-full text-xs font-medium ${
+                                  section.enabled
+                                    ? 'bg-green-100 text-green-800'
+                                    : 'bg-gray-100 text-gray-600'
+                                }`}>
+                                  {section.enabled ? 'Enabled' : 'Disabled'}
+                                </span>
+                                <span className="px-3 py-1 rounded-full text-xs font-medium bg-blue-100 text-blue-800">
+                                  {section.type.replace(/_/g, ' ')}
+                                </span>
+                              </div>
+                              <p className="text-sm text-gray-500 mt-2">
+                                Position: {section.position + 1}
+                                {section.insertAfter !== null && ` • Inserts after menu section ${section.insertAfter + 1}`}
+                              </p>
+                              {section.content?.title && (
+                                <p className="text-sm text-gray-700 mt-2 font-medium">{section.content.title}</p>
+                              )}
+                            </div>
+
+                            <div className="flex items-center gap-2">
+                              {/* Reorder buttons */}
+                              <button
+                                onClick={() => handleReorderFrontendSection(section.id, 'up')}
+                                disabled={index === 0}
+                                className="p-2 text-gray-600 hover:text-blue-600 disabled:opacity-30 disabled:cursor-not-allowed"
+                                title="Move up"
+                              >
+                                ↑
+                              </button>
+                              <button
+                                onClick={() => handleReorderFrontendSection(section.id, 'down')}
+                                disabled={index === frontendSections.length - 1}
+                                className="p-2 text-gray-600 hover:text-blue-600 disabled:opacity-30 disabled:cursor-not-allowed"
+                                title="Move down"
+                              >
+                                ↓
+                              </button>
+
+                              <button
+                                onClick={() => setEditingFrontendSection(section)}
+                                className="p-2 text-blue-600 hover:text-blue-800"
+                                title="Edit"
+                              >
+                                <Edit2 className="h-4 w-4" />
+                              </button>
+                              <button
+                                onClick={() => handleDeleteFrontendSection(section.id)}
+                                className="p-2 text-red-600 hover:text-red-800"
+                                title="Delete"
+                              >
+                                <Trash2 className="h-4 w-4" />
+                              </button>
+                            </div>
+                          </div>
+                        </div>
+                      ))}
+                    </div>
+                  )}
+                </div>
+              )}
             </div>
           ) : null}
         </div>
@@ -3142,6 +3366,206 @@ export default function MenuEditorPage() {
                     <button
                       type="button"
                       onClick={() => setEditingGroceryBundle(null)}
+                      className="flex-1 px-4 py-2 border border-gray-300 rounded-md shadow-sm text-sm font-medium text-gray-700 bg-white hover:bg-gray-50"
+                    >
+                      Cancel
+                    </button>
+                  </div>
+                </form>
+              </div>
+            </div>
+          </div>
+        )}
+
+        {/* Frontend Section Edit Modal */}
+        {editingFrontendSection && (
+          <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50 p-4">
+            <div className="bg-white rounded-lg max-w-2xl w-full max-h-[90vh] overflow-y-auto">
+              <div className="p-6">
+                <h3 className="text-xl font-semibold mb-4 text-gray-900">
+                  {editingFrontendSection.id ? 'Edit Frontend Section' : 'Add Frontend Section'}
+                </h3>
+                <form
+                  onSubmit={(e) => {
+                    e.preventDefault();
+                    handleSaveFrontendSection();
+                  }}
+                  className="space-y-4"
+                >
+                  <div className="grid grid-cols-2 gap-4">
+                    <div className="col-span-2">
+                      <label className="block text-sm font-medium text-gray-700 mb-1">
+                        Section Name *
+                      </label>
+                      <input
+                        type="text"
+                        required
+                        value={editingFrontendSection.name}
+                        onChange={(e) =>
+                          setEditingFrontendSection({ ...editingFrontendSection, name: e.target.value })
+                        }
+                        className="w-full px-3 py-2 border border-gray-300 rounded-md"
+                        placeholder="e.g., Grocery Store Banner, Holiday Promotion"
+                      />
+                    </div>
+
+                    <div>
+                      <label className="block text-sm font-medium text-gray-700 mb-1">
+                        Section Type *
+                      </label>
+                      <select
+                        required
+                        value={editingFrontendSection.type}
+                        onChange={(e) =>
+                          setEditingFrontendSection({
+                            ...editingFrontendSection,
+                            type: e.target.value as any,
+                          })
+                        }
+                        className="w-full px-3 py-2 border border-gray-300 rounded-md"
+                      >
+                        <option value="PROMOTIONAL_BANNER">Promotional Banner</option>
+                        <option value="GROCERY_BANNER">Grocery Store Banner</option>
+                        <option value="BUNDLE_SHOWCASE">Bundle Showcase</option>
+                        <option value="HERO_BANNER">Hero Banner</option>
+                        <option value="CUSTOM_HTML">Custom HTML</option>
+                      </select>
+                    </div>
+
+                    <div>
+                      <label className="block text-sm font-medium text-gray-700 mb-1">
+                        Insert After Menu Section #
+                      </label>
+                      <input
+                        type="number"
+                        min="0"
+                        value={editingFrontendSection.insertAfter ?? ''}
+                        onChange={(e) =>
+                          setEditingFrontendSection({
+                            ...editingFrontendSection,
+                            insertAfter: e.target.value ? parseInt(e.target.value) : null,
+                          })
+                        }
+                        className="w-full px-3 py-2 border border-gray-300 rounded-md"
+                        placeholder="Leave empty for default position"
+                      />
+                      <p className="text-xs text-gray-500 mt-1">Which menu section should this appear after? (0-based index)</p>
+                    </div>
+
+                    <div className="col-span-2">
+                      <label className="flex items-center">
+                        <input
+                          type="checkbox"
+                          checked={editingFrontendSection.enabled}
+                          onChange={(e) =>
+                            setEditingFrontendSection({
+                              ...editingFrontendSection,
+                              enabled: e.target.checked,
+                            })
+                          }
+                          className="mr-2"
+                        />
+                        <span className="text-sm font-medium text-gray-700">Section Enabled</span>
+                      </label>
+                    </div>
+
+                    <div className="col-span-2 border-t pt-4">
+                      <h4 className="font-medium text-gray-900 mb-3">Content Settings</h4>
+
+                      <div className="space-y-3">
+                        <div>
+                          <label className="block text-sm font-medium text-gray-700 mb-1">Title</label>
+                          <input
+                            type="text"
+                            value={editingFrontendSection.content?.title || ''}
+                            onChange={(e) =>
+                              setEditingFrontendSection({
+                                ...editingFrontendSection,
+                                content: { ...editingFrontendSection.content, title: e.target.value },
+                              })
+                            }
+                            className="w-full px-3 py-2 border border-gray-300 rounded-md"
+                            placeholder="Section title"
+                          />
+                        </div>
+
+                        <div>
+                          <label className="block text-sm font-medium text-gray-700 mb-1">Subtitle</label>
+                          <input
+                            type="text"
+                            value={editingFrontendSection.content?.subtitle || ''}
+                            onChange={(e) =>
+                              setEditingFrontendSection({
+                                ...editingFrontendSection,
+                                content: { ...editingFrontendSection.content, subtitle: e.target.value },
+                              })
+                            }
+                            className="w-full px-3 py-2 border border-gray-300 rounded-md"
+                            placeholder="Section subtitle"
+                          />
+                        </div>
+
+                        <div>
+                          <label className="block text-sm font-medium text-gray-700 mb-1">Button Text</label>
+                          <input
+                            type="text"
+                            value={editingFrontendSection.content?.buttonText || ''}
+                            onChange={(e) =>
+                              setEditingFrontendSection({
+                                ...editingFrontendSection,
+                                content: { ...editingFrontendSection.content, buttonText: e.target.value },
+                              })
+                            }
+                            className="w-full px-3 py-2 border border-gray-300 rounded-md"
+                            placeholder="e.g., Shop Now, Learn More"
+                          />
+                        </div>
+
+                        <div>
+                          <label className="block text-sm font-medium text-gray-700 mb-1">Button Link</label>
+                          <input
+                            type="text"
+                            value={editingFrontendSection.content?.buttonLink || ''}
+                            onChange={(e) =>
+                              setEditingFrontendSection({
+                                ...editingFrontendSection,
+                                content: { ...editingFrontendSection.content, buttonLink: e.target.value },
+                              })
+                            }
+                            className="w-full px-3 py-2 border border-gray-300 rounded-md"
+                            placeholder="/grocery, /catering, https://..."
+                          />
+                        </div>
+
+                        <div>
+                          <label className="block text-sm font-medium text-gray-700 mb-1">Image URL</label>
+                          <input
+                            type="text"
+                            value={editingFrontendSection.content?.image || ''}
+                            onChange={(e) =>
+                              setEditingFrontendSection({
+                                ...editingFrontendSection,
+                                content: { ...editingFrontendSection.content, image: e.target.value },
+                              })
+                            }
+                            className="w-full px-3 py-2 border border-gray-300 rounded-md"
+                            placeholder="https://..."
+                          />
+                        </div>
+                      </div>
+                    </div>
+                  </div>
+
+                  <div className="bg-gray-50 px-4 py-3 sm:flex sm:flex-row-reverse gap-3 -mx-6 -mb-6 mt-6">
+                    <button
+                      type="submit"
+                      className="flex-1 px-4 py-2 bg-blue-600 text-white rounded-md shadow-sm hover:bg-blue-700 font-medium"
+                    >
+                      Save Section
+                    </button>
+                    <button
+                      type="button"
+                      onClick={() => setEditingFrontendSection(null)}
                       className="flex-1 px-4 py-2 border border-gray-300 rounded-md shadow-sm text-sm font-medium text-gray-700 bg-white hover:bg-gray-50"
                     >
                       Cancel

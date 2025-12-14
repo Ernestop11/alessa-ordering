@@ -277,6 +277,7 @@ model Tenant {
   customerSessions       CustomerSession[]
   menuSections           MenuSection[]
   menuItems              MenuItem[]
+  frontendSections       FrontendSection[]
   cateringSections       CateringSection[]
   cateringPackages       CateringPackage[]
   groceryItems           GroceryItem[]
@@ -393,6 +394,30 @@ enum MenuSectionType {
   BEVERAGE
   SPECIAL
   OTHER
+}
+
+model FrontendSection {
+  id          String                @id @default(uuid())
+  tenantId    String
+  name        String                // e.g., "Grocery Store Banner", "Promotional Billboard"
+  type        FrontendSectionType
+  position    Int                   @default(0) // Display order on page
+  enabled     Boolean               @default(true)
+  content     Json?                 // Flexible content: title, subtitle, image, CTA, etc.
+  insertAfter Int?                  // Insert after which menu section index (null = before all sections)
+  createdAt   DateTime              @default(now())
+  updatedAt   DateTime              @updatedAt
+  tenant      Tenant                @relation(fields: [tenantId], references: [id], onDelete: Cascade)
+
+  @@index([tenantId, position])
+}
+
+enum FrontendSectionType {
+  HERO_BANNER          // Top hero section
+  PROMOTIONAL_BANNER   // Promotional billboard
+  GROCERY_BANNER       // Grocery store link banner
+  BUNDLE_SHOWCASE      // Featured bundle/package
+  CUSTOM_HTML          // Custom content
 }
 
 model Customer {
