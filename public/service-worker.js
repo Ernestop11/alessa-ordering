@@ -3,17 +3,18 @@
  * Provides offline support and caching
  */
 
-const CACHE_NAME = 'alessa-ordering-v4-2025-12-14';
+const CACHE_NAME = 'alessa-ordering-v5-2025-12-14';
 const OFFLINE_PAGE = '/offline.html';
 
-// Install event - cache essential files
+// Install event - cache only truly static files (NOT dynamic pages like /)
 self.addEventListener('install', (event) => {
   event.waitUntil(
     caches.open(CACHE_NAME).then((cache) => {
       return cache.addAll([
-        '/',
         '/offline.html',
         '/manifest.json',
+        '/icon-192.png',
+        '/icon-512.png',
       ]);
     })
   );
