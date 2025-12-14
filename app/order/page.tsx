@@ -217,6 +217,15 @@ async function getCateringPackages(tenantId: string) {
     ],
   });
 
+  // Debug logging
+  console.log('========================================');
+  console.log('[getCateringPackages] Tenant ID:', tenantId);
+  console.log('[getCateringPackages] Raw packages from DB:', packages.length);
+  packages.forEach(p => {
+    console.log(`  - ${p.name}: category="${p.category}", available=${p.available}`);
+  });
+  console.log('========================================');
+
   // Add cache-busting timestamp to images
   const timestamp = Date.now();
   const addCacheBuster = (url: string | null) => {
