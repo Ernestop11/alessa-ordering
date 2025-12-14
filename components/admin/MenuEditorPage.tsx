@@ -131,48 +131,6 @@ export default function MenuEditorPage() {
   });
   const [savingFrontendConfig, setSavingFrontendConfig] = useState(false);
 
-  useEffect(() => {
-    // Update version without causing redirects or clearing storage
-    // This prevents breaking sessions and causing infinite redirect loops
-    const cachedVersion = localStorage.getItem('menu-editor-version');
-    if (cachedVersion !== MENU_EDITOR_VERSION) {
-      console.log('[MenuEditor] Version updated:', { cached: cachedVersion, current: MENU_EDITOR_VERSION });
-      localStorage.setItem('menu-editor-version', MENU_EDITOR_VERSION);
-      // Don't clear storage or redirect - just update version for tracking
-    }
-
-    console.log('[MenuEditor] Initializing...');
-
-    fetchSections();
-    fetchItems();
-    fetchCateringSections();
-    fetchCateringPackages();
-    fetchGroceryItems();
-    fetchGroceryBundles();
-    fetchCateringGallery();
-    fetchOrderingStatus();
-    fetchFrontendConfig();
-    fetchFrontendSections();
-
-    // Re-check operating hours every 30 seconds to keep toggle synced with business hours
-    // This ensures the status updates automatically when hours change or time passes
-    const statusInterval = setInterval(() => {
-      fetchOrderingStatus();
-    }, 30000); // 30 seconds - more frequent to catch hour changes
-
-    // Listen for operating hours updates from Settings page
-    const handleHoursUpdate = () => {
-      console.log('[MenuEditor] Operating hours updated, refreshing status...');
-      fetchOrderingStatus();
-    };
-    window.addEventListener('operatingHoursUpdated', handleHoursUpdate);
-
-    return () => {
-      clearInterval(statusInterval);
-      window.removeEventListener('operatingHoursUpdated', handleHoursUpdate);
-    };
-  }, [fetchOrderingStatus]);
-
   const fetchSections = async () => {
     try {
       const res = await fetch('/api/admin/menu-sections');
@@ -629,6 +587,46 @@ export default function MenuEditorPage() {
       console.error('Failed to fetch ordering status', err);
     }
   }, []);
+
+  // Main initialization useEffect - placed after fetchOrderingStatus to avoid hoisting issues
+  useEffect(() => {
+    // Update version without causing redirects or clearing storage
+    const cachedVersion = localStorage.getItem('menu-editor-version');
+    if (cachedVersion !== MENU_EDITOR_VERSION) {
+      console.log('[MenuEditor] Version updated:', { cached: cachedVersion, current: MENU_EDITOR_VERSION });
+      localStorage.setItem('menu-editor-version', MENU_EDITOR_VERSION);
+    }
+
+    console.log('[MenuEditor] Initializing...');
+
+    fetchSections();
+    fetchItems();
+    fetchCateringSections();
+    fetchCateringPackages();
+    fetchGroceryItems();
+    fetchGroceryBundles();
+    fetchCateringGallery();
+    fetchOrderingStatus();
+    fetchFrontendConfig();
+    fetchFrontendSections();
+
+    // Re-check operating hours every 30 seconds to keep toggle synced
+    const statusInterval = setInterval(() => {
+      fetchOrderingStatus();
+    }, 30000);
+
+    // Listen for operating hours updates from Settings page
+    const handleHoursUpdate = () => {
+      console.log('[MenuEditor] Operating hours updated, refreshing status...');
+      fetchOrderingStatus();
+    };
+    window.addEventListener('operatingHoursUpdated', handleHoursUpdate);
+
+    return () => {
+      clearInterval(statusInterval);
+      window.removeEventListener('operatingHoursUpdated', handleHoursUpdate);
+    };
+  }, [fetchOrderingStatus]);
 
   const toggleAcceptingOrders = async () => {
     setLoadingStatus(true);
