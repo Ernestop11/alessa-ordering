@@ -1,7 +1,6 @@
 import prisma from '@/lib/prisma';
 import { requireTenant } from '@/lib/tenant';
 import GroceryPageClient from '@/components/grocery/GroceryPageClient';
-import { headers } from 'next/headers';
 
 export const dynamic = 'force-dynamic';
 export const revalidate = 0;
