@@ -1,12 +1,16 @@
 import prisma from '@/lib/prisma';
 import { requireTenant } from '@/lib/tenant';
 import GroceryPageClient from '@/components/grocery/GroceryPageClient';
+import { headers } from 'next/headers';
 
 export const dynamic = 'force-dynamic';
 export const revalidate = 0;
 export const fetchCache = 'force-no-store';
 
 export default async function GroceryPage() {
+  // Force dynamic rendering by accessing headers
+  headers();
+
   const tenant = await requireTenant();
 
   // Fetch grocery items - fresh data on every request
@@ -37,8 +41,12 @@ export default async function GroceryPage() {
 
   console.log('[grocery-page] 🛒 Rendering with', groceryItems.length, 'items for tenant:', tenant.slug);
 
+  // Generate unique key based on current timestamp to force full re-render
+  const pageKey = `grocery-${Date.now()}`;
+
   return (
     <GroceryPageClient
+      key={pageKey}
       groceryItems={groceryItems}
       tenantSlug={tenant.slug}
       tenantName={tenant.name}

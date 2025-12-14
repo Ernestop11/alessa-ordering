@@ -54,11 +54,12 @@ export async function middleware(req: NextRequest) {
     const response = NextResponse.next();
     response.headers.set('x-tenant-slug', tenant);
 
-    // Force no-cache for dynamic pages (order, admin, etc.)
-    if (url.pathname.startsWith('/order') || url.pathname.startsWith('/admin') || url.pathname.startsWith('/checkout')) {
+    // Force no-cache for dynamic pages (order, admin, checkout, grocery, etc.)
+    if (url.pathname.startsWith('/order') || url.pathname.startsWith('/admin') || url.pathname.startsWith('/checkout') || url.pathname.startsWith('/grocery')) {
       response.headers.set('Cache-Control', 'no-store, no-cache, must-revalidate, proxy-revalidate, max-age=0');
       response.headers.set('Pragma', 'no-cache');
       response.headers.set('Expires', '0');
+      response.headers.set('Surrogate-Control', 'no-store');
     }
 
     return response;

@@ -51,12 +51,6 @@ const nextConfig = {
     dangerouslyAllowSVG: true,
     contentSecurityPolicy: "default-src 'self'; script-src 'none'; sandbox;",
   },
-  // Increase body size limit for image uploads (10MB)
-  experimental: {
-    serverActions: {
-      bodySizeLimit: '10mb',
-    },
-  },
   // Allow serving uploaded images from /public/uploads/
   async headers() {
     return [
@@ -123,6 +117,49 @@ const nextConfig = {
           {
             key: 'Expires',
             value: '0',
+          },
+        ],
+      },
+      // Prevent caching on grocery pages
+      {
+        source: '/grocery',
+        headers: [
+          {
+            key: 'Cache-Control',
+            value: 'no-store, no-cache, must-revalidate, proxy-revalidate, max-age=0',
+          },
+          {
+            key: 'Pragma',
+            value: 'no-cache',
+          },
+          {
+            key: 'Expires',
+            value: '0',
+          },
+          {
+            key: 'Surrogate-Control',
+            value: 'no-store',
+          },
+        ],
+      },
+      {
+        source: '/grocery/:path*',
+        headers: [
+          {
+            key: 'Cache-Control',
+            value: 'no-store, no-cache, must-revalidate, proxy-revalidate, max-age=0',
+          },
+          {
+            key: 'Pragma',
+            value: 'no-cache',
+          },
+          {
+            key: 'Expires',
+            value: '0',
+          },
+          {
+            key: 'Surrogate-Control',
+            value: 'no-store',
           },
         ],
       },
