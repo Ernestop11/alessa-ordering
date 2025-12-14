@@ -46,6 +46,10 @@ export async function PATCH(
     displayOrder: body.displayOrder !== undefined ? Number(body.displayOrder) : existing.displayOrder,
     taxPercentage: body.taxPercentage !== undefined ? (body.taxPercentage !== null ? parseFloat(String(body.taxPercentage)) : null) : existing.taxPercentage,
     expirationDate: body.expirationDate !== undefined ? (body.expirationDate ? new Date(body.expirationDate) : null) : existing.expirationDate,
+    isWeekendSpecial: body.isWeekendSpecial !== undefined ? Boolean(body.isWeekendSpecial) : existing.isWeekendSpecial,
+    weekendPrice: body.weekendPrice !== undefined ? (body.weekendPrice !== null ? parseFloat(String(body.weekendPrice)) : null) : existing.weekendPrice,
+    weekendStartDate: body.weekendStartDate !== undefined ? (body.weekendStartDate ? new Date(body.weekendStartDate) : null) : existing.weekendStartDate,
+    weekendEndDate: body.weekendEndDate !== undefined ? (body.weekendEndDate ? new Date(body.weekendEndDate) : null) : existing.weekendEndDate,
   };
 
   const updated = await prisma.groceryItem.update({

@@ -67,6 +67,10 @@ export async function POST(req: Request) {
     displayOrder: body.displayOrder !== undefined ? Number(body.displayOrder) : 0,
     taxPercentage: body.taxPercentage !== undefined && body.taxPercentage !== null ? parseFloat(String(body.taxPercentage)) : null,
     expirationDate: body.expirationDate ? new Date(body.expirationDate) : null,
+    isWeekendSpecial: body.isWeekendSpecial === true ? true : false,
+    weekendPrice: body.weekendPrice !== undefined && body.weekendPrice !== null ? parseFloat(String(body.weekendPrice)) : null,
+    weekendStartDate: body.weekendStartDate ? new Date(body.weekendStartDate) : null,
+    weekendEndDate: body.weekendEndDate ? new Date(body.weekendEndDate) : null,
   };
 
   const created = await prisma.groceryItem.create({ data });

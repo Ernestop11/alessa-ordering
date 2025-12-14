@@ -62,7 +62,7 @@ interface CateringPackage {
 
 export default function MenuEditorPage() {
   const [activeTab, setActiveTab] = useState<'menu' | 'catering' | 'grocery' | 'frontend'>('menu');
-  const [grocerySubTab, setGrocerySubTab] = useState<'items' | 'bundles'>('items');
+  const [grocerySubTab, setGrocerySubTab] = useState<'items' | 'bundles' | 'weekend'>('items');
   const [sections, setSections] = useState<MenuSection[]>([]);
   const [items, setItems] = useState<MenuItem[]>([]);
   const [cateringSections, setCateringSections] = useState<CateringSection[]>([]);
@@ -71,6 +71,7 @@ export default function MenuEditorPage() {
   const [groceryBundles, setGroceryBundles] = useState<any[]>([]);
   const [selectedSection, setSelectedSection] = useState<string | null>(null);
   const [selectedCateringSection, setSelectedCateringSection] = useState<string | null>(null);
+  const [selectedGroceryCategory, setSelectedGroceryCategory] = useState<string | null>(null);
   const [editingItem, setEditingItem] = useState<MenuItem | null>(null);
   const [editingSection, setEditingSection] = useState<MenuSection | null>(null);
   const [editingCateringSection, setEditingCateringSection] = useState<CateringSection | null>(null);
@@ -1144,78 +1145,156 @@ export default function MenuEditorPage() {
                   >
                     Bundles & Combos
                   </button>
+                  <button
+                    onClick={() => setGrocerySubTab('weekend')}
+                    className={`${
+                      grocerySubTab === 'weekend'
+                        ? 'border-yellow-500 text-yellow-600'
+                        : 'border-transparent text-gray-500 hover:text-gray-700 hover:border-gray-300'
+                    } whitespace-nowrap py-4 px-1 border-b-2 font-medium text-sm`}
+                  >
+                    🌟 Weekend Specials
+                  </button>
                 </nav>
               </div>
 
               {/* Grocery Items Sub-tab */}
               {grocerySubTab === 'items' && (
-                <div>
-                  <div className="flex justify-between items-center mb-4">
-                    <h3 className="text-xl font-medium text-gray-900">Individual Grocery Items</h3>
-                    <button
-                      onClick={handleAddGroceryItem}
-                      className="inline-flex items-center px-4 py-2 border border-transparent rounded-md shadow-sm text-sm font-medium text-white bg-green-600 hover:bg-green-700"
-                    >
-                      <Plus className="h-4 w-4 mr-2" />
-                      Add Grocery Item
-                    </button>
-                  </div>
-
-              {loading ? (
-                <div className="text-center py-12">Loading grocery items...</div>
-              ) : groceryItems.length === 0 ? (
-                <div className="text-center py-12 bg-white rounded-lg shadow">
-                  <p className="text-gray-500">No grocery items yet. Add your first item to get started!</p>
-                </div>
-              ) : (
-                <div className="grid gap-4 sm:grid-cols-2 lg:grid-cols-3">
-                  {groceryItems.map((item) => (
-                    <div key={item.id} className="bg-white rounded-lg shadow hover:shadow-md transition-shadow p-4">
-                      {item.image && (
-                        <img
-                          src={item.image}
-                          alt={item.name}
-                          className="w-full h-32 object-cover rounded mb-3"
-                        />
-                      )}
-                      <div className="flex justify-between items-start mb-2">
-                        <h3 className="font-medium text-gray-900">{item.name}</h3>
-                        {!item.available && (
-                          <span className="px-2 py-1 text-xs bg-red-100 text-red-800 rounded">
-                            Unavailable
-                          </span>
-                        )}
-                      </div>
-                      <p className="text-sm text-gray-600 mb-2">{item.description}</p>
-                      <div className="flex justify-between items-center mb-3">
-                        <span className="text-lg font-bold text-green-600">
-                          ${item.price.toFixed(2)} {item.unit && `/ ${item.unit}`}
-                        </span>
-                        <span className="text-xs text-gray-500 bg-gray-100 px-2 py-1 rounded">
-                          {item.category}
-                        </span>
-                      </div>
-                      {item.stockQuantity !== null && (
-                        <p className="text-xs text-gray-500 mb-3">Stock: {item.stockQuantity}</p>
-                      )}
-                      <div className="flex gap-2">
-                        <button
-                          onClick={() => setEditingGroceryItem(item)}
-                          className="flex-1 px-3 py-1.5 bg-blue-50 text-blue-600 hover:bg-blue-100 rounded text-sm font-medium"
-                        >
-                          Edit
-                        </button>
-                        <button
-                          onClick={() => handleDeleteGroceryItem(item.id)}
-                          className="flex-1 px-3 py-1.5 bg-red-50 text-red-600 hover:bg-red-100 rounded text-sm font-medium"
-                        >
-                          Delete
-                        </button>
+                <div className="grid grid-cols-1 lg:grid-cols-4 gap-6">
+                  {/* Categories List */}
+                  <div className="lg:col-span-1">
+                    <div className="bg-white rounded-lg shadow p-4">
+                      <h2 className="text-lg font-semibold text-gray-900 mb-4">Categories</h2>
+                      <div className="space-y-2">
+                        {Array.from(new Set(groceryItems.map(item => item.category))).sort().map((category) => {
+                          const itemsInCategory = groceryItems.filter(item => item.category === category).length;
+                          return (
+                            <div
+                              key={category}
+                              className={`p-3 rounded-lg cursor-pointer transition-colors ${
+                                selectedGroceryCategory === category
+                                  ? 'bg-green-50 border-2 border-green-500'
+                                  : 'bg-gray-50 border-2 border-transparent hover:bg-gray-100'
+                              }`}
+                              onClick={() => setSelectedGroceryCategory(category)}
+                            >
+                              <div className="flex items-center justify-between">
+                                <span className="font-medium text-gray-900 capitalize">{category}</span>
+                                <span className="text-xs bg-gray-200 px-2 py-1 rounded-full">{itemsInCategory}</span>
+                              </div>
+                            </div>
+                          );
+                        })}
                       </div>
                     </div>
-                  ))}
-                </div>
-              )}
+                  </div>
+
+                  {/* Items List */}
+                  <div className="lg:col-span-3">
+                    <div className="bg-white rounded-lg shadow p-6">
+                      <div className="flex justify-between items-center mb-4">
+                        <h2 className="text-lg font-semibold text-gray-900">
+                          {selectedGroceryCategory ? `${selectedGroceryCategory.charAt(0).toUpperCase() + selectedGroceryCategory.slice(1)} Items` : 'Select a category'}
+                        </h2>
+                        {selectedGroceryCategory && (
+                          <button
+                            onClick={() => {
+                              setEditingGroceryItem({
+                                id: null,
+                                name: '',
+                                description: '',
+                                price: 0,
+                                category: selectedGroceryCategory,
+                                unit: '',
+                                image: null,
+                                available: true,
+                                stockQuantity: null,
+                                taxPercentage: null,
+                                expirationDate: null,
+                                displayOrder: 0,
+                                isWeekendSpecial: false,
+                                weekendPrice: null,
+                                weekendStartDate: null,
+                                weekendEndDate: null,
+                              });
+                            }}
+                            className="inline-flex items-center px-4 py-2 border border-transparent rounded-md shadow-sm text-sm font-medium text-white bg-green-600 hover:bg-green-700"
+                          >
+                            <Plus className="h-4 w-4 mr-2" />
+                            Add Item
+                          </button>
+                        )}
+                      </div>
+
+                      {loading ? (
+                        <div className="text-center py-8 text-gray-500">Loading...</div>
+                      ) : !selectedGroceryCategory ? (
+                        <div className="text-center py-8 text-gray-500">
+                          Select a category to view items
+                        </div>
+                      ) : groceryItems.filter(item => item.category === selectedGroceryCategory).length === 0 ? (
+                        <div className="text-center py-8 text-gray-500">
+                          No items in this category
+                        </div>
+                      ) : (
+                        <div className="space-y-2">
+                          {groceryItems
+                            .filter(item => item.category === selectedGroceryCategory)
+                            .sort((a, b) => (a.displayOrder || 0) - (b.displayOrder || 0))
+                            .map((item) => (
+                            <div key={item.id} className="flex items-center gap-3 p-4 border border-gray-200 rounded-lg hover:bg-gray-50">
+                              <GripVertical className="h-5 w-5 text-gray-400" />
+                              {item.image && (
+                                <img src={item.image} alt={item.name} className="h-12 w-12 rounded object-cover" />
+                              )}
+                              <div className="flex-1">
+                                <div className="flex items-center gap-2">
+                                  <h3 className="font-medium text-gray-900">{item.name}</h3>
+                                  {item.isWeekendSpecial && (
+                                    <span className="px-2 py-0.5 text-xs bg-yellow-100 text-yellow-800 rounded font-semibold">
+                                      Weekend Special
+                                    </span>
+                                  )}
+                                  {!item.available && (
+                                    <span className="px-2 py-0.5 text-xs bg-red-100 text-red-800 rounded">
+                                      Unavailable
+                                    </span>
+                                  )}
+                                </div>
+                                <div className="flex items-center gap-3 mt-1">
+                                  <p className="text-sm font-bold text-green-600">
+                                    ${item.price.toFixed(2)} {item.unit && `/ ${item.unit}`}
+                                  </p>
+                                  {item.weekendPrice && (
+                                    <p className="text-sm text-yellow-600">
+                                      Weekend: ${item.weekendPrice.toFixed(2)}
+                                    </p>
+                                  )}
+                                  {item.stockQuantity !== null && (
+                                    <p className="text-xs text-gray-500">Stock: {item.stockQuantity}</p>
+                                  )}
+                                </div>
+                              </div>
+                              <div className="flex gap-2">
+                                <button
+                                  onClick={() => setEditingGroceryItem(item)}
+                                  className="text-gray-400 hover:text-blue-600"
+                                >
+                                  <Edit2 className="h-4 w-4" />
+                                </button>
+                                <button
+                                  onClick={() => handleDeleteGroceryItem(item.id)}
+                                  className="text-gray-400 hover:text-red-600"
+                                >
+                                  <Trash2 className="h-4 w-4" />
+                                </button>
+                              </div>
+                            </div>
+                          ))}
+                        </div>
+                      )}
+                    </div>
+                  </div>
                 </div>
               )}
 
@@ -1289,6 +1368,164 @@ export default function MenuEditorPage() {
                           </div>
                         </div>
                       ))}
+                    </div>
+                  )}
+                </div>
+              )}
+
+              {/* Weekend Specials Sub-tab */}
+              {grocerySubTab === 'weekend' && (
+                <div>
+                  <div className="mb-6">
+                    <h3 className="text-xl font-medium text-gray-900 mb-2">🌟 Weekend Specials Promotions</h3>
+                    <p className="text-sm text-gray-600">
+                      Select items to promote during weekends with special pricing. These will sync to Switch Menu Pro for digital menu displays.
+                    </p>
+                  </div>
+
+                  {loading ? (
+                    <div className="text-center py-12">Loading items...</div>
+                  ) : groceryItems.length === 0 ? (
+                    <div className="text-center py-12 bg-white rounded-lg shadow">
+                      <p className="text-gray-500">No grocery items available. Add items first to create weekend specials.</p>
+                    </div>
+                  ) : (
+                    <div className="space-y-6">
+                      {/* Active Weekend Specials */}
+                      <div className="bg-white rounded-lg shadow p-6">
+                        <h4 className="text-lg font-semibold text-gray-900 mb-4">Active Weekend Specials</h4>
+                        {groceryItems.filter(item => item.isWeekendSpecial).length === 0 ? (
+                          <div className="text-center py-8 text-gray-500 border-2 border-dashed border-gray-200 rounded-lg">
+                            <p>No weekend specials active. Click items below to add them.</p>
+                          </div>
+                        ) : (
+                          <div className="grid gap-4 sm:grid-cols-2 lg:grid-cols-3">
+                            {groceryItems
+                              .filter(item => item.isWeekendSpecial)
+                              .map((item) => (
+                                <div key={item.id} className="bg-gradient-to-br from-yellow-50 to-orange-50 border-2 border-yellow-400 rounded-lg shadow-md p-4">
+                                  {item.image && (
+                                    <img
+                                      src={item.image}
+                                      alt={item.name}
+                                      className="w-full h-32 object-cover rounded mb-3"
+                                    />
+                                  )}
+                                  <div className="flex items-start gap-2 mb-2">
+                                    <h3 className="font-bold text-gray-900 flex-1">{item.name}</h3>
+                                    <span className="px-2 py-1 text-xs bg-yellow-500 text-white rounded-full font-bold">
+                                      SPECIAL
+                                    </span>
+                                  </div>
+                                  <p className="text-sm text-gray-600 mb-3 line-clamp-2">{item.description}</p>
+                                  <div className="space-y-2 mb-3">
+                                    <div className="flex items-center justify-between">
+                                      <span className="text-xs text-gray-500">Regular Price:</span>
+                                      <span className="text-sm text-gray-600 line-through">${item.price.toFixed(2)}</span>
+                                    </div>
+                                    <div className="flex items-center justify-between">
+                                      <span className="text-xs font-bold text-yellow-700">Weekend Price:</span>
+                                      <span className="text-lg font-black text-yellow-600">
+                                        ${(item.weekendPrice || item.price).toFixed(2)}
+                                      </span>
+                                    </div>
+                                  </div>
+                                  <div className="flex gap-2">
+                                    <button
+                                      onClick={() => setEditingGroceryItem(item)}
+                                      className="flex-1 text-sm px-3 py-2 bg-blue-600 text-white rounded hover:bg-blue-700"
+                                    >
+                                      Edit Price
+                                    </button>
+                                    <button
+                                      onClick={async () => {
+                                        try {
+                                          const res = await fetch(`/api/admin/grocery-items/${item.id}`, {
+                                            method: 'PATCH',
+                                            headers: { 'Content-Type': 'application/json' },
+                                            body: JSON.stringify({
+                                              isWeekendSpecial: false,
+                                              weekendPrice: null,
+                                            }),
+                                          });
+                                          if (!res.ok) throw new Error('Failed to remove from weekend specials');
+                                          await fetchGroceryItems();
+                                        } catch (err) {
+                                          console.error('Failed to remove weekend special', err);
+                                          alert('Failed to remove weekend special');
+                                        }
+                                      }}
+                                      className="flex-1 text-sm px-3 py-2 bg-red-600 text-white rounded hover:bg-red-700"
+                                    >
+                                      Remove
+                                    </button>
+                                  </div>
+                                </div>
+                              ))}
+                          </div>
+                        )}
+                      </div>
+
+                      {/* All Available Items */}
+                      <div className="bg-white rounded-lg shadow p-6">
+                        <h4 className="text-lg font-semibold text-gray-900 mb-4">Add Items to Weekend Specials</h4>
+                        <div className="grid gap-3 sm:grid-cols-2 lg:grid-cols-3">
+                          {groceryItems
+                            .filter(item => !item.isWeekendSpecial)
+                            .sort((a, b) => a.name.localeCompare(b.name))
+                            .map((item) => (
+                              <div
+                                key={item.id}
+                                className="bg-white border-2 border-gray-200 hover:border-green-400 rounded-lg p-3 cursor-pointer transition group"
+                                onClick={async () => {
+                                  const weekendPrice = prompt(
+                                    `Enter weekend special price for "${item.name}"\nCurrent price: $${item.price.toFixed(2)}`,
+                                    item.price.toFixed(2)
+                                  );
+                                  if (weekendPrice === null) return;
+
+                                  const price = parseFloat(weekendPrice);
+                                  if (isNaN(price) || price < 0) {
+                                    alert('Invalid price');
+                                    return;
+                                  }
+
+                                  try {
+                                    const res = await fetch(`/api/admin/grocery-items/${item.id}`, {
+                                      method: 'PATCH',
+                                      headers: { 'Content-Type': 'application/json' },
+                                      body: JSON.stringify({
+                                        isWeekendSpecial: true,
+                                        weekendPrice: price,
+                                      }),
+                                    });
+                                    if (!res.ok) throw new Error('Failed to add to weekend specials');
+                                    await fetchGroceryItems();
+                                  } catch (err) {
+                                    console.error('Failed to add weekend special', err);
+                                    alert('Failed to add weekend special');
+                                  }
+                                }}
+                              >
+                                <div className="flex items-center gap-2">
+                                  {item.image && (
+                                    <img
+                                      src={item.image}
+                                      alt={item.name}
+                                      className="w-12 h-12 rounded object-cover"
+                                    />
+                                  )}
+                                  <div className="flex-1 min-w-0">
+                                    <h5 className="font-medium text-gray-900 text-sm truncate">{item.name}</h5>
+                                    <p className="text-xs text-gray-500 capitalize">{item.category}</p>
+                                    <p className="text-sm font-bold text-green-600">${item.price.toFixed(2)}</p>
+                                  </div>
+                                  <Plus className="h-5 w-5 text-gray-400 group-hover:text-green-600 transition" />
+                                </div>
+                              </div>
+                            ))}
+                        </div>
+                      </div>
                     </div>
                   )}
                 </div>
@@ -2624,6 +2861,86 @@ export default function MenuEditorPage() {
                       className="w-full px-3 py-2 border border-gray-300 rounded-md focus:ring-green-500 focus:border-green-500"
                     />
                     <p className="text-xs text-gray-500 mt-1">For perishable items - helps track freshness</p>
+                  </div>
+
+                  {/* Weekend Special Section */}
+                  <div className="border-t border-gray-200 pt-4">
+                    <div className="flex items-center mb-3">
+                      <input
+                        type="checkbox"
+                        id="grocery-weekend-special"
+                        checked={editingGroceryItem.isWeekendSpecial || false}
+                        onChange={(e) => setEditingGroceryItem({
+                          ...editingGroceryItem,
+                          isWeekendSpecial: e.target.checked,
+                          weekendPrice: e.target.checked ? (editingGroceryItem.weekendPrice || editingGroceryItem.price) : null
+                        })}
+                        className="h-4 w-4 text-yellow-600 focus:ring-yellow-500 border-gray-300 rounded"
+                      />
+                      <label htmlFor="grocery-weekend-special" className="ml-2 block text-sm font-medium text-gray-900">
+                        🌟 Mark as Weekend Special
+                      </label>
+                    </div>
+
+                    {editingGroceryItem.isWeekendSpecial && (
+                      <div className="ml-6 space-y-3 bg-yellow-50 p-3 rounded-md">
+                        <div>
+                          <label className="block text-sm font-medium text-gray-700 mb-1">
+                            Weekend Price ($) *
+                          </label>
+                          <input
+                            type="number"
+                            step="0.01"
+                            min="0"
+                            value={editingGroceryItem.weekendPrice ?? ''}
+                            onChange={(e) => setEditingGroceryItem({
+                              ...editingGroceryItem,
+                              weekendPrice: e.target.value === '' ? null : parseFloat(e.target.value)
+                            })}
+                            placeholder={`Regular: $${editingGroceryItem.price || 0}`}
+                            className="w-full px-3 py-2 border border-gray-300 rounded-md focus:ring-yellow-500 focus:border-yellow-500"
+                          />
+                          <p className="text-xs text-gray-500 mt-1">
+                            Special pricing for weekends (typically lower than regular price)
+                          </p>
+                        </div>
+
+                        <div className="grid grid-cols-2 gap-3">
+                          <div>
+                            <label className="block text-sm font-medium text-gray-700 mb-1">
+                              Start Date (optional)
+                            </label>
+                            <input
+                              type="date"
+                              value={editingGroceryItem.weekendStartDate ? new Date(editingGroceryItem.weekendStartDate).toISOString().split('T')[0] : ''}
+                              onChange={(e) => setEditingGroceryItem({
+                                ...editingGroceryItem,
+                                weekendStartDate: e.target.value ? e.target.value : null
+                              })}
+                              className="w-full px-3 py-2 border border-gray-300 rounded-md focus:ring-yellow-500 focus:border-yellow-500"
+                            />
+                          </div>
+
+                          <div>
+                            <label className="block text-sm font-medium text-gray-700 mb-1">
+                              End Date (optional)
+                            </label>
+                            <input
+                              type="date"
+                              value={editingGroceryItem.weekendEndDate ? new Date(editingGroceryItem.weekendEndDate).toISOString().split('T')[0] : ''}
+                              onChange={(e) => setEditingGroceryItem({
+                                ...editingGroceryItem,
+                                weekendEndDate: e.target.value ? e.target.value : null
+                              })}
+                              className="w-full px-3 py-2 border border-gray-300 rounded-md focus:ring-yellow-500 focus:border-yellow-500"
+                            />
+                          </div>
+                        </div>
+                        <p className="text-xs text-gray-500">
+                          Leave dates empty to keep special active indefinitely
+                        </p>
+                      </div>
+                    )}
                   </div>
 
                   <div>

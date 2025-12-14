@@ -106,6 +106,10 @@ model GroceryItem {
   displayOrder        Int       @default(0)
   taxPercentage       Float?    // Tax rate (e.g., 8.5 for 8.5%)
   expirationDate      DateTime? // Optional expiration/best-by date
+  isWeekendSpecial    Boolean   @default(false) // Weekend promotion flag
+  weekendPrice        Float?    // Special weekend pricing
+  weekendStartDate    DateTime? // When weekend special starts
+  weekendEndDate      DateTime? // When weekend special ends
   createdAt           DateTime  @default(now())
   updatedAt           DateTime  @updatedAt
   tenant              Tenant    @relation(fields: [tenantId], references: [id], onDelete: Cascade)
@@ -113,6 +117,7 @@ model GroceryItem {
   @@index([tenantId])
   @@index([category])
   @@index([expirationDate])
+  @@index([isWeekendSpecial])
 }
 
 model GroceryBundle {
