@@ -1,22 +1,27 @@
 import prisma from '@/lib/prisma';
 import { requireTenant } from '@/lib/tenant';
 import GroceryPageClient from '@/components/grocery/GroceryPageClient';
+import { headers } from 'next/headers';
 
 export const dynamic = 'force-dynamic';
+export const revalidate = 0;
 
 export default async function GroceryPage() {
   const tenant = await requireTenant();
 
-  // Fetch grocery items
+  // Fetch grocery items - fresh data on every request
   const groceryItems = await prisma.groceryItem.findMany({
     where: {
       tenantId: tenant.id,
       available: true,
     },
-    orderBy: {
-      displayOrder: 'asc',
-    },
+    orderBy: [
+      { displayOrder: 'asc' },
+      { createdAt: 'asc' },
+    ],
   });
+
+  console.log('[grocery-page] 🛒 Rendering with', groceryItems.length, 'items for tenant:', tenant.slug);
 
   return (
     <GroceryPageClient

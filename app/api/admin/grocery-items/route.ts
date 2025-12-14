@@ -34,10 +34,11 @@ export async function GET(req: Request) {
   });
 
   const response = NextResponse.json(items);
-  // Prevent caching to ensure fresh data
+  // Prevent caching to ensure fresh data (matches catering packages pattern)
   response.headers.set('Cache-Control', 'no-store, no-cache, must-revalidate, proxy-revalidate');
   response.headers.set('Pragma', 'no-cache');
   response.headers.set('Expires', '0');
+  response.headers.set('Surrogate-Control', 'no-store');
   return response;
 }
 
