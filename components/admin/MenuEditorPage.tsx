@@ -5,6 +5,7 @@ import Link from 'next/link';
 import { Plus, Edit2, Trash2, GripVertical, ArrowLeft } from 'lucide-react';
 import DashboardLayout from './DashboardLayout';
 import { compressImage, formatFileSize } from '@/lib/imageCompression';
+import { validateOperatingHours } from '@/lib/hours-validator';
 
 interface MenuSection {
   id: string;
@@ -119,6 +120,13 @@ export default function MenuEditorPage() {
     fetchCateringGallery();
     fetchOrderingStatus();
     fetchFrontendConfig();
+
+    // Re-check operating hours every minute to keep toggle synced
+    const statusInterval = setInterval(() => {
+      fetchOrderingStatus();
+    }, 60000); // 60 seconds
+
+    return () => clearInterval(statusInterval);
   }, []);
 
   const fetchSections = async () => {
@@ -546,9 +554,18 @@ export default function MenuEditorPage() {
     try {
       const res = await fetch('/api/admin/tenant-settings');
       const data = await res.json();
-      const isOpen = data.settings?.isOpen !== false;
-      const temporarilyClosed = data.settings?.operatingHours?.temporarilyClosed || false;
-      setIsAcceptingOrders(isOpen && !temporarilyClosed);
+      const isOpenFlag = data.settings?.isOpen !== false;
+      const operatingHours = data.settings?.operatingHours;
+
+      // Use the same validation logic as the front-end
+      const validation = validateOperatingHours(operatingHours, isOpenFlag);
+      setIsAcceptingOrders(validation.isOpen);
+
+      console.log('[MenuEditor] Operating status:', {
+        isOpenFlag,
+        validationResult: validation,
+        actuallyAccepting: validation.isOpen
+      });
     } catch (err) {
       console.error('Failed to fetch ordering status', err);
     }

@@ -1,8 +1,8 @@
 'use client';
 
-import { useState, useMemo } from 'react';
+import { useState, useMemo, useEffect } from 'react';
 import Link from 'next/link';
-import { ShoppingCart, ArrowLeft, Plus, Minus } from 'lucide-react';
+import { ShoppingCart, ArrowLeft, Plus, Minus, ChevronLeft, ChevronRight } from 'lucide-react';
 import { useCart } from '@/lib/store/cart';
 import { useRouter } from 'next/navigation';
 
@@ -32,9 +32,14 @@ interface GroceryBundle {
   items: any;
 }
 
+interface WeekendSpecial extends GroceryItem {
+  weekendPrice?: number | null;
+}
+
 interface GroceryPageClientProps {
   groceryItems: GroceryItem[];
   bundles: GroceryBundle[];
+  weekendSpecials: WeekendSpecial[];
   tenantSlug: string;
   tenantName: string;
 }
@@ -42,12 +47,25 @@ interface GroceryPageClientProps {
 export default function GroceryPageClient({
   groceryItems,
   bundles,
+  weekendSpecials,
   tenantSlug,
   tenantName,
 }: GroceryPageClientProps) {
   const router = useRouter();
   const { items: cartItems, addToCart, updateQuantity } = useCart();
   const [selectedCategory, setSelectedCategory] = useState<string>('all');
+  const [currentSpecialIndex, setCurrentSpecialIndex] = useState(0);
+
+  // Auto-rotate weekend specials carousel
+  useEffect(() => {
+    if (weekendSpecials.length <= 1) return;
+
+    const interval = setInterval(() => {
+      setCurrentSpecialIndex((prev) => (prev + 1) % weekendSpecials.length);
+    }, 5000); // Change every 5 seconds
+
+    return () => clearInterval(interval);
+  }, [weekendSpecials.length]);
 
   // Get unique categories
   const categories = useMemo(() =>
@@ -139,6 +157,156 @@ export default function GroceryPageClient({
           </div>
         </div>
       </div>
+
+      {/* Weekend Specials Carousel */}
+      {weekendSpecials.length > 0 && (
+        <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-4">
+          <div className="relative bg-gradient-to-r from-yellow-500 via-orange-500 to-red-500 rounded-3xl overflow-hidden shadow-2xl">
+            {/* Carousel Item */}
+            <div className="relative h-96 md:h-[500px]">
+              {weekendSpecials.map((special, index) => {
+                const savings = special.price - (special.weekendPrice || special.price);
+                const savingsPercent = Math.round((savings / special.price) * 100);
+                const quantity = getCartQuantity(special.id);
+
+                return (
+                  <div
+                    key={special.id}
+                    className={`absolute inset-0 transition-opacity duration-1000 ${
+                      index === currentSpecialIndex ? 'opacity-100' : 'opacity-0'
+                    }`}
+                  >
+                    <div className="grid md:grid-cols-2 gap-8 h-full p-8 md:p-12">
+                      {/* Image Side */}
+                      <div className="flex items-center justify-center">
+                        {special.image ? (
+                          <img
+                            src={special.image}
+                            alt={special.name}
+                            className="w-full h-full max-h-80 md:max-h-96 object-contain drop-shadow-2xl"
+                          />
+                        ) : (
+                          <div className="w-full h-80 flex items-center justify-center bg-white/20 rounded-2xl">
+                            <ShoppingCart className="h-32 w-32 text-white/40" />
+                          </div>
+                        )}
+                      </div>
+
+                      {/* Content Side */}
+                      <div className="flex flex-col justify-center text-white">
+                        <div className="inline-block">
+                          <span className="bg-white text-red-600 text-sm md:text-base font-black px-4 py-2 rounded-full mb-4 inline-block animate-pulse">
+                            🌟 WEEKEND SPECIAL
+                          </span>
+                        </div>
+
+                        <h2 className="text-4xl md:text-6xl font-black mb-4 drop-shadow-lg">
+                          {special.name}
+                        </h2>
+
+                        <p className="text-xl md:text-2xl mb-6 text-white/90 font-medium">
+                          {special.description}
+                        </p>
+
+                        {/* Pricing */}
+                        <div className="flex items-center gap-6 mb-8">
+                          <div>
+                            <p className="text-lg text-white/70 line-through">
+                              ${special.price.toFixed(2)}
+                              {special.unit && ` / ${special.unit}`}
+                            </p>
+                            <p className="text-5xl md:text-7xl font-black text-white drop-shadow-lg">
+                              ${(special.weekendPrice || special.price).toFixed(2)}
+                              {special.unit && <span className="text-3xl md:text-4xl ml-2">/ {special.unit}</span>}
+                            </p>
+                          </div>
+                          {savingsPercent > 0 && (
+                            <div className="bg-white text-red-600 px-6 py-3 rounded-2xl">
+                              <p className="text-3xl md:text-4xl font-black">
+                                -{savingsPercent}%
+                              </p>
+                              <p className="text-sm font-bold">SAVE</p>
+                            </div>
+                          )}
+                        </div>
+
+                        {/* Add to Cart */}
+                        {quantity === 0 ? (
+                          <button
+                            onClick={() => addToCart({
+                              id: special.id,
+                              name: special.name,
+                              price: special.weekendPrice || special.price,
+                              quantity: 1,
+                              image: special.image,
+                              description: special.description,
+                            })}
+                            className="bg-white text-gray-900 px-8 py-5 rounded-2xl text-xl md:text-2xl font-black hover:bg-gray-100 transition shadow-2xl flex items-center justify-center gap-3 max-w-md"
+                          >
+                            <Plus className="h-7 w-7" />
+                            ADD TO CART
+                          </button>
+                        ) : (
+                          <div className="flex items-center gap-3 max-w-md">
+                            <button
+                              onClick={() => handleDecrement(special.id, quantity)}
+                              className="flex-1 bg-white text-red-600 font-black py-4 px-6 rounded-xl transition shadow-lg hover:bg-gray-100"
+                            >
+                              <Minus className="h-6 w-6 mx-auto" />
+                            </button>
+                            <div className="flex-1 bg-white/20 border-4 border-white text-white font-black py-4 px-6 rounded-xl text-center text-3xl backdrop-blur">
+                              {quantity}
+                            </div>
+                            <button
+                              onClick={() => handleIncrement(special.id, quantity)}
+                              className="flex-1 bg-white text-green-600 font-black py-4 px-6 rounded-xl transition shadow-lg hover:bg-gray-100"
+                            >
+                              <Plus className="h-6 w-6 mx-auto" />
+                            </button>
+                          </div>
+                        )}
+                      </div>
+                    </div>
+                  </div>
+                );
+              })}
+            </div>
+
+            {/* Navigation Arrows */}
+            {weekendSpecials.length > 1 && (
+              <>
+                <button
+                  onClick={() => setCurrentSpecialIndex((prev) => (prev - 1 + weekendSpecials.length) % weekendSpecials.length)}
+                  className="absolute left-4 top-1/2 -translate-y-1/2 bg-white/30 hover:bg-white/50 backdrop-blur text-white p-3 rounded-full transition"
+                >
+                  <ChevronLeft className="h-8 w-8" />
+                </button>
+                <button
+                  onClick={() => setCurrentSpecialIndex((prev) => (prev + 1) % weekendSpecials.length)}
+                  className="absolute right-4 top-1/2 -translate-y-1/2 bg-white/30 hover:bg-white/50 backdrop-blur text-white p-3 rounded-full transition"
+                >
+                  <ChevronRight className="h-8 w-8" />
+                </button>
+
+                {/* Dots Indicator */}
+                <div className="absolute bottom-6 left-1/2 -translate-x-1/2 flex gap-2">
+                  {weekendSpecials.map((_, index) => (
+                    <button
+                      key={index}
+                      onClick={() => setCurrentSpecialIndex(index)}
+                      className={`w-3 h-3 rounded-full transition ${
+                        index === currentSpecialIndex
+                          ? 'bg-white scale-125'
+                          : 'bg-white/50 hover:bg-white/75'
+                      }`}
+                    />
+                  ))}
+                </div>
+              </>
+            )}
+          </div>
+        </div>
+      )}
 
       {/* Cross-promotion banner */}
       <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-4">

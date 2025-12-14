@@ -47,12 +47,63 @@ export default async function GroceryPage() {
     ],
   });
 
-  console.log('[grocery-page] 🛒 Rendering with', groceryItems.length, 'items and', bundles.length, 'bundles for tenant:', tenant.slug);
+  // Fetch weekend specials
+  const now = new Date();
+  const weekendSpecialsRaw = await prisma.groceryItem.findMany({
+    where: {
+      tenantId: tenant.id,
+      available: true,
+      isWeekendSpecial: true,
+      OR: [
+        // No dates set = always active
+        {
+          weekendStartDate: null,
+          weekendEndDate: null,
+        },
+        // Within date range
+        {
+          weekendStartDate: { lte: now },
+          weekendEndDate: { gte: now },
+        },
+        // Only start date set
+        {
+          weekendStartDate: { lte: now },
+          weekendEndDate: null,
+        },
+        // Only end date set
+        {
+          weekendStartDate: null,
+          weekendEndDate: { gte: now },
+        },
+      ],
+    },
+    orderBy: [
+      { displayOrder: 'asc' },
+      { name: 'asc' },
+    ],
+  });
+
+  // Add cache-busting to weekend specials
+  const weekendSpecials = weekendSpecialsRaw.map((item) => {
+    const timestamp = new Date(item.updatedAt).getTime();
+    const addCacheBuster = (url: string | null) => {
+      if (!url) return null;
+      return url.includes('?') ? `${url}&t=${timestamp}` : `${url}?t=${timestamp}`;
+    };
+
+    return {
+      ...item,
+      image: addCacheBuster(item.image),
+    };
+  });
+
+  console.log('[grocery-page] 🛒 Rendering with', groceryItems.length, 'items,', bundles.length, 'bundles, and', weekendSpecials.length, 'weekend specials for tenant:', tenant.slug);
 
   return (
     <GroceryPageClient
       groceryItems={groceryItems}
       bundles={bundles}
+      weekendSpecials={weekendSpecials}
       tenantSlug={tenant.slug}
       tenantName={tenant.name}
     />
