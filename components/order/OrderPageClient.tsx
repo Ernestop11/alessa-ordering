@@ -266,11 +266,19 @@ export default function OrderPageClient({
     if (typeof window !== 'undefined' && window.innerWidth < 768) return 'cards';
     return 'grid';
   });
-  const [activeSectionId, setActiveSectionId] = useState(() => {
+  
+  // Initialize activeSectionId after navSections is computed
+  const [activeSectionId, setActiveSectionId] = useState('');
+  
+  // Set activeSectionId based on URL param or first section after navSections is available
+  useEffect(() => {
     const categoryParam = searchParams.get('category');
-    if (categoryParam && navSections.some((section) => section.id === categoryParam)) return categoryParam;
-    return navSections[0]?.id ?? '';
-  });
+    if (categoryParam && navSections.some((section) => section.id === categoryParam)) {
+      setActiveSectionId(categoryParam);
+    } else if (navSections.length > 0 && !activeSectionId) {
+      setActiveSectionId(navSections[0]?.id ?? '');
+    }
+  }, [navSections, searchParams, activeSectionId]);
   const [notification, setNotification] = useState('');
 
   const [isAccessibilityOpen, setAccessibilityOpen] = useState(false);
@@ -286,6 +294,10 @@ export default function OrderPageClient({
   const [customNote, setCustomNote] = useState('');
   const [customQuantity, setCustomQuantity] = useState(1);
   const [isRewardsOpen, setRewardsOpen] = useState(false);
+  
+  // Use server-side data as initial state, with client-side refresh for real-time updates
+  // Declare this early so it can be used in useMemo hooks below
+  const [cateringPackages, setCateringPackages] = useState<CateringPackage[]>(initialCateringPackages);
 
   useEffect(() => {
     if (typeof window === 'undefined') return;
@@ -909,8 +921,6 @@ export default function OrderPageClient({
   const [cateringGuestCount, setCateringGuestCount] = useState('');
   const [cateringMessage, setCateringMessage] = useState('');
   const [cateringGalleryIndex, setCateringGalleryIndex] = useState(0);
-  // Use server-side data as initial state, with client-side refresh for real-time updates
-  const [cateringPackages, setCateringPackages] = useState<CateringPackage[]>(initialCateringPackages);
   const [rewardsGalleryIndex, setRewardsGalleryIndex] = useState(0);
   const [rewardsGalleryImages, setRewardsGalleryImages] = useState<string[]>(rewardsData?.rewardsGallery || []);
   const [customerData, setCustomerData] = useState<CustomerRewardsData | null>(customerRewardsData || null);
