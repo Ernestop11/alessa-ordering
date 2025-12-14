@@ -716,6 +716,11 @@ export default function Settings() {
       setMessage('Settings saved successfully. Frontend will reflect changes on next page load.');
       // Refresh the admin dashboard to show updated data
       router.refresh();
+      
+      // If operating hours were updated, trigger a custom event to notify other components
+      if (payload.operatingHours !== undefined) {
+        window.dispatchEvent(new CustomEvent('operatingHoursUpdated'));
+      }
     } catch (err) {
       console.error('Failed to save settings', err);
       setError('Failed to save settings. Please try again.');

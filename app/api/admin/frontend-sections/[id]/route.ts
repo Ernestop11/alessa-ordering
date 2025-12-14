@@ -3,13 +3,14 @@ import { getServerSession } from 'next-auth';
 import { authOptions } from '@/lib/auth/options';
 import prisma from '@/lib/prisma';
 import { requireTenant } from '@/lib/tenant';
+import { revalidatePath } from 'next/cache';
 
 /**
  * PATCH - Update a frontend section
  */
 export async function PATCH(
   req: Request,
-  { params }: { params: { id: string } }
+  { params }: { params: Promise<{ id: string }> | { id: string } }
 ) {
   try {
     const session = await getServerSession(authOptions);
@@ -20,7 +21,8 @@ export async function PATCH(
     }
 
     const tenant = await requireTenant();
-    const { id } = params;
+    const resolvedParams = await Promise.resolve(params);
+    const { id } = resolvedParams;
     const body = await req.json();
 
     // Check that section exists and belongs to tenant
@@ -44,6 +46,10 @@ export async function PATCH(
       },
     });
 
+    // Revalidate cache to ensure frontend shows updated sections
+    revalidatePath('/order');
+    revalidatePath('/');
+
     return NextResponse.json(updated);
   } catch (error) {
     console.error('[Frontend Section PATCH Error]', error);
@@ -59,7 +65,7 @@ export async function PATCH(
  */
 export async function DELETE(
   req: Request,
-  { params }: { params: { id: string } }
+  { params }: { params: Promise<{ id: string }> | { id: string } }
 ) {
   try {
     const session = await getServerSession(authOptions);
@@ -70,7 +76,8 @@ export async function DELETE(
     }
 
     const tenant = await requireTenant();
-    const { id } = params;
+    const resolvedParams = await Promise.resolve(params);
+    const { id } = resolvedParams;
 
     // Check that section exists and belongs to tenant
     const existing = await prisma.frontendSection.findUnique({
@@ -82,6 +89,10 @@ export async function DELETE(
     }
 
     await prisma.frontendSection.delete({ where: { id } });
+
+    // Revalidate cache to ensure frontend shows updated sections
+    revalidatePath('/order');
+    revalidatePath('/');
 
     return NextResponse.json({ ok: true });
   } catch (error) {

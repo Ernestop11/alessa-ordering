@@ -3,6 +3,7 @@ import { getServerSession } from 'next-auth';
 import { authOptions } from '@/lib/auth/options';
 import prisma from '@/lib/prisma';
 import { requireTenant } from '@/lib/tenant';
+import { revalidatePath } from 'next/cache';
 
 /**
  * POST - Reorder frontend sections
@@ -75,6 +76,10 @@ export async function POST(req: Request) {
         data: { position: currentSection.position },
       }),
     ]);
+
+    // Revalidate cache to ensure frontend shows updated section order
+    revalidatePath('/order');
+    revalidatePath('/');
 
     return NextResponse.json({ ok: true });
   } catch (error) {

@@ -3,6 +3,7 @@ import { getServerSession } from 'next-auth';
 import { authOptions } from '@/lib/auth/options';
 import prisma from '@/lib/prisma';
 import { requireTenant } from '@/lib/tenant';
+import { revalidatePath } from 'next/cache';
 
 /**
  * GET - Fetch all frontend sections for a tenant
@@ -73,6 +74,10 @@ export async function POST(req: Request) {
         insertAfter: body.insertAfter !== undefined ? body.insertAfter : null,
       },
     });
+
+    // Revalidate cache to ensure frontend shows updated sections
+    revalidatePath('/order');
+    revalidatePath('/');
 
     return NextResponse.json(section, { status: 201 });
   } catch (error) {
