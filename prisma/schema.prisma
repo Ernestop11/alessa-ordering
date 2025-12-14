@@ -115,6 +115,27 @@ model GroceryItem {
   @@index([expirationDate])
 }
 
+model GroceryBundle {
+  id                  String    @id @default(uuid())
+  tenantId            String
+  name                String
+  description         String
+  price               Float
+  category            String    @default("combo") // e.g., "combo", "meal-kit", "special"
+  image               String?
+  gallery             Json?     // Array of image URLs
+  available           Boolean   @default(true)
+  badge               String?   // e.g., "Popular", "Best Value"
+  items               Json      // Array of {groceryItemId, quantity, name}
+  displayOrder        Int       @default(0)
+  createdAt           DateTime  @default(now())
+  updatedAt           DateTime  @updatedAt
+  tenant              Tenant    @relation(fields: [tenantId], references: [id], onDelete: Cascade)
+
+  @@index([tenantId])
+  @@index([category])
+}
+
 model Order {
   id                String      @id @default(uuid())
   tenantId          String
@@ -254,6 +275,7 @@ model Tenant {
   cateringSections       CateringSection[]
   cateringPackages       CateringPackage[]
   groceryItems           GroceryItem[]
+  groceryBundles         GroceryBundle[]
   orders                 Order[]
   orderItems             OrderItem[]
   integrationLogs        IntegrationLog[]

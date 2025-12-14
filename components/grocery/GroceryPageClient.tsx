@@ -92,9 +92,9 @@ export default function GroceryPageClient({
   );
 
   return (
-    <div className="min-h-screen bg-gradient-to-br from-red-900 via-red-800 to-orange-900">
+    <div className="min-h-screen bg-gradient-to-br from-green-900 via-green-800 to-emerald-900">
       {/* Header */}
-      <div className="bg-gradient-to-r from-red-800 to-orange-800 border-b border-white/20 sticky top-0 z-40 backdrop-blur-sm bg-opacity-95">
+      <div className="bg-gradient-to-r from-green-700 to-emerald-700 border-b border-white/20 sticky top-0 z-40 backdrop-blur-sm bg-opacity-95">
         <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-6">
           <div className="flex items-center justify-between">
             <div className="flex items-center gap-4">
@@ -105,15 +105,18 @@ export default function GroceryPageClient({
                 <ArrowLeft className="h-5 w-5" />
                 <span className="text-sm">Back to Menu</span>
               </Link>
-              <h1 className="text-2xl font-bold text-white">
-                {tenantName} - Grocery Store
-              </h1>
+              <div>
+                <h1 className="text-2xl font-bold text-white">
+                  🛒 {tenantName} - Grocery Store
+                </h1>
+                <p className="text-white/60 text-sm">Fresh ingredients delivered with your food order</p>
+              </div>
             </div>
             <div className="flex items-center gap-4">
               {totalItems > 0 && (
                 <button
                   onClick={() => router.push('/checkout')}
-                  className="px-6 py-3 bg-green-600 hover:bg-green-700 rounded-full text-white font-semibold transition shadow-lg flex items-center gap-2"
+                  className="px-6 py-3 bg-yellow-500 hover:bg-yellow-600 rounded-full text-gray-900 font-bold transition shadow-lg flex items-center gap-2"
                 >
                   <ShoppingCart className="h-5 w-5" />
                   <span>{totalItems} items • ${cartTotal.toFixed(2)}</span>
@@ -122,6 +125,22 @@ export default function GroceryPageClient({
             </div>
           </div>
         </div>
+      </div>
+
+      {/* Cross-promotion banner */}
+      <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-4">
+        <Link
+          href="/order"
+          className="block bg-gradient-to-r from-red-600 to-orange-600 rounded-2xl p-6 text-white hover:shadow-2xl transition group"
+        >
+          <div className="flex items-center justify-between">
+            <div>
+              <h3 className="text-xl font-bold mb-2">🌮 Don't forget to order food!</h3>
+              <p className="text-white/90">Browse our authentic Mexican menu - your groceries ship together with your meal</p>
+            </div>
+            <ArrowLeft className="h-8 w-8 rotate-180 group-hover:translate-x-2 transition" />
+          </div>
+        </Link>
       </div>
 
       {/* Category Filter */}
@@ -156,67 +175,67 @@ export default function GroceryPageClient({
               return (
                 <div
                   key={item.id}
-                  className="bg-white/5 backdrop-blur-sm rounded-2xl overflow-hidden border border-white/10 hover:border-white/20 transition group"
+                  className="bg-white/10 backdrop-blur-sm rounded-3xl overflow-hidden border-2 border-green-500/30 hover:border-yellow-400 transition group shadow-xl hover:shadow-2xl"
                 >
                   {/* Image */}
-                  <div className="relative h-48 bg-gradient-to-br from-gray-800 to-gray-900">
+                  <div className="relative h-56 bg-gradient-to-br from-gray-800 to-gray-900 overflow-hidden">
                     {item.image ? (
                       <img
                         src={item.image}
                         alt={item.name}
-                        className="w-full h-full object-cover"
+                        className="w-full h-full object-contain p-4 group-hover:scale-110 transition-transform duration-300"
                       />
                     ) : (
                       <div className="absolute inset-0 flex items-center justify-center">
-                        <ShoppingCart className="h-16 w-16 text-white/20" />
+                        <ShoppingCart className="h-20 w-20 text-green-500/30" />
                       </div>
                     )}
                     {item.stockQuantity !== null && item.stockQuantity < 10 && (
-                      <div className="absolute top-2 right-2 bg-red-500 text-white text-xs px-2 py-1 rounded-full">
-                        Only {item.stockQuantity} left
+                      <div className="absolute top-3 right-3 bg-red-600 text-white text-xs font-bold px-3 py-1.5 rounded-full shadow-lg">
+                        Only {item.stockQuantity} left!
                       </div>
                     )}
-                  </div>
-
-                  {/* Content */}
-                  <div className="p-4">
-                    <h3 className="text-white font-semibold text-lg mb-1">{item.name}</h3>
-                    <p className="text-white/60 text-sm mb-3 line-clamp-2">{item.description}</p>
-
-                    <div className="flex items-center justify-between mb-3">
-                      <span className="text-2xl font-bold text-green-400">
+                    {/* Price badge overlay */}
+                    <div className="absolute bottom-3 left-3 bg-yellow-500 text-gray-900 px-4 py-2 rounded-full shadow-xl">
+                      <span className="text-2xl font-black">
                         ${item.price.toFixed(2)}
                       </span>
                       {item.unit && (
-                        <span className="text-white/50 text-sm">/ {item.unit}</span>
+                        <span className="text-sm font-bold ml-1">/ {item.unit}</span>
                       )}
                     </div>
+                  </div>
+
+                  {/* Content */}
+                  <div className="p-5 bg-gradient-to-b from-white/5 to-transparent">
+                    <h3 className="text-white font-bold text-xl mb-2">{item.name}</h3>
+                    <p className="text-white/70 text-sm mb-4 line-clamp-2 min-h-[40px]">{item.description}</p>
 
                     {/* Add to Cart Controls */}
                     {quantity === 0 ? (
                       <button
                         onClick={() => handleAddToCart(item)}
-                        className="w-full bg-green-600 hover:bg-green-700 text-white font-semibold py-2 px-4 rounded-lg transition flex items-center justify-center gap-2"
+                        className="w-full bg-gradient-to-r from-yellow-500 to-yellow-600 hover:from-yellow-600 hover:to-yellow-700 text-gray-900 font-bold py-3 px-4 rounded-xl transition flex items-center justify-center gap-2 shadow-lg"
                       >
-                        <Plus className="h-4 w-4" />
+                        <Plus className="h-5 w-5" />
                         Add to Cart
                       </button>
                     ) : (
                       <div className="flex items-center gap-2">
                         <button
                           onClick={() => handleDecrement(item.id, quantity)}
-                          className="flex-1 bg-red-600 hover:bg-red-700 text-white font-semibold py-2 px-4 rounded-lg transition flex items-center justify-center"
+                          className="flex-1 bg-red-600 hover:bg-red-700 text-white font-bold py-3 px-4 rounded-xl transition flex items-center justify-center shadow-lg"
                         >
-                          <Minus className="h-4 w-4" />
+                          <Minus className="h-5 w-5" />
                         </button>
-                        <div className="flex-1 bg-white/10 text-white font-bold py-2 px-4 rounded-lg text-center">
+                        <div className="flex-1 bg-white/20 border-2 border-yellow-400 text-white font-black py-3 px-4 rounded-xl text-center text-xl">
                           {quantity}
                         </div>
                         <button
                           onClick={() => handleIncrement(item.id, quantity)}
-                          className="flex-1 bg-green-600 hover:bg-green-700 text-white font-semibold py-2 px-4 rounded-lg transition flex items-center justify-center"
+                          className="flex-1 bg-gradient-to-r from-yellow-500 to-yellow-600 hover:from-yellow-600 hover:to-yellow-700 text-gray-900 font-bold py-3 px-4 rounded-xl transition flex items-center justify-center shadow-lg"
                         >
-                          <Plus className="h-4 w-4" />
+                          <Plus className="h-5 w-5" />
                         </button>
                       </div>
                     )}

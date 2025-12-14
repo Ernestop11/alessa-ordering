@@ -62,11 +62,13 @@ interface CateringPackage {
 
 export default function MenuEditorPage() {
   const [activeTab, setActiveTab] = useState<'menu' | 'catering' | 'grocery' | 'frontend'>('menu');
+  const [grocerySubTab, setGrocerySubTab] = useState<'items' | 'bundles'>('items');
   const [sections, setSections] = useState<MenuSection[]>([]);
   const [items, setItems] = useState<MenuItem[]>([]);
   const [cateringSections, setCateringSections] = useState<CateringSection[]>([]);
   const [cateringPackages, setCateringPackages] = useState<CateringPackage[]>([]);
   const [groceryItems, setGroceryItems] = useState<any[]>([]);
+  const [groceryBundles, setGroceryBundles] = useState<any[]>([]);
   const [selectedSection, setSelectedSection] = useState<string | null>(null);
   const [selectedCateringSection, setSelectedCateringSection] = useState<string | null>(null);
   const [editingItem, setEditingItem] = useState<MenuItem | null>(null);
@@ -74,6 +76,7 @@ export default function MenuEditorPage() {
   const [editingCateringSection, setEditingCateringSection] = useState<CateringSection | null>(null);
   const [editingPackage, setEditingPackage] = useState<CateringPackage | null>(null);
   const [editingGroceryItem, setEditingGroceryItem] = useState<any | null>(null);
+  const [editingGroceryBundle, setEditingGroceryBundle] = useState<any | null>(null);
   const [loading, setLoading] = useState(true);
   const [draggedItem, setDraggedItem] = useState<string | null>(null);
   const [cateringGallery, setCateringGallery] = useState<string[]>([]);
@@ -1065,18 +1068,51 @@ export default function MenuEditorPage() {
             </div>
             </div>
           ) : activeTab === 'grocery' ? (
-            /* Grocery Items View */
+            /* Grocery View with Sub-tabs */
             <div className="space-y-6">
               <div className="flex justify-between items-center mb-4">
-                <h2 className="text-2xl font-semibold text-gray-900">Grocery Items</h2>
-                <button
-                  onClick={handleAddGroceryItem}
-                  className="inline-flex items-center px-4 py-2 border border-transparent rounded-md shadow-sm text-sm font-medium text-white bg-green-600 hover:bg-green-700"
-                >
-                  <Plus className="h-4 w-4 mr-2" />
-                  Add Grocery Item
-                </button>
+                <h2 className="text-2xl font-semibold text-gray-900">Grocery Management</h2>
               </div>
+
+              {/* Sub-tabs */}
+              <div className="border-b border-gray-200 mb-6">
+                <nav className="-mb-px flex space-x-8">
+                  <button
+                    onClick={() => setGrocerySubTab('items')}
+                    className={`${
+                      grocerySubTab === 'items'
+                        ? 'border-green-500 text-green-600'
+                        : 'border-transparent text-gray-500 hover:text-gray-700 hover:border-gray-300'
+                    } whitespace-nowrap py-4 px-1 border-b-2 font-medium text-sm`}
+                  >
+                    Grocery Items
+                  </button>
+                  <button
+                    onClick={() => setGrocerySubTab('bundles')}
+                    className={`${
+                      grocerySubTab === 'bundles'
+                        ? 'border-green-500 text-green-600'
+                        : 'border-transparent text-gray-500 hover:text-gray-700 hover:border-gray-300'
+                    } whitespace-nowrap py-4 px-1 border-b-2 font-medium text-sm`}
+                  >
+                    Bundles & Combos
+                  </button>
+                </nav>
+              </div>
+
+              {/* Grocery Items Sub-tab */}
+              {grocerySubTab === 'items' && (
+                <div>
+                  <div className="flex justify-between items-center mb-4">
+                    <h3 className="text-xl font-medium text-gray-900">Individual Grocery Items</h3>
+                    <button
+                      onClick={handleAddGroceryItem}
+                      className="inline-flex items-center px-4 py-2 border border-transparent rounded-md shadow-sm text-sm font-medium text-white bg-green-600 hover:bg-green-700"
+                    >
+                      <Plus className="h-4 w-4 mr-2" />
+                      Add Grocery Item
+                    </button>
+                  </div>
 
               {loading ? (
                 <div className="text-center py-12">Loading grocery items...</div>
@@ -1131,6 +1167,83 @@ export default function MenuEditorPage() {
                       </div>
                     </div>
                   ))}
+                </div>
+              )}
+                </div>
+              )}
+
+              {/* Grocery Bundles Sub-tab */}
+              {grocerySubTab === 'bundles' && (
+                <div>
+                  <div className="flex justify-between items-center mb-4">
+                    <div>
+                      <h3 className="text-xl font-medium text-gray-900">Grocery Bundles & Combos</h3>
+                      <p className="text-sm text-gray-500 mt-1">Create special combos like "Pozole Kit" with multiple grocery items bundled together</p>
+                    </div>
+                    <button
+                      onClick={() => setEditingGroceryBundle({ id: null, name: '', description: '', price: 0, category: 'combo', items: [], available: true, displayOrder: 0 })}
+                      className="inline-flex items-center px-4 py-2 border border-transparent rounded-md shadow-sm text-sm font-medium text-white bg-green-600 hover:bg-green-700"
+                    >
+                      <Plus className="h-4 w-4 mr-2" />
+                      Create Bundle
+                    </button>
+                  </div>
+
+                  {loading ? (
+                    <div className="text-center py-12">Loading bundles...</div>
+                  ) : groceryBundles.length === 0 ? (
+                    <div className="text-center py-12 bg-white rounded-lg shadow">
+                      <p className="text-gray-500">No bundles yet. Create your first combo to get started!</p>
+                      <p className="text-sm text-gray-400 mt-2">Example: "Pozole Special" with hominy, chiles, and pork</p>
+                    </div>
+                  ) : (
+                    <div className="grid gap-4 sm:grid-cols-2 lg:grid-cols-3">
+                      {groceryBundles.map((bundle: any) => (
+                        <div key={bundle.id} className="bg-white rounded-lg shadow hover:shadow-md transition-shadow p-4 border-2 border-green-200">
+                          {bundle.image && (
+                            <img
+                              src={bundle.image}
+                              alt={bundle.name}
+                              className="w-full h-32 object-cover rounded mb-3"
+                            />
+                          )}
+                          {bundle.badge && (
+                            <span className="inline-block bg-yellow-100 text-yellow-800 text-xs px-2 py-1 rounded mb-2">
+                              {bundle.badge}
+                            </span>
+                          )}
+                          <h4 className="font-semibold text-gray-900 mb-1">{bundle.name}</h4>
+                          <p className="text-sm text-gray-600 mb-2">{bundle.description}</p>
+                          <p className="text-lg font-bold text-green-600 mb-2">${bundle.price.toFixed(2)}</p>
+                          <div className="text-xs text-gray-500 mb-3">
+                            {Array.isArray(bundle.items) && bundle.items.length > 0 && (
+                              <div>Includes {bundle.items.length} items</div>
+                            )}
+                          </div>
+                          <div className="flex gap-2">
+                            <button
+                              onClick={() => setEditingGroceryBundle(bundle)}
+                              className="flex-1 text-sm px-3 py-2 bg-blue-600 text-white rounded hover:bg-blue-700"
+                            >
+                              Edit
+                            </button>
+                            <button
+                              onClick={() => {
+                                if (confirm(`Delete bundle "${bundle.name}"?`)) {
+                                  fetch(`/api/admin/grocery-bundles/${bundle.id}`, { method: 'DELETE' })
+                                    .then(() => setGroceryBundles(groceryBundles.filter((b: any) => b.id !== bundle.id)))
+                                    .catch(err => alert('Error deleting bundle'));
+                                }
+                              }}
+                              className="flex-1 text-sm px-3 py-2 bg-red-600 text-white rounded hover:bg-red-700"
+                            >
+                              Delete
+                            </button>
+                          </div>
+                        </div>
+                      ))}
+                    </div>
+                  )}
                 </div>
               )}
             </div>
