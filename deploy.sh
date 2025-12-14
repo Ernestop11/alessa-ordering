@@ -58,7 +58,7 @@ echo ""
 
 # Step 3: Install dependencies
 echo -e "${YELLOW}[3/7]${NC} Installing dependencies on VPS..."
-ssh $VPS_HOST "cd $VPS_PATH && npm install --production"
+ssh $VPS_HOST "cd $VPS_PATH && npm install"
 echo -e "${GREEN}✓${NC} Dependencies installed"
 echo ""
 
