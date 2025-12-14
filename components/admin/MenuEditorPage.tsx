@@ -1791,7 +1791,10 @@ export default function MenuEditorPage() {
                       </div>
                       <div className="flex gap-2 mt-2">
                         <button
-                          onClick={() => setEditingFrontendSection(section)}
+                          onClick={() => setEditingFrontendSection({
+                          ...section,
+                          content: section.content || {}
+                        })}
                           className="flex-1 text-sm px-3 py-2 bg-blue-600 text-white rounded hover:bg-blue-700"
                         >
                           Edit
@@ -3170,7 +3173,7 @@ export default function MenuEditorPage() {
                             onChange={(e) =>
                               setEditingFrontendSection({
                                 ...editingFrontendSection,
-                                content: { ...editingFrontendSection.content, title: e.target.value },
+                                content: { ...(editingFrontendSection.content || {}), title: e.target.value },
                               })
                             }
                             className="w-full px-3 py-2 border border-gray-300 rounded-md"
@@ -3185,7 +3188,7 @@ export default function MenuEditorPage() {
                             onChange={(e) =>
                               setEditingFrontendSection({
                                 ...editingFrontendSection,
-                                content: { ...editingFrontendSection.content, description: e.target.value },
+                                content: { ...(editingFrontendSection.content || {}), description: e.target.value },
                               })
                             }
                             className="w-full px-3 py-2 border border-gray-300 rounded-md"
@@ -3202,7 +3205,7 @@ export default function MenuEditorPage() {
                             onChange={(e) =>
                               setEditingFrontendSection({
                                 ...editingFrontendSection,
-                                content: { ...editingFrontendSection.content, subtitle: e.target.value },
+                                content: { ...(editingFrontendSection.content || {}), subtitle: e.target.value },
                               })
                             }
                             className="w-full px-3 py-2 border border-gray-300 rounded-md"
@@ -3218,7 +3221,7 @@ export default function MenuEditorPage() {
                             onChange={(e) =>
                               setEditingFrontendSection({
                                 ...editingFrontendSection,
-                                content: { ...editingFrontendSection.content, badge: e.target.value },
+                                content: { ...(editingFrontendSection.content || {}), badge: e.target.value },
                               })
                             }
                             className="w-full px-3 py-2 border border-gray-300 rounded-md"
@@ -3234,7 +3237,7 @@ export default function MenuEditorPage() {
                             onChange={(e) =>
                               setEditingFrontendSection({
                                 ...editingFrontendSection,
-                                content: { ...editingFrontendSection.content, buttonText: e.target.value },
+                                content: { ...(editingFrontendSection.content || {}), buttonText: e.target.value },
                               })
                             }
                             className="w-full px-3 py-2 border border-gray-300 rounded-md"
@@ -3250,7 +3253,7 @@ export default function MenuEditorPage() {
                             onChange={(e) =>
                               setEditingFrontendSection({
                                 ...editingFrontendSection,
-                                content: { ...editingFrontendSection.content, buttonLink: e.target.value },
+                                content: { ...(editingFrontendSection.content || {}), buttonLink: e.target.value },
                               })
                             }
                             className="w-full px-3 py-2 border border-gray-300 rounded-md"
@@ -3266,7 +3269,7 @@ export default function MenuEditorPage() {
                             onChange={(e) =>
                               setEditingFrontendSection({
                                 ...editingFrontendSection,
-                                content: { ...editingFrontendSection.content, image: e.target.value },
+                                content: { ...(editingFrontendSection.content || {}), image: e.target.value },
                               })
                             }
                             className="w-full px-3 py-2 border border-gray-300 rounded-md"
@@ -3292,7 +3295,7 @@ export default function MenuEditorPage() {
                             onChange={(e) =>
                               setEditingFrontendSection({
                                 ...editingFrontendSection,
-                                content: { ...editingFrontendSection.content, backgroundColor: e.target.value },
+                                content: { ...(editingFrontendSection.content || {}), backgroundColor: e.target.value },
                               })
                             }
                             className="w-full px-3 py-2 border border-gray-300 rounded-md"
@@ -3308,7 +3311,7 @@ export default function MenuEditorPage() {
                             onChange={(e) =>
                               setEditingFrontendSection({
                                 ...editingFrontendSection,
-                                content: { ...editingFrontendSection.content, textColor: e.target.value },
+                                content: { ...(editingFrontendSection.content || {}), textColor: e.target.value },
                               })
                             }
                             className="w-full px-3 py-2 border border-gray-300 rounded-md"

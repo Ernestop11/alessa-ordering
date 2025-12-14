@@ -2416,7 +2416,12 @@ export default function OrderPageClient({
         })()}
 
         {/* Menu Sections with Promotional Banners Between */}
-        {enrichedSections.map((section, sectionIndex) => {
+        {/* Only render sections that are in navSections to ensure category buttons match */}
+        {enrichedSections
+          .filter((section) => navSections.some((navSection) => navSection.id === section.id))
+          .map((section) => {
+          // Find the original index in enrichedSections for banner placement
+          const originalIndex = enrichedSections.findIndex((s) => s.id === section.id);
           // Get promotional banner config for this section index
           const getPromoBannerForIndex = (index: number): FrontendUISection | null => {
             if (!frontendUISections || frontendUISections.length === 0) return null;
@@ -2434,12 +2439,12 @@ export default function OrderPageClient({
             return frontendUISections.find(s => s.type === bannerType && s.enabled) || null;
           };
 
-          const promoBanner = getPromoBannerForIndex(sectionIndex);
+          const promoBanner = getPromoBannerForIndex(originalIndex);
 
           return (
           <div key={section.id}>
             {/* Promotional Billboard Banner - After first section - Dynamic from Bundles */}
-            {sectionIndex === 1 && (() => {
+            {originalIndex === 1 && (() => {
               // Use saved config if available, otherwise fallback to bundle logic
               if (promoBanner && promoBanner.type === 'promoBanner1') {
                 const config = promoBanner.content;
@@ -2644,7 +2649,7 @@ export default function OrderPageClient({
             })()}
 
             {/* "WE COOK FOR YOU" Style Banner - After third section */}
-            {sectionIndex === 3 && (() => {
+            {originalIndex === 3 && (() => {
               const weCookBanner = getPromoBannerForIndex(3);
               if (weCookBanner && weCookBanner.type === 'weCookBanner') {
                 const config = weCookBanner.content;
@@ -2791,7 +2796,7 @@ export default function OrderPageClient({
             })()}
 
             {/* Quick Deal Strip - After 5th section */}
-            {sectionIndex === 5 && (() => {
+            {originalIndex === 5 && (() => {
               const dealStrip = getPromoBannerForIndex(5);
               if (dealStrip && dealStrip.type === 'dealStrip') {
                 const config = dealStrip.content;
@@ -2897,7 +2902,7 @@ export default function OrderPageClient({
             })()}
 
             {/* Grocery Store Banner - After 2nd section */}
-            {sectionIndex === 2 && (() => {
+            {originalIndex === 2 && (() => {
               const groceryBanner = getPromoBannerForIndex(2);
               if (groceryBanner && groceryBanner.type === 'groceryBanner') {
                 const config = groceryBanner.content;
@@ -2987,7 +2992,7 @@ export default function OrderPageClient({
             })()}
 
             {/* Fresh Quality Banner - After 7th section */}
-            {sectionIndex === 7 && (() => {
+            {originalIndex === 7 && (() => {
               const qualityBanner = getPromoBannerForIndex(7);
               if (qualityBanner && qualityBanner.type === 'qualityBanner') {
                 const config = qualityBanner.content;
@@ -3081,7 +3086,7 @@ export default function OrderPageClient({
             })()}
 
             {/* Customer Reviews Strip - After 9th section */}
-            {sectionIndex === 9 && (() => {
+            {originalIndex === 9 && (() => {
               const reviewsStrip = getPromoBannerForIndex(9);
               if (reviewsStrip && reviewsStrip.type === 'reviewsStrip') {
                 const config = reviewsStrip.content;
