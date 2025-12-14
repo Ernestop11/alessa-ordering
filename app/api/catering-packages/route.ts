@@ -2,6 +2,9 @@ import { NextResponse } from 'next/server';
 import prisma from '@/lib/prisma';
 import { requireTenant } from '@/lib/tenant';
 
+// Force dynamic rendering - never cache this route
+export const dynamic = 'force-dynamic';
+
 // CateringPackage expected by frontend
 interface CateringPackage {
   id: string;
