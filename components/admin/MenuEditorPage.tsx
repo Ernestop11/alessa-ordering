@@ -88,7 +88,7 @@ interface FrontendUISection {
 
 export default function MenuEditorPage() {
   const router = useRouter();
-  const [activeTab, setActiveTab] = useState<'menu' | 'catering' | 'grocery' | 'frontend'>('menu');
+  const [activeTab, setActiveTab] = useState<'menu' | 'catering' | 'grocery' | 'panaderia' | 'frontend'>('menu');
   const [grocerySubTab, setGrocerySubTab] = useState<'items' | 'bundles' | 'weekend'>('items');
   const [sections, setSections] = useState<MenuSection[]>([]);
   const [items, setItems] = useState<MenuItem[]>([]);
@@ -1098,16 +1098,31 @@ export default function MenuEditorPage() {
                 >
                   Catering Packages
                 </button>
-                <button
-                  onClick={() => setActiveTab('grocery')}
-                  className={`whitespace-nowrap py-4 px-1 border-b-2 font-medium text-sm ${
-                    activeTab === 'grocery'
-                      ? 'border-blue-500 text-blue-600'
-                      : 'border-transparent text-gray-500 hover:text-gray-700 hover:border-gray-300'
-                  }`}
-                >
-                  Grocery Items
-                </button>
+{/* Dynamic Add-on Tab - Shows Grocery or Panaderia based on enabled add-on */}
+                {enabledAddOns.includes('grocery') && (
+                  <button
+                    onClick={() => setActiveTab('grocery')}
+                    className={`whitespace-nowrap py-4 px-1 border-b-2 font-medium text-sm ${
+                      activeTab === 'grocery'
+                        ? 'border-green-500 text-green-600'
+                        : 'border-transparent text-gray-500 hover:text-gray-700 hover:border-gray-300'
+                    }`}
+                  >
+                    🛒 Grocery Items
+                  </button>
+                )}
+                {enabledAddOns.includes('panaderia') && (
+                  <button
+                    onClick={() => setActiveTab('panaderia')}
+                    className={`whitespace-nowrap py-4 px-1 border-b-2 font-medium text-sm ${
+                      activeTab === 'panaderia'
+                        ? 'border-amber-500 text-amber-600'
+                        : 'border-transparent text-gray-500 hover:text-gray-700 hover:border-gray-300'
+                    }`}
+                  >
+                    🥐 Panaderia Items
+                  </button>
+                )}
                 <button
                   onClick={() => setActiveTab('frontend')}
                   className={`whitespace-nowrap py-4 px-1 border-b-2 font-medium text-sm ${
@@ -1818,6 +1833,307 @@ export default function MenuEditorPage() {
                       </div>
                     </div>
                   )}
+                </div>
+              )}
+            </div>
+          ) : activeTab === 'panaderia' ? (
+            /* Panaderia View - Similar structure to Grocery but with bakery theming */
+            <div className="space-y-6">
+              <div className="flex justify-between items-center mb-4">
+                <h2 className="text-2xl font-semibold text-gray-900">🥐 Panaderia Management</h2>
+              </div>
+
+              {/* Sub-tabs */}
+              <div className="border-b border-gray-200 mb-6">
+                <nav className="-mb-px flex space-x-8">
+                  <button
+                    onClick={() => setGrocerySubTab('items')}
+                    className={`${
+                      grocerySubTab === 'items'
+                        ? 'border-amber-500 text-amber-600'
+                        : 'border-transparent text-gray-500 hover:text-gray-700 hover:border-gray-300'
+                    } whitespace-nowrap py-4 px-1 border-b-2 font-medium text-sm`}
+                  >
+                    Bakery Items
+                  </button>
+                  <button
+                    onClick={() => setGrocerySubTab('bundles')}
+                    className={`${
+                      grocerySubTab === 'bundles'
+                        ? 'border-amber-500 text-amber-600'
+                        : 'border-transparent text-gray-500 hover:text-gray-700 hover:border-gray-300'
+                    } whitespace-nowrap py-4 px-1 border-b-2 font-medium text-sm`}
+                  >
+                    Box Bundles
+                  </button>
+                  <button
+                    onClick={() => setGrocerySubTab('weekend')}
+                    className={`${
+                      grocerySubTab === 'weekend'
+                        ? 'border-orange-500 text-orange-600'
+                        : 'border-transparent text-gray-500 hover:text-gray-700 hover:border-gray-300'
+                    } whitespace-nowrap py-4 px-1 border-b-2 font-medium text-sm`}
+                  >
+                    🌟 Daily Specials
+                  </button>
+                </nav>
+              </div>
+
+              {/* Bakery Items Sub-tab */}
+              {grocerySubTab === 'items' && (
+                <div className="grid grid-cols-1 lg:grid-cols-4 gap-6">
+                  {/* Categories List */}
+                  <div className="lg:col-span-1">
+                    <div className="bg-white rounded-lg shadow p-4">
+                      <h2 className="text-lg font-semibold text-gray-900 mb-4">Categories</h2>
+                      <div className="space-y-2">
+                        {Array.from(new Set(groceryItems.map(item => item.category))).sort().map((category) => {
+                          const itemsInCategory = groceryItems.filter(item => item.category === category).length;
+                          return (
+                            <div
+                              key={category}
+                              className={`p-3 rounded-lg cursor-pointer transition-colors ${
+                                selectedGroceryCategory === category
+                                  ? 'bg-amber-50 border-2 border-amber-500'
+                                  : 'bg-gray-50 border-2 border-transparent hover:bg-gray-100'
+                              }`}
+                              onClick={() => setSelectedGroceryCategory(category)}
+                            >
+                              <div className="flex items-center justify-between">
+                                <span className="font-medium text-gray-900 capitalize">{category}</span>
+                                <span className="text-xs bg-gray-200 px-2 py-1 rounded-full">{itemsInCategory}</span>
+                              </div>
+                            </div>
+                          );
+                        })}
+                      </div>
+                    </div>
+                  </div>
+
+                  {/* Items List */}
+                  <div className="lg:col-span-3">
+                    <div className="bg-white rounded-lg shadow p-6">
+                      <div className="flex justify-between items-center mb-4">
+                        <h3 className="text-lg font-semibold">
+                          {selectedGroceryCategory ? `${selectedGroceryCategory} Items` : 'All Bakery Items'}
+                        </h3>
+                        <button
+                          onClick={() => setEditingGroceryItem({
+                            id: '',
+                            name: '',
+                            description: '',
+                            price: 0,
+                            category: selectedGroceryCategory || 'bread',
+                            image: null,
+                            available: true,
+                            isWeekendSpecial: false,
+                            weekendPrice: null,
+                          })}
+                          className="inline-flex items-center px-4 py-2 border border-transparent rounded-md shadow-sm text-sm font-medium text-white bg-amber-600 hover:bg-amber-700"
+                        >
+                          <Plus className="h-4 w-4 mr-2" />
+                          Add Bakery Item
+                        </button>
+                      </div>
+
+                      <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
+                        {groceryItems
+                          .filter(item => !selectedGroceryCategory || item.category === selectedGroceryCategory)
+                          .map((item) => (
+                            <div
+                              key={item.id}
+                              className={`p-4 rounded-lg border-2 transition-all ${
+                                item.available
+                                  ? 'bg-white border-gray-200 hover:border-amber-300'
+                                  : 'bg-gray-50 border-gray-200 opacity-60'
+                              }`}
+                            >
+                              {item.image && (
+                                <img
+                                  src={item.image}
+                                  alt={item.name}
+                                  className="w-full h-32 object-cover rounded-lg mb-3"
+                                />
+                              )}
+                              <h4 className="font-semibold text-gray-900">{item.name}</h4>
+                              <p className="text-sm text-gray-500 line-clamp-2 mb-2">{item.description}</p>
+                              <div className="flex items-center justify-between">
+                                <span className="text-lg font-bold text-amber-600">${item.price.toFixed(2)}</span>
+                                <div className="flex gap-2">
+                                  <button
+                                    onClick={() => setEditingGroceryItem(item)}
+                                    className="p-2 text-gray-400 hover:text-amber-600"
+                                  >
+                                    <Edit2 className="h-4 w-4" />
+                                  </button>
+                                  <button
+                                    onClick={() => handleDeleteGroceryItem(item.id)}
+                                    className="p-2 text-gray-400 hover:text-red-600"
+                                  >
+                                    <Trash2 className="h-4 w-4" />
+                                  </button>
+                                </div>
+                              </div>
+                              {item.isWeekendSpecial && (
+                                <div className="mt-2 text-xs text-orange-600 font-semibold">
+                                  🌟 Daily Special: ${item.weekendPrice?.toFixed(2)}
+                                </div>
+                              )}
+                            </div>
+                          ))}
+                      </div>
+                    </div>
+                  </div>
+                </div>
+              )}
+
+              {/* Box Bundles Sub-tab */}
+              {grocerySubTab === 'bundles' && (
+                <div className="bg-white rounded-lg shadow p-6">
+                  <div className="flex justify-between items-center mb-4">
+                    <h3 className="text-lg font-semibold">Box Bundles & Combos</h3>
+                    <button
+                      onClick={() => setEditingGroceryBundle({
+                        id: '',
+                        name: '',
+                        description: '',
+                        price: 0,
+                        items: [],
+                        image: null,
+                        available: true,
+                      })}
+                      className="inline-flex items-center px-4 py-2 border border-transparent rounded-md shadow-sm text-sm font-medium text-white bg-amber-600 hover:bg-amber-700"
+                    >
+                      <Plus className="h-4 w-4 mr-2" />
+                      Add Box Bundle
+                    </button>
+                  </div>
+
+                  <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
+                    {groceryBundles.map((bundle) => (
+                      <div
+                        key={bundle.id}
+                        className="p-4 rounded-lg border-2 border-gray-200 hover:border-amber-300 bg-white"
+                      >
+                        {bundle.image && (
+                          <img
+                            src={bundle.image}
+                            alt={bundle.name}
+                            className="w-full h-32 object-cover rounded-lg mb-3"
+                          />
+                        )}
+                        <h4 className="font-semibold text-gray-900">{bundle.name}</h4>
+                        <p className="text-sm text-gray-500 mb-2">{bundle.description}</p>
+                        <p className="text-xs text-gray-400 mb-2">{bundle.items?.length || 0} items</p>
+                        <div className="flex items-center justify-between">
+                          <span className="text-lg font-bold text-amber-600">${bundle.price.toFixed(2)}</span>
+                          <div className="flex gap-2">
+                            <button
+                              onClick={() => setEditingGroceryBundle(bundle)}
+                              className="p-2 text-gray-400 hover:text-amber-600"
+                            >
+                              <Edit2 className="h-4 w-4" />
+                            </button>
+                            <button
+                              onClick={() => handleDeleteGroceryBundle(bundle.id)}
+                              className="p-2 text-gray-400 hover:text-red-600"
+                            >
+                              <Trash2 className="h-4 w-4" />
+                            </button>
+                          </div>
+                        </div>
+                      </div>
+                    ))}
+                  </div>
+                </div>
+              )}
+
+              {/* Daily Specials Sub-tab */}
+              {grocerySubTab === 'weekend' && (
+                <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
+                  {/* Current Specials */}
+                  <div className="bg-gradient-to-br from-orange-50 to-amber-50 rounded-lg shadow p-6 border border-orange-200">
+                    <h3 className="text-lg font-semibold mb-4 text-orange-800">🌟 Active Daily Specials</h3>
+                    <div className="space-y-3">
+                      {groceryItems
+                        .filter(item => item.isWeekendSpecial)
+                        .map((item) => (
+                          <div
+                            key={item.id}
+                            className="flex items-center justify-between p-3 bg-white rounded-lg border border-orange-200"
+                          >
+                            <div className="flex items-center gap-3">
+                              {item.image && (
+                                <img src={item.image} alt={item.name} className="w-12 h-12 rounded object-cover" />
+                              )}
+                              <div>
+                                <h4 className="font-medium text-gray-900">{item.name}</h4>
+                                <div className="text-sm">
+                                  <span className="text-gray-400 line-through">${item.price.toFixed(2)}</span>
+                                  <span className="ml-2 font-bold text-orange-600">${item.weekendPrice?.toFixed(2)}</span>
+                                </div>
+                              </div>
+                            </div>
+                            <button
+                              onClick={() => handleRemoveWeekendSpecial(item.id)}
+                              className="text-red-500 hover:text-red-700 text-sm"
+                            >
+                              Remove
+                            </button>
+                          </div>
+                        ))}
+                      {groceryItems.filter(item => item.isWeekendSpecial).length === 0 && (
+                        <p className="text-center text-gray-500 py-4">No daily specials set. Add items from the list.</p>
+                      )}
+                    </div>
+                  </div>
+
+                  {/* Add to Specials */}
+                  <div className="bg-white rounded-lg shadow p-6">
+                    <h3 className="text-lg font-semibold mb-4">Add Items to Daily Specials</h3>
+                    <p className="text-sm text-gray-500 mb-4">Click an item to set a special price</p>
+                    <div className="space-y-2 max-h-96 overflow-y-auto">
+                      {groceryItems
+                        .filter(item => !item.isWeekendSpecial)
+                        .map((item) => (
+                          <div
+                            key={item.id}
+                            onClick={async () => {
+                              const price = prompt(`Set special price for ${item.name}:\nCurrent price: $${item.price.toFixed(2)}`, item.price.toFixed(2));
+                              if (price === null) return;
+                              const numPrice = parseFloat(price);
+                              if (isNaN(numPrice) || numPrice < 0) {
+                                alert('Invalid price');
+                                return;
+                              }
+                              try {
+                                const res = await fetch(`/api/admin/grocery-items/${item.id}`, {
+                                  method: 'PATCH',
+                                  headers: { 'Content-Type': 'application/json' },
+                                  body: JSON.stringify({ isWeekendSpecial: true, weekendPrice: numPrice }),
+                                });
+                                if (!res.ok) throw new Error('Failed to add to daily specials');
+                                await fetchGroceryItems();
+                              } catch (e) {
+                                console.error('Failed to add daily special', e);
+                                alert('Failed to add daily special');
+                              }
+                            }}
+                            className="flex items-center gap-3 p-3 rounded-lg hover:bg-amber-50 cursor-pointer border border-transparent hover:border-amber-200 transition group"
+                          >
+                            {item.image && (
+                              <img src={item.image} alt={item.name} className="w-12 h-12 rounded object-cover" />
+                            )}
+                            <div className="flex-1 min-w-0">
+                              <h5 className="font-medium text-gray-900 text-sm truncate">{item.name}</h5>
+                              <p className="text-xs text-gray-500 capitalize">{item.category}</p>
+                              <p className="text-sm font-bold text-amber-600">${item.price.toFixed(2)}</p>
+                            </div>
+                            <Plus className="h-5 w-5 text-gray-400 group-hover:text-amber-600 transition" />
+                          </div>
+                        ))}
+                    </div>
+                  </div>
                 </div>
               )}
             </div>
