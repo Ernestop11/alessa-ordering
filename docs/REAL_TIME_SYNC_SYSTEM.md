@@ -160,21 +160,23 @@ useEffect(() => {
 - Frontend polls `/api/restaurant-status` every 10 seconds
 - Updates `restaurantIsOpen` state → disables/enables ordering buttons
 
-### 2. Featured Carousel Items
+### 2. Featured Carousel Items ⭐ (MILESTONE FIX - Dec 2024)
 
 | Component | File |
 |-----------|------|
 | **Polling API** | `app/api/featured-items/route.ts` |
 | **Admin API** | `app/api/menu/[id]/route.ts` (PATCH) |
 | **Frontend State** | `components/order/OrderPageClient.tsx` |
-| **Poll Interval** | 10 seconds |
+| **Poll Interval** | **5 seconds** (fast for instant feel) |
 | **Database Field** | `MenuItem.isFeatured` |
 
 **How it works:**
 - Admin clicks items in Featured Carousel editor (Frontend Sections tab)
 - Each click immediately PATCHes `/api/menu/{id}` with `{ isFeatured: true/false }`
-- Frontend polls `/api/featured-items` every 10 seconds
+- Frontend polls `/api/featured-items` every **5 seconds**
 - Updates `currentFeaturedItems` state → carousel re-renders with new items
+
+> **MILESTONE NOTE:** This is the standard pattern for instant-feeling updates. Use 5-second polling for features that need to feel instant to the admin.
 
 ### 3. Menu Availability & Prices
 
