@@ -648,7 +648,9 @@ export default function OrderPageClient({
     (item: OrderMenuItem & { displayImage: string }, sectionType: string) => {
       // Check if restaurant is open before allowing customization
       if (!restaurantIsOpen) {
-        showNotification(restaurantClosedMessage || 'We are currently closed. Please check back during our operating hours.');
+        // Use setNotification directly since showNotification is defined later
+        setNotification(restaurantClosedMessage || 'We are currently closed. Please check back during our operating hours.');
+        setTimeout(() => setNotification(''), 2200);
         return;
       }
       const config = findCustomizationConfig(item, sectionType);
@@ -661,7 +663,7 @@ export default function OrderPageClient({
       setCustomNote('');
       setCustomQuantity(1);
     },
-    [findCustomizationConfig, restaurantIsOpen, restaurantClosedMessage, showNotification],
+    [findCustomizationConfig, restaurantIsOpen, restaurantClosedMessage],
   );
 
   const closeCustomization = useCallback(() => {
