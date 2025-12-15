@@ -7,11 +7,8 @@ const config: CapacitorConfig = {
   server: {
     androidScheme: 'https',
     iosScheme: 'https',
-    // For development, point to your local server:
-    // url: 'http://localhost:3001',
-    // cleartext: true,
-    // For production, uncomment and set your production URL:
-    // url: process.env.NEXT_PUBLIC_APP_URL || 'https://your-domain.com',
+    // Use the Las Reinas admin login page
+    url: 'https://lasreinas.alessacloud.com/login',
     cleartext: false,
   },
   ios: {

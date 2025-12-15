@@ -46,7 +46,9 @@
       "Bash(chmod:*)",
       "Bash(scp:*)",
       "Bash(git fetch:*)",
-      "Bash(git tag:*)"
+      "Bash(git tag:*)",
+      "Bash(npx cap:*)",
+      "Bash(open:*)"
     ],
     "deny": [],
     "ask": []

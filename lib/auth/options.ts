@@ -28,8 +28,8 @@ const LEGACY_ADMIN_PASSWORD = process.env.ADMIN_PASSWORD;
 
 type AdminRole = 'admin' | 'super_admin';
 
-type TokenWithRole = JWT & { role?: AdminRole };
-type SessionWithRole = Session & { user: Session['user'] & { role?: AdminRole } };
+type TokenWithRole = JWT & { role?: AdminRole; tenantSlug?: string };
+type SessionWithRole = Session & { user: Session['user'] & { role?: AdminRole; tenantSlug?: string } };
 
 interface CandidateUser {
   id: string;
@@ -37,9 +37,10 @@ interface CandidateUser {
   password: string;
   role: AdminRole;
   name: string;
+  tenantSlug?: string; // Tenant slug for tenant admins
 }
 
-type AdminUser = User & { role: AdminRole };
+type AdminUser = User & { role: AdminRole; tenantSlug?: string };
 
 export const authOptions: NextAuthOptions = {
   providers: [
@@ -63,6 +64,7 @@ export const authOptions: NextAuthOptions = {
               password: admin.password,
               role: 'admin',
               name: admin.name,
+              tenantSlug: slug, // Store tenant slug for routing
             });
           }
         });
@@ -122,9 +124,12 @@ export const authOptions: NextAuthOptions = {
   callbacks: {
     async jwt({ token, user }) {
       const typedToken = token as TokenWithRole;
-      const typedUser = user as AdminUser | undefined;
+      const typedUser = user as AdminUser & { tenantSlug?: string } | undefined;
       if (typedUser?.role) {
         typedToken.role = typedUser.role;
+      }
+      if (typedUser?.tenantSlug) {
+        typedToken.tenantSlug = typedUser.tenantSlug;
       }
       return typedToken;
     },
@@ -133,6 +138,9 @@ export const authOptions: NextAuthOptions = {
       const typedToken = token as TokenWithRole;
       if (typedToken?.role) {
         typedSession.user.role = typedToken.role;
+      }
+      if (typedToken?.tenantSlug) {
+        typedSession.user.tenantSlug = typedToken.tenantSlug;
       }
       return typedSession;
     },

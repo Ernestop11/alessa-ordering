@@ -88,42 +88,70 @@ export default function PrinterSetup({ currentConfig, onSave, onTest }: Props) {
 
     try {
       if (isNativeApp) {
-        // Use Capacitor Bluetooth plugin
-        const { BluetoothLE } = require('@capacitor-community/bluetooth-le');
-        
-        // Request permissions first
-        const permission = await BluetoothLE.requestLEScan({});
-        if (!permission.value) {
-          throw new Error('Bluetooth permission denied');
+        // Use Capacitor Bluetooth LE plugin
+        const { BleClient } = require('@capacitor-community/bluetooth-le');
+
+        // Initialize BLE client first
+        await BleClient.initialize();
+
+        // Request permissions (iOS will prompt for Bluetooth permission)
+        const isEnabled = await BleClient.isEnabled();
+        if (!isEnabled) {
+          throw new Error('Bluetooth is not enabled. Please enable Bluetooth in Settings.');
         }
 
-        // Start scanning
-        await BluetoothLE.startLEScan({
-          services: [
-            ...KNOWN_VENDORS.brother.services,
-            ...KNOWN_VENDORS.star.services,
-            ...KNOWN_VENDORS.escpos.services,
-          ],
-        });
+        const foundDevices: any[] = [];
 
-        // Listen for devices
-        BluetoothLE.addListener('onScanResult', (result: any) => {
-          if (result.devices && result.devices.length > 0) {
-            const device = result.devices[0];
-            setAvailableDevices([device]);
-            setPrinterType('bluetooth');
-            setPrinterName(device.name || 'Unknown Printer');
-            setDeviceId(device.address || device.id);
-            setSuccess(`Found printer: ${device.name || 'Unknown'}`);
-            BluetoothLE.stopLEScan();
-            setScanning(false);
+        // Start scanning for BLE devices
+        await BleClient.requestLEScan(
+          {
+            // Scan for printer service UUIDs
+            services: [
+              ...KNOWN_VENDORS.brother.services,
+              ...KNOWN_VENDORS.star.services,
+            ],
+          },
+          (result) => {
+            // Called for each device found
+            console.log('Found device:', result);
+            if (result.device) {
+              const device = result.device;
+              // Check if we already have this device
+              if (!foundDevices.find(d => d.deviceId === device.deviceId)) {
+                foundDevices.push(device);
+                setAvailableDevices([...foundDevices]);
+
+                // Auto-select if it looks like a printer
+                if (device.name && (
+                  device.name.toLowerCase().includes('brother') ||
+                  device.name.toLowerCase().includes('star') ||
+                  device.name.toLowerCase().includes('print') ||
+                  device.name.toLowerCase().includes('tsp') ||
+                  device.name.toLowerCase().includes('ql-')
+                )) {
+                  setPrinterType('bluetooth');
+                  setPrinterName(device.name);
+                  setDeviceId(device.deviceId);
+                  setSuccess(`Found printer: ${device.name}`);
+                }
+              }
+            }
           }
-        });
+        );
 
         // Stop scanning after 10 seconds
-        setTimeout(() => {
-          BluetoothLE.stopLEScan();
+        setTimeout(async () => {
+          try {
+            await BleClient.stopLEScan();
+          } catch (e) {
+            console.log('Stop scan error (may already be stopped):', e);
+          }
           setScanning(false);
+          if (foundDevices.length === 0) {
+            setError('No Bluetooth devices found. Make sure your printer is powered on and in pairing mode.');
+          } else if (!deviceId) {
+            setSuccess(`Found ${foundDevices.length} device(s). Select one from the list.`);
+          }
         }, 10000);
       } else {
         // Use Web Bluetooth API (desktop browsers)
@@ -299,10 +327,37 @@ export default function PrinterSetup({ currentConfig, onSave, onTest }: Props) {
               </div>
             )}
 
+            {/* Device list from scanning */}
+            {availableDevices.length > 0 && (
+              <div className="space-y-2">
+                <label className="block text-sm font-medium text-gray-700">
+                  Found Devices ({availableDevices.length})
+                </label>
+                {availableDevices.map((device, idx) => (
+                  <button
+                    key={device.deviceId || idx}
+                    onClick={() => {
+                      setPrinterName(device.name || 'Unknown Printer');
+                      setDeviceId(device.deviceId);
+                      setSuccess(`Selected: ${device.name || 'Unknown Printer'}`);
+                    }}
+                    className={`w-full p-3 rounded border text-left transition-colors ${
+                      deviceId === device.deviceId
+                        ? 'bg-blue-50 border-blue-500 text-blue-700'
+                        : 'bg-gray-50 border-gray-200 hover:bg-gray-100'
+                    }`}
+                  >
+                    <p className="text-sm font-medium">{device.name || 'Unknown Device'}</p>
+                    <p className="text-xs text-gray-600">ID: {device.deviceId}</p>
+                  </button>
+                ))}
+              </div>
+            )}
+
             {deviceId && (
-              <div className="p-3 bg-gray-50 rounded border border-gray-200">
-                <p className="text-sm font-medium">{printerName}</p>
-                <p className="text-xs text-gray-600">Device ID: {deviceId}</p>
+              <div className="p-3 bg-green-50 rounded border border-green-200">
+                <p className="text-sm font-medium text-green-800">✓ Selected: {printerName}</p>
+                <p className="text-xs text-green-600">Device ID: {deviceId}</p>
               </div>
             )}
 

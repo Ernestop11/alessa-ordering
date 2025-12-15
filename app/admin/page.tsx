@@ -4,6 +4,9 @@ import { authOptions } from '@/lib/auth/options'
 import { requireTenant } from '@/lib/tenant'
 import prisma from '@/lib/prisma'
 import AdminDashboardHome from '@/components/admin/AdminDashboardHome'
+import { headers } from 'next/headers'
+
+const ROOT_DOMAIN = process.env.ROOT_DOMAIN || 'alessacloud.com'
 
 export default async function AdminPage() {
   const session = await getServerSession(authOptions)
@@ -12,21 +15,32 @@ export default async function AdminPage() {
     redirect('/admin/login')
   }
 
-  const role = (session.user as { role?: string } | undefined)?.role
+  const role = (session.user as { role?: string; tenantSlug?: string } | undefined)?.role
+  const tenantSlug = (session.user as { tenantSlug?: string } | undefined)?.tenantSlug
 
-  // Allow super admins to access tenant admin when on tenant subdomain
-  // Otherwise redirect super admins to super admin dashboard
-  const { headers } = await import('next/headers')
-  const headersList = headers()
-  const host = headersList.get('host') || ''
-  const isTenantSubdomain = host.includes('.') && !host.startsWith('alessacloud.com') && !host.includes('www.alessacloud.com')
-  
-  if (role === 'super_admin' && !isTenantSubdomain) {
-    redirect('/super-admin')
+  // Always redirect super admins to super admin dashboard
+  if (role === 'super_admin') {
+    redirect('https://alessacloud.com/super-admin')
   }
 
   if (role !== 'admin' && role !== 'super_admin') {
     redirect('/')
+  }
+
+  // Check if we're on root domain - if so, redirect tenant admin to their subdomain
+  // This prevents "Root domain accessed" error from requireTenant()
+  const headersList = headers()
+  const host = headersList.get('host') || ''
+  const hostname = host.split(':')[0]
+  
+  if ((hostname === ROOT_DOMAIN || hostname === `www.${ROOT_DOMAIN}`) && tenantSlug) {
+    // Redirect tenant admin to their subdomain before calling requireTenant()
+    redirect(`https://${tenantSlug}.alessacloud.com/admin`)
+  }
+
+  // If we're on root domain without tenant slug, redirect to login
+  if (hostname === ROOT_DOMAIN || hostname === `www.${ROOT_DOMAIN}`) {
+    redirect('/admin/login')
   }
 
   const tenant = await requireTenant()

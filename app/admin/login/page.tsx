@@ -1,7 +1,7 @@
 'use client';
 
 import { useState } from 'react';
-import { signIn } from 'next-auth/react';
+import { signIn, getSession } from 'next-auth/react';
 import { useRouter } from 'next/navigation';
 
 export default function LoginPage() {
@@ -24,9 +24,24 @@ export default function LoginPage() {
 
     if (result?.error) {
       setError('Invalid email or password');
-    } else {
-      router.push('/admin');
-      router.refresh();
+    } else if (result?.ok) {
+      // Get session to check role and tenant
+      const session = await getSession();
+      const user = session?.user as { role?: string; tenantSlug?: string } | undefined;
+      const role = user?.role;
+      const tenantSlug = user?.tenantSlug;
+      
+      if (role === 'super_admin') {
+        // Super admin → redirect to super admin dashboard on root domain
+        window.location.href = 'https://alessacloud.com/super-admin';
+      } else if (role === 'admin' && tenantSlug) {
+        // Tenant admin → redirect to tenant subdomain admin dashboard
+        window.location.href = `https://${tenantSlug}.alessacloud.com/admin`;
+      } else {
+        // Fallback: redirect to /admin (will handle tenant resolution via middleware)
+        router.push('/admin');
+        router.refresh();
+      }
     }
   };
 
