@@ -3,10 +3,28 @@ import CredentialsProvider from 'next-auth/providers/credentials';
 import type { JWT } from 'next-auth/jwt';
 import type { Session, User } from 'next-auth';
 
-const ADMIN_EMAIL = process.env.ADMIN_EMAIL || 'admin@restaurant.com';
-const ADMIN_PASSWORD = process.env.ADMIN_PASSWORD || 'admin123';
+// Super Admin credentials
 const SUPER_ADMIN_EMAIL = process.env.SUPER_ADMIN_EMAIL;
 const SUPER_ADMIN_PASSWORD = process.env.SUPER_ADMIN_PASSWORD;
+
+// Tenant-specific admin credentials (from env)
+// Format: TENANT_ADMIN_{SLUG}_EMAIL and TENANT_ADMIN_{SLUG}_PASSWORD
+const TENANT_ADMINS: Record<string, { email: string; password: string; name: string }> = {
+  lasreinas: {
+    email: process.env.TENANT_ADMIN_LASREINAS_EMAIL || 'admin@lasreinas.com',
+    password: process.env.TENANT_ADMIN_LASREINAS_PASSWORD || 'LasReinas2024!',
+    name: 'Las Reinas Admin',
+  },
+  lapoblanita: {
+    email: process.env.TENANT_ADMIN_LAPOBLANITA_EMAIL || 'admin@lapoblanita.com',
+    password: process.env.TENANT_ADMIN_LAPOBLANITA_PASSWORD || 'LaPoblanita2024!',
+    name: 'La Poblanita Admin',
+  },
+};
+
+// Legacy single admin (backwards compatible)
+const LEGACY_ADMIN_EMAIL = process.env.ADMIN_EMAIL;
+const LEGACY_ADMIN_PASSWORD = process.env.ADMIN_PASSWORD;
 
 type AdminRole = 'admin' | 'super_admin';
 
@@ -34,16 +52,33 @@ export const authOptions: NextAuthOptions = {
       async authorize(credentials) {
         if (!credentials?.email || !credentials?.password) return null;
 
-        const candidates: CandidateUser[] = [
-          {
-            id: 'admin',
-            email: ADMIN_EMAIL,
-            password: ADMIN_PASSWORD,
+        const candidates: CandidateUser[] = [];
+
+        // Add all tenant-specific admins
+        Object.entries(TENANT_ADMINS).forEach(([slug, admin]) => {
+          if (admin.email && admin.password) {
+            candidates.push({
+              id: `admin_${slug}`,
+              email: admin.email,
+              password: admin.password,
+              role: 'admin',
+              name: admin.name,
+            });
+          }
+        });
+
+        // Legacy single admin (backwards compatible)
+        if (LEGACY_ADMIN_EMAIL && LEGACY_ADMIN_PASSWORD) {
+          candidates.push({
+            id: 'admin_legacy',
+            email: LEGACY_ADMIN_EMAIL,
+            password: LEGACY_ADMIN_PASSWORD,
             role: 'admin',
             name: 'Restaurant Admin',
-          },
-        ];
+          });
+        }
 
+        // Super Admin
         if (SUPER_ADMIN_EMAIL && SUPER_ADMIN_PASSWORD) {
           candidates.push({
             id: 'super_admin',

@@ -45,7 +45,8 @@
       "Bash(openssl rand:*)",
       "Bash(chmod:*)",
       "Bash(scp:*)",
-      "Bash(git fetch:*)"
+      "Bash(git fetch:*)",
+      "Bash(git tag:*)"
     ],
     "deny": [],
     "ask": []
