@@ -3320,6 +3320,72 @@ export default function MenuEditorPage() {
                         </div>
                       </div>
                     </div>
+
+                    {/* Featured Carousel - Item Selection */}
+                    {editingFrontendSection.type === 'featuredCarousel' && (
+                      <div className="col-span-2 border-t pt-4">
+                        <h4 className="font-medium text-gray-900 mb-2">Featured Items (Chef Recommends)</h4>
+                        <p className="text-sm text-gray-500 mb-3">
+                          Select menu items to display in the carousel. These will appear on the frontend order page.
+                        </p>
+                        <div className="max-h-64 overflow-y-auto border border-gray-200 rounded-md p-2 bg-gray-50">
+                          {items.length === 0 ? (
+                            <p className="text-sm text-gray-500 text-center py-4">No menu items available</p>
+                          ) : (
+                            <div className="space-y-2">
+                              {items.map((item) => (
+                                <label
+                                  key={item.id}
+                                  className={`flex items-center gap-3 p-2 rounded cursor-pointer hover:bg-white transition-colors ${
+                                    item.isFeatured ? 'bg-blue-50 border border-blue-200' : 'bg-white border border-gray-100'
+                                  }`}
+                                >
+                                  <input
+                                    type="checkbox"
+                                    checked={item.isFeatured || false}
+                                    onChange={async (e) => {
+                                      const newFeatured = e.target.checked;
+                                      // Optimistically update UI
+                                      setItems(items.map(i => i.id === item.id ? { ...i, isFeatured: newFeatured } : i));
+                                      // Update in database
+                                      try {
+                                        await fetch(`/api/menu/${item.id}`, {
+                                          method: 'PATCH',
+                                          headers: { 'Content-Type': 'application/json' },
+                                          body: JSON.stringify({ isFeatured: newFeatured }),
+                                        });
+                                      } catch (err) {
+                                        console.error('Failed to update featured status', err);
+                                        // Revert on error
+                                        setItems(items.map(i => i.id === item.id ? { ...i, isFeatured: !newFeatured } : i));
+                                      }
+                                    }}
+                                    className="w-4 h-4 text-blue-600 rounded"
+                                  />
+                                  {item.image && (
+                                    <img
+                                      src={item.image}
+                                      alt={item.name}
+                                      className="w-10 h-10 object-cover rounded"
+                                    />
+                                  )}
+                                  <div className="flex-1 min-w-0">
+                                    <p className="font-medium text-gray-900 text-sm truncate">{item.name}</p>
+                                    <p className="text-xs text-gray-500">${item.price.toFixed(2)}</p>
+                                  </div>
+                                  {item.isFeatured && (
+                                    <span className="text-xs bg-yellow-100 text-yellow-800 px-2 py-0.5 rounded">⭐ Featured</span>
+                                  )}
+                                </label>
+                              ))}
+                            </div>
+                          )}
+                        </div>
+                        <p className="text-xs text-gray-400 mt-2">
+                          {items.filter(i => i.isFeatured).length} item(s) featured
+                        </p>
+                      </div>
+                    )}
                   </div>
 
                   <div className="bg-gray-50 px-4 py-3 sm:flex sm:flex-row-reverse gap-3 -mx-6 -mb-6 mt-6">
