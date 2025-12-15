@@ -358,8 +358,8 @@ export default function OrderPageClient({
   const [restaurantIsOpen, setRestaurantIsOpen] = useState(isOpen);
   const [restaurantClosedMessage, setRestaurantClosedMessage] = useState(closedMessage || '');
 
-  // Featured items - use props directly for instant updates via revalidatePath
-  const currentFeaturedItems = featuredItems;
+  // Featured items state - polls for real-time updates when admin changes carousel
+  const [currentFeaturedItems, setCurrentFeaturedItems] = useState<OrderMenuItem[]>(featuredItems);
 
   useEffect(() => {
     if (typeof window === 'undefined') return;
@@ -1019,6 +1019,42 @@ export default function OrderPageClient({
 
     // Then poll every 10 seconds for quick updates when admin toggles
     const interval = setInterval(fetchRestaurantStatus, 10000);
+    return () => clearInterval(interval);
+  }, []);
+
+  // Poll featured items every 5 seconds for quick updates when admin changes carousel
+  useEffect(() => {
+    const fetchFeaturedItems = async () => {
+      try {
+        const timestamp = Date.now();
+        const res = await fetch(`/api/featured-items?t=${timestamp}`, {
+          cache: 'no-store',
+          headers: {
+            'Cache-Control': 'no-cache',
+            'Pragma': 'no-cache',
+          },
+        });
+        if (res.ok) {
+          const data = await res.json();
+          if (Array.isArray(data.items)) {
+            // Only update if the items have actually changed
+            setCurrentFeaturedItems(prev => {
+              const newIds = data.items.map((i: { id: string }) => i.id).sort().join(',');
+              const oldIds = prev.map(i => i.id).sort().join(',');
+              if (newIds !== oldIds) {
+                return data.items;
+              }
+              return prev;
+            });
+          }
+        }
+      } catch (err) {
+        // Silent fail - don't disrupt user experience
+      }
+    };
+
+    // Poll every 5 seconds for quick updates
+    const interval = setInterval(fetchFeaturedItems, 5000);
     return () => clearInterval(interval);
   }, []);
 
