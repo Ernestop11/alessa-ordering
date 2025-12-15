@@ -117,6 +117,10 @@ export default function MenuEditorPage() {
   const [savingFrontendSection, setSavingFrontendSection] = useState(false);
   const [reorderingSection, setReorderingSection] = useState<string | null>(null);
   const [syncStatus, setSyncStatus] = useState<'idle' | 'syncing' | 'synced'>('idle');
+  
+  // Add-ons state
+  const [enabledAddOns, setEnabledAddOns] = useState<string[]>([]);
+  const [availableAddOns, setAvailableAddOns] = useState<any[]>([]);
 
   const fetchSections = async () => {
     try {
@@ -621,10 +625,11 @@ export default function MenuEditorPage() {
     };
   }, [fetchOrderingStatus]);
 
-  // Fetch frontend sections when tab is active
+  // Fetch frontend sections and add-ons when tab is active
   useEffect(() => {
     if (activeTab === 'frontend') {
       fetchFrontendUISections();
+      fetchAddOns();
     }
   }, [activeTab]);
 
@@ -836,6 +841,70 @@ export default function MenuEditorPage() {
       console.error('Failed to toggle section', err);
       alert('Failed to update. Please refresh the page.');
       await fetchFrontendUISections();
+    }
+  };
+
+  // Fetch add-ons (same pattern as Accept Orders)
+  const fetchAddOns = async () => {
+    try {
+      const timestamp = Date.now();
+      const res = await fetch(`/api/admin/addons?t=${timestamp}`, {
+        cache: 'no-store',
+        headers: {
+          'Cache-Control': 'no-cache, no-store, must-revalidate',
+          'Pragma': 'no-cache',
+        },
+      });
+      if (!res.ok) throw new Error('Failed to fetch add-ons');
+      const data = await res.json();
+      setEnabledAddOns(data.enabledAddOns || []);
+      setAvailableAddOns(data.available || []);
+    } catch (err) {
+      console.error('Failed to fetch add-ons', err);
+      setEnabledAddOns([]);
+      setAvailableAddOns([]);
+    }
+  };
+
+  // Toggle add-on (same pattern as Accept Orders)
+  const handleToggleAddOn = async (addOnId: string, currentEnabled: boolean) => {
+    setSyncStatus('syncing');
+    
+    try {
+      const timestamp = Date.now();
+      const res = await fetch(`/api/admin/addons?t=${timestamp}`, {
+        method: 'PUT',
+        headers: {
+          'Content-Type': 'application/json',
+          'Cache-Control': 'no-cache, no-store, must-revalidate',
+        },
+        body: JSON.stringify({
+          addOnId,
+          enabled: !currentEnabled,
+        }),
+      });
+
+      if (!res.ok) throw new Error('Failed to toggle add-on');
+      
+      const data = await res.json();
+      setEnabledAddOns(data.enabledAddOns || []);
+      setFrontendUISections(data.sections || frontendUISections);
+      setSyncStatus('synced');
+      
+      // Refetch add-ons to get updated list
+      await fetchAddOns();
+      
+      // Refetch sections to get newly seeded sections
+      await fetchFrontendUISections();
+      
+      // Trigger router refresh for immediate frontend update (same as Accept Orders)
+      router.refresh();
+      
+      setTimeout(() => setSyncStatus('idle'), 2000);
+    } catch (err) {
+      console.error('Failed to toggle add-on', err);
+      alert('Failed to update add-on. Please refresh the page.');
+      await fetchAddOns();
     }
   };
 
@@ -1779,6 +1848,62 @@ export default function MenuEditorPage() {
                       : 'bg-gray-400'
                   }`}></span>
                   {syncStatus === 'syncing' ? 'Syncing...' : syncStatus === 'synced' ? 'Synced!' : 'Ready'}
+                </div>
+              </div>
+
+              {/* Business Add-ons Grid */}
+              <div className="bg-white rounded-lg border border-gray-200 p-6">
+                <div className="mb-4">
+                  <h3 className="text-lg font-semibold text-gray-900">Business Add-ons</h3>
+                  <p className="text-sm text-gray-500 mt-1">
+                    Enable add-ons to unlock additional sections and features
+                  </p>
+                </div>
+                
+                <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
+                  {availableAddOns.map((addOn) => {
+                    const isEnabled = enabledAddOns.includes(addOn.id);
+                    return (
+                      <div
+                        key={addOn.id}
+                        className={`border-2 rounded-lg p-4 transition-all ${
+                          isEnabled
+                            ? 'border-green-500 bg-green-50'
+                            : 'border-gray-200 bg-white hover:border-gray-300'
+                        }`}
+                      >
+                        <div className="flex items-start justify-between mb-3">
+                          <div className="flex items-center gap-2">
+                            <span className="text-2xl">{addOn.icon}</span>
+                            <div>
+                              <h4 className="font-semibold text-gray-900">{addOn.name}</h4>
+                              <p className="text-xs text-gray-500">{addOn.status}</p>
+                            </div>
+                          </div>
+                          {/* Toggle Switch */}
+                          <button
+                            onClick={() => handleToggleAddOn(addOn.id, isEnabled)}
+                            className={`relative w-12 h-6 rounded-full transition-colors ${
+                              isEnabled ? 'bg-green-500' : 'bg-gray-300'
+                            }`}
+                            title={isEnabled ? 'Click to disable' : 'Click to enable'}
+                          >
+                            <div className={`absolute top-0.5 w-5 h-5 rounded-full bg-white shadow transition-all ${
+                              isEnabled ? 'left-6' : 'left-0.5'
+                            }`} />
+                          </button>
+                        </div>
+                        <p className="text-sm text-gray-600">{addOn.description}</p>
+                        {isEnabled && (
+                          <div className="mt-3 pt-3 border-t border-green-200">
+                            <p className="text-xs text-green-700 font-medium">
+                              ✓ {addOn.sections?.length || 0} sections enabled
+                            </p>
+                          </div>
+                        )}
+                      </div>
+                    );
+                  })}
                 </div>
               </div>
 
