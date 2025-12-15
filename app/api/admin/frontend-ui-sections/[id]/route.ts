@@ -25,19 +25,21 @@ export async function PUT(
     const sectionId = resolvedParams.id;
     const body = await req.json();
 
-    // Get current tenant settings
-    const tenantData = await prisma.tenant.findUnique({
-      where: { id: tenant.id },
-      select: { settings: true },
+    // Get current tenant settings from TenantSettings table
+    const tenantSettings = await prisma.tenantSettings.findUnique({
+      where: { tenantId: tenant.id },
+      select: { frontendConfig: true },
     });
 
-    const currentSettings = (tenantData?.settings || {}) as any;
-    const currentSections = currentSettings.frontendUISections || [];
+    const frontendConfig = (tenantSettings?.frontendConfig || {}) as any;
+    const currentSections = frontendConfig.frontendUISections || [];
 
     // Find and update the section, or create it if it doesn't exist (upsert)
     const sectionIndex = currentSections.findIndex((s: any) => s.id === sectionId);
 
     let updatedSections = [...currentSections];
+    let savedSection;
+
     if (sectionIndex === -1) {
       // Section doesn't exist - create it with the provided data
       const newSection = {
@@ -50,20 +52,28 @@ export async function PUT(
         ...body,
       };
       updatedSections.push(newSection);
+      savedSection = newSection;
     } else {
       // Update existing section
       updatedSections[sectionIndex] = {
         ...updatedSections[sectionIndex],
         ...body,
       };
+      savedSection = updatedSections[sectionIndex];
     }
 
-    // Save to tenant settings
-    await prisma.tenant.update({
-      where: { id: tenant.id },
-      data: {
-        settings: {
-          ...currentSettings,
+    // Save to tenant settings (upsert to handle case where settings don't exist)
+    await prisma.tenantSettings.upsert({
+      where: { tenantId: tenant.id },
+      update: {
+        frontendConfig: {
+          ...frontendConfig,
+          frontendUISections: updatedSections,
+        },
+      },
+      create: {
+        tenantId: tenant.id,
+        frontendConfig: {
           frontendUISections: updatedSections,
         },
       },
@@ -73,7 +83,7 @@ export async function PUT(
     revalidatePath('/order');
     revalidatePath('/');
 
-    return NextResponse.json(updatedSections[sectionIndex], {
+    return NextResponse.json(savedSection, {
       headers: {
         'Cache-Control': 'no-store, no-cache, must-revalidate, proxy-revalidate',
         'Pragma': 'no-cache',
@@ -108,24 +118,30 @@ export async function DELETE(
     const resolvedParams = await Promise.resolve(params);
     const sectionId = resolvedParams.id;
 
-    // Get current tenant settings
-    const tenantData = await prisma.tenant.findUnique({
-      where: { id: tenant.id },
-      select: { settings: true },
+    // Get current tenant settings from TenantSettings table
+    const tenantSettings = await prisma.tenantSettings.findUnique({
+      where: { tenantId: tenant.id },
+      select: { frontendConfig: true },
     });
 
-    const currentSettings = (tenantData?.settings || {}) as any;
-    const currentSections = currentSettings.frontendUISections || [];
+    const frontendConfig = (tenantSettings?.frontendConfig || {}) as any;
+    const currentSections = frontendConfig.frontendUISections || [];
 
     // Remove the section
     const updatedSections = currentSections.filter((s: any) => s.id !== sectionId);
 
     // Save to tenant settings
-    await prisma.tenant.update({
-      where: { id: tenant.id },
-      data: {
-        settings: {
-          ...currentSettings,
+    await prisma.tenantSettings.upsert({
+      where: { tenantId: tenant.id },
+      update: {
+        frontendConfig: {
+          ...frontendConfig,
+          frontendUISections: updatedSections,
+        },
+      },
+      create: {
+        tenantId: tenant.id,
+        frontendConfig: {
           frontendUISections: updatedSections,
         },
       },

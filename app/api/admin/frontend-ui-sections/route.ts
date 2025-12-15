@@ -19,13 +19,14 @@ export async function GET(req: Request) {
 
     const tenant = await requireTenant();
 
-    // Get sections from tenant settings
-    const tenantData = await prisma.tenant.findUnique({
-      where: { id: tenant.id },
-      select: { settings: true },
+    // Get sections from TenantSettings table
+    const tenantSettings = await prisma.tenantSettings.findUnique({
+      where: { tenantId: tenant.id },
+      select: { frontendConfig: true },
     });
 
-    const sections = (tenantData?.settings as any)?.frontendUISections || [];
+    const frontendConfig = (tenantSettings?.frontendConfig || {}) as any;
+    const sections = frontendConfig.frontendUISections || [];
 
     // Return with cache-busting headers
     return NextResponse.json(sections, {
@@ -67,14 +68,14 @@ export async function POST(req: Request) {
       );
     }
 
-    // Get current tenant settings
-    const tenantData = await prisma.tenant.findUnique({
-      where: { id: tenant.id },
-      select: { settings: true },
+    // Get current tenant settings from TenantSettings table
+    const tenantSettings = await prisma.tenantSettings.findUnique({
+      where: { tenantId: tenant.id },
+      select: { frontendConfig: true },
     });
 
-    const currentSettings = (tenantData?.settings || {}) as any;
-    const currentSections = currentSettings.frontendUISections || [];
+    const frontendConfig = (tenantSettings?.frontendConfig || {}) as any;
+    const currentSections = frontendConfig.frontendUISections || [];
 
     // Update positions
     const updatedSections = currentSections.map((section: any) => {
@@ -83,11 +84,17 @@ export async function POST(req: Request) {
     }).sort((a: any, b: any) => a.position - b.position);
 
     // Save to tenant settings
-    await prisma.tenant.update({
-      where: { id: tenant.id },
-      data: {
-        settings: {
-          ...currentSettings,
+    await prisma.tenantSettings.upsert({
+      where: { tenantId: tenant.id },
+      update: {
+        frontendConfig: {
+          ...frontendConfig,
+          frontendUISections: updatedSections,
+        },
+      },
+      create: {
+        tenantId: tenant.id,
+        frontendConfig: {
           frontendUISections: updatedSections,
         },
       },
