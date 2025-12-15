@@ -1965,6 +1965,7 @@ export default function MenuEditorPage() {
                           {section.type === 'hero' ? '🖼️' :
                            section.type === 'promoBanner1' ? '📢' :
                            section.type === 'groceryBanner' ? '🛒' :
+                           section.type === 'panaderiaBanner' ? '🥐' :
                            section.type === 'quickInfo' ? '📍' :
                            section.type === 'featuredCarousel' ? '⭐' :
                            section.type === 'menuSections' ? '🍽️' :
@@ -3333,6 +3334,7 @@ export default function MenuEditorPage() {
                      editingFrontendSection.type === 'hero' ? '🏠' :
                      editingFrontendSection.type === 'promoBanner1' ? '📢' :
                      editingFrontendSection.type === 'groceryBanner' ? '🛒' :
+                     editingFrontendSection.type === 'panaderiaBanner' ? '🥐' :
                      editingFrontendSection.type === 'weCookBanner' ? '👨‍🍳' :
                      editingFrontendSection.type === 'dealStrip' ? '🏷️' :
                      editingFrontendSection.type === 'qualityBanner' ? '✨' :
@@ -3776,6 +3778,78 @@ export default function MenuEditorPage() {
                             onChange={(e) => setEditingFrontendSection({ ...editingFrontendSection, content: { ...(editingFrontendSection.content || {}), buttonLink: e.target.value } })}
                             className="w-full px-3 py-2 border border-gray-300 rounded-lg"
                             placeholder="/grocery"
+                          />
+                        </div>
+                      </div>
+                    </div>
+                  )}
+
+                  {/* ============================================ */}
+                  {/* PANADERIA BANNER - Visual Editor */}
+                  {/* ============================================ */}
+                  {editingFrontendSection.type === 'panaderiaBanner' && (
+                    <div className="p-6 bg-gradient-to-b from-amber-50 to-white border-b">
+                      <div className="flex items-center gap-2 mb-4">
+                        <span className="bg-amber-600 text-white px-2 py-0.5 rounded text-sm font-bold">LIVE PREVIEW</span>
+                        <span className="text-xs bg-amber-100 text-amber-700 px-2 py-0.5 rounded">Panaderia Add-on</span>
+                      </div>
+                      {/* Preview Panel */}
+                      <div className="rounded-xl overflow-hidden shadow-lg border-2 border-amber-200 mb-6">
+                        <div className="bg-gradient-to-r from-amber-600 via-orange-500 to-yellow-500 p-6 flex items-center justify-between">
+                          <div className="text-white">
+                            <span className="text-3xl mb-2 block">🥐</span>
+                            <h2 className="text-2xl font-bold mb-1">
+                              {editingFrontendSection.content?.title || 'Fresh Baked Daily!'}
+                            </h2>
+                            <p className="text-white/90 text-sm">
+                              {editingFrontendSection.content?.subtitle || 'Authentic Mexican pastries and breads'}
+                            </p>
+                          </div>
+                          <button className="bg-white text-amber-700 px-6 py-3 rounded-full font-bold text-sm shadow-lg">
+                            {editingFrontendSection.content?.buttonText || 'Browse Bakery'}
+                          </button>
+                        </div>
+                      </div>
+                      {/* Editor Fields */}
+                      <div className="grid grid-cols-2 gap-4">
+                        <div className="col-span-2">
+                          <label className="block text-sm font-semibold text-gray-700 mb-1">Title</label>
+                          <input
+                            type="text"
+                            value={editingFrontendSection.content?.title || ''}
+                            onChange={(e) => setEditingFrontendSection({ ...editingFrontendSection, content: { ...(editingFrontendSection.content || {}), title: e.target.value } })}
+                            className="w-full px-3 py-2 border border-gray-300 rounded-lg"
+                            placeholder="Fresh Baked Daily!"
+                          />
+                        </div>
+                        <div className="col-span-2">
+                          <label className="block text-sm font-semibold text-gray-700 mb-1">Subtitle</label>
+                          <input
+                            type="text"
+                            value={editingFrontendSection.content?.subtitle || ''}
+                            onChange={(e) => setEditingFrontendSection({ ...editingFrontendSection, content: { ...(editingFrontendSection.content || {}), subtitle: e.target.value } })}
+                            className="w-full px-3 py-2 border border-gray-300 rounded-lg"
+                            placeholder="Authentic Mexican pastries and breads made fresh every morning"
+                          />
+                        </div>
+                        <div>
+                          <label className="block text-sm font-semibold text-gray-700 mb-1">Button Text</label>
+                          <input
+                            type="text"
+                            value={editingFrontendSection.content?.buttonText || ''}
+                            onChange={(e) => setEditingFrontendSection({ ...editingFrontendSection, content: { ...(editingFrontendSection.content || {}), buttonText: e.target.value } })}
+                            className="w-full px-3 py-2 border border-gray-300 rounded-lg"
+                            placeholder="Browse Bakery"
+                          />
+                        </div>
+                        <div>
+                          <label className="block text-sm font-semibold text-gray-700 mb-1">Button Link</label>
+                          <input
+                            type="text"
+                            value={editingFrontendSection.content?.buttonLink || ''}
+                            onChange={(e) => setEditingFrontendSection({ ...editingFrontendSection, content: { ...(editingFrontendSection.content || {}), buttonLink: e.target.value } })}
+                            className="w-full px-3 py-2 border border-gray-300 rounded-lg"
+                            placeholder="/bakery"
                           />
                         </div>
                       </div>
@@ -4371,7 +4445,7 @@ export default function MenuEditorPage() {
                   {/* ============================================ */}
                   {/* GENERIC FALLBACK - For any unknown section types */}
                   {/* ============================================ */}
-                  {!['featuredCarousel', 'hero', 'promoBanner1', 'groceryBanner', 'weCookBanner', 'dealStrip', 'qualityBanner', 'reviewsStrip', 'weekendSpecials', 'bundles', 'aisles', 'dailyFresh', 'boxBuilder', 'categories', 'quickInfo', 'menuSections'].includes(editingFrontendSection.type) && (
+                  {!['featuredCarousel', 'hero', 'promoBanner1', 'groceryBanner', 'panaderiaBanner', 'weCookBanner', 'dealStrip', 'qualityBanner', 'reviewsStrip', 'weekendSpecials', 'bundles', 'aisles', 'dailyFresh', 'boxBuilder', 'categories', 'quickInfo', 'menuSections'].includes(editingFrontendSection.type) && (
                     <div className="p-6">
                       <h4 className="font-bold text-gray-900 mb-4 flex items-center gap-2">
                         <span className="bg-gray-200 text-gray-700 px-2 py-0.5 rounded text-sm">CONTENT</span>

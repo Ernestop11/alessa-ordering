@@ -139,7 +139,7 @@ interface CustomerRewardsData {
 interface FrontendUISection {
   id: string;
   name: string;
-  type: 'hero' | 'quickInfo' | 'featuredCarousel' | 'menuSections' | 'promoBanner1' | 'groceryBanner' | 'weCookBanner' | 'dealStrip' | 'qualityBanner' | 'reviewsStrip';
+  type: 'hero' | 'quickInfo' | 'featuredCarousel' | 'menuSections' | 'promoBanner1' | 'groceryBanner' | 'panaderiaBanner' | 'weCookBanner' | 'dealStrip' | 'qualityBanner' | 'reviewsStrip' | 'weekendSpecials' | 'bundles' | 'aisles' | 'dailyFresh' | 'boxBuilder' | 'categories';
   position: number;
   enabled: boolean;
   content: {
@@ -2422,13 +2422,20 @@ export default function OrderPageClient({
             if (sortedUISections.length === 0) return null;
             
             // Find promotional banners (not menu sections) in sorted order
-            const promoBanners = sortedUISections.filter(s => 
-              s.type === 'promoBanner1' || 
-              s.type === 'groceryBanner' || 
-              s.type === 'weCookBanner' || 
-              s.type === 'dealStrip' || 
-              s.type === 'qualityBanner' || 
-              s.type === 'reviewsStrip'
+            const promoBanners = sortedUISections.filter(s =>
+              s.type === 'promoBanner1' ||
+              s.type === 'groceryBanner' ||
+              s.type === 'panaderiaBanner' ||
+              s.type === 'weCookBanner' ||
+              s.type === 'dealStrip' ||
+              s.type === 'qualityBanner' ||
+              s.type === 'reviewsStrip' ||
+              s.type === 'weekendSpecials' ||
+              s.type === 'bundles' ||
+              s.type === 'aisles' ||
+              s.type === 'dailyFresh' ||
+              s.type === 'boxBuilder' ||
+              s.type === 'categories'
             );
             
             // Legacy mapping for backward compatibility (if no position-based ordering)
@@ -2925,13 +2932,73 @@ export default function OrderPageClient({
               );
             })()}
 
-            {/* Grocery Store Banner - After 2nd section */}
+            {/* Grocery Store / Panaderia Banner - After 2nd section */}
             {originalIndex === 2 && (() => {
-              const groceryBanner = getPromoBannerForIndex(2);
-              if (groceryBanner && groceryBanner.type === 'groceryBanner') {
-                const config = groceryBanner.content;
+              const storeBanner = getPromoBannerForIndex(2);
+
+              // Panaderia Banner (amber/orange theme)
+              if (storeBanner && storeBanner.type === 'panaderiaBanner') {
+                const config = storeBanner.content;
                 return (
-                  <div 
+                  <div
+                    className="mb-10 relative overflow-hidden rounded-3xl p-1"
+                    style={{
+                      background: config.gradientFrom && config.gradientTo
+                        ? `linear-gradient(to right, ${config.gradientFrom}, ${config.gradientTo})`
+                        : config.backgroundColor || 'linear-gradient(to right, #d97706, #f59e0b, #fbbf24)',
+                    }}
+                  >
+                    <div className="relative overflow-hidden rounded-[22px] bg-gradient-to-br from-amber-950 to-amber-900 p-6 md:p-8">
+                      <div className="relative grid md:grid-cols-2 gap-6 items-center">
+                        <div>
+                          {config.badge && (
+                            <div className="inline-block px-4 py-1.5 rounded-full bg-amber-400/20 text-amber-300 text-xs font-bold uppercase tracking-wider mb-3">
+                              {config.badge}
+                            </div>
+                          )}
+                          <div className="text-4xl mb-3">🥐</div>
+                          {config.title && (
+                            <h3 className="text-3xl md:text-4xl font-black text-white mb-3">
+                              {config.title}
+                            </h3>
+                          )}
+                          {(config.description || config.subtitle) && (
+                            <p className="text-white/80 mb-6 text-lg">
+                              {config.description || config.subtitle}
+                            </p>
+                          )}
+                          {config.buttonText && (
+                            <Link
+                              href={config.buttonLink || '/bakery'}
+                              className="inline-flex items-center gap-2 px-6 py-3 rounded-full bg-gradient-to-r from-amber-500 to-orange-500 text-white font-bold shadow-lg hover:scale-105 transition-transform"
+                            >
+                              {config.buttonText}
+                              <svg className="w-5 h-5" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M13 7l5 5m0 0l-5 5m5-5H6" />
+                              </svg>
+                            </Link>
+                          )}
+                        </div>
+                        {config.image && (
+                          <div className="relative h-48 md:h-64 rounded-2xl overflow-hidden">
+                            <img
+                              src={config.image}
+                              alt={config.title || 'Bakery'}
+                              className="w-full h-full object-cover"
+                            />
+                          </div>
+                        )}
+                      </div>
+                    </div>
+                  </div>
+                );
+              }
+
+              // Grocery Banner (green theme)
+              if (storeBanner && storeBanner.type === 'groceryBanner') {
+                const config = storeBanner.content;
+                return (
+                  <div
                     className="mb-10 relative overflow-hidden rounded-3xl p-1"
                     style={{
                       background: config.gradientFrom && config.gradientTo
@@ -2984,35 +3051,8 @@ export default function OrderPageClient({
                 );
               }
 
-              // Fallback to original
-              return (
-                <div className="mb-10 relative overflow-hidden rounded-3xl bg-gradient-to-r from-green-700 via-green-600 to-green-700 p-1">
-                  <div className="relative overflow-hidden rounded-[22px] bg-gradient-to-br from-green-950 to-green-900 p-6 md:p-8">
-                    <div className="relative grid md:grid-cols-2 gap-6 items-center">
-                      <div>
-                        <div className="inline-block px-4 py-1.5 rounded-full bg-green-400/20 text-green-300 text-xs font-bold uppercase tracking-wider mb-3">
-                          ✨ Now Available
-                        </div>
-                        <h3 className="text-3xl md:text-4xl font-black text-white mb-3">
-                          Order Your <span className="text-green-400">Groceries</span> Too!
-                        </h3>
-                        <p className="text-white/80 mb-6 text-lg">
-                          Fresh produce, pantry staples, and more delivered with your meal order. Save time, shop smart!
-                        </p>
-                        <Link
-                          href="/grocery"
-                          className="inline-flex items-center gap-2 px-6 py-3 rounded-full bg-gradient-to-r from-green-500 to-green-600 text-white font-bold shadow-lg hover:scale-105 transition-transform"
-                        >
-                          Browse Grocery Store
-                          <svg className="w-5 h-5" fill="none" viewBox="0 0 24 24" stroke="currentColor">
-                            <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M13 7l5 5m0 0l-5 5m5-5H6" />
-                          </svg>
-                        </Link>
-                      </div>
-                    </div>
-                  </div>
-                </div>
-              );
+              // No banner configured - don't show fallback
+              return null;
             })()}
 
             {/* Fresh Quality Banner - After 7th section */}
