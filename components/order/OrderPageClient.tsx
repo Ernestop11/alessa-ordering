@@ -3232,7 +3232,8 @@ export default function OrderPageClient({
             </section>
           </div>
           );
-        })}
+        });
+        })()}
       </main>
 
       {/* Catering Slide-In Panel */}
