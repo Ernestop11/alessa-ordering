@@ -1075,6 +1075,10 @@ export default function OrderPageClient({
             // Fallback for old API format (flat array)
             setCateringPackages(data);
           }
+          // Also update gallery from the same API response
+          if (data.gallery && Array.isArray(data.gallery) && data.gallery.length > 0) {
+            setCateringGalleryImages(data.gallery);
+          }
         }
       } catch (err) {
         console.error('Failed to refresh catering packages', err);
@@ -1387,14 +1391,14 @@ export default function OrderPageClient({
   const currentHeroBackground = heroMedia[heroBackgroundIndex] || heroImage;
   const nextHeroBackground = heroMedia[(heroBackgroundIndex + 1) % heroMedia.length] || heroImage;
 
-  // Catering gallery - fetch from tenant settings, fallback to defaults
+  // Catering gallery - fetch from main catering API, fallback to defaults
   const [cateringGalleryImages, setCateringGalleryImages] = useState<string[]>([]);
   useEffect(() => {
     const fetchGallery = async () => {
       try {
-        // Add cache-busting timestamp
+        // Add cache-busting timestamp - use main catering API which has proper tenant resolution
         const timestamp = Date.now();
-        const res = await fetch(`/api/catering-packages/gallery?t=${timestamp}`, {
+        const res = await fetch(`/api/catering-packages?t=${timestamp}`, {
           cache: 'no-store',
           headers: {
             'Cache-Control': 'no-cache',
@@ -1403,14 +1407,15 @@ export default function OrderPageClient({
         });
         if (res.ok) {
           const data = await res.json();
-          setCateringGalleryImages(Array.isArray(data.gallery) ? data.gallery : []);
+          // API returns { sections: [...], gallery: [...] }
+          if (data.gallery && Array.isArray(data.gallery) && data.gallery.length > 0) {
+            setCateringGalleryImages(data.gallery);
+          }
         } else {
           console.error('Failed to fetch catering gallery:', res.status, res.statusText);
-          setCateringGalleryImages([]);
         }
       } catch (err) {
         console.error('Failed to fetch catering gallery:', err);
-        setCateringGalleryImages([]);
       }
     };
     fetchGallery();
