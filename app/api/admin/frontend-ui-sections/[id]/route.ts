@@ -62,6 +62,29 @@ export async function PUT(
       savedSection = updatedSections[sectionIndex];
     }
 
+    // Get current branding to potentially update heroImages
+    const fullSettings = await prisma.tenantSettings.findUnique({
+      where: { tenantId: tenant.id },
+      select: { branding: true },
+    });
+    const currentBranding = (fullSettings?.branding || {}) as any;
+
+    // If this is the hero section, also update branding.heroImages for instant frontend updates
+    let brandingUpdate = {};
+    if (sectionId === 'hero' && savedSection.content?.image) {
+      // Add the hero image to branding.heroImages array for polling
+      const heroImages = currentBranding.heroImages || [];
+      const newImage = savedSection.content.image;
+      // Replace the first image or add if empty
+      const updatedHeroImages = [newImage, ...heroImages.filter((img: string) => img !== newImage)].slice(0, 5);
+      brandingUpdate = {
+        branding: {
+          ...currentBranding,
+          heroImages: updatedHeroImages,
+        },
+      };
+    }
+
     // Save to tenant settings (upsert to handle case where settings don't exist)
     await prisma.tenantSettings.upsert({
       where: { tenantId: tenant.id },
@@ -70,12 +93,14 @@ export async function PUT(
           ...frontendConfig,
           frontendUISections: updatedSections,
         },
+        ...brandingUpdate,
       },
       create: {
         tenantId: tenant.id,
         frontendConfig: {
           frontendUISections: updatedSections,
         },
+        ...brandingUpdate,
       },
     });
 

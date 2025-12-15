@@ -361,6 +361,11 @@ export default function OrderPageClient({
   // Featured items state - polls for real-time updates when admin changes carousel
   const [currentFeaturedItems, setCurrentFeaturedItems] = useState<OrderMenuItem[]>(featuredItems);
 
+  // Hero images state - polls for real-time updates when admin changes hero section
+  const [currentHeroImages, setCurrentHeroImages] = useState<string[]>(
+    tenant.branding?.heroImages?.filter(Boolean) as string[] || []
+  );
+
   useEffect(() => {
     if (typeof window === 'undefined') return;
     const media = window.matchMedia('(prefers-reduced-motion: reduce)');
@@ -797,16 +802,16 @@ export default function OrderPageClient({
 
   const heroImage = tenant.heroImageUrl || assets.hero;
   const heroGallery = useMemo(() => {
-    const fromBranding = tenant.branding?.heroImages?.filter(Boolean);
-    if (fromBranding && fromBranding.length > 0) {
-      return fromBranding as string[];
+    // Use currentHeroImages (from polling) for real-time updates
+    if (currentHeroImages && currentHeroImages.length > 0) {
+      return currentHeroImages;
     }
     const unique = new Set<string>();
     [heroImage, assets.membership, '/stock/hero1.jpg', '/stock/hero2.jpg']
       .filter(Boolean)
       .forEach((url) => unique.add(url as string));
     return Array.from(unique);
-  }, [assets.membership, heroImage, tenant.branding?.heroImages]);
+  }, [assets.membership, heroImage, currentHeroImages]);
   const membershipImage = assets.membership;
   const [heroBackgroundIndex, setHeroBackgroundIndex] = useState(0);
 
@@ -1055,6 +1060,42 @@ export default function OrderPageClient({
 
     // Poll every 5 seconds for quick updates
     const interval = setInterval(fetchFeaturedItems, 5000);
+    return () => clearInterval(interval);
+  }, []);
+
+  // Poll hero images every 5 seconds for quick updates when admin changes hero section
+  useEffect(() => {
+    const fetchHeroImages = async () => {
+      try {
+        const timestamp = Date.now();
+        const res = await fetch(`/api/hero-images?t=${timestamp}`, {
+          cache: 'no-store',
+          headers: {
+            'Cache-Control': 'no-cache',
+            'Pragma': 'no-cache',
+          },
+        });
+        if (res.ok) {
+          const data = await res.json();
+          if (Array.isArray(data.heroImages) && data.heroImages.length > 0) {
+            // Only update if the images have actually changed
+            setCurrentHeroImages(prev => {
+              const newImages = data.heroImages.join(',');
+              const oldImages = prev.join(',');
+              if (newImages !== oldImages) {
+                return data.heroImages;
+              }
+              return prev;
+            });
+          }
+        }
+      } catch (err) {
+        // Silent fail - don't disrupt user experience
+      }
+    };
+
+    // Poll every 5 seconds for quick updates
+    const interval = setInterval(fetchHeroImages, 5000);
     return () => clearInterval(interval);
   }, []);
 
