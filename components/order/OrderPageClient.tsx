@@ -356,6 +356,9 @@ export default function OrderPageClient({
   const [restaurantIsOpen, setRestaurantIsOpen] = useState(isOpen);
   const [restaurantClosedMessage, setRestaurantClosedMessage] = useState(closedMessage || '');
 
+  // Featured items state - can be updated in real-time when admin changes Featured Carousel
+  const [currentFeaturedItems, setCurrentFeaturedItems] = useState<OrderMenuItem[]>(featuredItems);
+
   useEffect(() => {
     if (typeof window === 'undefined') return;
     const media = window.matchMedia('(prefers-reduced-motion: reduce)');
@@ -728,9 +731,9 @@ export default function OrderPageClient({
 
   const brandingHighlights = useMemo(() => tenant.branding?.highlights ?? [], [tenant.branding?.highlights]);
   const recommendedItems = useMemo(() => {
-    // Use featured items from database if available, otherwise fall back to branding config
-    if (Array.isArray(featuredItems) && featuredItems.length > 0) {
-      return featuredItems.map((item) => {
+    // Use featured items from database if available (via real-time state), otherwise fall back to branding config
+    if (Array.isArray(currentFeaturedItems) && currentFeaturedItems.length > 0) {
+      return currentFeaturedItems.map((item) => {
         // Find the section for this item
         const matchingSection = safeSections.find(section =>
           section && Array.isArray(section.items) && section.items.some(sectionItem => sectionItem.id === item.id)
@@ -758,7 +761,7 @@ export default function OrderPageClient({
       section: lookup.get(String(name).toLowerCase())?.section,
       item: lookup.get(String(name).toLowerCase())?.item,
     }));
-  }, [featuredItems, safeSections, flattenedMenuItems, tenant.branding?.recommendedItems]);
+  }, [currentFeaturedItems, safeSections, flattenedMenuItems, tenant.branding?.recommendedItems]);
 
   // Prepare featured items for carousel
   const carouselItems = useMemo(() => {
@@ -1014,6 +1017,46 @@ export default function OrderPageClient({
 
     // Then poll every 10 seconds for quick updates when admin toggles
     const interval = setInterval(fetchRestaurantStatus, 10000);
+    return () => clearInterval(interval);
+  }, []);
+
+  // Poll featured items every 10 seconds for real-time updates when admin changes Featured Carousel
+  useEffect(() => {
+    const fetchFeaturedItems = async () => {
+      try {
+        const timestamp = Date.now();
+        const res = await fetch(`/api/featured-items?t=${timestamp}`, {
+          cache: 'no-store',
+          headers: {
+            'Cache-Control': 'no-cache',
+            'Pragma': 'no-cache',
+          },
+        });
+        if (res.ok) {
+          const data = await res.json();
+          if (Array.isArray(data.items)) {
+            // Only update if the items have actually changed
+            const newIds = data.items.map((i: { id: string }) => i.id).sort().join(',');
+            setCurrentFeaturedItems(prev => {
+              const oldIds = prev.map(i => i.id).sort().join(',');
+              if (newIds !== oldIds) {
+                console.log('[FeaturedItems] Updated carousel items:', data.items.length);
+                return data.items;
+              }
+              return prev;
+            });
+          }
+        }
+      } catch (err) {
+        console.error('Failed to fetch featured items', err);
+      }
+    };
+
+    // Fetch immediately on mount for quick initial sync
+    fetchFeaturedItems();
+
+    // Then poll every 10 seconds (same as restaurant status) for quick updates
+    const interval = setInterval(fetchFeaturedItems, 10000);
     return () => clearInterval(interval);
   }, []);
 
