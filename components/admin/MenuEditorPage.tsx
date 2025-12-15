@@ -3101,181 +3101,228 @@ export default function MenuEditorPage() {
           </div>
         )}
 
-        {/* Frontend Section Edit Modal */}
+        {/* Frontend Section Edit Modal - Enhanced Visual Editor */}
         {editingFrontendSection && (
-          <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50 p-4">
-            <div className="bg-white rounded-lg max-w-2xl w-full max-h-[90vh] overflow-y-auto">
-              <div className="p-6">
-                <h3 className="text-xl font-semibold mb-4 text-gray-900">
-                  {editingFrontendSection.id ? 'Edit Frontend Section' : 'Add Frontend Section'}
-                </h3>
+          <div className="fixed inset-0 bg-black/60 backdrop-blur-sm flex items-center justify-center z-50 p-4">
+            <div className="bg-white rounded-2xl max-w-4xl w-full max-h-[90vh] overflow-hidden shadow-2xl">
+              {/* Modal Header */}
+              <div className="bg-gradient-to-r from-gray-900 to-gray-800 px-6 py-4 flex items-center justify-between">
+                <div className="flex items-center gap-3">
+                  <span className="text-2xl">
+                    {editingFrontendSection.type === 'featuredCarousel' ? '🌟' :
+                     editingFrontendSection.type === 'hero' ? '🏠' :
+                     editingFrontendSection.type === 'promoBanner1' ? '📢' :
+                     editingFrontendSection.type === 'groceryBanner' ? '🛒' :
+                     editingFrontendSection.type === 'weCookBanner' ? '👨‍🍳' :
+                     editingFrontendSection.type === 'dealStrip' ? '🏷️' :
+                     editingFrontendSection.type === 'qualityBanner' ? '✨' :
+                     editingFrontendSection.type === 'reviewsStrip' ? '⭐' : '📋'}
+                  </span>
+                  <div>
+                    <h3 className="text-lg font-semibold text-white">{editingFrontendSection.name}</h3>
+                    <p className="text-sm text-gray-400">Edit section content and appearance</p>
+                  </div>
+                </div>
+                <div className="flex items-center gap-3">
+                  <label className="flex items-center gap-2 bg-white/10 px-3 py-1.5 rounded-full cursor-pointer">
+                    <input
+                      type="checkbox"
+                      checked={editingFrontendSection.enabled}
+                      onChange={(e) =>
+                        setEditingFrontendSection({
+                          ...editingFrontendSection,
+                          enabled: e.target.checked,
+                        })
+                      }
+                      className="w-4 h-4 rounded"
+                    />
+                    <span className="text-sm text-white font-medium">
+                      {editingFrontendSection.enabled ? 'Visible' : 'Hidden'}
+                    </span>
+                  </label>
+                  <button
+                    type="button"
+                    onClick={() => setEditingFrontendSection(null)}
+                    className="text-gray-400 hover:text-white transition-colors p-1"
+                  >
+                    <svg className="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                      <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M6 18L18 6M6 6l12 12" />
+                    </svg>
+                  </button>
+                </div>
+              </div>
+
+              <div className="overflow-y-auto max-h-[calc(90vh-140px)]">
                 <form
                   onSubmit={(e) => {
                     e.preventDefault();
                     handleSaveFrontendSection();
                   }}
-                  className="space-y-4"
                 >
-                  <div className="grid grid-cols-2 gap-4">
-                    <div className="col-span-2">
-                      <label className="block text-sm font-medium text-gray-700 mb-1">
-                        Section Name *
-                      </label>
-                      <input
-                        type="text"
-                        required
-                        value={editingFrontendSection.name}
-                        onChange={(e) =>
-                          setEditingFrontendSection({ ...editingFrontendSection, name: e.target.value })
-                        }
-                        className="w-full px-3 py-2 border border-gray-300 rounded-md"
-                        placeholder="e.g., Grocery Store Banner, Holiday Promotion"
-                      />
+                  {/* ============================================ */}
+                  {/* FEATURED CAROUSEL - Item Selection FIRST */}
+                  {/* ============================================ */}
+                  {editingFrontendSection.type === 'featuredCarousel' && (
+                    <div className="p-6 bg-gradient-to-b from-yellow-50 to-white border-b">
+                      <div className="flex items-center justify-between mb-4">
+                        <div>
+                          <h4 className="font-bold text-gray-900 text-lg flex items-center gap-2">
+                            <span className="bg-yellow-400 text-yellow-900 px-2 py-0.5 rounded text-sm">STEP 1</span>
+                            Select Featured Items
+                          </h4>
+                          <p className="text-sm text-gray-600 mt-1">
+                            Click items below to add/remove from the carousel. Changes save instantly!
+                          </p>
+                        </div>
+                        <div className="bg-yellow-100 text-yellow-800 px-4 py-2 rounded-full font-bold text-lg">
+                          {items.filter(i => i.isFeatured).length} items
+                        </div>
+                      </div>
+
+                      {/* Currently Selected - Visual Grid */}
+                      {items.filter(i => i.isFeatured).length > 0 && (
+                        <div className="mb-4">
+                          <p className="text-xs font-semibold text-yellow-700 mb-2 uppercase tracking-wide">Currently in Carousel:</p>
+                          <div className="flex flex-wrap gap-3">
+                            {items.filter(i => i.isFeatured).map((item) => (
+                              <div
+                                key={item.id}
+                                className="relative group"
+                              >
+                                <div className="w-20 h-20 rounded-xl overflow-hidden border-3 border-yellow-400 shadow-lg">
+                                  {item.image ? (
+                                    <img src={item.image} alt={item.name} className="w-full h-full object-cover" />
+                                  ) : (
+                                    <div className="w-full h-full bg-gray-200 flex items-center justify-center text-2xl">🍽️</div>
+                                  )}
+                                </div>
+                                <button
+                                  type="button"
+                                  onClick={async () => {
+                                    setItems(items.map(i => i.id === item.id ? { ...i, isFeatured: false } : i));
+                                    try {
+                                      await fetch(`/api/menu/${item.id}`, {
+                                        method: 'PATCH',
+                                        headers: { 'Content-Type': 'application/json' },
+                                        body: JSON.stringify({ isFeatured: false }),
+                                      });
+                                    } catch (err) {
+                                      setItems(items.map(i => i.id === item.id ? { ...i, isFeatured: true } : i));
+                                    }
+                                  }}
+                                  className="absolute -top-2 -right-2 bg-red-500 text-white rounded-full w-6 h-6 flex items-center justify-center text-sm font-bold shadow-lg hover:bg-red-600 transition-colors"
+                                >
+                                  ×
+                                </button>
+                                <p className="text-xs text-center mt-1 font-medium text-gray-700 truncate w-20">{item.name}</p>
+                              </div>
+                            ))}
+                          </div>
+                        </div>
+                      )}
+
+                      {/* Items Grid by Category */}
+                      <div className="max-h-64 overflow-y-auto border border-gray-200 rounded-xl bg-white">
+                        {items.length === 0 ? (
+                          <p className="text-sm text-gray-500 text-center py-8">No menu items. Add items in Menu tab first.</p>
+                        ) : (
+                          <div>
+                            {(() => {
+                              const categories = Array.from(new Set(items.map(i => i.category || 'Uncategorized'))).sort();
+                              return categories.map((category) => {
+                                const categoryItems = items.filter(i => (i.category || 'Uncategorized') === category);
+                                return (
+                                  <div key={category} className="border-b border-gray-100 last:border-b-0">
+                                    <div className="sticky top-0 bg-gray-50 px-4 py-2 border-b border-gray-200 z-10">
+                                      <h5 className="font-bold text-gray-700 text-sm">{category}</h5>
+                                    </div>
+                                    <div className="p-2 grid grid-cols-2 sm:grid-cols-3 gap-2">
+                                      {categoryItems.map((item) => (
+                                        <button
+                                          type="button"
+                                          key={item.id}
+                                          onClick={async () => {
+                                            const newFeatured = !item.isFeatured;
+                                            setItems(items.map(i => i.id === item.id ? { ...i, isFeatured: newFeatured } : i));
+                                            try {
+                                              await fetch(`/api/menu/${item.id}`, {
+                                                method: 'PATCH',
+                                                headers: { 'Content-Type': 'application/json' },
+                                                body: JSON.stringify({ isFeatured: newFeatured }),
+                                              });
+                                            } catch (err) {
+                                              setItems(items.map(i => i.id === item.id ? { ...i, isFeatured: !newFeatured } : i));
+                                            }
+                                          }}
+                                          className={`flex items-center gap-2 p-2 rounded-lg text-left transition-all ${
+                                            item.isFeatured
+                                              ? 'bg-yellow-100 border-2 border-yellow-400 shadow-md'
+                                              : 'bg-white border border-gray-200 hover:border-yellow-300 hover:bg-yellow-50'
+                                          }`}
+                                        >
+                                          {item.image ? (
+                                            <img src={item.image} alt={item.name} className="w-10 h-10 object-cover rounded-lg flex-shrink-0" />
+                                          ) : (
+                                            <div className="w-10 h-10 bg-gray-100 rounded-lg flex items-center justify-center text-gray-400 flex-shrink-0">🍽️</div>
+                                          )}
+                                          <div className="flex-1 min-w-0">
+                                            <p className="font-medium text-gray-900 text-sm truncate">{item.name}</p>
+                                            <p className="text-xs text-gray-500">${item.price.toFixed(2)}</p>
+                                          </div>
+                                          {item.isFeatured && <span className="text-yellow-500">⭐</span>}
+                                        </button>
+                                      ))}
+                                    </div>
+                                  </div>
+                                );
+                              });
+                            })()}
+                          </div>
+                        )}
+                      </div>
                     </div>
+                  )}
 
-                    <div>
-                      <label className="block text-sm font-medium text-gray-700 mb-1">
-                        Section Type *
-                      </label>
-                      <select
-                        required
-                        value={editingFrontendSection.type}
-                        onChange={(e) =>
-                          setEditingFrontendSection({
-                            ...editingFrontendSection,
-                            type: e.target.value as any,
-                          })
-                        }
-                        className="w-full px-3 py-2 border border-gray-300 rounded-md"
-                      >
-                        <option value="PROMOTIONAL_BANNER">Promotional Banner</option>
-                        <option value="GROCERY_BANNER">Grocery Store Banner</option>
-                        <option value="BUNDLE_SHOWCASE">Bundle Showcase</option>
-                        <option value="HERO_BANNER">Hero Banner</option>
-                        <option value="CUSTOM_HTML">Custom HTML</option>
-                      </select>
-                    </div>
+                  {/* ============================================ */}
+                  {/* HERO SECTION - Visual Editor */}
+                  {/* ============================================ */}
+                  {editingFrontendSection.type === 'hero' && (
+                    <div className="p-6 bg-gradient-to-b from-blue-50 to-white border-b">
+                      <div className="flex items-center gap-2 mb-4">
+                        <span className="bg-blue-500 text-white px-2 py-0.5 rounded text-sm font-bold">HERO</span>
+                        <h4 className="font-bold text-gray-900">Main Banner Settings</h4>
+                      </div>
 
+                      {/* Live Preview */}
+                      <div className="mb-6 rounded-xl overflow-hidden border border-gray-300 shadow-lg">
+                        <div
+                          className="relative h-48 bg-cover bg-center"
+                          style={{
+                            backgroundImage: editingFrontendSection.content?.image
+                              ? `url(${editingFrontendSection.content.image})`
+                              : 'linear-gradient(135deg, #1a1a2e 0%, #16213e 100%)'
+                          }}
+                        >
+                          <div className="absolute inset-0 bg-black/40 flex flex-col items-center justify-center text-center p-4">
+                            <h2 className="text-2xl font-bold text-white mb-2">
+                              {editingFrontendSection.content?.title || 'Your Restaurant Name'}
+                            </h2>
+                            <p className="text-white/80 text-sm mb-4">
+                              {editingFrontendSection.content?.subtitle || 'Authentic flavors crafted with passion'}
+                            </p>
+                            <button className="bg-red-600 text-white px-6 py-2 rounded-full font-bold text-sm">
+                              {editingFrontendSection.content?.buttonText || 'ORDER NOW'}
+                            </button>
+                          </div>
+                        </div>
+                        <div className="bg-gray-100 px-3 py-2 text-xs text-gray-500 text-center">
+                          Live Preview - Changes appear as you type
+                        </div>
+                      </div>
 
-                    <div className="col-span-2">
-                      <label className="flex items-center">
-                        <input
-                          type="checkbox"
-                          checked={editingFrontendSection.enabled}
-                          onChange={(e) =>
-                            setEditingFrontendSection({
-                              ...editingFrontendSection,
-                              enabled: e.target.checked,
-                            })
-                          }
-                          className="mr-2"
-                        />
-                        <span className="text-sm font-medium text-gray-700">Section Enabled</span>
-                      </label>
-                    </div>
-
-                    <div className="col-span-2 border-t pt-4">
-                      <h4 className="font-medium text-gray-900 mb-3">Content Settings</h4>
-
-                      <div className="space-y-3">
+                      <div className="grid grid-cols-2 gap-4">
                         <div className="col-span-2">
-                          <label className="block text-sm font-medium text-gray-700 mb-1">Title</label>
-                          <input
-                            type="text"
-                            value={editingFrontendSection.content?.title || ''}
-                            onChange={(e) =>
-                              setEditingFrontendSection({
-                                ...editingFrontendSection,
-                                content: { ...(editingFrontendSection.content || {}), title: e.target.value },
-                              })
-                            }
-                            className="w-full px-3 py-2 border border-gray-300 rounded-md"
-                            placeholder="Section title"
-                          />
-                        </div>
-
-                        <div className="col-span-2">
-                          <label className="block text-sm font-medium text-gray-700 mb-1">Description</label>
-                          <textarea
-                            value={editingFrontendSection.content?.description || ''}
-                            onChange={(e) =>
-                              setEditingFrontendSection({
-                                ...editingFrontendSection,
-                                content: { ...(editingFrontendSection.content || {}), description: e.target.value },
-                              })
-                            }
-                            className="w-full px-3 py-2 border border-gray-300 rounded-md"
-                            rows={3}
-                            placeholder="Section description"
-                          />
-                        </div>
-
-                        <div>
-                          <label className="block text-sm font-medium text-gray-700 mb-1">Subtitle</label>
-                          <input
-                            type="text"
-                            value={editingFrontendSection.content?.subtitle || ''}
-                            onChange={(e) =>
-                              setEditingFrontendSection({
-                                ...editingFrontendSection,
-                                content: { ...(editingFrontendSection.content || {}), subtitle: e.target.value },
-                              })
-                            }
-                            className="w-full px-3 py-2 border border-gray-300 rounded-md"
-                            placeholder="Section subtitle"
-                          />
-                        </div>
-
-                        <div>
-                          <label className="block text-sm font-medium text-gray-700 mb-1">Badge (optional)</label>
-                          <input
-                            type="text"
-                            value={editingFrontendSection.content?.badge || ''}
-                            onChange={(e) =>
-                              setEditingFrontendSection({
-                                ...editingFrontendSection,
-                                content: { ...(editingFrontendSection.content || {}), badge: e.target.value },
-                              })
-                            }
-                            className="w-full px-3 py-2 border border-gray-300 rounded-md"
-                            placeholder="e.g., Popular, Special, New"
-                          />
-                        </div>
-
-                        <div>
-                          <label className="block text-sm font-medium text-gray-700 mb-1">Button Text</label>
-                          <input
-                            type="text"
-                            value={editingFrontendSection.content?.buttonText || ''}
-                            onChange={(e) =>
-                              setEditingFrontendSection({
-                                ...editingFrontendSection,
-                                content: { ...(editingFrontendSection.content || {}), buttonText: e.target.value },
-                              })
-                            }
-                            className="w-full px-3 py-2 border border-gray-300 rounded-md"
-                            placeholder="e.g., Shop Now, Learn More"
-                          />
-                        </div>
-
-                        <div>
-                          <label className="block text-sm font-medium text-gray-700 mb-1">Button Link</label>
-                          <input
-                            type="text"
-                            value={editingFrontendSection.content?.buttonLink || ''}
-                            onChange={(e) =>
-                              setEditingFrontendSection({
-                                ...editingFrontendSection,
-                                content: { ...(editingFrontendSection.content || {}), buttonLink: e.target.value },
-                              })
-                            }
-                            className="w-full px-3 py-2 border border-gray-300 rounded-md"
-                            placeholder="/grocery, /catering, https://..."
-                          />
-                        </div>
-
-                        <div className="col-span-2">
-                          <label className="block text-sm font-medium text-gray-700 mb-1">Image URL</label>
+                          <label className="block text-sm font-semibold text-gray-700 mb-1">Hero Image URL</label>
                           <input
                             type="text"
                             value={editingFrontendSection.content?.image || ''}
@@ -3285,206 +3332,322 @@ export default function MenuEditorPage() {
                                 content: { ...(editingFrontendSection.content || {}), image: e.target.value },
                               })
                             }
-                            className="w-full px-3 py-2 border border-gray-300 rounded-md"
-                            placeholder="https://..."
+                            className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-blue-500"
+                            placeholder="https://images.unsplash.com/..."
                           />
-                          {editingFrontendSection.content?.image && (
-                            <img
-                              src={editingFrontendSection.content.image}
-                              alt="Preview"
-                              className="mt-2 w-full h-32 object-cover rounded border border-gray-300"
-                              onError={(e) => {
-                                (e.target as HTMLImageElement).style.display = 'none';
-                              }}
-                            />
-                          )}
                         </div>
-
                         <div>
-                          <label className="block text-sm font-medium text-gray-700 mb-1">Background Color (optional)</label>
+                          <label className="block text-sm font-semibold text-gray-700 mb-1">Title (optional)</label>
                           <input
                             type="text"
-                            value={editingFrontendSection.content?.backgroundColor || ''}
+                            value={editingFrontendSection.content?.title || ''}
                             onChange={(e) =>
                               setEditingFrontendSection({
                                 ...editingFrontendSection,
-                                content: { ...(editingFrontendSection.content || {}), backgroundColor: e.target.value },
+                                content: { ...(editingFrontendSection.content || {}), title: e.target.value },
                               })
                             }
-                            className="w-full px-3 py-2 border border-gray-300 rounded-md"
-                            placeholder="#8B0000 or gradient-from"
+                            className="w-full px-3 py-2 border border-gray-300 rounded-lg"
+                            placeholder="Leave empty to use restaurant name"
                           />
                         </div>
-
                         <div>
-                          <label className="block text-sm font-medium text-gray-700 mb-1">Text Color (optional)</label>
+                          <label className="block text-sm font-semibold text-gray-700 mb-1">Subtitle</label>
                           <input
                             type="text"
-                            value={editingFrontendSection.content?.textColor || ''}
+                            value={editingFrontendSection.content?.subtitle || ''}
                             onChange={(e) =>
                               setEditingFrontendSection({
                                 ...editingFrontendSection,
-                                content: { ...(editingFrontendSection.content || {}), textColor: e.target.value },
+                                content: { ...(editingFrontendSection.content || {}), subtitle: e.target.value },
                               })
                             }
-                            className="w-full px-3 py-2 border border-gray-300 rounded-md"
-                            placeholder="#FFFFFF"
+                            className="w-full px-3 py-2 border border-gray-300 rounded-lg"
+                            placeholder="Authentic flavors crafted with passion"
+                          />
+                        </div>
+                        <div>
+                          <label className="block text-sm font-semibold text-gray-700 mb-1">Button Text</label>
+                          <input
+                            type="text"
+                            value={editingFrontendSection.content?.buttonText || ''}
+                            onChange={(e) =>
+                              setEditingFrontendSection({
+                                ...editingFrontendSection,
+                                content: { ...(editingFrontendSection.content || {}), buttonText: e.target.value },
+                              })
+                            }
+                            className="w-full px-3 py-2 border border-gray-300 rounded-lg"
+                            placeholder="ORDER NOW"
+                          />
+                        </div>
+                        <div>
+                          <label className="block text-sm font-semibold text-gray-700 mb-1">Button Link</label>
+                          <input
+                            type="text"
+                            value={editingFrontendSection.content?.buttonLink || ''}
+                            onChange={(e) =>
+                              setEditingFrontendSection({
+                                ...editingFrontendSection,
+                                content: { ...(editingFrontendSection.content || {}), buttonLink: e.target.value },
+                              })
+                            }
+                            className="w-full px-3 py-2 border border-gray-300 rounded-lg"
+                            placeholder="#menu"
                           />
                         </div>
                       </div>
                     </div>
+                  )}
 
-                    {/* Featured Carousel - Item Selection */}
-                    {editingFrontendSection.type === 'featuredCarousel' && (
-                      <div className="col-span-2 border-t pt-4">
-                        <div className="flex items-center justify-between mb-3">
-                          <div>
-                            <h4 className="font-semibold text-gray-900 text-lg">🌟 Select Featured Items</h4>
-                            <p className="text-sm text-gray-500">
-                              Choose dishes to highlight on your homepage carousel
-                            </p>
-                          </div>
-                          <span className="bg-blue-100 text-blue-800 px-3 py-1 rounded-full text-sm font-medium">
-                            {items.filter(i => i.isFeatured).length} selected
-                          </span>
+                  {/* ============================================ */}
+                  {/* GENERIC SECTIONS - Text & Content Fields */}
+                  {/* ============================================ */}
+                  {!['featuredCarousel', 'hero'].includes(editingFrontendSection.type) && (
+                    <div className="p-6">
+                      <h4 className="font-bold text-gray-900 mb-4 flex items-center gap-2">
+                        <span className="bg-gray-200 text-gray-700 px-2 py-0.5 rounded text-sm">CONTENT</span>
+                        Section Settings
+                      </h4>
+
+                      <div className="grid grid-cols-2 gap-4">
+                        <div className="col-span-2">
+                          <label className="block text-sm font-semibold text-gray-700 mb-1">Title</label>
+                          <input
+                            type="text"
+                            value={editingFrontendSection.content?.title || ''}
+                            onChange={(e) =>
+                              setEditingFrontendSection({
+                                ...editingFrontendSection,
+                                content: { ...(editingFrontendSection.content || {}), title: e.target.value },
+                              })
+                            }
+                            className="w-full px-3 py-2 border border-gray-300 rounded-lg"
+                            placeholder="Section title"
+                          />
                         </div>
 
-                        {/* Currently Selected Items */}
-                        {items.filter(i => i.isFeatured).length > 0 && (
-                          <div className="mb-4 p-3 bg-gradient-to-r from-yellow-50 to-orange-50 border border-yellow-200 rounded-lg">
-                            <p className="text-xs font-medium text-yellow-800 mb-2 uppercase tracking-wide">Currently Featured:</p>
-                            <div className="flex flex-wrap gap-2">
-                              {items.filter(i => i.isFeatured).map((item) => (
-                                <div
-                                  key={item.id}
-                                  className="flex items-center gap-2 bg-white px-3 py-1.5 rounded-full border border-yellow-300 shadow-sm"
-                                >
-                                  {item.image && (
-                                    <img src={item.image} alt="" className="w-6 h-6 rounded-full object-cover" />
-                                  )}
-                                  <span className="text-sm font-medium text-gray-800">{item.name}</span>
-                                  <button
-                                    type="button"
-                                    onClick={async () => {
-                                      setItems(items.map(i => i.id === item.id ? { ...i, isFeatured: false } : i));
-                                      try {
-                                        await fetch(`/api/menu/${item.id}`, {
-                                          method: 'PATCH',
-                                          headers: { 'Content-Type': 'application/json' },
-                                          body: JSON.stringify({ isFeatured: false }),
-                                        });
-                                      } catch (err) {
-                                        setItems(items.map(i => i.id === item.id ? { ...i, isFeatured: true } : i));
-                                      }
-                                    }}
-                                    className="text-gray-400 hover:text-red-500 transition-colors"
-                                  >
-                                    ✕
-                                  </button>
-                                </div>
-                              ))}
-                            </div>
+                        <div className="col-span-2">
+                          <label className="block text-sm font-semibold text-gray-700 mb-1">Subtitle / Description</label>
+                          <textarea
+                            value={editingFrontendSection.content?.subtitle || editingFrontendSection.content?.description || ''}
+                            onChange={(e) =>
+                              setEditingFrontendSection({
+                                ...editingFrontendSection,
+                                content: { ...(editingFrontendSection.content || {}), subtitle: e.target.value, description: e.target.value },
+                              })
+                            }
+                            className="w-full px-3 py-2 border border-gray-300 rounded-lg"
+                            rows={2}
+                            placeholder="Section description or subtitle"
+                          />
+                        </div>
+
+                        <div>
+                          <label className="block text-sm font-semibold text-gray-700 mb-1">Button Text</label>
+                          <input
+                            type="text"
+                            value={editingFrontendSection.content?.buttonText || ''}
+                            onChange={(e) =>
+                              setEditingFrontendSection({
+                                ...editingFrontendSection,
+                                content: { ...(editingFrontendSection.content || {}), buttonText: e.target.value },
+                              })
+                            }
+                            className="w-full px-3 py-2 border border-gray-300 rounded-lg"
+                            placeholder="Shop Now, Learn More..."
+                          />
+                        </div>
+
+                        <div>
+                          <label className="block text-sm font-semibold text-gray-700 mb-1">Button Link</label>
+                          <input
+                            type="text"
+                            value={editingFrontendSection.content?.buttonLink || ''}
+                            onChange={(e) =>
+                              setEditingFrontendSection({
+                                ...editingFrontendSection,
+                                content: { ...(editingFrontendSection.content || {}), buttonLink: e.target.value },
+                              })
+                            }
+                            className="w-full px-3 py-2 border border-gray-300 rounded-lg"
+                            placeholder="/grocery, /catering, https://..."
+                          />
+                        </div>
+
+                        <div>
+                          <label className="block text-sm font-semibold text-gray-700 mb-1">Badge</label>
+                          <input
+                            type="text"
+                            value={editingFrontendSection.content?.badge || ''}
+                            onChange={(e) =>
+                              setEditingFrontendSection({
+                                ...editingFrontendSection,
+                                content: { ...(editingFrontendSection.content || {}), badge: e.target.value },
+                              })
+                            }
+                            className="w-full px-3 py-2 border border-gray-300 rounded-lg"
+                            placeholder="NEW, SPECIAL, Popular..."
+                          />
+                        </div>
+
+                        <div>
+                          <label className="block text-sm font-semibold text-gray-700 mb-1">Image URL</label>
+                          <input
+                            type="text"
+                            value={editingFrontendSection.content?.image || ''}
+                            onChange={(e) =>
+                              setEditingFrontendSection({
+                                ...editingFrontendSection,
+                                content: { ...(editingFrontendSection.content || {}), image: e.target.value },
+                              })
+                            }
+                            className="w-full px-3 py-2 border border-gray-300 rounded-lg"
+                            placeholder="https://..."
+                          />
+                        </div>
+
+                        {editingFrontendSection.content?.image && (
+                          <div className="col-span-2">
+                            <img
+                              src={editingFrontendSection.content.image}
+                              alt="Preview"
+                              className="w-full h-32 object-cover rounded-lg border border-gray-300"
+                              onError={(e) => { (e.target as HTMLImageElement).style.display = 'none'; }}
+                            />
                           </div>
                         )}
 
-                        {/* Items organized by category */}
-                        <div className="max-h-80 overflow-y-auto border border-gray-200 rounded-lg bg-white">
-                          {items.length === 0 ? (
-                            <p className="text-sm text-gray-500 text-center py-8">No menu items available. Add items in the Menu tab first.</p>
-                          ) : (
-                            <div>
-                              {/* Group items by category */}
-                              {(() => {
-                                const categories = Array.from(new Set(items.map(i => i.category || 'Uncategorized'))).sort();
-                                return categories.map((category) => {
-                                  const categoryItems = items.filter(i => (i.category || 'Uncategorized') === category);
-                                  return (
-                                    <div key={category} className="border-b border-gray-100 last:border-b-0">
-                                      <div className="sticky top-0 bg-gray-100 px-4 py-2 border-b border-gray-200">
-                                        <h5 className="font-semibold text-gray-700 text-sm uppercase tracking-wide">
-                                          {category} ({categoryItems.length})
-                                        </h5>
-                                      </div>
-                                      <div className="p-2 grid grid-cols-1 gap-1">
-                                        {categoryItems.map((item) => (
-                                          <button
-                                            type="button"
-                                            key={item.id}
-                                            onClick={async () => {
-                                              const newFeatured = !item.isFeatured;
-                                              setItems(items.map(i => i.id === item.id ? { ...i, isFeatured: newFeatured } : i));
-                                              try {
-                                                await fetch(`/api/menu/${item.id}`, {
-                                                  method: 'PATCH',
-                                                  headers: { 'Content-Type': 'application/json' },
-                                                  body: JSON.stringify({ isFeatured: newFeatured }),
-                                                });
-                                              } catch (err) {
-                                                console.error('Failed to update featured status', err);
-                                                setItems(items.map(i => i.id === item.id ? { ...i, isFeatured: !newFeatured } : i));
-                                              }
-                                            }}
-                                            className={`flex items-center gap-3 p-2 rounded-lg text-left transition-all ${
-                                              item.isFeatured
-                                                ? 'bg-yellow-50 border-2 border-yellow-400 shadow-sm'
-                                                : 'bg-white border border-gray-100 hover:border-blue-300 hover:bg-blue-50'
-                                            }`}
-                                          >
-                                            <div className={`w-5 h-5 rounded-full border-2 flex items-center justify-center flex-shrink-0 ${
-                                              item.isFeatured
-                                                ? 'bg-yellow-400 border-yellow-500 text-white'
-                                                : 'border-gray-300'
-                                            }`}>
-                                              {item.isFeatured && <span className="text-xs">✓</span>}
-                                            </div>
-                                            {item.image ? (
-                                              <img
-                                                src={item.image}
-                                                alt={item.name}
-                                                className="w-12 h-12 object-cover rounded-lg flex-shrink-0"
-                                              />
-                                            ) : (
-                                              <div className="w-12 h-12 bg-gray-200 rounded-lg flex items-center justify-center text-gray-400 flex-shrink-0">
-                                                🍽️
-                                              </div>
-                                            )}
-                                            <div className="flex-1 min-w-0">
-                                              <p className="font-medium text-gray-900 truncate">{item.name}</p>
-                                              <p className="text-sm text-gray-500">${item.price.toFixed(2)}</p>
-                                            </div>
-                                            {item.isFeatured && (
-                                              <span className="text-yellow-500 text-lg flex-shrink-0">⭐</span>
-                                            )}
-                                          </button>
-                                        ))}
-                                      </div>
-                                    </div>
-                                  );
-                                });
-                              })()}
-                            </div>
-                          )}
+                        <div>
+                          <label className="block text-sm font-semibold text-gray-700 mb-1">Background Color</label>
+                          <div className="flex gap-2">
+                            <input
+                              type="color"
+                              value={editingFrontendSection.content?.backgroundColor || '#8B0000'}
+                              onChange={(e) =>
+                                setEditingFrontendSection({
+                                  ...editingFrontendSection,
+                                  content: { ...(editingFrontendSection.content || {}), backgroundColor: e.target.value },
+                                })
+                              }
+                              className="w-12 h-10 rounded border border-gray-300 cursor-pointer"
+                            />
+                            <input
+                              type="text"
+                              value={editingFrontendSection.content?.backgroundColor || ''}
+                              onChange={(e) =>
+                                setEditingFrontendSection({
+                                  ...editingFrontendSection,
+                                  content: { ...(editingFrontendSection.content || {}), backgroundColor: e.target.value },
+                                })
+                              }
+                              className="flex-1 px-3 py-2 border border-gray-300 rounded-lg"
+                              placeholder="#8B0000"
+                            />
+                          </div>
                         </div>
-                        <p className="text-xs text-gray-400 mt-2 text-center">
-                          Click on any item to add or remove it from the carousel
-                        </p>
-                      </div>
-                    )}
-                  </div>
 
-                  <div className="bg-gray-50 px-4 py-3 sm:flex sm:flex-row-reverse gap-3 -mx-6 -mb-6 mt-6">
-                    <button
-                      type="submit"
-                      className="flex-1 px-4 py-2 bg-blue-600 text-white rounded-md shadow-sm hover:bg-blue-700 font-medium"
-                    >
-                      Save Section
-                    </button>
+                        <div>
+                          <label className="block text-sm font-semibold text-gray-700 mb-1">Text Color</label>
+                          <div className="flex gap-2">
+                            <input
+                              type="color"
+                              value={editingFrontendSection.content?.textColor || '#FFFFFF'}
+                              onChange={(e) =>
+                                setEditingFrontendSection({
+                                  ...editingFrontendSection,
+                                  content: { ...(editingFrontendSection.content || {}), textColor: e.target.value },
+                                })
+                              }
+                              className="w-12 h-10 rounded border border-gray-300 cursor-pointer"
+                            />
+                            <input
+                              type="text"
+                              value={editingFrontendSection.content?.textColor || ''}
+                              onChange={(e) =>
+                                setEditingFrontendSection({
+                                  ...editingFrontendSection,
+                                  content: { ...(editingFrontendSection.content || {}), textColor: e.target.value },
+                                })
+                              }
+                              className="flex-1 px-3 py-2 border border-gray-300 rounded-lg"
+                              placeholder="#FFFFFF"
+                            />
+                          </div>
+                        </div>
+                      </div>
+                    </div>
+                  )}
+
+                  {/* ============================================ */}
+                  {/* FEATURED CAROUSEL - Title/Subtitle (STEP 2) */}
+                  {/* ============================================ */}
+                  {editingFrontendSection.type === 'featuredCarousel' && (
+                    <div className="p-6 bg-white">
+                      <h4 className="font-bold text-gray-900 mb-4 flex items-center gap-2">
+                        <span className="bg-blue-500 text-white px-2 py-0.5 rounded text-sm">STEP 2</span>
+                        Carousel Title & Subtitle
+                      </h4>
+                      <div className="grid grid-cols-2 gap-4">
+                        <div>
+                          <label className="block text-sm font-semibold text-gray-700 mb-1">Title</label>
+                          <input
+                            type="text"
+                            value={editingFrontendSection.content?.title || ''}
+                            onChange={(e) =>
+                              setEditingFrontendSection({
+                                ...editingFrontendSection,
+                                content: { ...(editingFrontendSection.content || {}), title: e.target.value },
+                              })
+                            }
+                            className="w-full px-3 py-2 border border-gray-300 rounded-lg"
+                            placeholder="Chef Recommends"
+                          />
+                        </div>
+                        <div>
+                          <label className="block text-sm font-semibold text-gray-700 mb-1">Subtitle</label>
+                          <input
+                            type="text"
+                            value={editingFrontendSection.content?.subtitle || ''}
+                            onChange={(e) =>
+                              setEditingFrontendSection({
+                                ...editingFrontendSection,
+                                content: { ...(editingFrontendSection.content || {}), subtitle: e.target.value },
+                              })
+                            }
+                            className="w-full px-3 py-2 border border-gray-300 rounded-lg"
+                            placeholder="Handpicked favorites from our kitchen"
+                          />
+                        </div>
+                      </div>
+                    </div>
+                  )}
+
+                  {/* Save Button Footer */}
+                  <div className="bg-gray-50 px-6 py-4 flex justify-end gap-3 border-t sticky bottom-0">
                     <button
                       type="button"
                       onClick={() => setEditingFrontendSection(null)}
-                      className="flex-1 px-4 py-2 border border-gray-300 rounded-md shadow-sm text-sm font-medium text-gray-700 bg-white hover:bg-gray-50"
+                      className="px-6 py-2.5 border border-gray-300 rounded-lg text-gray-700 font-medium hover:bg-gray-100 transition-colors"
                     >
                       Cancel
+                    </button>
+                    <button
+                      type="submit"
+                      disabled={savingFrontendSection}
+                      className="px-8 py-2.5 bg-blue-600 text-white rounded-lg font-medium hover:bg-blue-700 transition-colors disabled:opacity-50 flex items-center gap-2"
+                    >
+                      {savingFrontendSection ? (
+                        <>
+                          <svg className="animate-spin h-4 w-4" viewBox="0 0 24 24">
+                            <circle className="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" strokeWidth="4" fill="none" />
+                            <path className="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4zm2 5.291A7.962 7.962 0 014 12H0c0 3.042 1.135 5.824 3 7.938l3-2.647z" />
+                          </svg>
+                          Saving...
+                        </>
+                      ) : (
+                        'Save Changes'
+                      )}
                     </button>
                   </div>
                 </form>
