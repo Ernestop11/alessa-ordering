@@ -3051,8 +3051,35 @@ export default function OrderPageClient({
                 );
               }
 
-              // No banner configured - don't show fallback
-              return null;
+              // Fallback to original grocery banner if no specific banner configured
+              return (
+                <div className="mb-10 relative overflow-hidden rounded-3xl bg-gradient-to-r from-green-700 via-green-600 to-green-700 p-1">
+                  <div className="relative overflow-hidden rounded-[22px] bg-gradient-to-br from-green-950 to-green-900 p-6 md:p-8">
+                    <div className="relative grid md:grid-cols-2 gap-6 items-center">
+                      <div>
+                        <div className="inline-block px-4 py-1.5 rounded-full bg-green-400/20 text-green-300 text-xs font-bold uppercase tracking-wider mb-3">
+                          ✨ Now Available
+                        </div>
+                        <h3 className="text-3xl md:text-4xl font-black text-white mb-3">
+                          Order Your <span className="text-green-400">Groceries</span> Too!
+                        </h3>
+                        <p className="text-white/80 mb-6 text-lg">
+                          Fresh produce, pantry staples, and more delivered with your meal order. Save time, shop smart!
+                        </p>
+                        <Link
+                          href="/grocery"
+                          className="inline-flex items-center gap-2 px-6 py-3 rounded-full bg-gradient-to-r from-green-500 to-green-600 text-white font-bold shadow-lg hover:scale-105 transition-transform"
+                        >
+                          Browse Grocery Store
+                          <svg className="w-5 h-5" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                            <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M13 7l5 5m0 0l-5 5m5-5H6" />
+                          </svg>
+                        </Link>
+                      </div>
+                    </div>
+                  </div>
+                </div>
+              );
             })()}
 
             {/* Fresh Quality Banner - After 7th section */}
