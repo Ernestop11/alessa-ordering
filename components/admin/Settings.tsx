@@ -7,6 +7,7 @@ import DoorDashConnectButton from './DoorDashConnectButton';
 import UberDirectConnectButton from './UberDirectConnectButton';
 import TaxRemittance from './TaxRemittance';
 import SwitchMenuProSync from './SwitchMenuProSync';
+import { TEMPLATES, getTemplateGradient, type TemplateType } from '@/lib/templates/registry';
 
 interface SettingsForm {
   restaurantName: string;
@@ -277,6 +278,11 @@ export default function Settings() {
   const [heroGallery, setHeroGallery] = useState<string[]>([]);
   const [heroGalleryInput, setHeroGalleryInput] = useState<string>('');
   const [operatingHours, setOperatingHours] = useState<OperatingHoursForm>(defaultOperatingHours);
+  const [templateType, setTemplateType] = useState<TemplateType>('restaurant');
+  const [gradientFrom, setGradientFrom] = useState<string>('#dc2626');
+  const [gradientVia, setGradientVia] = useState<string>('#ea580c');
+  const [gradientTo, setGradientTo] = useState<string>('#facc15');
+  const [isSavingTheme, setIsSavingTheme] = useState(false);
 
   const handleHoursChange = (type: 'storeHours' | 'kitchenHours' | 'winterHours', day: string, field: keyof DayHours, value: string | boolean) => {
     setOperatingHours((prev) => ({
@@ -546,6 +552,14 @@ export default function Settings() {
         } else {
           setOperatingHours(defaultOperatingHours);
         }
+
+        // Load theme settings
+        const loadedTemplateType = (settings.templateType || 'restaurant') as TemplateType;
+        const defaultGradient = getTemplateGradient(loadedTemplateType);
+        setTemplateType(loadedTemplateType);
+        setGradientFrom(settings.gradientFrom || defaultGradient.from);
+        setGradientVia(settings.gradientVia || defaultGradient.via);
+        setGradientTo(settings.gradientTo || defaultGradient.to);
       } catch (err) {
         console.error('Failed to load tenant settings', err);
         if (active) {
@@ -1019,6 +1033,233 @@ export default function Settings() {
                   </label>
                 </div>
               </div>
+            </div>
+          </div>
+        </section>
+
+        {/* Theme & Branding Section */}
+        <section>
+          <h3 className="text-base font-semibold text-gray-900 mb-4">Theme & Branding</h3>
+          <div className="bg-white rounded-lg border border-gray-200 p-6 shadow-sm">
+            {/* Template Selector */}
+            <div className="mb-6">
+              <label htmlFor="templateType" className="block text-sm font-medium text-gray-700 mb-2">
+                Template Type
+              </label>
+              <select
+                id="templateType"
+                value={templateType}
+                onChange={(e) => {
+                  const newTemplate = e.target.value as TemplateType;
+                  setTemplateType(newTemplate);
+                  // Optionally apply default gradient
+                  const defaultGradient = getTemplateGradient(newTemplate);
+                  setGradientFrom(defaultGradient.from);
+                  setGradientVia(defaultGradient.via);
+                  setGradientTo(defaultGradient.to);
+                }}
+                className="mt-1 block w-full border-gray-300 rounded-md shadow-sm focus:ring-blue-500 focus:border-blue-500 sm:text-sm"
+              >
+                {Object.values(TEMPLATES).map((template) => (
+                  <option key={template.id} value={template.id}>
+                    {template.icon} {template.name}
+                  </option>
+                ))}
+              </select>
+              <p className="mt-1 text-xs text-gray-500">
+                {TEMPLATES[templateType].description}
+              </p>
+            </div>
+
+            {/* Gradient Editor */}
+            <div className="mb-6">
+              <label className="block text-sm font-medium text-gray-700 mb-3">
+                Custom Gradient Colors
+              </label>
+              <div className="space-y-4">
+                {/* From */}
+                <div>
+                  <label className="block text-xs font-medium text-gray-600 mb-1">From</label>
+                  <div className="flex items-center gap-3">
+                    <input
+                      type="color"
+                      value={gradientFrom}
+                      onChange={(e) => setGradientFrom(e.target.value)}
+                      className="h-10 w-16 cursor-pointer border border-gray-300 rounded"
+                    />
+                    <input
+                      type="text"
+                      value={gradientFrom}
+                      onChange={(e) => {
+                        const value = e.target.value;
+                        // Allow typing, validate format
+                        if (value === '' || /^#[0-9A-Fa-f]{0,6}$/i.test(value)) {
+                          setGradientFrom(value || '#');
+                        }
+                      }}
+                      onBlur={(e) => {
+                        // Ensure valid hex on blur
+                        const value = e.target.value.trim();
+                        if (!/^#[0-9A-Fa-f]{6}$/i.test(value)) {
+                          // If invalid, try to fix or use default
+                          if (value.startsWith('#') && /^[0-9A-Fa-f]{1,6}$/i.test(value.slice(1))) {
+                            // Pad with zeros if needed
+                            const hex = value.slice(1).padEnd(6, '0');
+                            setGradientFrom(`#${hex}`);
+                          } else {
+                            setGradientFrom('#dc2626');
+                          }
+                        }
+                      }}
+                      placeholder="#dc2626"
+                      className="flex-1 border-gray-300 rounded-md shadow-sm focus:ring-blue-500 focus:border-blue-500 sm:text-sm"
+                    />
+                  </div>
+                </div>
+
+                {/* Via */}
+                <div>
+                  <label className="block text-xs font-medium text-gray-600 mb-1">Via</label>
+                  <div className="flex items-center gap-3">
+                    <input
+                      type="color"
+                      value={gradientVia}
+                      onChange={(e) => setGradientVia(e.target.value)}
+                      className="h-10 w-16 cursor-pointer border border-gray-300 rounded"
+                    />
+                    <input
+                      type="text"
+                      value={gradientVia}
+                      onChange={(e) => {
+                        const value = e.target.value;
+                        // Allow typing, validate format
+                        if (value === '' || /^#[0-9A-Fa-f]{0,6}$/i.test(value)) {
+                          setGradientVia(value || '#');
+                        }
+                      }}
+                      onBlur={(e) => {
+                        // Ensure valid hex on blur
+                        const value = e.target.value.trim();
+                        if (!/^#[0-9A-Fa-f]{6}$/i.test(value)) {
+                          // If invalid, try to fix or use default
+                          if (value.startsWith('#') && /^[0-9A-Fa-f]{1,6}$/i.test(value.slice(1))) {
+                            // Pad with zeros if needed
+                            const hex = value.slice(1).padEnd(6, '0');
+                            setGradientVia(`#${hex}`);
+                          } else {
+                            setGradientVia('#ea580c');
+                          }
+                        }
+                      }}
+                      placeholder="#ea580c"
+                      className="flex-1 border-gray-300 rounded-md shadow-sm focus:ring-blue-500 focus:border-blue-500 sm:text-sm"
+                    />
+                  </div>
+                </div>
+
+                {/* To */}
+                <div>
+                  <label className="block text-xs font-medium text-gray-600 mb-1">To</label>
+                  <div className="flex items-center gap-3">
+                    <input
+                      type="color"
+                      value={gradientTo}
+                      onChange={(e) => setGradientTo(e.target.value)}
+                      className="h-10 w-16 cursor-pointer border border-gray-300 rounded"
+                    />
+                    <input
+                      type="text"
+                      value={gradientTo}
+                      onChange={(e) => {
+                        const value = e.target.value;
+                        // Allow typing, validate format
+                        if (value === '' || /^#[0-9A-Fa-f]{0,6}$/i.test(value)) {
+                          setGradientTo(value || '#');
+                        }
+                      }}
+                      onBlur={(e) => {
+                        // Ensure valid hex on blur
+                        const value = e.target.value.trim();
+                        if (!/^#[0-9A-Fa-f]{6}$/i.test(value)) {
+                          // If invalid, try to fix or use default
+                          if (value.startsWith('#') && /^[0-9A-Fa-f]{1,6}$/i.test(value.slice(1))) {
+                            // Pad with zeros if needed
+                            const hex = value.slice(1).padEnd(6, '0');
+                            setGradientTo(`#${hex}`);
+                          } else {
+                            setGradientTo('#facc15');
+                          }
+                        }
+                      }}
+                      placeholder="#facc15"
+                      className="flex-1 border-gray-300 rounded-md shadow-sm focus:ring-blue-500 focus:border-blue-500 sm:text-sm"
+                    />
+                  </div>
+                </div>
+              </div>
+            </div>
+
+            {/* Live Preview */}
+            <div className="mb-6">
+              <label className="block text-sm font-medium text-gray-700 mb-2">Live Preview</label>
+              <div
+                className="h-20 rounded-xl border border-gray-300 shadow-sm"
+                style={{
+                  background: `linear-gradient(135deg, ${gradientFrom}, ${gradientVia}, ${gradientTo})`,
+                }}
+              />
+            </div>
+
+            {/* Action Buttons */}
+            <div className="flex items-center gap-3">
+              <button
+                type="button"
+                onClick={() => {
+                  const defaultGradient = getTemplateGradient(templateType);
+                  setGradientFrom(defaultGradient.from);
+                  setGradientVia(defaultGradient.via);
+                  setGradientTo(defaultGradient.to);
+                }}
+                className="inline-flex items-center px-4 py-2 border border-gray-300 text-sm font-medium rounded-md text-gray-700 bg-white hover:bg-gray-50 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-blue-500"
+              >
+                Reset to Template Default
+              </button>
+              <button
+                type="button"
+                onClick={async () => {
+                  setIsSavingTheme(true);
+                  setError(null);
+                  setMessage(null);
+                  try {
+                    const res = await fetch('/api/admin/tenant-settings', {
+                      method: 'PATCH',
+                      headers: { 'Content-Type': 'application/json' },
+                      body: JSON.stringify({
+                        templateType,
+                        gradientFrom,
+                        gradientVia,
+                        gradientTo,
+                      }),
+                    });
+
+                    if (!res.ok) {
+                      throw new Error(await res.text());
+                    }
+
+                    setMessage('Theme settings saved successfully. Frontend will reflect changes on next page load.');
+                    router.refresh();
+                  } catch (err) {
+                    console.error('Failed to save theme settings', err);
+                    setError('Failed to save theme settings. Please try again.');
+                  } finally {
+                    setIsSavingTheme(false);
+                  }
+                }}
+                disabled={isSavingTheme}
+                className="inline-flex items-center px-4 py-2 border border-transparent text-sm font-medium rounded-md shadow-sm text-white bg-blue-600 hover:bg-blue-700 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-blue-500 disabled:bg-blue-400 disabled:cursor-not-allowed"
+              >
+                {isSavingTheme ? 'Saving...' : 'Save Theme'}
+              </button>
             </div>
           </div>
         </section>

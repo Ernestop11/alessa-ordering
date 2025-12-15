@@ -71,6 +71,10 @@ export async function GET() {
           emailOffers: (tenant.settings as any).emailOffers ?? [],
           cateringTabConfig: (tenant.settings as any).cateringTabConfig ?? null,
           frontendConfig: (tenant.settings as any).frontendConfig ?? null,
+          templateType: tenant.settings.templateType ?? 'restaurant',
+          gradientFrom: tenant.settings.gradientFrom ?? null,
+          gradientVia: tenant.settings.gradientVia ?? null,
+          gradientTo: tenant.settings.gradientTo ?? null,
         }
       : null,
     integrations: tenant.integrations
@@ -195,6 +199,43 @@ export async function PUT(req: Request) {
 
   if (body.frontendConfig !== undefined) {
     settingsData.frontendConfig = body.frontendConfig || null;
+  }
+
+  // Validate and handle templateType
+  if (body.templateType !== undefined) {
+    const validTemplateTypes = ['restaurant', 'grocery', 'panaderia', 'coffee', 'juice'];
+    if (validTemplateTypes.includes(body.templateType)) {
+      settingsData.templateType = body.templateType;
+    } else {
+      return json({ error: `Invalid templateType. Must be one of: ${validTemplateTypes.join(', ')}` }, { status: 400 });
+    }
+  }
+
+  // Validate and handle gradient colors
+  const hexColorRegex = /^#[0-9A-Fa-f]{6}$/;
+  
+  if (body.gradientFrom !== undefined) {
+    if (body.gradientFrom === null || hexColorRegex.test(body.gradientFrom)) {
+      settingsData.gradientFrom = body.gradientFrom ?? null;
+    } else {
+      return json({ error: 'Invalid gradientFrom. Must be a valid hex color (e.g., #dc2626) or null' }, { status: 400 });
+    }
+  }
+
+  if (body.gradientVia !== undefined) {
+    if (body.gradientVia === null || hexColorRegex.test(body.gradientVia)) {
+      settingsData.gradientVia = body.gradientVia ?? null;
+    } else {
+      return json({ error: 'Invalid gradientVia. Must be a valid hex color (e.g., #ea580c) or null' }, { status: 400 });
+    }
+  }
+
+  if (body.gradientTo !== undefined) {
+    if (body.gradientTo === null || hexColorRegex.test(body.gradientTo)) {
+      settingsData.gradientTo = body.gradientTo ?? null;
+    } else {
+      return json({ error: 'Invalid gradientTo. Must be a valid hex color (e.g., #facc15) or null' }, { status: 400 });
+    }
   }
 
   if (body.branding !== undefined) {
@@ -379,6 +420,10 @@ export async function PUT(req: Request) {
           cateringGallery: updatedTenant.settings.cateringGallery ?? [],
           rewardsGallery: (updatedTenant.settings as any).rewardsGallery ?? [],
           frontendConfig: (updatedTenant.settings as any).frontendConfig ?? null,
+          templateType: updatedTenant.settings.templateType ?? 'restaurant',
+          gradientFrom: updatedTenant.settings.gradientFrom ?? null,
+          gradientVia: updatedTenant.settings.gradientVia ?? null,
+          gradientTo: updatedTenant.settings.gradientTo ?? null,
         }
       : null,
     integrations: updatedTenant.integrations

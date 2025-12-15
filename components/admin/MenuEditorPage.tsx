@@ -115,6 +115,8 @@ export default function MenuEditorPage() {
   const [frontendUISections, setFrontendUISections] = useState<FrontendUISection[]>([]);
   const [editingFrontendSection, setEditingFrontendSection] = useState<FrontendUISection | null>(null);
   const [savingFrontendSection, setSavingFrontendSection] = useState(false);
+  const [reorderingSection, setReorderingSection] = useState<string | null>(null);
+  const [syncStatus, setSyncStatus] = useState<'idle' | 'syncing' | 'synced'>('idle');
 
   const fetchSections = async () => {
     try {
@@ -595,6 +597,13 @@ export default function MenuEditorPage() {
     fetchFrontendUISections();
 
     // Re-check operating hours every 30 seconds to keep toggle synced
+  }, []);
+
+  // Fetch frontend sections when tab is active
+  useEffect(() => {
+    if (activeTab === 'frontend') {
+      fetchFrontendUISections();
+    }
     const statusInterval = setInterval(() => {
       fetchOrderingStatus();
     }, 30000);
@@ -611,6 +620,13 @@ export default function MenuEditorPage() {
       window.removeEventListener('operatingHoursUpdated', handleHoursUpdate);
     };
   }, [fetchOrderingStatus]);
+
+  // Fetch frontend sections when tab is active
+  useEffect(() => {
+    if (activeTab === 'frontend') {
+      fetchFrontendUISections();
+    }
+  }, [activeTab]);
 
   const toggleAcceptingOrders = async () => {
     setLoadingStatus(true);
@@ -678,43 +694,20 @@ export default function MenuEditorPage() {
 
   const fetchFrontendUISections = async () => {
     try {
-      const res = await fetch('/api/admin/frontend-ui-sections?t=' + Date.now(), { cache: 'no-store' });
+      // Cache busting - same pattern as "Accepting Orders"
+      const res = await fetch(`/api/admin/frontend-ui-sections?t=${Date.now()}`, {
+        cache: 'no-store',
+        headers: {
+          'Cache-Control': 'no-cache, no-store, must-revalidate',
+          'Pragma': 'no-cache',
+        },
+      });
       if (!res.ok) throw new Error('Failed to fetch');
       const data = await res.json();
-      // If no sections exist, initialize with defaults
-      if (!data || data.length === 0) {
-        const defaultSections: FrontendUISection[] = [
-          { id: 'hero', name: 'Hero Section', type: 'hero', position: 0, enabled: true, content: { title: '', subtitle: 'Authentic flavors crafted with passion', buttonText: 'ORDER NOW', buttonLink: '#menu' } },
-          { id: 'quickInfo', name: 'Quick Info Bar', type: 'quickInfo', position: 1, enabled: true, content: {} },
-          { id: 'featuredCarousel', name: 'Featured Carousel', type: 'featuredCarousel', position: 2, enabled: true, content: { title: 'Chef Recommends', subtitle: 'Handpicked favorites from our kitchen' } },
-          { id: 'menuSections', name: 'Menu Sections', type: 'menuSections', position: 3, enabled: true, content: {} },
-          { id: 'promoBanner1', name: 'Promotional Billboard', type: 'promoBanner1', position: 4, enabled: true, content: { title: '', subtitle: '', buttonText: 'Order Bundle', image: '' } },
-          { id: 'groceryBanner', name: 'Grocery Store Banner', type: 'groceryBanner', position: 5, enabled: true, content: { title: 'Order Your Groceries Too!', subtitle: 'Fresh produce, pantry staples, and more delivered with your meal order', buttonText: 'Browse Grocery Store', buttonLink: '/grocery' } },
-          { id: 'weCookBanner', name: 'WE COOK FOR YOU Banner', type: 'weCookBanner', position: 6, enabled: true, content: { title: 'WE COOK FOR YOU', description: 'Fresh ingredients, authentic recipes, made with passion every single day' } },
-          { id: 'dealStrip', name: 'Quick Deal Strip', type: 'dealStrip', position: 7, enabled: true, content: { title: 'LUNCH SPECIAL', subtitle: 'Any 2 tacos + drink for $8.99', buttonText: 'Get Deal' } },
-          { id: 'qualityBanner', name: 'Fresh Quality Banner', type: 'qualityBanner', position: 8, enabled: true, content: { title: 'Quality You Can Taste', subtitle: 'All ingredients sourced fresh daily from local suppliers', badge: 'Fresh Guarantee' } },
-          { id: 'reviewsStrip', name: 'Customer Reviews Strip', type: 'reviewsStrip', position: 9, enabled: true, content: { title: 'Best authentic Mexican food in town!', subtitle: 'Over 500+ 5-star reviews', buttonText: 'Read Reviews' } },
-        ];
-        setFrontendUISections(defaultSections);
-      } else {
-        setFrontendUISections(data);
-      }
+      setFrontendUISections(data || []);
     } catch (err) {
       console.error('Failed to fetch frontend UI sections', err);
-      // Initialize with defaults on error
-      const defaultSections: FrontendUISection[] = [
-        { id: 'hero', name: 'Hero Section', type: 'hero', position: 0, enabled: true, content: { title: '', subtitle: 'Authentic flavors crafted with passion', buttonText: 'ORDER NOW', buttonLink: '#menu' } },
-        { id: 'quickInfo', name: 'Quick Info Bar', type: 'quickInfo', position: 1, enabled: true, content: {} },
-        { id: 'featuredCarousel', name: 'Featured Carousel', type: 'featuredCarousel', position: 2, enabled: true, content: { title: 'Chef Recommends', subtitle: 'Handpicked favorites from our kitchen' } },
-        { id: 'menuSections', name: 'Menu Sections', type: 'menuSections', position: 3, enabled: true, content: {} },
-        { id: 'promoBanner1', name: 'Promotional Billboard', type: 'promoBanner1', position: 4, enabled: true, content: { title: '', subtitle: '', buttonText: 'Order Bundle', image: '' } },
-        { id: 'groceryBanner', name: 'Grocery Store Banner', type: 'groceryBanner', position: 5, enabled: true, content: { title: 'Order Your Groceries Too!', subtitle: 'Fresh produce, pantry staples, and more delivered with your meal order', buttonText: 'Browse Grocery Store', buttonLink: '/grocery' } },
-        { id: 'weCookBanner', name: 'WE COOK FOR YOU Banner', type: 'weCookBanner', position: 6, enabled: true, content: { title: 'WE COOK FOR YOU', description: 'Fresh ingredients, authentic recipes, made with passion every single day' } },
-        { id: 'dealStrip', name: 'Quick Deal Strip', type: 'dealStrip', position: 7, enabled: true, content: { title: 'LUNCH SPECIAL', subtitle: 'Any 2 tacos + drink for $8.99', buttonText: 'Get Deal' } },
-        { id: 'qualityBanner', name: 'Fresh Quality Banner', type: 'qualityBanner', position: 8, enabled: true, content: { title: 'Quality You Can Taste', subtitle: 'All ingredients sourced fresh daily from local suppliers', badge: 'Fresh Guarantee' } },
-        { id: 'reviewsStrip', name: 'Customer Reviews Strip', type: 'reviewsStrip', position: 9, enabled: true, content: { title: 'Best authentic Mexican food in town!', subtitle: 'Over 500+ 5-star reviews', buttonText: 'Read Reviews' } },
-      ];
-      setFrontendUISections(defaultSections);
+      setFrontendUISections([]);
     }
   };
 
@@ -748,59 +741,89 @@ export default function MenuEditorPage() {
     }
   };
 
-  const handleDeleteFrontendSection = async (id: string) => {
-    if (!confirm('Are you sure you want to delete this section? It will be removed from the frontend.')) return;
-
+  // Delete section
+  const handleDeleteFrontendSection = async (sectionId: string) => {
+    if (!confirm('Delete this section? This cannot be undone.')) return;
+    
+    setSyncStatus('syncing');
+    
     try {
-      const res = await fetch(`/api/admin/frontend-ui-sections/${id}?t=${Date.now()}`, { 
+      const res = await fetch(`/api/admin/frontend-ui-sections?id=${sectionId}&t=${Date.now()}`, {
         method: 'DELETE',
-        cache: 'no-store',
+        headers: {
+          'Cache-Control': 'no-cache, no-store, must-revalidate',
+        },
       });
+
       if (!res.ok) throw new Error('Failed to delete');
       
-      // Cache busting
-      await fetch('/api/admin/revalidate?path=/order&path=/', { method: 'POST' }).catch(() => {});
-      
       await fetchFrontendUISections();
-      
-      // Trigger router refresh
-      router.refresh();
+      setSyncStatus('synced');
+      setTimeout(() => setSyncStatus('idle'), 2000);
     } catch (err) {
-      console.error('Failed to delete frontend section', err);
-      alert('Failed to delete frontend section');
+      console.error('Failed to delete section', err);
+      alert('Failed to delete. Please refresh the page.');
     }
   };
 
-  const handleMoveSection = async (index: number, direction: -1 | 1) => {
-    const targetIndex = index + direction;
-    if (targetIndex < 0 || targetIndex >= frontendUISections.length) return;
-
-    const reordered = [...frontendUISections];
-    const [current] = reordered.splice(index, 1);
-    reordered.splice(targetIndex, 0, current);
-
-    // Update positions
-    const updated = reordered.map((section, position) => ({ ...section, position }));
-
+  // Move section up/down - INSTANT SYNC
+  const handleMoveSection = async (sectionId: string, direction: 'up' | 'down') => {
+    setReorderingSection(sectionId);
+    setSyncStatus('syncing');
+    
     try {
-      const res = await fetch('/api/admin/frontend-ui-sections/reorder?t=' + Date.now(), {
+      const res = await fetch(`/api/admin/frontend-ui-sections/reorder?t=${Date.now()}`, {
         method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ sections: updated.map(s => ({ id: s.id, position: s.position })) }),
-        cache: 'no-store',
+        headers: {
+          'Content-Type': 'application/json',
+          'Cache-Control': 'no-cache, no-store, must-revalidate',
+        },
+        body: JSON.stringify({ sectionId, direction }),
       });
+
       if (!res.ok) throw new Error('Failed to reorder');
       
-      // Cache busting
-      await fetch('/api/admin/revalidate?path=/order&path=/', { method: 'POST' }).catch(() => {});
+      const data = await res.json();
+      setFrontendUISections(data.sections);
+      setSyncStatus('synced');
       
-      setFrontendUISections(updated);
-      
-      // Trigger router refresh
-      router.refresh();
+      // Reset sync indicator after 2s
+      setTimeout(() => setSyncStatus('idle'), 2000);
     } catch (err) {
-      console.error('Failed to reorder sections', err);
-      alert('Failed to reorder sections');
+      console.error('Failed to move section', err);
+      alert('Failed to reorder. Please refresh the page.');
+      await fetchFrontendUISections(); // Refetch on error
+    } finally {
+      setReorderingSection(null);
+    }
+  };
+
+  // Toggle section enabled/disabled - INSTANT SYNC
+  const handleToggleSection = async (sectionId: string, currentEnabled: boolean) => {
+    setSyncStatus('syncing');
+    
+    try {
+      const res = await fetch(`/api/admin/frontend-ui-sections?t=${Date.now()}`, {
+        method: 'PUT',
+        headers: {
+          'Content-Type': 'application/json',
+          'Cache-Control': 'no-cache, no-store, must-revalidate',
+        },
+        body: JSON.stringify({
+          sectionId,
+          updates: { enabled: !currentEnabled },
+        }),
+      });
+
+      if (!res.ok) throw new Error('Failed to toggle');
+      
+      const data = await res.json();
+      setFrontendUISections(data.sections);
+      setSyncStatus('synced');
+      setTimeout(() => setSyncStatus('idle'), 2000);
+    } catch (err) {
+      console.error('Failed to toggle section', err);
+      alert('Failed to update. Please refresh the page.');
       await fetchFrontendUISections();
     }
   };
@@ -1719,110 +1742,171 @@ export default function MenuEditorPage() {
               )}
             </div>
           ) : activeTab === 'frontend' ? (
-            /* Frontend Sections Management - Visual Preview Style */
             <div className="space-y-6">
-              <div className="mb-6">
-                <h2 className="text-2xl font-semibold text-gray-900">Frontend Sections</h2>
-                <p className="text-gray-600 mt-1">Click any section to customize. These control what appears on your customer order page.</p>
+              {/* Header with Sync Status */}
+              <div className="flex items-center justify-between">
+                <div>
+                  <h2 className="text-lg font-semibold text-gray-900">Frontend Sections</h2>
+                  <p className="text-sm text-gray-500">
+                    Reorder sections with arrows • Changes sync instantly
+                  </p>
+                </div>
+                
+                {/* Sync Status Indicator - same style as "Accepting Orders" */}
+                <div className={`inline-flex items-center px-3 py-1.5 rounded-full text-xs font-semibold transition-colors ${
+                  syncStatus === 'syncing'
+                    ? 'bg-yellow-100 text-yellow-800'
+                    : syncStatus === 'synced'
+                    ? 'bg-green-100 text-green-800'
+                    : 'bg-gray-100 text-gray-600'
+                }`}>
+                  <span className={`w-2 h-2 rounded-full mr-2 ${
+                    syncStatus === 'syncing'
+                      ? 'bg-yellow-500 animate-pulse'
+                      : syncStatus === 'synced'
+                      ? 'bg-green-500'
+                      : 'bg-gray-400'
+                  }`}></span>
+                  {syncStatus === 'syncing' ? 'Syncing...' : syncStatus === 'synced' ? 'Synced!' : 'Ready'}
+                </div>
               </div>
 
-              {loading ? (
-                <div className="text-center py-12">Loading sections...</div>
-              ) : frontendUISections.length === 0 ? (
-                <div className="bg-white rounded-lg shadow p-8 text-center">
-                  <p className="text-gray-500">No sections configured yet. Sections will be initialized automatically.</p>
-                </div>
-              ) : (
-                <div className="space-y-3">
-                  {frontendUISections
+              {/* Sections List */}
+              <div className="bg-white rounded-lg border border-gray-200 divide-y divide-gray-200">
+                {frontendUISections.length === 0 ? (
+                  <div className="p-8 text-center text-gray-500">
+                    No sections configured. Add sections below.
+                  </div>
+                ) : (
+                  frontendUISections
                     .sort((a, b) => a.position - b.position)
-                    .map((section, index) => {
-                      // Section type icons and preview configs
-                      const sectionConfig: Record<string, { icon: string; preview: string; color: string }> = {
-                        hero: { icon: '🏠', preview: 'Main banner with restaurant name and call-to-action', color: 'from-purple-500 to-indigo-600' },
-                        quickInfo: { icon: '📍', preview: 'Hours, location, and contact info bar', color: 'from-blue-500 to-cyan-500' },
-                        featuredCarousel: { icon: '⭐', preview: 'Chef Recommends rotating carousel', color: 'from-amber-500 to-orange-500' },
-                        menuSections: { icon: '🍽️', preview: 'Full menu organized by category', color: 'from-red-500 to-pink-500' },
-                        promoBanner1: { icon: '🎉', preview: 'Promotional billboard for specials', color: 'from-green-500 to-emerald-500' },
-                        groceryBanner: { icon: '🛒', preview: 'Link to grocery store section', color: 'from-teal-500 to-green-500' },
-                        weCookBanner: { icon: '👨‍🍳', preview: '"We Cook For You" brand message', color: 'from-orange-500 to-red-500' },
-                        dealStrip: { icon: '💰', preview: 'Quick deal or special offer strip', color: 'from-yellow-500 to-amber-500' },
-                        qualityBanner: { icon: '✨', preview: 'Fresh quality guarantee banner', color: 'from-emerald-500 to-teal-500' },
-                        reviewsStrip: { icon: '💬', preview: 'Customer reviews and ratings', color: 'from-indigo-500 to-purple-500' },
-                      };
-                      const config = sectionConfig[section.type] || { icon: '📄', preview: 'Custom section', color: 'from-gray-500 to-gray-600' };
-
-                      return (
-                        <div
-                          key={section.id}
-                          onClick={() => setEditingFrontendSection({ ...section, content: section.content || {} })}
-                          className="group relative bg-white rounded-xl border border-gray-200 hover:border-blue-400 hover:shadow-lg transition-all cursor-pointer overflow-hidden"
-                        >
-                          {/* Preview Bar */}
-                          <div className={`h-2 bg-gradient-to-r ${config.color}`} />
-
-                          <div className="p-4 flex items-center gap-4">
-                            {/* Icon */}
-                            <div className={`w-12 h-12 rounded-xl bg-gradient-to-br ${config.color} flex items-center justify-center text-2xl shadow-md`}>
-                              {config.icon}
-                            </div>
-
-                            {/* Content */}
-                            <div className="flex-1 min-w-0">
-                              <div className="flex items-center gap-2">
-                                <h4 className="font-semibold text-gray-900">{section.name}</h4>
-                                <span className={`px-2 py-0.5 rounded-full text-xs font-medium ${
-                                  section.enabled
-                                    ? 'bg-green-100 text-green-700'
-                                    : 'bg-gray-100 text-gray-500'
-                                }`}>
-                                  {section.enabled ? 'Visible' : 'Hidden'}
-                                </span>
-                              </div>
-                              <p className="text-sm text-gray-500 mt-0.5">{config.preview}</p>
-                              {section.type === 'featuredCarousel' && (
-                                <p className="text-xs text-amber-600 mt-1 font-medium">
-                                  {items.filter(i => i.isFeatured).length} items featured
-                                </p>
-                              )}
-                            </div>
-
-                            {/* Position Controls */}
-                            <div className="flex items-center gap-1 opacity-0 group-hover:opacity-100 transition-opacity">
-                              <button
-                                onClick={(e) => { e.stopPropagation(); handleMoveSection(index, -1); }}
-                                disabled={index === 0}
-                                className="p-2 rounded-lg bg-gray-100 hover:bg-gray-200 disabled:opacity-30 disabled:cursor-not-allowed"
-                                title="Move up"
-                              >
-                                <svg className="w-4 h-4 text-gray-600" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M5 15l7-7 7 7" />
-                                </svg>
-                              </button>
-                              <button
-                                onClick={(e) => { e.stopPropagation(); handleMoveSection(index, 1); }}
-                                disabled={index === frontendUISections.length - 1}
-                                className="p-2 rounded-lg bg-gray-100 hover:bg-gray-200 disabled:opacity-30 disabled:cursor-not-allowed"
-                                title="Move down"
-                              >
-                                <svg className="w-4 h-4 text-gray-600" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M19 9l-7 7-7-7" />
-                                </svg>
-                              </button>
-                            </div>
-
-                            {/* Click indicator */}
-                            <div className="text-gray-400 group-hover:text-blue-500 transition-colors">
-                              <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9 5l7 7-7 7" />
-                              </svg>
-                            </div>
-                          </div>
+                    .map((section, index) => (
+                      <div
+                        key={section.id}
+                        className={`p-4 flex items-center gap-4 transition-opacity ${
+                          !section.enabled ? 'opacity-50 bg-gray-50' : ''
+                        } ${reorderingSection === section.id ? 'bg-blue-50' : ''}`}
+                      >
+                        {/* Reorder Arrows */}
+                        <div className="flex flex-col gap-1">
+                          <button
+                            onClick={() => handleMoveSection(section.id, 'up')}
+                            disabled={index === 0 || reorderingSection !== null}
+                            className={`p-1 rounded transition-colors ${
+                              index === 0 || reorderingSection !== null
+                                ? 'text-gray-300 cursor-not-allowed'
+                                : 'text-gray-400 hover:text-gray-600 hover:bg-gray-100'
+                            }`}
+                            title="Move up"
+                          >
+                            <svg className="w-4 h-4" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                              <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M5 15l7-7 7 7" />
+                            </svg>
+                          </button>
+                          <button
+                            onClick={() => handleMoveSection(section.id, 'down')}
+                            disabled={index === frontendUISections.length - 1 || reorderingSection !== null}
+                            className={`p-1 rounded transition-colors ${
+                              index === frontendUISections.length - 1 || reorderingSection !== null
+                                ? 'text-gray-300 cursor-not-allowed'
+                                : 'text-gray-400 hover:text-gray-600 hover:bg-gray-100'
+                            }`}
+                            title="Move down"
+                          >
+                            <svg className="w-4 h-4" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                              <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M19 9l-7 7-7-7" />
+                            </svg>
+                          </button>
                         </div>
-                      );
-                    })}
-                </div>
-              )}
+
+                        {/* Position Badge */}
+                        <div className="w-8 h-8 rounded-lg bg-gray-100 flex items-center justify-center text-sm font-bold text-gray-600">
+                          {index + 1}
+                        </div>
+
+                        {/* Section Icon */}
+                        <span className="text-2xl">
+                          {section.type === 'hero' ? '🖼️' :
+                           section.type === 'promoBanner1' ? '📢' :
+                           section.type === 'groceryBanner' ? '🛒' :
+                           section.type === 'quickInfo' ? '📍' :
+                           section.type === 'featuredCarousel' ? '⭐' :
+                           section.type === 'menuSections' ? '🍽️' :
+                           section.type === 'weCookBanner' ? '👨‍🍳' :
+                           section.type === 'dealStrip' ? '💰' :
+                           section.type === 'qualityBanner' ? '✨' :
+                           section.type === 'reviewsStrip' ? '💬' : '📄'}
+                        </span>
+
+                        {/* Section Info */}
+                        <div className="flex-1 min-w-0">
+                          <h3 className="font-medium text-gray-900 truncate">{section.name}</h3>
+                          <p className="text-xs text-gray-500">{section.type}</p>
+                        </div>
+
+                        {/* Enable/Disable Toggle */}
+                        <button
+                          onClick={() => handleToggleSection(section.id, section.enabled)}
+                          className={`relative w-12 h-6 rounded-full transition-colors ${
+                            section.enabled ? 'bg-green-500' : 'bg-gray-300'
+                          }`}
+                          title={section.enabled ? 'Click to disable' : 'Click to enable'}
+                        >
+                          <div className={`absolute top-0.5 w-5 h-5 rounded-full bg-white shadow transition-all ${
+                            section.enabled ? 'left-6' : 'left-0.5'
+                          }`} />
+                        </button>
+
+                        {/* Edit Button */}
+                        <button
+                          onClick={() => {
+                            setEditingFrontendSection({ ...section, content: section.content || {} });
+                          }}
+                          className="p-2 text-gray-400 hover:text-blue-600 hover:bg-blue-50 rounded-lg transition-colors"
+                          title="Edit section"
+                        >
+                          <svg className="w-4 h-4" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                            <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M11 5H6a2 2 0 00-2 2v11a2 2 0 002 2h11a2 2 0 002-2v-5m-1.414-9.414a2 2 0 112.828 2.828L11.828 15H9v-2.828l8.586-8.586z" />
+                          </svg>
+                        </button>
+
+                        {/* Delete Button */}
+                        <button
+                          onClick={() => handleDeleteFrontendSection(section.id)}
+                          className="p-2 text-gray-400 hover:text-red-600 hover:bg-red-50 rounded-lg transition-colors"
+                          title="Delete section"
+                        >
+                          <svg className="w-4 h-4" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                            <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M19 7l-.867 12.142A2 2 0 0116.138 21H7.862a2 2 0 01-1.995-1.858L5 7m5 4v6m4-6v6m1-10V4a1 1 0 00-1-1h-4a1 1 0 00-1 1v3M4 7h16" />
+                          </svg>
+                        </button>
+                      </div>
+                    ))
+                )}
+              </div>
+
+              {/* Add Section Button */}
+              <button
+                onClick={() => {
+                  setEditingFrontendSection(null);
+                }}
+                className="w-full py-4 border-2 border-dashed border-gray-300 rounded-lg text-gray-500 hover:border-blue-400 hover:text-blue-600 transition-colors flex items-center justify-center gap-2"
+              >
+                <svg className="w-5 h-5" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 4v16m8-8H4" />
+                </svg>
+                Add New Section
+              </button>
+
+              {/* Stats Footer */}
+              <div className="bg-gray-50 rounded-lg p-4 text-sm text-gray-500 flex items-center justify-between">
+                <span>
+                  {frontendUISections.filter(s => s.enabled).length} of {frontendUISections.length} sections enabled
+                </span>
+                <span>
+                  Order page: /order
+                </span>
+              </div>
             </div>
           ) : null}
         </div>

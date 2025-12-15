@@ -1,6 +1,7 @@
 "use client";
 
 import { createContext, useContext, useEffect, useMemo } from 'react';
+import { getTemplateGradient, type TemplateType } from '@/lib/templates/registry';
 
 export interface TenantTheme {
   id: string;
@@ -14,6 +15,10 @@ export interface TenantTheme {
   primaryColor: string;
   secondaryColor: string;
   themeColor?: string | null;
+  templateType?: string;
+  gradientFrom?: string;
+  gradientVia?: string;
+  gradientTo?: string;
   featureFlags: string[];
   contactEmail?: string | null;
   contactPhone?: string | null;
@@ -134,12 +139,26 @@ interface TenantThemeProviderProps {
 
 export function TenantThemeProvider({ tenant, children }: TenantThemeProviderProps) {
   const theme = useMemo<TenantTheme>(() => {
+    // Get templateType from tenant or default to 'restaurant'
+    const templateType = tenant.templateType || 'restaurant';
+    
+    // Get default gradient from template registry
+    const defaultGradient = getTemplateGradient(templateType as TemplateType);
+    
+    // Merge tenant data with defaults
     const merged = {
       ...DEFAULT_THEME,
       ...tenant,
     };
     merged.featureFlags = Array.isArray(tenant.featureFlags) ? tenant.featureFlags : DEFAULT_THEME.featureFlags;
     merged.themeColor = tenant.themeColor ?? DEFAULT_THEME.themeColor;
+    
+    // Add template and gradient fields (use tenant values or fallback to defaults)
+    merged.templateType = templateType;
+    merged.gradientFrom = tenant.gradientFrom || defaultGradient.from;
+    merged.gradientVia = tenant.gradientVia || defaultGradient.via;
+    merged.gradientTo = tenant.gradientTo || defaultGradient.to;
+    
     return merged;
   }, [tenant]);
 
@@ -152,7 +171,18 @@ export function TenantThemeProvider({ tenant, children }: TenantThemeProviderPro
     root.style.setProperty('--tenant-primary-soft', hexToRgba(theme.primaryColor, 0.25));
     root.style.setProperty('--tenant-secondary-soft', hexToRgba(theme.secondaryColor, 0.25));
     root.style.setProperty('--tenant-theme-color', theme.themeColor || theme.primaryColor);
-  }, [theme.primaryColor, theme.secondaryColor, theme.themeColor]);
+    
+    // Template gradient
+    const templateType = theme.templateType || 'restaurant';
+    const gradientFrom = theme.gradientFrom || getTemplateGradient(templateType as TemplateType).from;
+    const gradientVia = theme.gradientVia || getTemplateGradient(templateType as TemplateType).via;
+    const gradientTo = theme.gradientTo || getTemplateGradient(templateType as TemplateType).to;
+    
+    root.style.setProperty('--tenant-gradient-from', gradientFrom);
+    root.style.setProperty('--tenant-gradient-via', gradientVia);
+    root.style.setProperty('--tenant-gradient-to', gradientTo);
+    root.style.setProperty('--tenant-gradient', `linear-gradient(135deg, ${gradientFrom}, ${gradientVia}, ${gradientTo})`);
+  }, [theme.primaryColor, theme.secondaryColor, theme.themeColor, theme.templateType, theme.gradientFrom, theme.gradientVia, theme.gradientTo]);
 
   return <TenantThemeContext.Provider value={theme}>{children}</TenantThemeContext.Provider>;
 }

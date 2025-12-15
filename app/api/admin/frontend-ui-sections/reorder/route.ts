@@ -6,7 +6,7 @@ import { revalidatePath } from 'next/cache';
 import prisma from '@/lib/prisma';
 
 /**
- * POST - Reorder frontend UI sections
+ * POST - Reorder frontend UI sections (up/down)
  */
 export async function POST(req: Request) {
   try {
@@ -19,49 +19,82 @@ export async function POST(req: Request) {
 
     const tenant = await requireTenant();
     const body = await req.json();
+    const { sectionId, direction } = body; // direction: 'up' | 'down'
 
-    if (!body.sections || !Array.isArray(body.sections)) {
+    if (!sectionId || !direction) {
       return NextResponse.json(
-        { error: 'Sections array is required' },
+        { error: 'Section ID and direction (up/down) are required' },
         { status: 400 }
       );
     }
 
-    // Get current tenant settings
-    const tenantData = await prisma.tenant.findUnique({
-      where: { id: tenant.id },
-      select: { settings: true },
+    if (direction !== 'up' && direction !== 'down') {
+      return NextResponse.json(
+        { error: 'Direction must be "up" or "down"' },
+        { status: 400 }
+      );
+    }
+
+    // Get current tenant settings from TenantSettings table
+    const tenantSettings = await prisma.tenantSettings.findUnique({
+      where: { tenantId: tenant.id },
+      select: { frontendConfig: true },
     });
 
-    const currentSettings = (tenantData?.settings || {}) as any;
-    const currentSections = currentSettings.frontendUISections || [];
+    const frontendConfig = (tenantSettings?.frontendConfig || {}) as any;
+    const sections = [...(frontendConfig.frontendUISections || [])];
+
+    // Find current index
+    const currentIndex = sections.findIndex((s: any) => s.id === sectionId);
+    if (currentIndex === -1) {
+      return NextResponse.json({ error: 'Section not found' }, { status: 404 });
+    }
+
+    // Calculate new index
+    const newIndex = direction === 'up' ? currentIndex - 1 : currentIndex + 1;
+    if (newIndex < 0 || newIndex >= sections.length) {
+      return NextResponse.json({ error: 'Cannot move further' }, { status: 400 });
+    }
+
+    // Swap positions
+    [sections[currentIndex], sections[newIndex]] = [sections[newIndex], sections[currentIndex]];
 
     // Update positions
-    const updatedSections = currentSections.map((section: any) => {
-      const update = body.sections.find((s: any) => s.id === section.id);
-      return update ? { ...section, position: update.position } : section;
-    }).sort((a: any, b: any) => a.position - b.position);
+    const reorderedSections = sections.map((s: any, i: number) => ({
+      ...s,
+      position: i,
+    }));
 
     // Save to tenant settings
-    await prisma.tenant.update({
-      where: { id: tenant.id },
-      data: {
-        settings: {
-          ...currentSettings,
-          frontendUISections: updatedSections,
+    await prisma.tenantSettings.upsert({
+      where: { tenantId: tenant.id },
+      update: {
+        frontendConfig: {
+          ...frontendConfig,
+          frontendUISections: reorderedSections,
+        },
+      },
+      create: {
+        tenantId: tenant.id,
+        frontendConfig: {
+          frontendUISections: reorderedSections,
         },
       },
     });
 
-    // Revalidate cache
+    // INSTANT SYNC - same pattern as "Accepting Orders"
     revalidatePath('/order');
     revalidatePath('/');
 
-    return NextResponse.json({ success: true }, {
+    return NextResponse.json({ 
+      success: true, 
+      sections: reorderedSections 
+    }, {
       headers: {
         'Cache-Control': 'no-store, no-cache, must-revalidate, proxy-revalidate',
         'Pragma': 'no-cache',
         'Expires': '0',
+        'Surrogate-Control': 'no-store',
       },
     });
   } catch (error) {

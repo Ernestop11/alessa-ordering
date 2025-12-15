@@ -91,28 +91,28 @@ model CateringSection {
 }
 
 model GroceryItem {
-  id                  String    @id @default(uuid())
-  tenantId            String
-  name                String
-  description         String
-  price               Float
-  category            String    @default("general") // e.g., "produce", "dairy", "snacks", "beverages"
-  unit                String?   // e.g., "lb", "each", "gallon", "dozen"
-  image               String?
-  gallery             Json?
-  available           Boolean   @default(true)
-  stockQuantity       Int?      // Optional inventory tracking
-  tags                String[]  @default([])
-  displayOrder        Int       @default(0)
-  taxPercentage       Float?    // Tax rate (e.g., 8.5 for 8.5%)
-  expirationDate      DateTime? // Optional expiration/best-by date
-  isWeekendSpecial    Boolean   @default(false) // Weekend promotion flag
-  weekendPrice        Float?    // Special weekend pricing
-  weekendStartDate    DateTime? // When weekend special starts
-  weekendEndDate      DateTime? // When weekend special ends
-  createdAt           DateTime  @default(now())
-  updatedAt           DateTime  @updatedAt
-  tenant              Tenant    @relation(fields: [tenantId], references: [id], onDelete: Cascade)
+  id               String    @id @default(uuid())
+  tenantId         String
+  name             String
+  description      String
+  price            Float
+  category         String    @default("general") // e.g., "produce", "dairy", "snacks", "beverages"
+  unit             String? // e.g., "lb", "each", "gallon", "dozen"
+  image            String?
+  gallery          Json?
+  available        Boolean   @default(true)
+  stockQuantity    Int? // Optional inventory tracking
+  tags             String[]  @default([])
+  displayOrder     Int       @default(0)
+  taxPercentage    Float? // Tax rate (e.g., 8.5 for 8.5%)
+  expirationDate   DateTime? // Optional expiration/best-by date
+  isWeekendSpecial Boolean   @default(false) // Weekend promotion flag
+  weekendPrice     Float? // Special weekend pricing
+  weekendStartDate DateTime? // When weekend special starts
+  weekendEndDate   DateTime? // When weekend special ends
+  createdAt        DateTime  @default(now())
+  updatedAt        DateTime  @updatedAt
+  tenant           Tenant    @relation(fields: [tenantId], references: [id], onDelete: Cascade)
 
   @@index([tenantId])
   @@index([category])
@@ -121,21 +121,21 @@ model GroceryItem {
 }
 
 model GroceryBundle {
-  id                  String    @id @default(uuid())
-  tenantId            String
-  name                String
-  description         String
-  price               Float
-  category            String    @default("combo") // e.g., "combo", "meal-kit", "special"
-  image               String?
-  gallery             Json?     // Array of image URLs
-  available           Boolean   @default(true)
-  badge               String?   // e.g., "Popular", "Best Value"
-  items               Json      // Array of {groceryItemId, quantity, name}
-  displayOrder        Int       @default(0)
-  createdAt           DateTime  @default(now())
-  updatedAt           DateTime  @updatedAt
-  tenant              Tenant    @relation(fields: [tenantId], references: [id], onDelete: Cascade)
+  id           String   @id @default(uuid())
+  tenantId     String
+  name         String
+  description  String
+  price        Float
+  category     String   @default("combo") // e.g., "combo", "meal-kit", "special"
+  image        String?
+  gallery      Json? // Array of image URLs
+  available    Boolean  @default(true)
+  badge        String? // e.g., "Popular", "Best Value"
+  items        Json // Array of {groceryItemId, quantity, name}
+  displayOrder Int      @default(0)
+  createdAt    DateTime @default(now())
+  updatedAt    DateTime @updatedAt
+  tenant       Tenant   @relation(fields: [tenantId], references: [id], onDelete: Cascade)
 
   @@index([tenantId])
   @@index([category])
@@ -208,21 +208,21 @@ model PaymentSession {
 }
 
 model TaxRemittance {
-  id                String   @id @default(uuid())
-  tenantId           String
-  periodStart        DateTime
-  periodEnd          DateTime
-  totalTaxCollected  Float
-  totalTaxRemitted   Float   @default(0)
-  status             String   @default("pending") // pending, processing, completed, failed
-  remittanceDate     DateTime?
-  remittanceMethod   String?  // automatic, manual
+  id                  String    @id @default(uuid())
+  tenantId            String
+  periodStart         DateTime
+  periodEnd           DateTime
+  totalTaxCollected   Float
+  totalTaxRemitted    Float     @default(0)
+  status              String    @default("pending") // pending, processing, completed, failed
+  remittanceDate      DateTime?
+  remittanceMethod    String? // automatic, manual
   remittanceReference String? // Transaction ID or reference number
-  reportData         Json?    // Tax report details
-  notes              String?
-  createdAt          DateTime @default(now())
-  updatedAt          DateTime @updatedAt
-  tenant             Tenant   @relation(fields: [tenantId], references: [id], onDelete: Cascade)
+  reportData          Json? // Tax report details
+  notes               String?
+  createdAt           DateTime  @default(now())
+  updatedAt           DateTime  @updatedAt
+  tenant              Tenant    @relation(fields: [tenantId], references: [id], onDelete: Cascade)
 
   @@index([tenantId])
   @@index([status])
@@ -293,7 +293,7 @@ model Tenant {
   crmActivities          CRMActivity[]
   crmNotes               CRMNote[]
   convertedFromLead      Lead?              @relation("LeadToTenant")
-  productSubscriptions   TenantProduct[]     @relation("TenantProducts")
+  productSubscriptions   TenantProduct[]    @relation("TenantProducts")
   taxRemittances         TaxRemittance[]
 
   @@index([status])
@@ -324,6 +324,11 @@ model TenantSettings {
   cateringGallery       String[] @default([])
   rewardsGallery        String[] @default([])
   isOpen                Boolean? @default(true)
+  templateType          String?  @default("restaurant")
+  gradientFrom          String?
+  gradientVia           String?
+  gradientTo            String?
+  templateConfig        Json?
   createdAt             DateTime @default(now())
   updatedAt             DateTime @updatedAt
   tenant                Tenant   @relation(fields: [tenantId], references: [id], onDelete: Cascade)
@@ -352,7 +357,7 @@ model TenantIntegration {
   taxConfig                            Json?
   taxRemittanceEnabled                 Boolean?  @default(false)
   taxRemittanceSchedule                String?   @default("monthly") // monthly, quarterly
-  taxEscrowAccountId                   String?   // Stripe Connect account for tax escrow
+  taxEscrowAccountId                   String? // Stripe Connect account for tax escrow
   paymentProcessor                     String?   @default("stripe")
   paymentConfig                        Json?
   printerType                          String?   @default("bluetooth")
@@ -397,27 +402,27 @@ enum MenuSectionType {
 }
 
 model FrontendSection {
-  id          String                @id @default(uuid())
+  id          String              @id @default(uuid())
   tenantId    String
-  name        String                // e.g., "Grocery Store Banner", "Promotional Billboard"
+  name        String // e.g., "Grocery Store Banner", "Promotional Billboard"
   type        FrontendSectionType
-  position    Int                   @default(0) // Display order on page
-  enabled     Boolean               @default(true)
-  content     Json?                 // Flexible content: title, subtitle, image, CTA, etc.
-  insertAfter Int?                  // Insert after which menu section index (null = before all sections)
-  createdAt   DateTime              @default(now())
-  updatedAt   DateTime              @updatedAt
-  tenant      Tenant                @relation(fields: [tenantId], references: [id], onDelete: Cascade)
+  position    Int                 @default(0) // Display order on page
+  enabled     Boolean             @default(true)
+  content     Json? // Flexible content: title, subtitle, image, CTA, etc.
+  insertAfter Int? // Insert after which menu section index (null = before all sections)
+  createdAt   DateTime            @default(now())
+  updatedAt   DateTime            @updatedAt
+  tenant      Tenant              @relation(fields: [tenantId], references: [id], onDelete: Cascade)
 
   @@index([tenantId, position])
 }
 
 enum FrontendSectionType {
-  HERO_BANNER          // Top hero section
-  PROMOTIONAL_BANNER   // Promotional billboard
-  GROCERY_BANNER       // Grocery store link banner
-  BUNDLE_SHOWCASE      // Featured bundle/package
-  CUSTOM_HTML          // Custom content
+  HERO_BANNER // Top hero section
+  PROMOTIONAL_BANNER // Promotional billboard
+  GROCERY_BANNER // Grocery store link banner
+  BUNDLE_SHOWCASE // Featured bundle/package
+  CUSTOM_HTML // Custom content
 }
 
 model Customer {
@@ -909,25 +914,25 @@ model EcosystemEvent {
 
 // CRM - Leads & Deals Pipeline
 model Lead {
-  id                String    @id @default(uuid())
-  companyName       String
-  contactName       String
-  contactEmail      String
-  contactPhone      String?
-  status            String    @default("new") // 'new', 'in_progress', 'closing', 'converted', 'lost'
-  dealValue         Float?
-  probability       Int       @default(50) // 0-100
-  nextAction        DateTime?
-  nextActionNote    String?
-  notes             String?
-  tags              String[]  @default([])
-  proposals         Json?     // Array of {name, url, date, version}
-  prototypes        Json?     // Array of {name, url, description}
-  convertedToTenantId String? @unique
-  convertedAt       DateTime?
-  createdAt         DateTime  @default(now())
-  updatedAt         DateTime  @updatedAt
-  convertedToTenant Tenant?   @relation("LeadToTenant", fields: [convertedToTenantId], references: [id], onDelete: SetNull)
+  id                  String    @id @default(uuid())
+  companyName         String
+  contactName         String
+  contactEmail        String
+  contactPhone        String?
+  status              String    @default("new") // 'new', 'in_progress', 'closing', 'converted', 'lost'
+  dealValue           Float?
+  probability         Int       @default(50) // 0-100
+  nextAction          DateTime?
+  nextActionNote      String?
+  notes               String?
+  tags                String[]  @default([])
+  proposals           Json? // Array of {name, url, date, version}
+  prototypes          Json? // Array of {name, url, description}
+  convertedToTenantId String?   @unique
+  convertedAt         DateTime?
+  createdAt           DateTime  @default(now())
+  updatedAt           DateTime  @updatedAt
+  convertedToTenant   Tenant?   @relation("LeadToTenant", fields: [convertedToTenantId], references: [id], onDelete: SetNull)
 
   @@index([status])
   @@index([createdAt])
@@ -945,8 +950,8 @@ model Product {
   monthlyPrice  Float?
   setupFee      Float?
   features      String[]        @default([])
-  icon          String?         // Emoji or icon name
-  color         String?         // Hex color for UI
+  icon          String? // Emoji or icon name
+  color         String? // Hex color for UI
   order         Int             @default(0) // Display order
   createdAt     DateTime        @default(now())
   updatedAt     DateTime        @updatedAt
@@ -958,16 +963,16 @@ model Product {
 
 // Tenant Product Subscriptions
 model TenantProduct {
-  id            String    @id @default(uuid())
-  tenantId      String
-  productId     String
-  status        String    @default("active") // 'active', 'paused', 'cancelled', 'trial', 'prepaid'
+  id           String    @id @default(uuid())
+  tenantId     String
+  productId    String
+  status       String    @default("active") // 'active', 'paused', 'cancelled', 'trial', 'prepaid'
   subscribedAt DateTime  @default(now())
-  cancelledAt   DateTime?
-  trialEndsAt   DateTime?
-  expiresAt     DateTime? // For prepaid subscriptions (e.g., Sept 9, 2027)
-  tenant        Tenant    @relation("TenantProducts", fields: [tenantId], references: [id], onDelete: Cascade)
-  product       Product   @relation(fields: [productId], references: [id], onDelete: Cascade)
+  cancelledAt  DateTime?
+  trialEndsAt  DateTime?
+  expiresAt    DateTime? // For prepaid subscriptions (e.g., Sept 9, 2027)
+  tenant       Tenant    @relation("TenantProducts", fields: [tenantId], references: [id], onDelete: Cascade)
+  product      Product   @relation(fields: [productId], references: [id], onDelete: Cascade)
 
   @@unique([tenantId, productId])
   @@index([tenantId])

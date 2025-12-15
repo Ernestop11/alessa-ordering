@@ -133,6 +133,10 @@ export default async function RootLayout({
       : [],
     accessibilityDefaults: (tenant.settings?.accessibilityDefaults ?? null) as unknown as AccessibilityDefaults | null,
     branding: (tenant.settings?.branding ?? null) as unknown as TenantBranding | null,
+    templateType: tenant.settings?.templateType || 'restaurant',
+    gradientFrom: tenant.settings?.gradientFrom || null,
+    gradientVia: tenant.settings?.gradientVia || null,
+    gradientTo: tenant.settings?.gradientTo || null,
   } : {
     id: 'root',
     name: 'Alessa Cloud',
@@ -171,6 +175,10 @@ export default async function RootLayout({
     upsellBundles: [],
     accessibilityDefaults: null,
     branding: null,
+    templateType: 'restaurant',
+    gradientFrom: undefined,
+    gradientVia: undefined,
+    gradientTo: undefined,
   }
 
   const themeVars = {
