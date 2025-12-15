@@ -878,7 +878,7 @@ export default function OrderPageClient({
   );
 
   const enrichedSections = useMemo(() => {
-    return sections.map((section, sectionIndex) => ({
+    return safeSections.map((section, sectionIndex) => ({
       ...section,
       icon: SECTION_ICONS[section.type] || '🍽️',
       items: section.items
@@ -926,7 +926,7 @@ export default function OrderPageClient({
         })
         .filter((item): item is NonNullable<typeof item> => item !== null), // Remove nulls
     }));
-  }, [sections]);
+  }, [safeSections]);
 
   // Build ordered render queue based on frontendUISections configuration
   // This determines the order and which promotional banners to show
