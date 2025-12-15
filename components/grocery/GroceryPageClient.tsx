@@ -42,6 +42,7 @@ interface GroceryPageClientProps {
   weekendSpecials: WeekendSpecial[];
   tenantSlug: string;
   tenantName: string;
+  variant?: 'grocery' | 'bakery'; // Theme variant - green for grocery, amber for bakery
 }
 
 export default function GroceryPageClient({
@@ -50,8 +51,38 @@ export default function GroceryPageClient({
   weekendSpecials,
   tenantSlug,
   tenantName,
+  variant = 'grocery',
 }: GroceryPageClientProps) {
   const router = useRouter();
+
+  // Theme colors based on variant
+  const theme = variant === 'bakery' ? {
+    primary: 'amber',
+    gradient: 'from-amber-900 via-orange-800 to-amber-900',
+    headerGradient: 'from-amber-950 to-amber-900',
+    accent: 'amber-500',
+    accentHover: 'amber-600',
+    badge: 'amber-100',
+    badgeText: 'amber-800',
+    icon: '🥐',
+    title: 'Fresh Bakery',
+    subtitle: 'Authentic Mexican Pan Dulce & Breads',
+    specialsTitle: 'Daily Fresh Specials',
+    backLink: '/order',
+  } : {
+    primary: 'green',
+    gradient: 'from-green-900 via-green-800 to-green-900',
+    headerGradient: 'from-green-950 to-green-900',
+    accent: 'green-500',
+    accentHover: 'green-600',
+    badge: 'green-100',
+    badgeText: 'green-800',
+    icon: '🛒',
+    title: 'Grocery Store',
+    subtitle: 'Fresh Produce & Pantry Staples',
+    specialsTitle: 'Weekend Specials',
+    backLink: '/order',
+  };
   const { items: cartItems, addToCart, updateQuantity } = useCart();
   const [selectedCategory, setSelectedCategory] = useState<string>('all');
   const [currentSpecialIndex, setCurrentSpecialIndex] = useState(0);
@@ -123,14 +154,14 @@ export default function GroceryPageClient({
   );
 
   return (
-    <div className="min-h-screen bg-gradient-to-br from-green-900 via-green-800 to-emerald-900">
+    <div className={`min-h-screen bg-gradient-to-br ${variant === 'bakery' ? 'from-amber-900 via-orange-800 to-amber-900' : 'from-green-900 via-green-800 to-emerald-900'}`}>
       {/* Header */}
-      <div className="bg-gradient-to-r from-green-700 to-emerald-700 border-b border-white/20 sticky top-0 z-40 backdrop-blur-sm bg-opacity-95">
+      <div className={`${variant === 'bakery' ? 'bg-gradient-to-r from-amber-700 to-orange-700' : 'bg-gradient-to-r from-green-700 to-emerald-700'} border-b border-white/20 sticky top-0 z-40 backdrop-blur-sm bg-opacity-95`}>
         <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-6">
           <div className="flex items-center justify-between">
             <div className="flex items-center gap-4">
               <Link
-                href="/order"
+                href={theme.backLink}
                 className="inline-flex items-center gap-2 text-white/70 hover:text-white transition"
               >
                 <ArrowLeft className="h-5 w-5" />
@@ -138,9 +169,9 @@ export default function GroceryPageClient({
               </Link>
               <div>
                 <h1 className="text-2xl font-bold text-white">
-                  🛒 {tenantName} - Grocery Store
+                  {theme.icon} {tenantName} - {theme.title}
                 </h1>
-                <p className="text-white/60 text-sm">Fresh ingredients delivered with your food order</p>
+                <p className="text-white/60 text-sm">{theme.subtitle}</p>
               </div>
             </div>
             <div className="flex items-center gap-4">
