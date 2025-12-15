@@ -1,50 +1,10 @@
 import { NextResponse } from 'next/server';
 import prisma from '@/lib/prisma';
 import { requireTenant } from '@/lib/tenant';
+import { validateOperatingHours } from '@/lib/hours-validator';
 
 // Force dynamic rendering - never cache this route
 export const dynamic = 'force-dynamic';
-
-// Operating hours validation (same logic as order page)
-function validateOperatingHours(
-  operatingHours: Record<string, { open: string; close: string; enabled: boolean }> | null | undefined,
-  isOpenFlag: boolean
-): { isOpen: boolean; message: string } {
-  // If manually closed, always show closed
-  if (!isOpenFlag) {
-    return { isOpen: false, message: 'We are currently closed.' };
-  }
-
-  // If no operating hours configured, use isOpen flag only
-  if (!operatingHours || Object.keys(operatingHours).length === 0) {
-    return { isOpen: isOpenFlag, message: isOpenFlag ? '' : 'We are currently closed.' };
-  }
-
-  const now = new Date();
-  const days = ['sunday', 'monday', 'tuesday', 'wednesday', 'thursday', 'friday', 'saturday'];
-  const currentDay = days[now.getDay()];
-  const todayHours = operatingHours[currentDay];
-
-  if (!todayHours || !todayHours.enabled) {
-    return { isOpen: false, message: `We are closed on ${currentDay.charAt(0).toUpperCase() + currentDay.slice(1)}s.` };
-  }
-
-  const currentTime = now.getHours() * 60 + now.getMinutes();
-  const [openHour, openMin] = todayHours.open.split(':').map(Number);
-  const [closeHour, closeMin] = todayHours.close.split(':').map(Number);
-  const openTime = openHour * 60 + openMin;
-  const closeTime = closeHour * 60 + closeMin;
-
-  if (currentTime < openTime) {
-    return { isOpen: false, message: `We open at ${todayHours.open}. Please check back soon!` };
-  }
-
-  if (currentTime >= closeTime) {
-    return { isOpen: false, message: `We are closed for the day. We open again tomorrow.` };
-  }
-
-  return { isOpen: true, message: '' };
-}
 
 export async function GET() {
   try {
@@ -55,17 +15,40 @@ export async function GET() {
       select: {
         isOpen: true,
         operatingHours: true,
+        timeZone: true,
       },
     });
 
     const isOpenFlag = settings?.isOpen === true;
-    const operatingHours = settings?.operatingHours as Record<string, { open: string; close: string; enabled: boolean }> | null;
+    const rawOperatingHours = settings?.operatingHours as Record<string, { open: string; close: string; enabled?: boolean; closed?: boolean }> | null;
+    const timeZone = settings?.timeZone || 'America/Los_Angeles';
 
-    const validation = validateOperatingHours(operatingHours, isOpenFlag);
+    // Convert operatingHours to the format expected by hours-validator
+    // The validator expects: { timezone, storeHours: { day: { open, close, closed } } }
+    let formattedOperatingHours = null;
+    if (rawOperatingHours && Object.keys(rawOperatingHours).length > 0) {
+      const storeHours: Record<string, { open: string; close: string; closed: boolean }> = {};
+      for (const [day, hours] of Object.entries(rawOperatingHours)) {
+        if (hours && typeof hours === 'object') {
+          storeHours[day] = {
+            open: hours.open || '09:00',
+            close: hours.close || '21:00',
+            // Handle both 'enabled' (old format) and 'closed' (new format)
+            closed: hours.closed === true || hours.enabled === false,
+          };
+        }
+      }
+      formattedOperatingHours = {
+        timezone: timeZone,
+        storeHours,
+      };
+    }
+
+    const validation = validateOperatingHours(formattedOperatingHours, isOpenFlag);
 
     const response = NextResponse.json({
       isOpen: validation.isOpen,
-      message: validation.message,
+      message: validation.message || '',
       timestamp: Date.now(),
     });
 
