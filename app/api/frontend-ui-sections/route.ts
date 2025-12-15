@@ -1,7 +1,9 @@
 import { NextResponse } from 'next/server';
 import { requireTenant } from '@/lib/tenant';
-import { revalidatePath } from 'next/cache';
 import prisma from '@/lib/prisma';
+
+// Force dynamic - prevent build-time caching for multi-tenant data
+export const dynamic = 'force-dynamic';
 
 /**
  * GET - Fetch all frontend UI sections for a tenant (PUBLIC - no auth required)

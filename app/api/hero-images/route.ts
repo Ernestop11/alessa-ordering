@@ -2,6 +2,9 @@ import { NextResponse } from 'next/server';
 import { requireTenant } from '@/lib/tenant';
 import prisma from '@/lib/prisma';
 
+// Force dynamic - prevent build-time caching for multi-tenant data
+export const dynamic = 'force-dynamic';
+
 /**
  * GET - Fetch hero images for polling (public endpoint for frontend updates)
  */
