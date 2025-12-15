@@ -1719,13 +1719,11 @@ export default function MenuEditorPage() {
               )}
             </div>
           ) : activeTab === 'frontend' ? (
-            /* Frontend Sections Management - Grocery Bundle Style */
+            /* Frontend Sections Management - Visual Preview Style */
             <div className="space-y-6">
-              <div className="flex justify-between items-center mb-4">
-                <div>
-                  <h2 className="text-2xl font-semibold text-gray-900">Frontend Section Order</h2>
-                  <p className="text-gray-600 mt-1">Reorder and customize sections that appear on your customer-facing order page. Drag sections up/down to change their display order.</p>
-                </div>
+              <div className="mb-6">
+                <h2 className="text-2xl font-semibold text-gray-900">Frontend Sections</h2>
+                <p className="text-gray-600 mt-1">Click any section to customize. These control what appears on your customer order page.</p>
               </div>
 
               {loading ? (
@@ -1735,79 +1733,94 @@ export default function MenuEditorPage() {
                   <p className="text-gray-500">No sections configured yet. Sections will be initialized automatically.</p>
                 </div>
               ) : (
-                <div className="grid gap-4 sm:grid-cols-2 lg:grid-cols-3">
+                <div className="space-y-3">
                   {frontendUISections
                     .sort((a, b) => a.position - b.position)
-                    .map((section, index) => (
-                    <div key={section.id} className="bg-white rounded-lg shadow hover:shadow-md transition-shadow p-4 border-2 border-blue-200">
-                      {section.content?.image && (
-                        <img
-                          src={section.content.image}
-                          alt={section.name}
-                          className="w-full h-32 object-cover rounded mb-3"
-                        />
-                      )}
-                      {section.content?.badge && (
-                        <span className="inline-block bg-yellow-100 text-yellow-800 text-xs px-2 py-1 rounded mb-2">
-                          {section.content.badge}
-                        </span>
-                      )}
-                      <div className="flex items-center gap-2 mb-2">
-                        <h4 className="font-semibold text-gray-900 flex-1">{section.name}</h4>
-                        <span className={`px-2 py-1 rounded-full text-xs font-medium ${
-                          section.enabled
-                            ? 'bg-green-100 text-green-800'
-                            : 'bg-gray-100 text-gray-600'
-                        }`}>
-                          {section.enabled ? 'On' : 'Off'}
-                        </span>
-                      </div>
-                      {section.content?.title && (
-                        <p className="text-sm text-gray-600 mb-2 line-clamp-2">{section.content.title}</p>
-                      )}
-                      {section.content?.subtitle && (
-                        <p className="text-xs text-gray-500 mb-2 line-clamp-1">{section.content.subtitle}</p>
-                      )}
-                      <div className="text-xs text-gray-500 mb-3">
-                        Position: {section.position + 1}
-                      </div>
-                      <div className="flex gap-2">
-                        <button
-                          onClick={() => handleMoveSection(index, -1)}
-                          disabled={index === 0}
-                          className="flex-1 text-sm px-3 py-2 bg-gray-100 text-gray-700 rounded hover:bg-gray-200 disabled:opacity-30 disabled:cursor-not-allowed"
-                          title="Move up"
+                    .map((section, index) => {
+                      // Section type icons and preview configs
+                      const sectionConfig: Record<string, { icon: string; preview: string; color: string }> = {
+                        hero: { icon: '🏠', preview: 'Main banner with restaurant name and call-to-action', color: 'from-purple-500 to-indigo-600' },
+                        quickInfo: { icon: '📍', preview: 'Hours, location, and contact info bar', color: 'from-blue-500 to-cyan-500' },
+                        featuredCarousel: { icon: '⭐', preview: 'Chef Recommends rotating carousel', color: 'from-amber-500 to-orange-500' },
+                        menuSections: { icon: '🍽️', preview: 'Full menu organized by category', color: 'from-red-500 to-pink-500' },
+                        promoBanner1: { icon: '🎉', preview: 'Promotional billboard for specials', color: 'from-green-500 to-emerald-500' },
+                        groceryBanner: { icon: '🛒', preview: 'Link to grocery store section', color: 'from-teal-500 to-green-500' },
+                        weCookBanner: { icon: '👨‍🍳', preview: '"We Cook For You" brand message', color: 'from-orange-500 to-red-500' },
+                        dealStrip: { icon: '💰', preview: 'Quick deal or special offer strip', color: 'from-yellow-500 to-amber-500' },
+                        qualityBanner: { icon: '✨', preview: 'Fresh quality guarantee banner', color: 'from-emerald-500 to-teal-500' },
+                        reviewsStrip: { icon: '💬', preview: 'Customer reviews and ratings', color: 'from-indigo-500 to-purple-500' },
+                      };
+                      const config = sectionConfig[section.type] || { icon: '📄', preview: 'Custom section', color: 'from-gray-500 to-gray-600' };
+
+                      return (
+                        <div
+                          key={section.id}
+                          onClick={() => setEditingFrontendSection({ ...section, content: section.content || {} })}
+                          className="group relative bg-white rounded-xl border border-gray-200 hover:border-blue-400 hover:shadow-lg transition-all cursor-pointer overflow-hidden"
                         >
-                          ↑ Up
-                        </button>
-                        <button
-                          onClick={() => handleMoveSection(index, 1)}
-                          disabled={index === frontendUISections.length - 1}
-                          className="flex-1 text-sm px-3 py-2 bg-gray-100 text-gray-700 rounded hover:bg-gray-200 disabled:opacity-30 disabled:cursor-not-allowed"
-                          title="Move down"
-                        >
-                          ↓ Down
-                        </button>
-                      </div>
-                      <div className="flex gap-2 mt-2">
-                        <button
-                          onClick={() => setEditingFrontendSection({
-                          ...section,
-                          content: section.content || {}
-                        })}
-                          className="flex-1 text-sm px-3 py-2 bg-blue-600 text-white rounded hover:bg-blue-700"
-                        >
-                          Edit
-                        </button>
-                        <button
-                          onClick={() => handleDeleteFrontendSection(section.id)}
-                          className="flex-1 text-sm px-3 py-2 bg-red-600 text-white rounded hover:bg-red-700"
-                        >
-                          Delete
-                        </button>
-                      </div>
-                    </div>
-                  ))}
+                          {/* Preview Bar */}
+                          <div className={`h-2 bg-gradient-to-r ${config.color}`} />
+
+                          <div className="p-4 flex items-center gap-4">
+                            {/* Icon */}
+                            <div className={`w-12 h-12 rounded-xl bg-gradient-to-br ${config.color} flex items-center justify-center text-2xl shadow-md`}>
+                              {config.icon}
+                            </div>
+
+                            {/* Content */}
+                            <div className="flex-1 min-w-0">
+                              <div className="flex items-center gap-2">
+                                <h4 className="font-semibold text-gray-900">{section.name}</h4>
+                                <span className={`px-2 py-0.5 rounded-full text-xs font-medium ${
+                                  section.enabled
+                                    ? 'bg-green-100 text-green-700'
+                                    : 'bg-gray-100 text-gray-500'
+                                }`}>
+                                  {section.enabled ? 'Visible' : 'Hidden'}
+                                </span>
+                              </div>
+                              <p className="text-sm text-gray-500 mt-0.5">{config.preview}</p>
+                              {section.type === 'featuredCarousel' && (
+                                <p className="text-xs text-amber-600 mt-1 font-medium">
+                                  {items.filter(i => i.isFeatured).length} items featured
+                                </p>
+                              )}
+                            </div>
+
+                            {/* Position Controls */}
+                            <div className="flex items-center gap-1 opacity-0 group-hover:opacity-100 transition-opacity">
+                              <button
+                                onClick={(e) => { e.stopPropagation(); handleMoveSection(index, -1); }}
+                                disabled={index === 0}
+                                className="p-2 rounded-lg bg-gray-100 hover:bg-gray-200 disabled:opacity-30 disabled:cursor-not-allowed"
+                                title="Move up"
+                              >
+                                <svg className="w-4 h-4 text-gray-600" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M5 15l7-7 7 7" />
+                                </svg>
+                              </button>
+                              <button
+                                onClick={(e) => { e.stopPropagation(); handleMoveSection(index, 1); }}
+                                disabled={index === frontendUISections.length - 1}
+                                className="p-2 rounded-lg bg-gray-100 hover:bg-gray-200 disabled:opacity-30 disabled:cursor-not-allowed"
+                                title="Move down"
+                              >
+                                <svg className="w-4 h-4 text-gray-600" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M19 9l-7 7-7-7" />
+                                </svg>
+                              </button>
+                            </div>
+
+                            {/* Click indicator */}
+                            <div className="text-gray-400 group-hover:text-blue-500 transition-colors">
+                              <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9 5l7 7-7 7" />
+                              </svg>
+                            </div>
+                          </div>
+                        </div>
+                      );
+                    })}
                 </div>
               )}
             </div>

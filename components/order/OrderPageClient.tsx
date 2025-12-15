@@ -358,8 +358,8 @@ export default function OrderPageClient({
   const [restaurantIsOpen, setRestaurantIsOpen] = useState(isOpen);
   const [restaurantClosedMessage, setRestaurantClosedMessage] = useState(closedMessage || '');
 
-  // Featured items state - can be updated in real-time when admin changes Featured Carousel
-  const [currentFeaturedItems, setCurrentFeaturedItems] = useState<OrderMenuItem[]>(featuredItems);
+  // Featured items - use props directly for instant updates via revalidatePath
+  const currentFeaturedItems = featuredItems;
 
   useEffect(() => {
     if (typeof window === 'undefined') return;
@@ -1019,46 +1019,6 @@ export default function OrderPageClient({
 
     // Then poll every 10 seconds for quick updates when admin toggles
     const interval = setInterval(fetchRestaurantStatus, 10000);
-    return () => clearInterval(interval);
-  }, []);
-
-  // Poll featured items every 10 seconds for real-time updates when admin changes Featured Carousel
-  useEffect(() => {
-    const fetchFeaturedItems = async () => {
-      try {
-        const timestamp = Date.now();
-        const res = await fetch(`/api/featured-items?t=${timestamp}`, {
-          cache: 'no-store',
-          headers: {
-            'Cache-Control': 'no-cache',
-            'Pragma': 'no-cache',
-          },
-        });
-        if (res.ok) {
-          const data = await res.json();
-          if (Array.isArray(data.items)) {
-            // Only update if the items have actually changed
-            const newIds = data.items.map((i: { id: string }) => i.id).sort().join(',');
-            setCurrentFeaturedItems(prev => {
-              const oldIds = prev.map(i => i.id).sort().join(',');
-              if (newIds !== oldIds) {
-                console.log('[FeaturedItems] Updated carousel items:', data.items.length);
-                return data.items;
-              }
-              return prev;
-            });
-          }
-        }
-      } catch (err) {
-        console.error('Failed to fetch featured items', err);
-      }
-    };
-
-    // Fetch immediately on mount for quick initial sync
-    fetchFeaturedItems();
-
-    // Then poll every 10 seconds (same as restaurant status) for quick updates
-    const interval = setInterval(fetchFeaturedItems, 10000);
     return () => clearInterval(interval);
   }, []);
 
