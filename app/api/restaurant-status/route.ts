@@ -1,3 +1,25 @@
+/**
+ * Restaurant Status API
+ *
+ * Returns real-time open/closed status for frontend polling.
+ *
+ * HOW IT WORKS:
+ * 1. Frontend polls this endpoint every 10 seconds (see OrderPageClient.tsx)
+ * 2. Uses lib/hours-validator.ts which handles:
+ *    - Timezone conversion (VPS is UTC, restaurant uses America/Los_Angeles)
+ *    - Operating hours validation (storeHours per day)
+ *    - Holidays and temporary closures
+ * 3. Checks both `isOpen` flag (manual toggle) AND operating hours schedule
+ *
+ * OPERATING HOURS FORMATS SUPPORTED:
+ * - New format: { storeHours: { monday: { open, close, closed } }, timezone: '...' }
+ * - Old format: { monday: { open, close, enabled }, ... } (auto-converted)
+ *
+ * TIMEZONE FIX (2025-12-14):
+ * The VPS runs in UTC. Without timezone handling, 4pm PST Sunday would appear
+ * as 12am UTC Monday, causing "closed on Monday" errors. The hours-validator
+ * uses Intl.DateTimeFormat to convert server time to restaurant's local timezone.
+ */
 import { NextResponse } from 'next/server';
 import prisma from '@/lib/prisma';
 import { requireTenant } from '@/lib/tenant';
