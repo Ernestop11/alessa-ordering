@@ -3621,9 +3621,757 @@ export default function MenuEditorPage() {
                   )}
 
                   {/* ============================================ */}
-                  {/* GENERIC SECTIONS - Text & Content Fields */}
+                  {/* PROMO BANNER - Visual Editor */}
                   {/* ============================================ */}
-                  {!['featuredCarousel', 'hero'].includes(editingFrontendSection.type) && (
+                  {editingFrontendSection.type === 'promoBanner1' && (
+                    <div className="p-6 bg-gradient-to-b from-orange-50 to-white border-b">
+                      <div className="flex items-center gap-2 mb-4">
+                        <span className="bg-orange-500 text-white px-2 py-0.5 rounded text-sm font-bold">LIVE PREVIEW</span>
+                      </div>
+                      {/* Preview Panel */}
+                      <div className="rounded-xl overflow-hidden shadow-lg border-2 border-orange-200 mb-6">
+                        <div
+                          className="relative h-40 bg-cover bg-center"
+                          style={{
+                            backgroundImage: editingFrontendSection.content?.image
+                              ? `url(${editingFrontendSection.content.image})`
+                              : 'linear-gradient(135deg, #dc2626 0%, #ea580c 100%)',
+                            backgroundColor: editingFrontendSection.content?.backgroundColor || '#dc2626'
+                          }}
+                        >
+                          <div className="absolute inset-0 bg-black/30 flex items-center justify-between p-6">
+                            <div className="text-white">
+                              <h2 className="text-2xl font-bold mb-1">
+                                {editingFrontendSection.content?.title || 'Promotional Title'}
+                              </h2>
+                              <p className="text-white/90 text-sm">
+                                {editingFrontendSection.content?.subtitle || 'Add your promo description here'}
+                              </p>
+                            </div>
+                            {editingFrontendSection.content?.buttonText && (
+                              <button className="bg-white text-red-600 px-6 py-2 rounded-full font-bold text-sm shadow-lg">
+                                {editingFrontendSection.content.buttonText}
+                              </button>
+                            )}
+                          </div>
+                        </div>
+                      </div>
+                      {/* Editor Fields */}
+                      <div className="grid grid-cols-2 gap-4">
+                        <div className="col-span-2">
+                          <label className="block text-sm font-semibold text-gray-700 mb-1">Background Image URL</label>
+                          <input
+                            type="text"
+                            value={editingFrontendSection.content?.image || ''}
+                            onChange={(e) => setEditingFrontendSection({ ...editingFrontendSection, content: { ...(editingFrontendSection.content || {}), image: e.target.value } })}
+                            className="w-full px-3 py-2 border border-gray-300 rounded-lg"
+                            placeholder="https://your-image-url.jpg"
+                          />
+                        </div>
+                        <div>
+                          <label className="block text-sm font-semibold text-gray-700 mb-1">Title</label>
+                          <input
+                            type="text"
+                            value={editingFrontendSection.content?.title || ''}
+                            onChange={(e) => setEditingFrontendSection({ ...editingFrontendSection, content: { ...(editingFrontendSection.content || {}), title: e.target.value } })}
+                            className="w-full px-3 py-2 border border-gray-300 rounded-lg"
+                            placeholder="FAMILY BUNDLES"
+                          />
+                        </div>
+                        <div>
+                          <label className="block text-sm font-semibold text-gray-700 mb-1">Subtitle</label>
+                          <input
+                            type="text"
+                            value={editingFrontendSection.content?.subtitle || ''}
+                            onChange={(e) => setEditingFrontendSection({ ...editingFrontendSection, content: { ...(editingFrontendSection.content || {}), subtitle: e.target.value } })}
+                            className="w-full px-3 py-2 border border-gray-300 rounded-lg"
+                            placeholder="Perfect for the whole family"
+                          />
+                        </div>
+                        <div>
+                          <label className="block text-sm font-semibold text-gray-700 mb-1">Button Text</label>
+                          <input
+                            type="text"
+                            value={editingFrontendSection.content?.buttonText || ''}
+                            onChange={(e) => setEditingFrontendSection({ ...editingFrontendSection, content: { ...(editingFrontendSection.content || {}), buttonText: e.target.value } })}
+                            className="w-full px-3 py-2 border border-gray-300 rounded-lg"
+                            placeholder="Order Bundle"
+                          />
+                        </div>
+                        <div className="flex gap-2">
+                          <div className="flex-1">
+                            <label className="block text-sm font-semibold text-gray-700 mb-1">Background Color</label>
+                            <div className="flex gap-2">
+                              <input type="color" value={editingFrontendSection.content?.backgroundColor || '#dc2626'} onChange={(e) => setEditingFrontendSection({ ...editingFrontendSection, content: { ...(editingFrontendSection.content || {}), backgroundColor: e.target.value } })} className="w-10 h-10 rounded cursor-pointer" />
+                              <input type="text" value={editingFrontendSection.content?.backgroundColor || ''} onChange={(e) => setEditingFrontendSection({ ...editingFrontendSection, content: { ...(editingFrontendSection.content || {}), backgroundColor: e.target.value } })} className="flex-1 px-3 py-2 border border-gray-300 rounded-lg text-sm" placeholder="#dc2626" />
+                            </div>
+                          </div>
+                        </div>
+                      </div>
+                    </div>
+                  )}
+
+                  {/* ============================================ */}
+                  {/* GROCERY BANNER - Visual Editor */}
+                  {/* ============================================ */}
+                  {editingFrontendSection.type === 'groceryBanner' && (
+                    <div className="p-6 bg-gradient-to-b from-green-50 to-white border-b">
+                      <div className="flex items-center gap-2 mb-4">
+                        <span className="bg-green-600 text-white px-2 py-0.5 rounded text-sm font-bold">LIVE PREVIEW</span>
+                      </div>
+                      {/* Preview Panel */}
+                      <div className="rounded-xl overflow-hidden shadow-lg border-2 border-green-200 mb-6">
+                        <div className="bg-gradient-to-r from-emerald-600 via-green-500 to-teal-500 p-6 flex items-center justify-between">
+                          <div className="text-white">
+                            <span className="text-3xl mb-2 block">🛒</span>
+                            <h2 className="text-2xl font-bold mb-1">
+                              {editingFrontendSection.content?.title || 'Order Your Groceries Too!'}
+                            </h2>
+                            <p className="text-white/90 text-sm">
+                              {editingFrontendSection.content?.subtitle || 'Fresh produce and pantry staples'}
+                            </p>
+                          </div>
+                          <button className="bg-white text-green-700 px-6 py-3 rounded-full font-bold text-sm shadow-lg">
+                            {editingFrontendSection.content?.buttonText || 'Browse Grocery'}
+                          </button>
+                        </div>
+                      </div>
+                      {/* Editor Fields */}
+                      <div className="grid grid-cols-2 gap-4">
+                        <div className="col-span-2">
+                          <label className="block text-sm font-semibold text-gray-700 mb-1">Title</label>
+                          <input
+                            type="text"
+                            value={editingFrontendSection.content?.title || ''}
+                            onChange={(e) => setEditingFrontendSection({ ...editingFrontendSection, content: { ...(editingFrontendSection.content || {}), title: e.target.value } })}
+                            className="w-full px-3 py-2 border border-gray-300 rounded-lg"
+                            placeholder="Order Your Groceries Too!"
+                          />
+                        </div>
+                        <div className="col-span-2">
+                          <label className="block text-sm font-semibold text-gray-700 mb-1">Subtitle</label>
+                          <input
+                            type="text"
+                            value={editingFrontendSection.content?.subtitle || ''}
+                            onChange={(e) => setEditingFrontendSection({ ...editingFrontendSection, content: { ...(editingFrontendSection.content || {}), subtitle: e.target.value } })}
+                            className="w-full px-3 py-2 border border-gray-300 rounded-lg"
+                            placeholder="Fresh produce, pantry staples, and more"
+                          />
+                        </div>
+                        <div>
+                          <label className="block text-sm font-semibold text-gray-700 mb-1">Button Text</label>
+                          <input
+                            type="text"
+                            value={editingFrontendSection.content?.buttonText || ''}
+                            onChange={(e) => setEditingFrontendSection({ ...editingFrontendSection, content: { ...(editingFrontendSection.content || {}), buttonText: e.target.value } })}
+                            className="w-full px-3 py-2 border border-gray-300 rounded-lg"
+                            placeholder="Browse Grocery Store"
+                          />
+                        </div>
+                        <div>
+                          <label className="block text-sm font-semibold text-gray-700 mb-1">Button Link</label>
+                          <input
+                            type="text"
+                            value={editingFrontendSection.content?.buttonLink || ''}
+                            onChange={(e) => setEditingFrontendSection({ ...editingFrontendSection, content: { ...(editingFrontendSection.content || {}), buttonLink: e.target.value } })}
+                            className="w-full px-3 py-2 border border-gray-300 rounded-lg"
+                            placeholder="/grocery"
+                          />
+                        </div>
+                      </div>
+                    </div>
+                  )}
+
+                  {/* ============================================ */}
+                  {/* WE COOK BANNER - Visual Editor */}
+                  {/* ============================================ */}
+                  {editingFrontendSection.type === 'weCookBanner' && (
+                    <div className="p-6 bg-gradient-to-b from-red-50 to-white border-b">
+                      <div className="flex items-center gap-2 mb-4">
+                        <span className="bg-red-600 text-white px-2 py-0.5 rounded text-sm font-bold">LIVE PREVIEW</span>
+                      </div>
+                      {/* Preview Panel */}
+                      <div className="rounded-xl overflow-hidden shadow-lg border-2 border-red-200 mb-6">
+                        <div className="bg-gradient-to-r from-red-700 via-red-600 to-orange-600 p-8 text-center">
+                          <span className="text-4xl mb-3 block">👨‍🍳</span>
+                          <h2 className="text-3xl font-black text-white tracking-wide mb-2">
+                            {editingFrontendSection.content?.title || 'WE COOK FOR YOU'}
+                          </h2>
+                          <p className="text-white/90 text-sm max-w-md mx-auto">
+                            {editingFrontendSection.content?.description || 'Fresh ingredients, authentic recipes, made with passion'}
+                          </p>
+                        </div>
+                      </div>
+                      {/* Editor Fields */}
+                      <div className="grid grid-cols-1 gap-4">
+                        <div>
+                          <label className="block text-sm font-semibold text-gray-700 mb-1">Title</label>
+                          <input
+                            type="text"
+                            value={editingFrontendSection.content?.title || ''}
+                            onChange={(e) => setEditingFrontendSection({ ...editingFrontendSection, content: { ...(editingFrontendSection.content || {}), title: e.target.value } })}
+                            className="w-full px-3 py-2 border border-gray-300 rounded-lg"
+                            placeholder="WE COOK FOR YOU"
+                          />
+                        </div>
+                        <div>
+                          <label className="block text-sm font-semibold text-gray-700 mb-1">Description</label>
+                          <textarea
+                            value={editingFrontendSection.content?.description || ''}
+                            onChange={(e) => setEditingFrontendSection({ ...editingFrontendSection, content: { ...(editingFrontendSection.content || {}), description: e.target.value } })}
+                            className="w-full px-3 py-2 border border-gray-300 rounded-lg"
+                            rows={2}
+                            placeholder="Fresh ingredients, authentic recipes, made with passion every single day"
+                          />
+                        </div>
+                      </div>
+                    </div>
+                  )}
+
+                  {/* ============================================ */}
+                  {/* DEAL STRIP - Visual Editor */}
+                  {/* ============================================ */}
+                  {editingFrontendSection.type === 'dealStrip' && (
+                    <div className="p-6 bg-gradient-to-b from-yellow-50 to-white border-b">
+                      <div className="flex items-center gap-2 mb-4">
+                        <span className="bg-yellow-500 text-white px-2 py-0.5 rounded text-sm font-bold">LIVE PREVIEW</span>
+                      </div>
+                      {/* Preview Panel */}
+                      <div className="rounded-xl overflow-hidden shadow-lg border-2 border-yellow-200 mb-6">
+                        <div className="bg-gradient-to-r from-yellow-400 via-amber-400 to-orange-400 p-4 flex items-center justify-between">
+                          <div className="flex items-center gap-4">
+                            <span className="text-3xl">🏷️</span>
+                            <div>
+                              <h3 className="text-lg font-black text-gray-900">
+                                {editingFrontendSection.content?.title || 'LUNCH SPECIAL'}
+                              </h3>
+                              <p className="text-gray-800 text-sm">
+                                {editingFrontendSection.content?.subtitle || 'Any 2 tacos + drink for $8.99'}
+                              </p>
+                            </div>
+                          </div>
+                          <button className="bg-gray-900 text-white px-5 py-2 rounded-full font-bold text-sm">
+                            {editingFrontendSection.content?.buttonText || 'Get Deal'}
+                          </button>
+                        </div>
+                      </div>
+                      {/* Editor Fields */}
+                      <div className="grid grid-cols-2 gap-4">
+                        <div>
+                          <label className="block text-sm font-semibold text-gray-700 mb-1">Deal Title</label>
+                          <input
+                            type="text"
+                            value={editingFrontendSection.content?.title || ''}
+                            onChange={(e) => setEditingFrontendSection({ ...editingFrontendSection, content: { ...(editingFrontendSection.content || {}), title: e.target.value } })}
+                            className="w-full px-3 py-2 border border-gray-300 rounded-lg"
+                            placeholder="LUNCH SPECIAL"
+                          />
+                        </div>
+                        <div>
+                          <label className="block text-sm font-semibold text-gray-700 mb-1">Deal Details</label>
+                          <input
+                            type="text"
+                            value={editingFrontendSection.content?.subtitle || ''}
+                            onChange={(e) => setEditingFrontendSection({ ...editingFrontendSection, content: { ...(editingFrontendSection.content || {}), subtitle: e.target.value } })}
+                            className="w-full px-3 py-2 border border-gray-300 rounded-lg"
+                            placeholder="Any 2 tacos + drink for $8.99"
+                          />
+                        </div>
+                        <div>
+                          <label className="block text-sm font-semibold text-gray-700 mb-1">Button Text</label>
+                          <input
+                            type="text"
+                            value={editingFrontendSection.content?.buttonText || ''}
+                            onChange={(e) => setEditingFrontendSection({ ...editingFrontendSection, content: { ...(editingFrontendSection.content || {}), buttonText: e.target.value } })}
+                            className="w-full px-3 py-2 border border-gray-300 rounded-lg"
+                            placeholder="Get Deal"
+                          />
+                        </div>
+                        <div>
+                          <label className="block text-sm font-semibold text-gray-700 mb-1">Button Link</label>
+                          <input
+                            type="text"
+                            value={editingFrontendSection.content?.buttonLink || ''}
+                            onChange={(e) => setEditingFrontendSection({ ...editingFrontendSection, content: { ...(editingFrontendSection.content || {}), buttonLink: e.target.value } })}
+                            className="w-full px-3 py-2 border border-gray-300 rounded-lg"
+                            placeholder="#menu"
+                          />
+                        </div>
+                      </div>
+                    </div>
+                  )}
+
+                  {/* ============================================ */}
+                  {/* QUALITY BANNER - Visual Editor */}
+                  {/* ============================================ */}
+                  {editingFrontendSection.type === 'qualityBanner' && (
+                    <div className="p-6 bg-gradient-to-b from-emerald-50 to-white border-b">
+                      <div className="flex items-center gap-2 mb-4">
+                        <span className="bg-emerald-600 text-white px-2 py-0.5 rounded text-sm font-bold">LIVE PREVIEW</span>
+                      </div>
+                      {/* Preview Panel */}
+                      <div className="rounded-xl overflow-hidden shadow-lg border-2 border-emerald-200 mb-6">
+                        <div className="bg-gradient-to-r from-emerald-700 via-green-600 to-teal-600 p-6 text-center">
+                          {editingFrontendSection.content?.badge && (
+                            <span className="inline-block bg-white/20 text-white text-xs font-bold px-3 py-1 rounded-full mb-3">
+                              {editingFrontendSection.content.badge}
+                            </span>
+                          )}
+                          <div className="flex items-center justify-center gap-3 mb-2">
+                            <span className="text-3xl">✨</span>
+                            <h2 className="text-2xl font-bold text-white">
+                              {editingFrontendSection.content?.title || 'Quality You Can Taste'}
+                            </h2>
+                            <span className="text-3xl">✨</span>
+                          </div>
+                          <p className="text-white/90 text-sm">
+                            {editingFrontendSection.content?.subtitle || 'All ingredients sourced fresh daily'}
+                          </p>
+                        </div>
+                      </div>
+                      {/* Editor Fields */}
+                      <div className="grid grid-cols-2 gap-4">
+                        <div className="col-span-2">
+                          <label className="block text-sm font-semibold text-gray-700 mb-1">Badge Text</label>
+                          <input
+                            type="text"
+                            value={editingFrontendSection.content?.badge || ''}
+                            onChange={(e) => setEditingFrontendSection({ ...editingFrontendSection, content: { ...(editingFrontendSection.content || {}), badge: e.target.value } })}
+                            className="w-full px-3 py-2 border border-gray-300 rounded-lg"
+                            placeholder="Fresh Guarantee"
+                          />
+                        </div>
+                        <div className="col-span-2">
+                          <label className="block text-sm font-semibold text-gray-700 mb-1">Title</label>
+                          <input
+                            type="text"
+                            value={editingFrontendSection.content?.title || ''}
+                            onChange={(e) => setEditingFrontendSection({ ...editingFrontendSection, content: { ...(editingFrontendSection.content || {}), title: e.target.value } })}
+                            className="w-full px-3 py-2 border border-gray-300 rounded-lg"
+                            placeholder="Quality You Can Taste"
+                          />
+                        </div>
+                        <div className="col-span-2">
+                          <label className="block text-sm font-semibold text-gray-700 mb-1">Subtitle</label>
+                          <input
+                            type="text"
+                            value={editingFrontendSection.content?.subtitle || ''}
+                            onChange={(e) => setEditingFrontendSection({ ...editingFrontendSection, content: { ...(editingFrontendSection.content || {}), subtitle: e.target.value } })}
+                            className="w-full px-3 py-2 border border-gray-300 rounded-lg"
+                            placeholder="All ingredients sourced fresh daily from local suppliers"
+                          />
+                        </div>
+                      </div>
+                    </div>
+                  )}
+
+                  {/* ============================================ */}
+                  {/* REVIEWS STRIP - Visual Editor */}
+                  {/* ============================================ */}
+                  {editingFrontendSection.type === 'reviewsStrip' && (
+                    <div className="p-6 bg-gradient-to-b from-amber-50 to-white border-b">
+                      <div className="flex items-center gap-2 mb-4">
+                        <span className="bg-amber-500 text-white px-2 py-0.5 rounded text-sm font-bold">LIVE PREVIEW</span>
+                      </div>
+                      {/* Preview Panel */}
+                      <div className="rounded-xl overflow-hidden shadow-lg border-2 border-amber-200 mb-6">
+                        <div className="bg-gradient-to-r from-amber-500 via-yellow-500 to-orange-500 p-5 flex items-center justify-between">
+                          <div className="flex items-center gap-4">
+                            <div className="flex">
+                              {[1,2,3,4,5].map(i => <span key={i} className="text-2xl">⭐</span>)}
+                            </div>
+                            <div className="text-white">
+                              <h3 className="text-lg font-bold">
+                                {editingFrontendSection.content?.title || 'Best authentic Mexican food in town!'}
+                              </h3>
+                              <p className="text-white/90 text-sm">
+                                {editingFrontendSection.content?.subtitle || 'Over 500+ 5-star reviews'}
+                              </p>
+                            </div>
+                          </div>
+                          <button className="bg-white text-amber-700 px-5 py-2 rounded-full font-bold text-sm shadow-lg">
+                            {editingFrontendSection.content?.buttonText || 'Read Reviews'}
+                          </button>
+                        </div>
+                      </div>
+                      {/* Editor Fields */}
+                      <div className="grid grid-cols-2 gap-4">
+                        <div className="col-span-2">
+                          <label className="block text-sm font-semibold text-gray-700 mb-1">Review Quote</label>
+                          <input
+                            type="text"
+                            value={editingFrontendSection.content?.title || ''}
+                            onChange={(e) => setEditingFrontendSection({ ...editingFrontendSection, content: { ...(editingFrontendSection.content || {}), title: e.target.value } })}
+                            className="w-full px-3 py-2 border border-gray-300 rounded-lg"
+                            placeholder="Best authentic Mexican food in town!"
+                          />
+                        </div>
+                        <div>
+                          <label className="block text-sm font-semibold text-gray-700 mb-1">Reviews Count</label>
+                          <input
+                            type="text"
+                            value={editingFrontendSection.content?.subtitle || ''}
+                            onChange={(e) => setEditingFrontendSection({ ...editingFrontendSection, content: { ...(editingFrontendSection.content || {}), subtitle: e.target.value } })}
+                            className="w-full px-3 py-2 border border-gray-300 rounded-lg"
+                            placeholder="Over 500+ 5-star reviews"
+                          />
+                        </div>
+                        <div>
+                          <label className="block text-sm font-semibold text-gray-700 mb-1">Button Text</label>
+                          <input
+                            type="text"
+                            value={editingFrontendSection.content?.buttonText || ''}
+                            onChange={(e) => setEditingFrontendSection({ ...editingFrontendSection, content: { ...(editingFrontendSection.content || {}), buttonText: e.target.value } })}
+                            className="w-full px-3 py-2 border border-gray-300 rounded-lg"
+                            placeholder="Read Reviews"
+                          />
+                        </div>
+                      </div>
+                    </div>
+                  )}
+
+                  {/* ============================================ */}
+                  {/* WEEKEND SPECIALS - Visual Editor (Grocery Add-on) */}
+                  {/* ============================================ */}
+                  {editingFrontendSection.type === 'weekendSpecials' && (
+                    <div className="p-6 bg-gradient-to-b from-yellow-50 to-white border-b">
+                      <div className="flex items-center gap-2 mb-4">
+                        <span className="bg-yellow-600 text-white px-2 py-0.5 rounded text-sm font-bold">LIVE PREVIEW</span>
+                        <span className="text-xs bg-green-100 text-green-700 px-2 py-0.5 rounded">Grocery Add-on</span>
+                      </div>
+                      {/* Preview Panel */}
+                      <div className="rounded-xl overflow-hidden shadow-lg border-2 border-yellow-200 mb-6">
+                        <div className="bg-gradient-to-r from-yellow-500 via-amber-500 to-orange-500 p-6 text-center">
+                          {editingFrontendSection.content?.badge && (
+                            <span className="inline-block bg-red-600 text-white text-xs font-bold px-3 py-1 rounded-full mb-3">
+                              {editingFrontendSection.content.badge}
+                            </span>
+                          )}
+                          <h2 className="text-3xl font-black text-white mb-2">
+                            🌟 {editingFrontendSection.content?.title || 'Weekend Specials'} 🌟
+                          </h2>
+                          <p className="text-white/90">
+                            {editingFrontendSection.content?.subtitle || 'Fresh deals every weekend'}
+                          </p>
+                        </div>
+                      </div>
+                      {/* Editor Fields */}
+                      <div className="grid grid-cols-2 gap-4">
+                        <div>
+                          <label className="block text-sm font-semibold text-gray-700 mb-1">Badge</label>
+                          <input
+                            type="text"
+                            value={editingFrontendSection.content?.badge || ''}
+                            onChange={(e) => setEditingFrontendSection({ ...editingFrontendSection, content: { ...(editingFrontendSection.content || {}), badge: e.target.value } })}
+                            className="w-full px-3 py-2 border border-gray-300 rounded-lg"
+                            placeholder="Weekend Only"
+                          />
+                        </div>
+                        <div>
+                          <label className="block text-sm font-semibold text-gray-700 mb-1">Title</label>
+                          <input
+                            type="text"
+                            value={editingFrontendSection.content?.title || ''}
+                            onChange={(e) => setEditingFrontendSection({ ...editingFrontendSection, content: { ...(editingFrontendSection.content || {}), title: e.target.value } })}
+                            className="w-full px-3 py-2 border border-gray-300 rounded-lg"
+                            placeholder="Weekend Specials"
+                          />
+                        </div>
+                        <div className="col-span-2">
+                          <label className="block text-sm font-semibold text-gray-700 mb-1">Subtitle</label>
+                          <input
+                            type="text"
+                            value={editingFrontendSection.content?.subtitle || ''}
+                            onChange={(e) => setEditingFrontendSection({ ...editingFrontendSection, content: { ...(editingFrontendSection.content || {}), subtitle: e.target.value } })}
+                            className="w-full px-3 py-2 border border-gray-300 rounded-lg"
+                            placeholder="Fresh deals every weekend"
+                          />
+                        </div>
+                      </div>
+                    </div>
+                  )}
+
+                  {/* ============================================ */}
+                  {/* BUNDLES - Visual Editor (Grocery Add-on) */}
+                  {/* ============================================ */}
+                  {editingFrontendSection.type === 'bundles' && (
+                    <div className="p-6 bg-gradient-to-b from-green-50 to-white border-b">
+                      <div className="flex items-center gap-2 mb-4">
+                        <span className="bg-green-600 text-white px-2 py-0.5 rounded text-sm font-bold">LIVE PREVIEW</span>
+                        <span className="text-xs bg-green-100 text-green-700 px-2 py-0.5 rounded">Grocery Add-on</span>
+                      </div>
+                      {/* Preview Panel */}
+                      <div className="rounded-xl overflow-hidden shadow-lg border-2 border-green-200 mb-6">
+                        <div className="bg-gradient-to-r from-green-600 via-emerald-500 to-teal-500 p-6 text-center">
+                          <span className="text-4xl mb-3 block">📦</span>
+                          <h2 className="text-2xl font-bold text-white mb-2">
+                            {editingFrontendSection.content?.title || 'Bundles & Packages'}
+                          </h2>
+                          <p className="text-white/90">
+                            {editingFrontendSection.content?.subtitle || 'Save with our combo deals'}
+                          </p>
+                        </div>
+                      </div>
+                      {/* Editor Fields */}
+                      <div className="grid grid-cols-1 gap-4">
+                        <div>
+                          <label className="block text-sm font-semibold text-gray-700 mb-1">Title</label>
+                          <input
+                            type="text"
+                            value={editingFrontendSection.content?.title || ''}
+                            onChange={(e) => setEditingFrontendSection({ ...editingFrontendSection, content: { ...(editingFrontendSection.content || {}), title: e.target.value } })}
+                            className="w-full px-3 py-2 border border-gray-300 rounded-lg"
+                            placeholder="Bundles & Packages"
+                          />
+                        </div>
+                        <div>
+                          <label className="block text-sm font-semibold text-gray-700 mb-1">Subtitle</label>
+                          <input
+                            type="text"
+                            value={editingFrontendSection.content?.subtitle || ''}
+                            onChange={(e) => setEditingFrontendSection({ ...editingFrontendSection, content: { ...(editingFrontendSection.content || {}), subtitle: e.target.value } })}
+                            className="w-full px-3 py-2 border border-gray-300 rounded-lg"
+                            placeholder="Save with our combo deals"
+                          />
+                        </div>
+                      </div>
+                    </div>
+                  )}
+
+                  {/* ============================================ */}
+                  {/* AISLES - Visual Editor (Grocery Add-on) */}
+                  {/* ============================================ */}
+                  {editingFrontendSection.type === 'aisles' && (
+                    <div className="p-6 bg-gradient-to-b from-teal-50 to-white border-b">
+                      <div className="flex items-center gap-2 mb-4">
+                        <span className="bg-teal-600 text-white px-2 py-0.5 rounded text-sm font-bold">LIVE PREVIEW</span>
+                        <span className="text-xs bg-green-100 text-green-700 px-2 py-0.5 rounded">Grocery Add-on</span>
+                      </div>
+                      {/* Preview Panel */}
+                      <div className="rounded-xl overflow-hidden shadow-lg border-2 border-teal-200 mb-6">
+                        <div className="bg-gradient-to-r from-teal-600 via-cyan-500 to-blue-500 p-6">
+                          <h2 className="text-2xl font-bold text-white mb-2 text-center">
+                            🏪 {editingFrontendSection.content?.title || 'Browse Aisles'}
+                          </h2>
+                          <p className="text-white/90 text-center mb-4">
+                            {editingFrontendSection.content?.subtitle || 'Find what you need'}
+                          </p>
+                          <div className="flex justify-center gap-3 flex-wrap">
+                            {['Produce', 'Dairy', 'Meats', 'Pantry', 'Drinks'].map(aisle => (
+                              <span key={aisle} className="bg-white/20 text-white px-4 py-2 rounded-full text-sm font-medium">
+                                {aisle}
+                              </span>
+                            ))}
+                          </div>
+                        </div>
+                      </div>
+                      {/* Editor Fields */}
+                      <div className="grid grid-cols-1 gap-4">
+                        <div>
+                          <label className="block text-sm font-semibold text-gray-700 mb-1">Title</label>
+                          <input
+                            type="text"
+                            value={editingFrontendSection.content?.title || ''}
+                            onChange={(e) => setEditingFrontendSection({ ...editingFrontendSection, content: { ...(editingFrontendSection.content || {}), title: e.target.value } })}
+                            className="w-full px-3 py-2 border border-gray-300 rounded-lg"
+                            placeholder="Browse Aisles"
+                          />
+                        </div>
+                        <div>
+                          <label className="block text-sm font-semibold text-gray-700 mb-1">Subtitle</label>
+                          <input
+                            type="text"
+                            value={editingFrontendSection.content?.subtitle || ''}
+                            onChange={(e) => setEditingFrontendSection({ ...editingFrontendSection, content: { ...(editingFrontendSection.content || {}), subtitle: e.target.value } })}
+                            className="w-full px-3 py-2 border border-gray-300 rounded-lg"
+                            placeholder="Find what you need"
+                          />
+                        </div>
+                      </div>
+                    </div>
+                  )}
+
+                  {/* ============================================ */}
+                  {/* DAILY FRESH - Visual Editor (Panaderia Add-on) */}
+                  {/* ============================================ */}
+                  {editingFrontendSection.type === 'dailyFresh' && (
+                    <div className="p-6 bg-gradient-to-b from-amber-50 to-white border-b">
+                      <div className="flex items-center gap-2 mb-4">
+                        <span className="bg-amber-600 text-white px-2 py-0.5 rounded text-sm font-bold">LIVE PREVIEW</span>
+                        <span className="text-xs bg-amber-100 text-amber-700 px-2 py-0.5 rounded">Panaderia Add-on</span>
+                      </div>
+                      {/* Preview Panel */}
+                      <div className="rounded-xl overflow-hidden shadow-lg border-2 border-amber-200 mb-6">
+                        <div className="bg-gradient-to-r from-amber-600 via-orange-500 to-yellow-500 p-6 text-center">
+                          {editingFrontendSection.content?.badge && (
+                            <span className="inline-block bg-white text-amber-700 text-xs font-bold px-3 py-1 rounded-full mb-3">
+                              {editingFrontendSection.content.badge}
+                            </span>
+                          )}
+                          <span className="text-4xl mb-3 block">🥐</span>
+                          <h2 className="text-2xl font-bold text-white mb-2">
+                            {editingFrontendSection.content?.title || 'Daily Fresh'}
+                          </h2>
+                          <p className="text-white/90">
+                            {editingFrontendSection.content?.subtitle || 'Baked fresh every day'}
+                          </p>
+                        </div>
+                      </div>
+                      {/* Editor Fields */}
+                      <div className="grid grid-cols-2 gap-4">
+                        <div>
+                          <label className="block text-sm font-semibold text-gray-700 mb-1">Badge</label>
+                          <input
+                            type="text"
+                            value={editingFrontendSection.content?.badge || ''}
+                            onChange={(e) => setEditingFrontendSection({ ...editingFrontendSection, content: { ...(editingFrontendSection.content || {}), badge: e.target.value } })}
+                            className="w-full px-3 py-2 border border-gray-300 rounded-lg"
+                            placeholder="Fresh"
+                          />
+                        </div>
+                        <div>
+                          <label className="block text-sm font-semibold text-gray-700 mb-1">Title</label>
+                          <input
+                            type="text"
+                            value={editingFrontendSection.content?.title || ''}
+                            onChange={(e) => setEditingFrontendSection({ ...editingFrontendSection, content: { ...(editingFrontendSection.content || {}), title: e.target.value } })}
+                            className="w-full px-3 py-2 border border-gray-300 rounded-lg"
+                            placeholder="Daily Fresh"
+                          />
+                        </div>
+                        <div className="col-span-2">
+                          <label className="block text-sm font-semibold text-gray-700 mb-1">Subtitle</label>
+                          <input
+                            type="text"
+                            value={editingFrontendSection.content?.subtitle || ''}
+                            onChange={(e) => setEditingFrontendSection({ ...editingFrontendSection, content: { ...(editingFrontendSection.content || {}), subtitle: e.target.value } })}
+                            className="w-full px-3 py-2 border border-gray-300 rounded-lg"
+                            placeholder="Baked fresh every day"
+                          />
+                        </div>
+                      </div>
+                    </div>
+                  )}
+
+                  {/* ============================================ */}
+                  {/* BOX BUILDER - Visual Editor (Panaderia Add-on) */}
+                  {/* ============================================ */}
+                  {editingFrontendSection.type === 'boxBuilder' && (
+                    <div className="p-6 bg-gradient-to-b from-orange-50 to-white border-b">
+                      <div className="flex items-center gap-2 mb-4">
+                        <span className="bg-orange-600 text-white px-2 py-0.5 rounded text-sm font-bold">LIVE PREVIEW</span>
+                        <span className="text-xs bg-amber-100 text-amber-700 px-2 py-0.5 rounded">Panaderia Add-on</span>
+                      </div>
+                      {/* Preview Panel */}
+                      <div className="rounded-xl overflow-hidden shadow-lg border-2 border-orange-200 mb-6">
+                        <div className="bg-gradient-to-r from-orange-600 via-amber-500 to-yellow-500 p-6 flex items-center justify-between">
+                          <div className="text-white">
+                            <span className="text-3xl mb-2 block">📦</span>
+                            <h2 className="text-2xl font-bold mb-1">
+                              {editingFrontendSection.content?.title || 'Build Your Box'}
+                            </h2>
+                            <p className="text-white/90 text-sm">
+                              {editingFrontendSection.content?.subtitle || 'Create your perfect selection'}
+                            </p>
+                          </div>
+                          <button className="bg-white text-orange-700 px-6 py-3 rounded-full font-bold text-sm shadow-lg">
+                            {editingFrontendSection.content?.buttonText || 'Start Building'}
+                          </button>
+                        </div>
+                      </div>
+                      {/* Editor Fields */}
+                      <div className="grid grid-cols-2 gap-4">
+                        <div className="col-span-2">
+                          <label className="block text-sm font-semibold text-gray-700 mb-1">Title</label>
+                          <input
+                            type="text"
+                            value={editingFrontendSection.content?.title || ''}
+                            onChange={(e) => setEditingFrontendSection({ ...editingFrontendSection, content: { ...(editingFrontendSection.content || {}), title: e.target.value } })}
+                            className="w-full px-3 py-2 border border-gray-300 rounded-lg"
+                            placeholder="Build Your Box"
+                          />
+                        </div>
+                        <div>
+                          <label className="block text-sm font-semibold text-gray-700 mb-1">Subtitle</label>
+                          <input
+                            type="text"
+                            value={editingFrontendSection.content?.subtitle || ''}
+                            onChange={(e) => setEditingFrontendSection({ ...editingFrontendSection, content: { ...(editingFrontendSection.content || {}), subtitle: e.target.value } })}
+                            className="w-full px-3 py-2 border border-gray-300 rounded-lg"
+                            placeholder="Create your perfect selection"
+                          />
+                        </div>
+                        <div>
+                          <label className="block text-sm font-semibold text-gray-700 mb-1">Button Text</label>
+                          <input
+                            type="text"
+                            value={editingFrontendSection.content?.buttonText || ''}
+                            onChange={(e) => setEditingFrontendSection({ ...editingFrontendSection, content: { ...(editingFrontendSection.content || {}), buttonText: e.target.value } })}
+                            className="w-full px-3 py-2 border border-gray-300 rounded-lg"
+                            placeholder="Start Building"
+                          />
+                        </div>
+                      </div>
+                    </div>
+                  )}
+
+                  {/* ============================================ */}
+                  {/* CATEGORIES - Visual Editor (Panaderia Add-on) */}
+                  {/* ============================================ */}
+                  {editingFrontendSection.type === 'categories' && (
+                    <div className="p-6 bg-gradient-to-b from-yellow-50 to-white border-b">
+                      <div className="flex items-center gap-2 mb-4">
+                        <span className="bg-yellow-600 text-white px-2 py-0.5 rounded text-sm font-bold">LIVE PREVIEW</span>
+                        <span className="text-xs bg-amber-100 text-amber-700 px-2 py-0.5 rounded">Panaderia Add-on</span>
+                      </div>
+                      {/* Preview Panel */}
+                      <div className="rounded-xl overflow-hidden shadow-lg border-2 border-yellow-200 mb-6">
+                        <div className="bg-gradient-to-r from-yellow-500 via-amber-400 to-orange-400 p-6">
+                          <h2 className="text-2xl font-bold text-white mb-2 text-center">
+                            🍞 {editingFrontendSection.content?.title || 'Browse Categories'}
+                          </h2>
+                          <p className="text-white/90 text-center mb-4">
+                            {editingFrontendSection.content?.subtitle || 'Find your favorites'}
+                          </p>
+                          <div className="flex justify-center gap-3 flex-wrap">
+                            {['Conchas', 'Cuernos', 'Polvorones', 'Empanadas', 'Orejas'].map(cat => (
+                              <span key={cat} className="bg-white/20 text-white px-4 py-2 rounded-full text-sm font-medium">
+                                {cat}
+                              </span>
+                            ))}
+                          </div>
+                        </div>
+                      </div>
+                      {/* Editor Fields */}
+                      <div className="grid grid-cols-1 gap-4">
+                        <div>
+                          <label className="block text-sm font-semibold text-gray-700 mb-1">Title</label>
+                          <input
+                            type="text"
+                            value={editingFrontendSection.content?.title || ''}
+                            onChange={(e) => setEditingFrontendSection({ ...editingFrontendSection, content: { ...(editingFrontendSection.content || {}), title: e.target.value } })}
+                            className="w-full px-3 py-2 border border-gray-300 rounded-lg"
+                            placeholder="Browse Categories"
+                          />
+                        </div>
+                        <div>
+                          <label className="block text-sm font-semibold text-gray-700 mb-1">Subtitle</label>
+                          <input
+                            type="text"
+                            value={editingFrontendSection.content?.subtitle || ''}
+                            onChange={(e) => setEditingFrontendSection({ ...editingFrontendSection, content: { ...(editingFrontendSection.content || {}), subtitle: e.target.value } })}
+                            className="w-full px-3 py-2 border border-gray-300 rounded-lg"
+                            placeholder="Find your favorites"
+                          />
+                        </div>
+                      </div>
+                    </div>
+                  )}
+
+                  {/* ============================================ */}
+                  {/* GENERIC FALLBACK - For any unknown section types */}
+                  {/* ============================================ */}
+                  {!['featuredCarousel', 'hero', 'promoBanner1', 'groceryBanner', 'weCookBanner', 'dealStrip', 'qualityBanner', 'reviewsStrip', 'weekendSpecials', 'bundles', 'aisles', 'dailyFresh', 'boxBuilder', 'categories', 'quickInfo', 'menuSections'].includes(editingFrontendSection.type) && (
                     <div className="p-6">
                       <h4 className="font-bold text-gray-900 mb-4 flex items-center gap-2">
                         <span className="bg-gray-200 text-gray-700 px-2 py-0.5 rounded text-sm">CONTENT</span>
