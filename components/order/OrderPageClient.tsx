@@ -336,6 +336,10 @@ export default function OrderPageClient({
   // Declare this early so it can be used in useMemo hooks below
   const [cateringPackages, setCateringPackages] = useState<CateringPackage[]>(initialCateringPackages);
 
+  // Restaurant open/closed status - can be updated in real-time
+  const [restaurantIsOpen, setRestaurantIsOpen] = useState(isOpen);
+  const [restaurantClosedMessage, setRestaurantClosedMessage] = useState(closedMessage || '');
+
   useEffect(() => {
     if (typeof window === 'undefined') return;
     const media = window.matchMedia('(prefers-reduced-motion: reduce)');
@@ -917,8 +921,8 @@ export default function OrderPageClient({
 
   const handleAddToCart = useCallback(
     (item: OrderMenuItem, image?: string | null) => {
-      if (!isOpen) {
-        showNotification(closedMessage || 'We are currently closed. Please check back during our operating hours.');
+      if (!restaurantIsOpen) {
+        showNotification(restaurantClosedMessage || 'We are currently closed. Please check back during our operating hours.');
         return;
       }
       if (!item.available) return;
@@ -934,13 +938,13 @@ export default function OrderPageClient({
 
       showNotification(`Added ${item.name} to cart`);
     },
-    [addToCart, showNotification, isOpen, closedMessage],
+    [addToCart, showNotification, restaurantIsOpen, restaurantClosedMessage],
   );
 
   const handleAddHighlight = useCallback(
     (card: HighlightCard) => {
-      if (!isOpen) {
-        showNotification(closedMessage || 'We are currently closed. Please check back during our operating hours.');
+      if (!restaurantIsOpen) {
+        showNotification(restaurantClosedMessage || 'We are currently closed. Please check back during our operating hours.');
         return;
       }
       addToCart({
@@ -955,13 +959,13 @@ export default function OrderPageClient({
       });
       showNotification(`Bundle added: ${card.title}`);
     },
-    [addToCart, showNotification, isOpen, closedMessage],
+    [addToCart, showNotification, restaurantIsOpen, restaurantClosedMessage],
   );
 
   const handleCarouselAddToCart = useCallback(
     (item: { id: string; name: string; description: string; price: number; image?: string | null; displayImage?: string }) => {
-      if (!isOpen) {
-        showNotification(closedMessage || 'We are currently closed. Please check back during our operating hours.');
+      if (!restaurantIsOpen) {
+        showNotification(restaurantClosedMessage || 'We are currently closed. Please check back during our operating hours.');
         return;
       }
       addToCart({
@@ -974,7 +978,7 @@ export default function OrderPageClient({
       });
       showNotification(`Added ${item.name} to cart`);
     },
-    [addToCart, showNotification, isOpen, closedMessage],
+    [addToCart, showNotification, restaurantIsOpen, restaurantClosedMessage],
   );
 
   const enrichedSections = useMemo(() => {
@@ -1087,6 +1091,38 @@ export default function OrderPageClient({
     
     // Refresh every 30 seconds for real-time updates
     const interval = setInterval(fetchCateringPackages, 30000);
+    return () => clearInterval(interval);
+  }, []);
+
+  // Poll restaurant status every 10 seconds for real-time open/closed updates
+  useEffect(() => {
+    const fetchRestaurantStatus = async () => {
+      try {
+        const timestamp = Date.now();
+        const res = await fetch(`/api/restaurant-status?t=${timestamp}`, {
+          cache: 'no-store',
+          headers: {
+            'Cache-Control': 'no-cache',
+            'Pragma': 'no-cache',
+          },
+        });
+        if (res.ok) {
+          const data = await res.json();
+          if (typeof data.isOpen === 'boolean') {
+            setRestaurantIsOpen(data.isOpen);
+            setRestaurantClosedMessage(data.message || '');
+          }
+        }
+      } catch (err) {
+        console.error('Failed to fetch restaurant status', err);
+      }
+    };
+
+    // Fetch immediately on mount
+    fetchRestaurantStatus();
+
+    // Then poll every 10 seconds for quick updates when admin toggles
+    const interval = setInterval(fetchRestaurantStatus, 10000);
     return () => clearInterval(interval);
   }, []);
 
@@ -2020,9 +2056,9 @@ export default function OrderPageClient({
         </div>
 
         {/* Promotional Banner */}
-        <div className={`border-t border-white/10 ${isOpen ? 'bg-[#6B1C1C]' : 'bg-red-900'}`}>
+        <div className={`border-t border-white/10 ${restaurantIsOpen ? 'bg-[#6B1C1C]' : 'bg-red-900'}`}>
           <div className="mx-auto max-w-7xl px-4 py-2 flex items-center justify-center gap-4">
-            {isOpen ? (
+            {restaurantIsOpen ? (
               <>
                 <span className="text-amber-300 font-semibold text-sm">🎉 Order online for pickup or delivery</span>
                 <span className="text-white/50">•</span>
@@ -2030,7 +2066,7 @@ export default function OrderPageClient({
               </>
             ) : (
               <>
-                <span className="text-red-200 font-semibold text-sm">🚫 {closedMessage || 'Ordering is currently closed'}</span>
+                <span className="text-red-200 font-semibold text-sm">🚫 {restaurantClosedMessage || 'Ordering is currently closed'}</span>
                 {hoursDisplay && (
                   <>
                     <span className="text-white/50">•</span>
