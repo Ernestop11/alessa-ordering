@@ -34,21 +34,29 @@ export async function PUT(
     const currentSettings = (tenantData?.settings || {}) as any;
     const currentSections = currentSettings.frontendUISections || [];
 
-    // Find and update the section
+    // Find and update the section, or create it if it doesn't exist (upsert)
     const sectionIndex = currentSections.findIndex((s: any) => s.id === sectionId);
-    if (sectionIndex === -1) {
-      return NextResponse.json(
-        { error: 'Section not found' },
-        { status: 404 }
-      );
-    }
 
-    // Update the section
-    const updatedSections = [...currentSections];
-    updatedSections[sectionIndex] = {
-      ...updatedSections[sectionIndex],
-      ...body,
-    };
+    let updatedSections = [...currentSections];
+    if (sectionIndex === -1) {
+      // Section doesn't exist - create it with the provided data
+      const newSection = {
+        id: sectionId,
+        name: body.name || sectionId,
+        type: body.type || sectionId,
+        position: currentSections.length,
+        enabled: body.enabled !== undefined ? body.enabled : true,
+        content: body.content || {},
+        ...body,
+      };
+      updatedSections.push(newSection);
+    } else {
+      // Update existing section
+      updatedSections[sectionIndex] = {
+        ...updatedSections[sectionIndex],
+        ...body,
+      };
+    }
 
     // Save to tenant settings
     await prisma.tenant.update({
