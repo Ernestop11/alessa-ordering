@@ -291,7 +291,7 @@ export default function OrderPageClient({
   isOpen = false, // Default to closed - server should always pass explicit value
   closedMessage,
   frontendConfig,
-  frontendUISections = [],
+  frontendUISections: initialFrontendUISections = [],
 }: OrderPageClientProps) {
   const searchParams = useSearchParams();
   const router = useRouter();
@@ -299,6 +299,42 @@ export default function OrderPageClient({
   const assets = getTenantAssets(tenantSlug || tenant.slug);
   const { addToCart, items: cartItems } = useCart();
   const cartItemCount = useMemo(() => cartItems.reduce((sum, item) => sum + item.quantity, 0), [cartItems]);
+
+  // Client-side state for frontendUISections with polling (same pattern as Accept Orders)
+  const [frontendUISections, setFrontendUISections] = useState<FrontendUISection[]>(initialFrontendUISections);
+  
+  // Poll for frontend sections updates (every 10 seconds, like Accept Orders polls every 30s)
+  useEffect(() => {
+    const fetchSections = async () => {
+      try {
+        const res = await fetch(`/api/frontend-ui-sections?t=${Date.now()}`, {
+          cache: 'no-store',
+          headers: {
+            'Cache-Control': 'no-cache, no-store, must-revalidate',
+          },
+        });
+        if (res.ok) {
+          const data = await res.json();
+          if (Array.isArray(data)) {
+            setFrontendUISections(data);
+          }
+        }
+      } catch (err) {
+        // Silently fail - don't spam console
+      }
+    };
+    
+    // Initial fetch after mount
+    const timeout = setTimeout(fetchSections, 2000);
+    
+    // Poll every 10 seconds
+    const interval = setInterval(fetchSections, 10000);
+    
+    return () => {
+      clearTimeout(timeout);
+      clearInterval(interval);
+    };
+  }, []);
 
   // Menu sections with real-time availability updates
   const [currentSections, setCurrentSections] = useState<OrderMenuSection[]>(sections);

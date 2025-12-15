@@ -731,7 +731,7 @@ export default function MenuEditorPage() {
       await fetchFrontendUISections();
       setEditingFrontendSection(null);
       
-      // Trigger router refresh for immediate UI update
+      // Trigger router refresh for immediate frontend update (same as Accept Orders)
       router.refresh();
     } catch (err) {
       console.error('Failed to save frontend section', err);
@@ -741,7 +741,7 @@ export default function MenuEditorPage() {
     }
   };
 
-  // Delete section
+  // Delete section (same pattern as Accept Orders)
   const handleDeleteFrontendSection = async (sectionId: string) => {
     if (!confirm('Delete this section? This cannot be undone.')) return;
     
@@ -759,6 +759,10 @@ export default function MenuEditorPage() {
       
       await fetchFrontendUISections();
       setSyncStatus('synced');
+      
+      // Trigger router refresh for immediate frontend update (same as Accept Orders)
+      router.refresh();
+      
       setTimeout(() => setSyncStatus('idle'), 2000);
     } catch (err) {
       console.error('Failed to delete section', err);
@@ -766,7 +770,7 @@ export default function MenuEditorPage() {
     }
   };
 
-  // Move section up/down - INSTANT SYNC
+  // Move section up/down - INSTANT SYNC (same pattern as Accept Orders)
   const handleMoveSection = async (sectionId: string, direction: 'up' | 'down') => {
     setReorderingSection(sectionId);
     setSyncStatus('syncing');
@@ -787,6 +791,9 @@ export default function MenuEditorPage() {
       setFrontendUISections(data.sections);
       setSyncStatus('synced');
       
+      // Trigger router refresh for immediate frontend update (same as Accept Orders)
+      router.refresh();
+      
       // Reset sync indicator after 2s
       setTimeout(() => setSyncStatus('idle'), 2000);
     } catch (err) {
@@ -798,7 +805,7 @@ export default function MenuEditorPage() {
     }
   };
 
-  // Toggle section enabled/disabled - INSTANT SYNC
+  // Toggle section enabled/disabled - INSTANT SYNC (same pattern as Accept Orders)
   const handleToggleSection = async (sectionId: string, currentEnabled: boolean) => {
     setSyncStatus('syncing');
     
@@ -820,6 +827,10 @@ export default function MenuEditorPage() {
       const data = await res.json();
       setFrontendUISections(data.sections);
       setSyncStatus('synced');
+      
+      // Trigger router refresh for immediate frontend update (same as Accept Orders)
+      router.refresh();
+      
       setTimeout(() => setSyncStatus('idle'), 2000);
     } catch (err) {
       console.error('Failed to toggle section', err);
