@@ -473,18 +473,16 @@ export default function OrderPageClient({
     requestAnimationFrame(() => {
       const sectionEl = document.getElementById(`section-${activeSectionId}`);
       if (sectionEl) {
-        const headerHeight = 140; // Account for fixed header and nav
-        const elementPosition = sectionEl.getBoundingClientRect().top + window.pageYOffset;
-        // Use instant scroll on Safari for better performance, smooth on others
-        window.scrollTo({ 
-          top: elementPosition - headerHeight, 
-          behavior: isSafariBrowser ? 'auto' : 'smooth' 
+        const offset = 150; // Header (72px) + nav (~50px) + padding
+        const elementPosition = sectionEl.getBoundingClientRect().top + window.scrollY;
+        window.scrollTo({
+          top: elementPosition - offset,
+          behavior: isSafariBrowser ? 'auto' : 'smooth'
         });
-        
-        // Reset the flag after scrolling completes
+
         scrollTimeoutRef.current = setTimeout(() => {
           isUserScrollingRef.current = false;
-        }, isSafariBrowser ? 2000 : 1500);
+        }, 1200);
       }
     });
     
@@ -791,7 +789,6 @@ export default function OrderPageClient({
 
     const observer = new IntersectionObserver(
       (entries) => {
-        // Use requestAnimationFrame to batch DOM reads and prevent Chrome flashing
         requestAnimationFrame(() => {
           const now = Date.now();
           if (now - lastUpdate < throttleDelay) return;
@@ -805,9 +802,7 @@ export default function OrderPageClient({
             const targetId = sectionsToObserve.find((section) => section.el === visibleSection.target)?.id;
             if (targetId && targetId !== activeSectionId) {
               // Only update if user is NOT manually scrolling (clicking category button)
-              // This prevents conflicts with manual scrolling
               if (!isUserScrollingRef.current) {
-                // Batch state update to prevent flashing
                 setActiveSectionId(targetId);
               }
             }
@@ -815,8 +810,9 @@ export default function OrderPageClient({
         });
       },
       {
-        rootMargin: '-140px 0px -40%',
-        threshold: 0.3, // Single threshold to reduce callbacks
+        // Header (72px) + nav bar (~50px) = ~122px, use 130px for safe margin
+        rootMargin: '-130px 0px -50%',
+        threshold: 0.2,
       },
     );
 
@@ -2117,108 +2113,70 @@ export default function OrderPageClient({
         </div>
       </header>
 
-      {/* Category Navigation - Enhanced Sticky Bar with Auto-Scroll */}
-      <div className="sticky top-[88px] z-30 bg-gradient-to-b from-[#1a1a1a] to-[#1a1a1a]/95 backdrop-blur-md border-b border-white/10 shadow-lg shadow-black/20">
-        <div className="mx-auto max-w-7xl px-4 py-2">
-          <div className="flex items-center gap-4">
-            {/* Categories - Enhanced scrollable nav */}
+      {/* Category Navigation - Sticky Bar */}
+      <div className="sticky top-[72px] z-30 bg-[#1a0a0a]/98 backdrop-blur-lg border-b border-[#C41E3A]/20 shadow-xl shadow-black/30">
+        <div className="mx-auto max-w-7xl px-3 py-2">
+          <div className="flex items-center gap-3">
+            {/* Categories - Scrollable nav */}
             <div
               ref={categoryNavRef}
-              className="flex-1 overflow-x-auto scrollbar-hide scroll-smooth"
+              className="flex-1 overflow-x-auto scroll-smooth"
               style={{ scrollbarWidth: 'none', msOverflowStyle: 'none' }}
             >
-              <nav className="flex items-center gap-1 py-1">
-                {navSections.map((section, index) => {
+              <nav className="flex items-center gap-2 py-1">
+                {navSections.map((section) => {
                   const isActive = activeSectionId === section.id;
                   return (
                     <button
                       key={section.id}
                       onClick={() => {
-                        // Mark as user-initiated scroll to prevent IntersectionObserver conflicts
                         isUserScrollingRef.current = true;
-                        
-                        // Clear any pending timeout
-                        if (scrollTimeoutRef.current) {
-                          clearTimeout(scrollTimeoutRef.current);
-                        }
-                        
+                        if (scrollTimeoutRef.current) clearTimeout(scrollTimeoutRef.current);
+
                         setActiveSectionId(section.id);
                         const element = document.getElementById(`section-${section.id}`);
                         if (element) {
-                          const headerHeight = 160;
-                          const elementPosition = element.getBoundingClientRect().top + window.pageYOffset;
-                          window.scrollTo({ top: elementPosition - headerHeight, behavior: isSafariBrowser ? 'auto' : 'smooth' });
-                          
-                          // Reset flag after scroll completes (Safari needs more time)
+                          const offset = 150; // Header (72px) + nav (~50px) + padding
+                          const elementPosition = element.getBoundingClientRect().top + window.scrollY;
+                          window.scrollTo({ top: elementPosition - offset, behavior: 'smooth' });
+
                           scrollTimeoutRef.current = setTimeout(() => {
                             isUserScrollingRef.current = false;
-                          }, isSafariBrowser ? 2000 : 1500);
+                          }, 1200);
                         } else {
-                          // If element not found, reset flag immediately
-                          console.warn(`Section element not found: section-${section.id}`);
                           isUserScrollingRef.current = false;
                         }
                       }}
                       data-section-button={section.id}
-                      className={`flex-shrink-0 px-5 py-2.5 rounded-full text-sm font-semibold transition-all duration-300 relative ${
+                      className={`flex-shrink-0 px-4 py-2 rounded-full text-sm font-medium whitespace-nowrap transition-all duration-200 ${
                         isActive
-                          ? 'bg-gradient-to-r from-[#C41E3A] to-[#FF6B6B] text-white shadow-lg shadow-[#C41E3A]/30 scale-105 ring-2 ring-[#FF6B6B]/50'
-                          : 'text-white/60 hover:text-white hover:bg-white/10'
+                          ? 'bg-[#C41E3A] text-white shadow-lg shadow-[#C41E3A]/40'
+                          : 'bg-white/5 text-white/70 hover:bg-white/10 hover:text-white'
                       }`}
                     >
-                      <span className="relative z-10 flex items-center gap-2">
-                        {isActive && (
-                          <>
-                            <span className="w-2 h-2 rounded-full bg-white animate-pulse" />
-                            <span className="absolute -top-1 -right-1 w-3 h-3 rounded-full bg-[#FFD700] border-2 border-white" />
-                          </>
-                        )}
-                        {section.name}
-                      </span>
-                      {/* Active indicator line */}
-                      {isActive && (
-                        <span className="absolute bottom-0 left-1/2 -translate-x-1/2 w-3/4 h-0.5 bg-white rounded-full" />
-                      )}
+                      {section.name}
                     </button>
                   );
                 })}
               </nav>
             </div>
 
-            {/* Progress indicator & View Toggles */}
-            <div className="hidden md:flex items-center gap-4 border-l border-white/10 pl-4">
-              {/* Progress bar */}
-              <div className="flex items-center gap-2">
-                <div className="w-20 h-1.5 rounded-full bg-white/10 overflow-hidden">
-                  <div
-                    className="h-full bg-gradient-to-r from-[#C41E3A] to-[#FFD700] rounded-full transition-all duration-500"
-                    style={{
-                      width: `${((navSections.findIndex(s => s.id === activeSectionId) + 1) / navSections.length) * 100}%`
-                    }}
-                  />
-                </div>
-                <span className="text-xs text-white/50 font-medium min-w-[40px]">
-                  {navSections.findIndex(s => s.id === activeSectionId) + 1}/{navSections.length}
-                </span>
-              </div>
-
-              {/* View toggles */}
-              <div className="flex items-center gap-1 rounded-xl bg-[#2a2a2a] p-1">
-                {LAYOUTS.map((layout) => (
-                  <button
-                    key={layout.id}
-                    onClick={() => setActiveLayout(layout.id)}
-                    className={`rounded-lg px-3 py-2 text-xs font-medium transition-all duration-200 ${
-                      activeLayout === layout.id
-                        ? 'bg-[#C41E3A] text-white shadow-md'
-                        : 'text-white/50 hover:text-white hover:bg-white/10'
-                    }`}
-                    title={layout.label}
-                  >
-                    {layout.icon}
-                  </button>
-                ))}
-              </div>
+            {/* View toggles - Desktop only */}
+            <div className="hidden md:flex items-center gap-1 rounded-lg bg-white/5 p-1 border border-white/10">
+              {LAYOUTS.map((layout) => (
+                <button
+                  key={layout.id}
+                  onClick={() => setActiveLayout(layout.id)}
+                  className={`rounded-md px-2.5 py-1.5 text-xs transition-all ${
+                    activeLayout === layout.id
+                      ? 'bg-[#C41E3A] text-white'
+                      : 'text-white/50 hover:text-white'
+                  }`}
+                  title={layout.label}
+                >
+                  {layout.icon}
+                </button>
+              ))}
             </div>
           </div>
         </div>
@@ -2309,9 +2267,9 @@ export default function OrderPageClient({
                       setActiveSectionId(firstSection.id);
                       const element = document.getElementById(`section-${firstSection.id}`);
                       if (element) {
-                        const headerHeight = 160;
-                        const elementPosition = element.getBoundingClientRect().top + window.pageYOffset;
-                        window.scrollTo({ top: elementPosition - headerHeight, behavior: 'smooth' });
+                        const offset = 150;
+                        const elementPosition = element.getBoundingClientRect().top + window.scrollY;
+                        window.scrollTo({ top: elementPosition - offset, behavior: 'smooth' });
                       }
                     }
                   }}
@@ -3258,7 +3216,7 @@ export default function OrderPageClient({
               ref={(el) => {
                 sectionRefs.current[section.id] = el;
               }}
-              className="scroll-mt-32 mb-10"
+              className="scroll-mt-40 mb-10"
             >
               {/* Section Header with varied styles based on index */}
               <header className="mb-6">
