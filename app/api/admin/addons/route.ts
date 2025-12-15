@@ -205,6 +205,7 @@ function getSectionName(sectionType: string, addOnName: string): string {
     weekendSpecials: 'Weekend Specials',
     bundles: 'Bundles & Packages',
     groceryBanner: 'Grocery Store',
+    panaderiaBanner: 'Bakery Banner',
     aisles: 'Grocery Aisles',
     dailyFresh: 'Daily Fresh',
     boxBuilder: 'Box Builder',
@@ -250,6 +251,14 @@ function getDefaultSectionContent(sectionType: string, addOn: any): any {
       subtitle: 'Fresh produce and essentials',
       buttonText: 'Shop Grocery',
       buttonLink: '/grocery',
+    },
+    panaderiaBanner: {
+      ...baseContent,
+      title: 'Fresh Bakery',
+      subtitle: 'Authentic Mexican Pan Dulce & Breads',
+      badge: '🥐 Baked Fresh Daily',
+      buttonText: 'Browse Bakery',
+      buttonLink: '/bakery',
     },
     aisles: {
       ...baseContent,

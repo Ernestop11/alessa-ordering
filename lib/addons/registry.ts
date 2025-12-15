@@ -77,6 +77,7 @@ export const AVAILABLE_ADDONS: Record<string, AddOn> = {
     },
     status: 'active',
     sections: [
+      'panaderiaBanner',
       'dailyFresh',
       'boxBuilder',
       'categories',
