@@ -332,21 +332,6 @@ export default function OrderPageClient({
     setHasHydratedLayout(true);
   }, [searchParams, hasHydratedLayout]);
   
-  // Initialize activeSectionId after navSections is computed
-  const [activeSectionId, setActiveSectionId] = useState('');
-  // Track if scroll is user-initiated (clicking category button) vs observer-initiated (scrolling)
-  const isUserScrollingRef = useRef(false);
-  const scrollTimeoutRef = useRef<NodeJS.Timeout | null>(null);
-  
-  // Set activeSectionId based on URL param or first section after navSections is available
-  useEffect(() => {
-    const categoryParam = searchParams.get('category');
-    if (categoryParam && navSections.some((section) => section.id === categoryParam)) {
-      setActiveSectionId(categoryParam);
-    } else if (navSections.length > 0 && !activeSectionId) {
-      setActiveSectionId(navSections[0]?.id ?? '');
-    }
-  }, [navSections, searchParams, activeSectionId]);
   const [notification, setNotification] = useState('');
 
   const [isAccessibilityOpen, setAccessibilityOpen] = useState(false);
@@ -417,11 +402,8 @@ export default function OrderPageClient({
       } else {
         params.delete('view');
       }
-      if (activeSectionId) {
-        params.set('category', activeSectionId);
-      } else {
-        params.delete('category');
-      }
+      // Remove category param since navigation bar was removed
+      params.delete('category');
       if (tenantSlug) {
         params.set('tenant', tenantSlug);
       } else {
@@ -429,7 +411,7 @@ export default function OrderPageClient({
       }
       const query = params.toString();
       const newUrl = query ? `${window.location.pathname}?${query}` : window.location.pathname;
-      
+
       // Only update if URL actually changed to prevent unnecessary navigation
       if (newUrl !== window.location.pathname + window.location.search) {
         router.replace(newUrl, { scroll: false });
@@ -439,7 +421,7 @@ export default function OrderPageClient({
     // Debounce URL updates to prevent rapid changes that cause flashing
     const timeoutId = setTimeout(updateUrl, 300);
     return () => clearTimeout(timeoutId);
-  }, [activeLayout, activeSectionId, tenantSlug, router]);
+  }, [activeLayout, tenantSlug, router]);
 
   useEffect(() => {
     if (typeof window === 'undefined') return;
@@ -452,47 +434,6 @@ export default function OrderPageClient({
 
   // Detect Safari for scroll optimization
   const isSafariBrowser = typeof window !== 'undefined' && /^((?!chrome|android).)*safari/i.test(navigator.userAgent);
-  
-  // Only auto-scroll when user clicks a category button, NOT when IntersectionObserver updates
-  // This prevents the page from jumping back during manual scrolling
-  useEffect(() => {
-    if (typeof window === 'undefined' || !activeSectionId) return;
-    
-    // Only scroll if this is user-initiated (category button click)
-    // Skip auto-scroll if IntersectionObserver updated the section (user is manually scrolling)
-    if (!isUserScrollingRef.current) {
-      return; // Don't auto-scroll - let IntersectionObserver handle it naturally
-    }
-    
-    // Clear any pending scroll timeout
-    if (scrollTimeoutRef.current) {
-      clearTimeout(scrollTimeoutRef.current);
-    }
-    
-    // Use requestAnimationFrame to prevent scroll conflicts
-    requestAnimationFrame(() => {
-      const sectionEl = document.getElementById(`section-${activeSectionId}`);
-      if (sectionEl) {
-        const offset = 150; // Header (72px) + nav (~50px) + padding
-        const elementPosition = sectionEl.getBoundingClientRect().top + window.scrollY;
-        window.scrollTo({
-          top: elementPosition - offset,
-          behavior: isSafariBrowser ? 'auto' : 'smooth'
-        });
-
-        scrollTimeoutRef.current = setTimeout(() => {
-          isUserScrollingRef.current = false;
-        }, 1200);
-      }
-    });
-    
-    // Cleanup timeout on unmount
-    return () => {
-      if (scrollTimeoutRef.current) {
-        clearTimeout(scrollTimeoutRef.current);
-      }
-    };
-  }, [activeSectionId, isSafariBrowser]);
 
   useEffect(() => {
     let canceled = false;
@@ -774,90 +715,6 @@ export default function OrderPageClient({
   }, [addToCart, closeCustomization, customModal, customNote, customQuantity, customRemovals, perItemCustomizedPrice, selectedAddonObjects]);
 
   const sectionRefs = useRef<Record<string, HTMLElement | null>>({});
-  const categoryNavRef = useRef<HTMLDivElement>(null);
-
-  useEffect(() => {
-    const sectionsToObserve = Object.entries(sectionRefs.current)
-      .map(([id, el]) => ({ id, el }))
-      .filter((entry) => entry.el);
-
-    if (sectionsToObserve.length === 0) return;
-
-    // Throttle updates to prevent excessive re-renders (especially important for Chrome)
-    let lastUpdate = 0;
-    const throttleDelay = 150; // Increased to 150ms for better Chrome stability
-
-    const observer = new IntersectionObserver(
-      (entries) => {
-        requestAnimationFrame(() => {
-          const now = Date.now();
-          if (now - lastUpdate < throttleDelay) return;
-          lastUpdate = now;
-
-          const visibleSection = entries
-            .filter((entry) => entry.isIntersecting)
-            .sort((a, b) => b.intersectionRatio - a.intersectionRatio)[0];
-
-          if (visibleSection) {
-            const targetId = sectionsToObserve.find((section) => section.el === visibleSection.target)?.id;
-            if (targetId && targetId !== activeSectionId) {
-              // Only update if user is NOT manually scrolling (clicking category button)
-              if (!isUserScrollingRef.current) {
-                setActiveSectionId(targetId);
-              }
-            }
-          }
-        });
-      },
-      {
-        // Header (72px) + nav bar (~50px) = ~122px, use 130px for safe margin
-        rootMargin: '-130px 0px -50%',
-        threshold: 0.2,
-      },
-    );
-
-    sectionsToObserve.forEach((section) => {
-      if (section.el) observer.observe(section.el);
-    });
-
-    return () => observer.disconnect();
-  }, [navSections.length, sections, activeSectionId]);
-
-  // Auto-scroll category nav to show active section button
-  // Use requestAnimationFrame to prevent scroll conflicts
-  useEffect(() => {
-    if (!activeSectionId || !categoryNavRef.current) return;
-
-    // Use requestAnimationFrame to batch DOM reads/writes and prevent scroll jank
-    requestAnimationFrame(() => {
-      if (!categoryNavRef.current) return;
-      const activeButton = categoryNavRef.current.querySelector(`[data-section-button="${activeSectionId}"]`) as HTMLElement;
-      if (activeButton) {
-        const navContainer = categoryNavRef.current;
-        const buttonLeft = activeButton.offsetLeft;
-        const buttonWidth = activeButton.offsetWidth;
-        const containerWidth = navContainer.offsetWidth;
-        const scrollLeft = navContainer.scrollLeft;
-
-        // Calculate center position
-        const targetScroll = buttonLeft - (containerWidth / 2) + (buttonWidth / 2);
-
-        // Only scroll if button is not already visible
-        const buttonRight = buttonLeft + buttonWidth;
-        const visibleLeft = scrollLeft;
-        const visibleRight = scrollLeft + containerWidth;
-        
-        if (buttonLeft < visibleLeft || buttonRight > visibleRight) {
-          // Use instant scroll on Safari for better performance, smooth on others
-          const isSafari = /^((?!chrome|android).)*safari/i.test(navigator.userAgent);
-          navContainer.scrollTo({
-            left: Math.max(0, targetScroll),
-            behavior: isSafari ? 'auto' : 'smooth'
-          });
-        }
-      }
-    });
-  }, [activeSectionId]);
 
   const addressParts = useMemo(() => {
     const parts = [
@@ -1880,11 +1737,6 @@ export default function OrderPageClient({
     [activeLayout, handleAddToCart, openCustomization],
   );
 
-  const activeSection = useMemo(
-    () => navSections.find((section) => section.id === activeSectionId),
-    [activeSectionId, navSections],
-  );
-
   // Profile menu state
   const [showProfileMenu, setShowProfileMenu] = useState(false);
 
@@ -2113,76 +1965,6 @@ export default function OrderPageClient({
         </div>
       </header>
 
-      {/* Category Navigation - Sticky Bar */}
-      <div className="sticky top-[72px] z-30 bg-[#1a0a0a]/98 backdrop-blur-lg border-b border-[#C41E3A]/20 shadow-xl shadow-black/30">
-        <div className="mx-auto max-w-7xl px-3 py-2">
-          <div className="flex items-center gap-3">
-            {/* Categories - Scrollable nav */}
-            <div
-              ref={categoryNavRef}
-              className="flex-1 overflow-x-auto scroll-smooth"
-              style={{ scrollbarWidth: 'none', msOverflowStyle: 'none' }}
-            >
-              <nav className="flex items-center gap-2 py-1">
-                {navSections.map((section) => {
-                  const isActive = activeSectionId === section.id;
-                  return (
-                    <button
-                      key={section.id}
-                      onClick={() => {
-                        isUserScrollingRef.current = true;
-                        if (scrollTimeoutRef.current) clearTimeout(scrollTimeoutRef.current);
-
-                        setActiveSectionId(section.id);
-                        const element = document.getElementById(`section-${section.id}`);
-                        if (element) {
-                          const offset = 150; // Header (72px) + nav (~50px) + padding
-                          const elementPosition = element.getBoundingClientRect().top + window.scrollY;
-                          window.scrollTo({ top: elementPosition - offset, behavior: 'smooth' });
-
-                          scrollTimeoutRef.current = setTimeout(() => {
-                            isUserScrollingRef.current = false;
-                          }, 1200);
-                        } else {
-                          isUserScrollingRef.current = false;
-                        }
-                      }}
-                      data-section-button={section.id}
-                      className={`flex-shrink-0 px-4 py-2 rounded-full text-sm font-medium whitespace-nowrap transition-all duration-200 ${
-                        isActive
-                          ? 'bg-[#C41E3A] text-white shadow-lg shadow-[#C41E3A]/40'
-                          : 'bg-white/5 text-white/70 hover:bg-white/10 hover:text-white'
-                      }`}
-                    >
-                      {section.name}
-                    </button>
-                  );
-                })}
-              </nav>
-            </div>
-
-            {/* View toggles - Desktop only */}
-            <div className="hidden md:flex items-center gap-1 rounded-lg bg-white/5 p-1 border border-white/10">
-              {LAYOUTS.map((layout) => (
-                <button
-                  key={layout.id}
-                  onClick={() => setActiveLayout(layout.id)}
-                  className={`rounded-md px-2.5 py-1.5 text-xs transition-all ${
-                    activeLayout === layout.id
-                      ? 'bg-[#C41E3A] text-white'
-                      : 'text-white/50 hover:text-white'
-                  }`}
-                  title={layout.label}
-                >
-                  {layout.icon}
-                </button>
-              ))}
-            </div>
-          </div>
-        </div>
-      </div>
-
-      {/* Right-side floating nav removed - using horizontal sticky nav instead */}
 
       {/* Hero Section - Macy's Holiday Red Style with INTENSE Sparkles & Decorations */}
       <section className="relative overflow-hidden min-h-[500px] md:min-h-[600px]">
@@ -2264,12 +2046,11 @@ export default function OrderPageClient({
                   onClick={() => {
                     const firstSection = navSections[0];
                     if (firstSection) {
-                      setActiveSectionId(firstSection.id);
                       const element = document.getElementById(`section-${firstSection.id}`);
                       if (element) {
-                        const offset = 150;
+                        const offset = 100; // Just header height
                         const elementPosition = element.getBoundingClientRect().top + window.scrollY;
-                        window.scrollTo({ top: elementPosition - offset, behavior: 'smooth' });
+                        window.scrollTo({ top: elementPosition - offset, behavior: isSafariBrowser ? 'auto' : 'smooth' });
                       }
                     }
                   }}
