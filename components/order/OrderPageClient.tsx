@@ -1,3 +1,34 @@
+/**
+ * OrderPageClient - Main Order Page Component
+ *
+ * REAL-TIME RESTAURANT STATUS SYSTEM (2025-12-14)
+ * ================================================
+ * This component implements real-time sync between the admin "Accepting Orders"
+ * toggle and the frontend ordering UI.
+ *
+ * HOW IT WORKS:
+ * 1. Frontend polls /api/restaurant-status every 10 seconds
+ * 2. API checks both `isOpen` flag AND operating hours schedule
+ * 3. API uses lib/hours-validator.ts for timezone-aware validation
+ *    (VPS runs UTC, restaurant uses America/Los_Angeles)
+ * 4. When closed, both "Add to Cart" buttons are disabled with notification
+ *
+ * KEY STATE:
+ * - restaurantIsOpen: boolean - Current open/closed status
+ * - restaurantClosedMessage: string - Message to show when closed
+ *
+ * CART BUTTON PROTECTION:
+ * - handleAddToCart: Quick add (+) button and "Quick Add" text button
+ * - openCustomization: "ADD TO ORDER" button that opens customization modal
+ * Both check restaurantIsOpen before proceeding.
+ *
+ * RELATED FILES:
+ * - /api/restaurant-status/route.ts - Status polling endpoint
+ * - /lib/hours-validator.ts - Timezone-aware hours validation
+ * - TenantSettings.operatingHours - Store hours configuration
+ * - TenantSettings.isOpen - Manual toggle flag
+ * - TenantSettings.timeZone - Restaurant timezone (default: America/Los_Angeles)
+ */
 "use client";
 
 import Image from 'next/image';

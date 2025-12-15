@@ -1,12 +1,33 @@
 /**
  * Operating Hours Validation Utility
- * 
+ *
  * Validates if a restaurant is currently open based on:
  * - Operating hours (store hours or kitchen hours)
  * - Temporary closure flag
  * - Holiday closures
  * - Winter mode (seasonal hours)
  * - Timezone handling
+ *
+ * TIMEZONE HANDLING (Critical for VPS deployments):
+ * =================================================
+ * The VPS server runs in UTC. Without timezone conversion, a restaurant
+ * in Los Angeles at 4pm Sunday (PST) would appear as Monday 12am (UTC),
+ * causing incorrect "closed on Monday" messages.
+ *
+ * The toTimezone() function uses Intl.DateTimeFormat to convert server
+ * time to the restaurant's local timezone before checking operating hours.
+ *
+ * USAGE:
+ * - Called by /api/restaurant-status/route.ts for real-time status polling
+ * - Frontend polls every 10 seconds to sync admin toggle with order page
+ * - Both "Add to Cart" buttons check this status before allowing orders
+ *
+ * OPERATING HOURS FORMATS:
+ * - New format: { storeHours: { monday: { open, close, closed } }, timezone }
+ * - Old format: { monday: { open, close, enabled } } - auto-converted by API
+ *
+ * @see /api/restaurant-status/route.ts - Status polling endpoint
+ * @see /components/order/OrderPageClient.tsx - Frontend status handling
  */
 
 interface DayHours {
