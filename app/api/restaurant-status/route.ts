@@ -20,28 +20,43 @@ export async function GET() {
     });
 
     const isOpenFlag = settings?.isOpen === true;
-    const rawOperatingHours = settings?.operatingHours as Record<string, { open: string; close: string; enabled?: boolean; closed?: boolean }> | null;
+    // eslint-disable-next-line @typescript-eslint/no-explicit-any
+    const rawOperatingHours = settings?.operatingHours as any;
     const timeZone = settings?.timeZone || 'America/Los_Angeles';
 
-    // Convert operatingHours to the format expected by hours-validator
-    // The validator expects: { timezone, storeHours: { day: { open, close, closed } } }
+    // Detect format and convert to hours-validator format
+    // New format: { storeHours: {...}, timezone: '...', holidays: [...] }
+    // Old format: { monday: { open, close, enabled }, ... }
     let formattedOperatingHours = null;
-    if (rawOperatingHours && Object.keys(rawOperatingHours).length > 0) {
-      const storeHours: Record<string, { open: string; close: string; closed: boolean }> = {};
-      for (const [day, hours] of Object.entries(rawOperatingHours)) {
-        if (hours && typeof hours === 'object') {
-          storeHours[day] = {
-            open: hours.open || '09:00',
-            close: hours.close || '21:00',
-            // Handle both 'enabled' (old format) and 'closed' (new format)
-            closed: hours.closed === true || hours.enabled === false,
+
+    if (rawOperatingHours && typeof rawOperatingHours === 'object') {
+      // Check if it's already in the new format (has storeHours property)
+      if (rawOperatingHours.storeHours) {
+        // Already in correct format, just ensure timezone is set
+        formattedOperatingHours = {
+          ...rawOperatingHours,
+          timezone: rawOperatingHours.timezone || timeZone,
+        };
+      } else if (Object.keys(rawOperatingHours).length > 0) {
+        // Old flat format - convert to new format
+        const storeHours: Record<string, { open: string; close: string; closed: boolean }> = {};
+        for (const [day, hours] of Object.entries(rawOperatingHours)) {
+          if (hours && typeof hours === 'object' && 'open' in (hours as object)) {
+            const h = hours as { open?: string; close?: string; enabled?: boolean; closed?: boolean };
+            storeHours[day] = {
+              open: h.open || '09:00',
+              close: h.close || '21:00',
+              closed: h.closed === true || h.enabled === false,
+            };
+          }
+        }
+        if (Object.keys(storeHours).length > 0) {
+          formattedOperatingHours = {
+            timezone: timeZone,
+            storeHours,
           };
         }
       }
-      formattedOperatingHours = {
-        timezone: timeZone,
-        storeHours,
-      };
     }
 
     const validation = validateOperatingHours(formattedOperatingHours, isOpenFlag);
