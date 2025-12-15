@@ -300,7 +300,9 @@ export default function OrderPageClient({
   const { addToCart, items: cartItems } = useCart();
   const cartItemCount = useMemo(() => cartItems.reduce((sum, item) => sum + item.quantity, 0), [cartItems]);
 
-  const safeSections = useMemo(() => Array.isArray(sections) ? sections : [], [sections]);
+  // Menu sections with real-time availability updates
+  const [currentSections, setCurrentSections] = useState<OrderMenuSection[]>(sections);
+  const safeSections = useMemo(() => Array.isArray(currentSections) ? currentSections : [], [currentSections]);
   const navSections = useMemo(() => {
     if (!Array.isArray(safeSections)) return [];
     return safeSections.filter((section) => section && Array.isArray(section.items) && section.items.length > 0);
@@ -1057,6 +1059,53 @@ export default function OrderPageClient({
 
     // Then poll every 10 seconds (same as restaurant status) for quick updates
     const interval = setInterval(fetchFeaturedItems, 10000);
+    return () => clearInterval(interval);
+  }, []);
+
+  // Poll menu availability every 15 seconds for real-time sold out / price updates
+  useEffect(() => {
+    const fetchMenuAvailability = async () => {
+      try {
+        const timestamp = Date.now();
+        const res = await fetch(`/api/menu-availability?t=${timestamp}`, {
+          cache: 'no-store',
+          headers: {
+            'Cache-Control': 'no-cache',
+            'Pragma': 'no-cache',
+          },
+        });
+        if (res.ok) {
+          const data = await res.json();
+          if (Array.isArray(data.items)) {
+            // Create a map of item updates for quick lookup
+            const updates = new Map(data.items.map((item: { id: string; available: boolean; price: number }) => [item.id, item]));
+
+            // Merge availability updates into current sections
+            setCurrentSections(prevSections => {
+              let hasChanges = false;
+              const newSections = prevSections.map(section => ({
+                ...section,
+                items: section.items.map(item => {
+                  const update = updates.get(item.id);
+                  if (update && (item.available !== update.available || item.price !== update.price)) {
+                    hasChanges = true;
+                    console.log(`[MenuAvailability] ${item.name}: available=${update.available}, price=$${update.price}`);
+                    return { ...item, available: update.available, price: update.price };
+                  }
+                  return item;
+                }),
+              }));
+              return hasChanges ? newSections : prevSections;
+            });
+          }
+        }
+      } catch (err) {
+        console.error('Failed to fetch menu availability', err);
+      }
+    };
+
+    // Poll every 15 seconds (slightly less frequent than status checks)
+    const interval = setInterval(fetchMenuAvailability, 15000);
     return () => clearInterval(interval);
   }, []);
 
