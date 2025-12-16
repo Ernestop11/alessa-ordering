@@ -14,6 +14,7 @@ export function normalizeOrderPayload(value: unknown): OrderPayload | null {
       quantity?: unknown;
       price?: unknown;
       notes?: unknown;
+      itemType?: unknown;
     };
 
     if (typeof record.menuItemId !== 'string') return null;
@@ -24,11 +25,18 @@ export function normalizeOrderPayload(value: unknown): OrderPayload | null {
     if (!Number.isFinite(normalizedQuantity) || normalizedQuantity <= 0) return null;
     if (!Number.isFinite(normalizedPrice) || normalizedPrice < 0) return null;
 
+    // Validate itemType if provided
+    const validItemTypes = ['food', 'grocery', 'bakery'];
+    const itemType = typeof record.itemType === 'string' && validItemTypes.includes(record.itemType)
+      ? (record.itemType as 'food' | 'grocery' | 'bakery')
+      : undefined;
+
     normalizedItems.push({
       menuItemId: record.menuItemId,
       quantity: normalizedQuantity,
       price: normalizedPrice,
       notes: typeof record.notes === 'string' ? record.notes : record.notes === null ? null : undefined,
+      itemType,
     });
   }
 

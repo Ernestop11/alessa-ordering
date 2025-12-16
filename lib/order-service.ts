@@ -11,6 +11,7 @@ export interface OrderItemPayload {
   quantity: number;
   price: number;
   notes?: string | null;
+  itemType?: 'food' | 'grocery' | 'bakery' | null; // Track item category for fulfillment
 }
 
 export interface OrderPayload {
@@ -252,6 +253,7 @@ export async function createOrderFromPayload({
           quantity: Number(item.quantity || 1),
           price: Number(item.price || 0),
           notes: item.notes || null,
+          itemType: item.itemType || null, // Track food/grocery/bakery for fulfillment
           tenantId: tenant.id,
         },
       });

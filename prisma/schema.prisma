@@ -237,6 +237,7 @@ model OrderItem {
   quantity   Int
   price      Float
   notes      String?
+  itemType   String?  // 'food', 'grocery', or 'bakery' - tracks item category for fulfillment
   menuItem   MenuItem @relation(fields: [menuItemId], references: [id], onDelete: Cascade)
   tenant     Tenant   @relation(fields: [tenantId], references: [id], onDelete: Cascade)
   order      Order    @relation(fields: [orderId], references: [id], onDelete: Cascade)

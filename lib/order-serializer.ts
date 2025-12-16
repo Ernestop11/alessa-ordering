@@ -66,6 +66,7 @@ type OrderWithRelations = Omit<Order, 'acknowledgedAt'> & {
   acknowledgedAt?: Date | null;
   items: Array<
     OrderItem & {
+      itemType?: string | null; // Stored itemType from order creation
       menuItem?: {
         name: string;
         section?: {
@@ -120,12 +121,17 @@ export function serializeOrder(
     createdAt: order.createdAt.toISOString(),
     updatedAt: order.updatedAt.toISOString(),
     items: order.items.map((item) => {
-      // Map section type to itemType
-      const sectionType = item.menuItem?.section?.type;
+      // Use stored itemType first (from cart), fallback to section type for legacy orders
       let itemType: ItemType | null = null;
-      if (sectionType === 'GROCERY') itemType = 'grocery';
-      else if (sectionType === 'BAKERY') itemType = 'bakery';
-      else if (sectionType) itemType = 'food'; // Default to food for RESTAURANT, etc.
+      if (item.itemType === 'grocery' || item.itemType === 'bakery' || item.itemType === 'food') {
+        itemType = item.itemType;
+      } else {
+        // Fallback: derive from menu section type
+        const sectionType = item.menuItem?.section?.type;
+        if (sectionType === 'GROCERY') itemType = 'grocery';
+        else if (sectionType === 'BAKERY') itemType = 'bakery';
+        else if (sectionType) itemType = 'food';
+      }
 
       return {
         id: item.id,

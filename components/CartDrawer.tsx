@@ -89,6 +89,7 @@ export default function CartDrawer() {
                           menuItemId: i.id,
                           quantity: i.quantity,
                           price: i.price,
+                          itemType: i.itemType || 'food', // Track food/grocery/bakery for fulfillment
                         })),
                         subtotalAmount: items.reduce((s: number, it: any) => s + it.price * it.quantity, 0),
                         tipAmount: data.tipAmount,
