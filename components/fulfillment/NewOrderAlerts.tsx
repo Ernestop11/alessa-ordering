@@ -558,6 +558,40 @@ export default function NewOrderAlerts({
     );
   };
 
+  // Function to stop alarm immediately
+  const stopAlarmNow = () => {
+    console.log('[Alarm] Stopping alarm immediately');
+    // Clear the repeating alarm interval
+    if (intervalRef.current) {
+      clearInterval(intervalRef.current);
+      intervalRef.current = null;
+    }
+    // Clear modal flash interval
+    if (modalFlashIntervalRef.current) {
+      clearInterval(modalFlashIntervalRef.current);
+      modalFlashIntervalRef.current = null;
+    }
+    // Clear auto-dismiss timeout
+    if (modalAutoDismissTimeoutRef.current) {
+      clearTimeout(modalAutoDismissTimeoutRef.current);
+      modalAutoDismissTimeoutRef.current = null;
+    }
+    // Reset state
+    setIsPlaying(false);
+    setShowModal(false);
+    lastAlertedOrderIdRef.current = null;
+    lastModalOrderIdRef.current = null;
+  };
+
+  // Handle acknowledge click - stops alarm IMMEDIATELY then notifies parent
+  const handleAcknowledgeClick = () => {
+    console.log('[Alarm] Acknowledge clicked - stopping alarm');
+    // FIRST: Stop the alarm immediately (before any async operations)
+    stopAlarmNow();
+    // THEN: Notify parent to update the orders
+    unacknowledgedOrders.forEach(order => onAcknowledge(order.id));
+  };
+
   // Render full-screen flashing modal
   const renderModal = () => {
     if (!showModal || !modalAlertEnabled || unacknowledgedOrders.length === 0) return null;
@@ -572,12 +606,12 @@ export default function NewOrderAlerts({
             50% { opacity: 1; background-color: #facc15; }
             75% { opacity: 1; background-color: #ef4444; }
           }
-          
+
           @keyframes pulse {
             0%, 100% { opacity: 1; transform: scale(1); }
             50% { opacity: 0.7; transform: scale(1.02); }
           }
-          
+
           @keyframes rainbow {
             0% { background-color: #dc2626; }
             25% { background-color: #f97316; }
@@ -585,100 +619,84 @@ export default function NewOrderAlerts({
             75% { background-color: #3b82f6; }
             100% { background-color: #dc2626; }
           }
-          
+
           .strobe-bg {
             animation: strobe 0.4s infinite;
           }
-          
+
           .pulse-bg {
             animation: pulse 1s infinite;
           }
-          
+
           .rainbow-bg {
             animation: rainbow 1s infinite;
           }
         `}</style>
 
-        {/* Full-screen modal overlay */}
-        <div 
-          className={`fixed inset-0 z-[9999] flex items-center justify-center ${
+        {/* Full-screen modal overlay - ENTIRE SCREEN IS CLICKABLE */}
+        <div
+          onClick={handleAcknowledgeClick}
+          className={`fixed inset-0 z-[9999] flex items-center justify-center cursor-pointer ${
             modalFlashStyle === 'strobe' ? 'strobe-bg' :
             modalFlashStyle === 'pulse' ? 'pulse-bg bg-red-500' :
             modalFlashStyle === 'rainbow' ? 'rainbow-bg' :
             getFlashColor()
           }`}
           style={{
-            transition: modalFlashStyle === 'strobe' || modalFlashStyle === 'rainbow' 
-              ? 'none' 
+            transition: modalFlashStyle === 'strobe' || modalFlashStyle === 'rainbow'
+              ? 'none'
               : 'background-color 0.2s ease'
           }}
         >
-          {/* Modal content */}
-          <div className="relative z-10 bg-white rounded-3xl shadow-2xl p-8 max-w-3xl w-full mx-4 transform scale-105 animate-bounce">
-            <div className="text-center space-y-6">
-              {/* Large order count */}
-              <div className="text-9xl font-black text-red-600 animate-pulse">
-                {unacknowledgedOrders.length}
+          {/* Modal content - also clickable */}
+          <div
+            className="relative z-10 bg-white rounded-3xl shadow-2xl p-6 md:p-10 max-w-4xl w-full mx-4"
+            onClick={(e) => {
+              e.stopPropagation(); // Prevent double-firing
+              handleAcknowledgeClick();
+            }}
+          >
+            <div className="text-center space-y-4">
+              {/* HUGE TAP TARGET - The main acknowledge area */}
+              <div className="bg-green-500 hover:bg-green-600 active:bg-green-700 rounded-2xl p-8 md:p-12 cursor-pointer transition-colors shadow-xl border-4 border-green-600">
+                {/* Large order count */}
+                <div className="text-8xl md:text-[12rem] font-black text-white drop-shadow-lg animate-pulse">
+                  {unacknowledgedOrders.length}
+                </div>
+
+                {/* Title */}
+                <h2 className="text-4xl md:text-6xl font-black text-white uppercase tracking-wider mt-4 drop-shadow-lg">
+                  NEW ORDER{unacknowledgedOrders.length > 1 ? 'S' : ''}!
+                </h2>
+
+                {/* Tap instruction */}
+                <p className="text-2xl md:text-4xl font-bold text-white/90 mt-6 animate-bounce">
+                  👆 TAP ANYWHERE TO ACKNOWLEDGE 👆
+                </p>
               </div>
-              
-              {/* Title */}
-              <h2 className="text-5xl font-black text-gray-900 uppercase tracking-wider">
-                New Order{unacknowledgedOrders.length > 1 ? 'S' : ''}!
-              </h2>
-              
-              {/* Order details */}
-              <div className="space-y-3 max-h-64 overflow-y-auto">
-                {unacknowledgedOrders.slice(0, 5).map((order, index) => (
-                  <div 
-                    key={order.id} 
-                    className="bg-gray-50 rounded-xl p-5 border-2 border-gray-200 animate-fade-in"
-                    style={{ animationDelay: `${index * 0.1}s` }}
+
+              {/* Order details - smaller, secondary info */}
+              <div className="space-y-2 max-h-40 overflow-y-auto bg-gray-50 rounded-xl p-4">
+                {unacknowledgedOrders.slice(0, 3).map((order) => (
+                  <div
+                    key={order.id}
+                    className="text-left bg-white rounded-lg p-3 border border-gray-200"
                   >
-                    <p className="text-2xl font-bold text-gray-900">
-                      {order.customerName || 'Guest'}
+                    <p className="text-lg font-bold text-gray-900">
+                      {order.customerName || 'Guest'} - {formatCurrency(order.totalAmount)}
                     </p>
-                    <p className="text-xl text-gray-600 mt-1">
-                      {formatCurrency(order.totalAmount)} · {order.items.length} item{order.items.length > 1 ? 's' : ''}
+                    <p className="text-sm text-gray-600">
+                      {order.items.length} item{order.items.length > 1 ? 's' : ''}
+                      {order.fulfillmentMethod === 'delivery' && ' · 🚗 Delivery'}
                     </p>
-                    {order.fulfillmentMethod === 'delivery' && (
-                      <p className="text-sm text-blue-600 mt-1 font-semibold">
-                        🚗 Delivery Order
-                      </p>
-                    )}
                   </div>
                 ))}
-                {unacknowledgedOrders.length > 5 && (
-                  <p className="text-2xl text-gray-700 font-semibold">
-                    +{unacknowledgedOrders.length - 5} more order{unacknowledgedOrders.length - 5 > 1 ? 's' : ''}
+                {unacknowledgedOrders.length > 3 && (
+                  <p className="text-lg text-gray-600 font-semibold text-center">
+                    +{unacknowledgedOrders.length - 3} more
                   </p>
                 )}
               </div>
-              
-              {/* Acknowledge button */}
-              <button
-                onClick={() => {
-                  unacknowledgedOrders.forEach(order => onAcknowledge(order.id));
-                  setShowModal(false);
-                  if (modalFlashIntervalRef.current) {
-                    clearInterval(modalFlashIntervalRef.current);
-                    modalFlashIntervalRef.current = null;
-                  }
-                  if (modalAutoDismissTimeoutRef.current) {
-                    clearTimeout(modalAutoDismissTimeoutRef.current);
-                    modalAutoDismissTimeoutRef.current = null;
-                  }
-                }}
-                className="w-full bg-green-600 hover:bg-green-700 text-white text-4xl font-black py-6 rounded-xl shadow-2xl transform hover:scale-105 transition-all active:scale-95"
-                style={{ minHeight: '80px' }}
-              >
-                ✓ ACKNOWLEDGE ALL
-              </button>
-              
-              {modalAutoDismiss && (
-                <p className="text-sm text-white/80 font-medium">
-                  Auto-dismissing in 30 seconds...
-                </p>
-              )}
             </div>
           </div>
         </div>
@@ -738,9 +756,7 @@ export default function NewOrderAlerts({
                     </svg>
                   </button>
                   <button
-                    onClick={() => {
-                      unacknowledgedOrders.forEach(order => onAcknowledge(order.id));
-                    }}
+                    onClick={handleAcknowledgeClick}
                     className="px-4 py-1.5 bg-white text-red-600 hover:bg-gray-100 rounded font-medium text-sm transition-colors"
                   >
                     Acknowledge All
