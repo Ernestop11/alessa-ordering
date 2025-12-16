@@ -423,6 +423,12 @@ export default function FulfillmentDashboard({ initialOrders, feedUrl, scope }: 
   };
 
   const handleAccept = (order: FulfillmentOrder) => void handleAction(order, ACCEPT_TARGET_STATUS);
+  const handleAcceptById = (orderId: string) => {
+    const order = orders.find(o => o.id === orderId);
+    if (order) {
+      void handleAction(order, ACCEPT_TARGET_STATUS);
+    }
+  };
   const handleMarkReady = (order: FulfillmentOrder) => void handleAction(order, READY_TARGET_STATUS);
   const handleComplete = (order: FulfillmentOrder) => void handleAction(order, COMPLETE_TARGET_STATUS);
 
@@ -724,6 +730,7 @@ export default function FulfillmentDashboard({ initialOrders, feedUrl, scope }: 
       <NewOrderAlerts
         unacknowledgedOrders={unacknowledgedOrders}
         onAcknowledge={handleAcknowledge}
+        onAcceptOrder={handleAcceptById}
         settings={alertSettings}
         onSettingsChange={setAlertSettings}
       />

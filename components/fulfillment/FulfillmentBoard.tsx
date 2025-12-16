@@ -16,44 +16,48 @@ const COLUMNS: Array<{
   icon: string;
 }> = [
   {
+    // LOUDEST - Urgent new orders needing attention
     key: 'new',
-    label: 'New Orders',
+    label: 'NEW ORDERS',
     statuses: ['pending', 'confirmed'],
-    bgColor: 'bg-blue-50',
-    borderColor: 'border-blue-400',
-    headerBg: 'bg-gradient-to-r from-blue-600 to-blue-500',
-    countBg: 'bg-blue-700',
-    icon: '🔔',
+    bgColor: 'bg-red-100',
+    borderColor: 'border-red-500',
+    headerBg: 'bg-gradient-to-r from-red-600 to-red-500',
+    countBg: 'bg-red-700',
+    icon: '🔴',
   },
   {
+    // MEDIUM - Actively being worked on
     key: 'preparing',
     label: 'Preparing',
     statuses: ['preparing'],
     bgColor: 'bg-amber-50',
     borderColor: 'border-amber-400',
-    headerBg: 'bg-gradient-to-r from-amber-500 to-orange-500',
+    headerBg: 'bg-gradient-to-r from-amber-500 to-yellow-500',
     countBg: 'bg-amber-600',
-    icon: '👨‍🍳',
+    icon: '🟡',
   },
   {
+    // CALM - Ready, waiting for pickup
     key: 'ready',
     label: 'Ready',
     statuses: ['ready'],
-    bgColor: 'bg-emerald-50',
-    borderColor: 'border-emerald-400',
-    headerBg: 'bg-gradient-to-r from-emerald-500 to-green-500',
-    countBg: 'bg-emerald-600',
-    icon: '✅',
+    bgColor: 'bg-green-50',
+    borderColor: 'border-green-300',
+    headerBg: 'bg-gradient-to-r from-green-500 to-emerald-400',
+    countBg: 'bg-green-600',
+    icon: '🟢',
   },
   {
+    // MUTED - Completed, archive
     key: 'completed',
     label: 'Done',
     statuses: ['completed'],
-    bgColor: 'bg-gray-50',
-    borderColor: 'border-gray-300',
-    headerBg: 'bg-gradient-to-r from-gray-500 to-gray-400',
-    countBg: 'bg-gray-600',
-    icon: '📦',
+    bgColor: 'bg-slate-50',
+    borderColor: 'border-slate-200',
+    headerBg: 'bg-gradient-to-r from-slate-400 to-slate-300',
+    countBg: 'bg-slate-500',
+    icon: '⚪',
   },
 ];
 
@@ -178,11 +182,11 @@ export default function FulfillmentBoard({
       {/* CSS for ticket animations */}
       <style jsx global>{`
         @keyframes ticketPulse {
-          0%, 100% { box-shadow: 0 0 0 0 rgba(59, 130, 246, 0.4); }
-          50% { box-shadow: 0 0 0 8px rgba(59, 130, 246, 0); }
+          0%, 100% { box-shadow: 0 0 0 0 rgba(239, 68, 68, 0.5); }
+          50% { box-shadow: 0 0 0 10px rgba(239, 68, 68, 0); }
         }
         .ticket-new {
-          animation: ticketPulse 2s infinite;
+          animation: ticketPulse 1.5s infinite;
         }
         .ticket-stack {
           transform-style: preserve-3d;

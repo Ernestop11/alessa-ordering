@@ -185,17 +185,18 @@ export default function OrderCard({ order, scope, onAccept, onMarkReady, onCompl
   }
 
   // Standard mode (desktop) - with color-coded status styling
+  // Colors go from LOUD (new/urgent) → MUTED (done)
   return (
     <article className={`rounded-xl border-2 px-4 py-3 shadow-sm transition hover:shadow-md ${
       isNew
-        ? 'border-blue-400 bg-blue-50 hover:border-blue-500'
+        ? 'border-red-400 bg-red-50 hover:border-red-500 shadow-red-100'
         : status === 'preparing'
           ? 'border-amber-300 bg-amber-50 hover:border-amber-400'
           : status === 'ready'
-            ? 'border-emerald-300 bg-emerald-50 hover:border-emerald-400'
+            ? 'border-green-200 bg-green-50 hover:border-green-300'
             : status === 'completed'
-              ? 'border-gray-200 bg-gray-50 hover:border-gray-300'
-              : 'border-gray-200 bg-white hover:border-blue-200'
+              ? 'border-slate-200 bg-slate-50 hover:border-slate-300'
+              : 'border-gray-200 bg-white hover:border-gray-300'
     }`}>
       <header className="flex items-start justify-between gap-3">
         <div className="space-y-1">

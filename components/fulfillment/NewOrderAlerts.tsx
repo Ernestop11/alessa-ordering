@@ -19,6 +19,7 @@ export interface AlertSettings {
 interface Props {
   unacknowledgedOrders: FulfillmentOrder[];
   onAcknowledge: (orderId: string) => void;
+  onAcceptOrder?: (orderId: string) => void; // Accept order (move to preparing)
   settings: AlertSettings;
   onSettingsChange: (settings: AlertSettings) => void;
 }
@@ -117,6 +118,7 @@ const SOUND_PATTERNS = {
 export default function NewOrderAlerts({
   unacknowledgedOrders,
   onAcknowledge,
+  onAcceptOrder,
   settings,
   onSettingsChange,
 }: Props) {
@@ -701,19 +703,24 @@ export default function NewOrderAlerts({
                 )}
               </div>
               
-              {/* Acknowledge button */}
+              {/* Accept All button - acknowledges AND moves to preparing */}
               <button
                 onClick={() => {
                   // IMMEDIATELY stop alarm and hide modal - don't wait for API
                   stopAlarmNow();
                   setShowModal(false);
-                  // Call API in background - UI is already updated
-                  unacknowledgedOrders.forEach(order => onAcknowledge(order.id));
+                  // Call APIs in background - acknowledge AND accept each order
+                  unacknowledgedOrders.forEach(order => {
+                    onAcknowledge(order.id);
+                    if (onAcceptOrder) {
+                      onAcceptOrder(order.id);
+                    }
+                  });
                 }}
                 className="w-full bg-green-600 hover:bg-green-700 text-white text-4xl font-black py-6 rounded-xl shadow-2xl transform hover:scale-105 transition-all active:scale-95"
                 style={{ minHeight: '80px' }}
               >
-                ✓ ACKNOWLEDGE ALL
+                ✓ ACCEPT ALL ORDERS
               </button>
               
               {modalAutoDismiss && (
@@ -784,12 +791,17 @@ export default function NewOrderAlerts({
                       // IMMEDIATELY stop alarm - don't wait for API
                       stopAlarmNow();
                       setShowModal(false);
-                      // Call API in background
-                      unacknowledgedOrders.forEach(order => onAcknowledge(order.id));
+                      // Call APIs in background - acknowledge AND accept
+                      unacknowledgedOrders.forEach(order => {
+                        onAcknowledge(order.id);
+                        if (onAcceptOrder) {
+                          onAcceptOrder(order.id);
+                        }
+                      });
                     }}
                     className="px-4 py-1.5 bg-white text-red-600 hover:bg-gray-100 rounded font-medium text-sm transition-colors"
                   >
-                    Acknowledge All
+                    Accept All
                   </button>
                 </div>
               </div>
