@@ -13,6 +13,7 @@ interface Props {
   onCancel?: (order: FulfillmentOrder) => void;
   onRefund?: (order: FulfillmentOrder) => void;
   kitchenMode?: boolean; // Large UI for kitchen tablet
+  isNew?: boolean; // Highlight as new order (blue glow)
 }
 
 function formatCurrency(value: number) {
@@ -24,7 +25,7 @@ function formatTime(value: string) {
   return `${date.toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' })}`;
 }
 
-export default function OrderCard({ order, scope, onAccept, onMarkReady, onComplete, onPrint, onCancel, onRefund, kitchenMode = false }: Props) {
+export default function OrderCard({ order, scope, onAccept, onMarkReady, onComplete, onPrint, onCancel, onRefund, kitchenMode = false, isNew = false }: Props) {
   const status = (order.status ?? '').toLowerCase();
   const isDelivery = order.fulfillmentMethod === 'delivery';
   const canAccept = status === 'pending' || status === 'confirmed';
@@ -183,9 +184,19 @@ export default function OrderCard({ order, scope, onAccept, onMarkReady, onCompl
     );
   }
 
-  // Standard mode (desktop)
+  // Standard mode (desktop) - with color-coded status styling
   return (
-    <article className="rounded-xl border border-gray-200 bg-white px-4 py-3 shadow-sm transition hover:border-blue-200 hover:shadow-md">
+    <article className={`rounded-xl border-2 px-4 py-3 shadow-sm transition hover:shadow-md ${
+      isNew
+        ? 'border-blue-400 bg-blue-50 hover:border-blue-500'
+        : status === 'preparing'
+          ? 'border-amber-300 bg-amber-50 hover:border-amber-400'
+          : status === 'ready'
+            ? 'border-emerald-300 bg-emerald-50 hover:border-emerald-400'
+            : status === 'completed'
+              ? 'border-gray-200 bg-gray-50 hover:border-gray-300'
+              : 'border-gray-200 bg-white hover:border-blue-200'
+    }`}>
       <header className="flex items-start justify-between gap-3">
         <div className="space-y-1">
           <div className="flex items-center gap-2">

@@ -9,11 +9,52 @@ const COLUMNS: Array<{
   key: ColumnKey;
   label: string;
   statuses: string[];
+  bgColor: string;
+  borderColor: string;
+  headerBg: string;
+  countBg: string;
+  icon: string;
 }> = [
-  { key: 'new', label: 'New', statuses: ['pending', 'confirmed'] },
-  { key: 'preparing', label: 'Preparing', statuses: ['preparing'] },
-  { key: 'ready', label: 'Ready for Pickup', statuses: ['ready'] },
-  { key: 'completed', label: 'Completed', statuses: ['completed'] },
+  {
+    key: 'new',
+    label: 'New Orders',
+    statuses: ['pending', 'confirmed'],
+    bgColor: 'bg-blue-50',
+    borderColor: 'border-blue-400',
+    headerBg: 'bg-gradient-to-r from-blue-600 to-blue-500',
+    countBg: 'bg-blue-700',
+    icon: '🔔',
+  },
+  {
+    key: 'preparing',
+    label: 'Preparing',
+    statuses: ['preparing'],
+    bgColor: 'bg-amber-50',
+    borderColor: 'border-amber-400',
+    headerBg: 'bg-gradient-to-r from-amber-500 to-orange-500',
+    countBg: 'bg-amber-600',
+    icon: '👨‍🍳',
+  },
+  {
+    key: 'ready',
+    label: 'Ready',
+    statuses: ['ready'],
+    bgColor: 'bg-emerald-50',
+    borderColor: 'border-emerald-400',
+    headerBg: 'bg-gradient-to-r from-emerald-500 to-green-500',
+    countBg: 'bg-emerald-600',
+    icon: '✅',
+  },
+  {
+    key: 'completed',
+    label: 'Done',
+    statuses: ['completed'],
+    bgColor: 'bg-gray-50',
+    borderColor: 'border-gray-300',
+    headerBg: 'bg-gradient-to-r from-gray-500 to-gray-400',
+    countBg: 'bg-gray-600',
+    icon: '📦',
+  },
 ];
 
 interface Props {
@@ -131,71 +172,118 @@ export default function FulfillmentBoard({
     );
   }
 
-  // Standard/tablet mode
+  // Standard/tablet mode - Ticket Rolodex Style
   return (
-    <div className={`grid gap-6 ${tabletMode ? 'grid-cols-2' : 'lg:grid-cols-4 md:grid-cols-2'}`}>
-      {COLUMNS.map((column) => (
-        <section key={column.key} className="rounded-2xl border border-gray-200 bg-white shadow-sm">
-          <header className="flex items-center justify-between border-b border-gray-200 px-4 py-3">
-            <div>
-              <h2 className="text-base font-semibold text-gray-900">{column.label}</h2>
-              <p className="text-xs text-gray-500">
-                {column.statuses.map((status) => status.toUpperCase()).join(', ')}
-              </p>
+    <>
+      {/* CSS for ticket animations */}
+      <style jsx global>{`
+        @keyframes ticketPulse {
+          0%, 100% { box-shadow: 0 0 0 0 rgba(59, 130, 246, 0.4); }
+          50% { box-shadow: 0 0 0 8px rgba(59, 130, 246, 0); }
+        }
+        .ticket-new {
+          animation: ticketPulse 2s infinite;
+        }
+        .ticket-stack {
+          transform-style: preserve-3d;
+          perspective: 1000px;
+        }
+        .ticket-card {
+          transition: transform 0.2s ease, box-shadow 0.2s ease;
+        }
+        .ticket-card:hover {
+          transform: translateY(-4px) scale(1.02);
+          box-shadow: 0 8px 25px -5px rgba(0, 0, 0, 0.2);
+          z-index: 10;
+        }
+      `}</style>
+
+      <div className={`grid gap-4 ${tabletMode ? 'grid-cols-2' : 'lg:grid-cols-4 md:grid-cols-2'}`}>
+        {COLUMNS.map((column) => (
+          <section
+            key={column.key}
+            className={`rounded-2xl border-2 ${column.borderColor} ${column.bgColor} shadow-lg overflow-hidden`}
+          >
+            {/* Color-coded header */}
+            <header className={`${column.headerBg} text-white px-4 py-3`}>
+              <div className="flex items-center justify-between">
+                <div className="flex items-center gap-2">
+                  <span className="text-xl">{column.icon}</span>
+                  <h2 className="text-lg font-bold">{column.label}</h2>
+                </div>
+                <span className={`${column.countBg} rounded-full px-3 py-1 text-lg font-bold shadow-inner`}>
+                  {grouped[column.key].length}
+                </span>
+              </div>
+            </header>
+
+            {/* Order cards - ticket stack style */}
+            <div className="ticket-stack flex min-h-[200px] flex-col gap-3 p-3 max-h-[500px] overflow-y-auto">
+              {grouped[column.key].length === 0 ? (
+                <div className="flex-1 flex items-center justify-center">
+                  <p className="rounded-xl border-2 border-dashed border-gray-300 px-6 py-8 text-center text-sm text-gray-400 bg-white/50">
+                    No {column.label.toLowerCase()} orders
+                  </p>
+                </div>
+              ) : (
+                grouped[column.key].map((order, index) => (
+                  <div
+                    key={order.id}
+                    className={`ticket-card ${column.key === 'new' && index === 0 ? 'ticket-new' : ''}`}
+                    style={{
+                      position: 'relative',
+                      zIndex: grouped[column.key].length - index,
+                    }}
+                  >
+                    <OrderCard
+                      order={order}
+                      scope={scope}
+                      onAccept={onAccept}
+                      onMarkReady={onMarkReady}
+                      onComplete={onComplete}
+                      onPrint={onPrint}
+                      onCancel={onCancel}
+                      onRefund={onRefund}
+                      isNew={column.key === 'new'}
+                    />
+                  </div>
+                ))
+              )}
             </div>
-            <span className="rounded-full bg-gray-100 px-3 py-1 text-sm font-medium text-gray-700">
-              {grouped[column.key].length}
-            </span>
-          </header>
-          <div className="flex min-h-[220px] flex-col gap-3 p-3">
-            {grouped[column.key].length === 0 ? (
-              <p className="rounded-xl border border-dashed border-gray-200 px-4 py-6 text-center text-sm text-gray-500">
-                No orders here yet.
-              </p>
-            ) : (
-              grouped[column.key].map((order) => (
-                <OrderCard
-                  key={order.id}
-                  order={order}
-                  scope={scope}
-                  onAccept={onAccept}
-                  onMarkReady={onMarkReady}
-                  onComplete={onComplete}
-                  onPrint={onPrint}
-                  onCancel={onCancel}
-                  onRefund={onRefund}
-                />
-              ))
-            )}
-          </div>
-        </section>
-      ))}
-      {grouped.other.length > 0 && (
-        <section className="rounded-2xl border border-amber-200 bg-amber-50 shadow-inner lg:col-span-4">
-          <header className="flex items-center justify-between border-b border-amber-200 px-4 py-3">
-            <div>
-              <h2 className="text-base font-semibold text-amber-900">Other Statuses</h2>
-              <p className="text-xs text-amber-700">Will include cancelled or custom workflow steps.</p>
+          </section>
+        ))}
+
+        {/* Other/cancelled orders */}
+        {grouped.other.length > 0 && (
+          <section className="rounded-2xl border-2 border-red-300 bg-red-50 shadow-lg lg:col-span-4 overflow-hidden">
+            <header className="bg-gradient-to-r from-red-500 to-pink-500 text-white px-4 py-3">
+              <div className="flex items-center justify-between">
+                <div className="flex items-center gap-2">
+                  <span className="text-xl">⚠️</span>
+                  <h2 className="text-lg font-bold">Cancelled / Other</h2>
+                </div>
+                <span className="bg-red-700 rounded-full px-3 py-1 text-lg font-bold shadow-inner">
+                  {grouped.other.length}
+                </span>
+              </div>
+            </header>
+            <div className="flex flex-wrap gap-3 p-3">
+              {grouped.other.map((order) => (
+                <div key={order.id} className="ticket-card flex-shrink-0 w-72">
+                  <OrderCard
+                    order={order}
+                    scope={scope}
+                    onAccept={onAccept}
+                    onMarkReady={onMarkReady}
+                    onComplete={onComplete}
+                    onPrint={onPrint}
+                  />
+                </div>
+              ))}
             </div>
-            <span className="rounded-full bg-amber-100 px-3 py-1 text-sm font-medium text-amber-800">
-              {grouped.other.length}
-            </span>
-          </header>
-          <div className="flex flex-col gap-3 p-3">
-            {grouped.other.map((order) => (
-              <OrderCard
-                key={order.id}
-                order={order}
-                scope={scope}
-                onAccept={onAccept}
-                onMarkReady={onMarkReady}
-                onComplete={onComplete}
-                onPrint={onPrint}
-              />
-            ))}
-          </div>
-        </section>
-      )}
-    </div>
+          </section>
+        )}
+      </div>
+    </>
   );
 }

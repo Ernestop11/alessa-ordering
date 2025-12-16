@@ -125,6 +125,7 @@ export default function NewOrderAlerts({
   const [audioUnlocked, setAudioUnlocked] = useState(false); // Track unlock state for UI
   const [showModal, setShowModal] = useState(false);
   const [flashingColor, setFlashingColor] = useState(0); // For cycling colors in strobe mode
+  const [alarmSuppressed, setAlarmSuppressed] = useState(false); // Immediately stop alarm on tap
   const audioContextRef = useRef<AudioContext | null>(null);
   const customAudioRef = useRef<HTMLAudioElement | null>(null);
   const lastAlertedOrderIdRef = useRef<string | null>(null);
@@ -133,6 +134,7 @@ export default function NewOrderAlerts({
   const modalFlashIntervalRef = useRef<number | null>(null);
   const modalAutoDismissTimeoutRef = useRef<number | null>(null);
   const lastModalOrderIdRef = useRef<string | null>(null);
+  const suppressedOrderIdsRef = useRef<Set<string>>(new Set()); // Track suppressed order IDs
 
   // Initialize audio context and unlock it aggressively - ESPECIALLY for PWA
   useEffect(() => {
@@ -311,11 +313,56 @@ export default function NewOrderAlerts({
     }
   }, [settings]);
 
+  // Function to immediately stop all alarm sounds and intervals
+  const stopAlarmNow = () => {
+    console.log('[Alarm] STOPPING alarm immediately');
+    if (intervalRef.current) {
+      clearInterval(intervalRef.current);
+      intervalRef.current = null;
+    }
+    if (modalFlashIntervalRef.current) {
+      clearInterval(modalFlashIntervalRef.current);
+      modalFlashIntervalRef.current = null;
+    }
+    if (modalAutoDismissTimeoutRef.current) {
+      clearTimeout(modalAutoDismissTimeoutRef.current);
+      modalAutoDismissTimeoutRef.current = null;
+    }
+    setIsPlaying(false);
+    setAlarmSuppressed(true);
+    // Track all current unacknowledged orders as suppressed
+    unacknowledgedOrders.forEach(order => {
+      suppressedOrderIdsRef.current.add(order.id);
+    });
+  };
+
+  // Reset alarm suppression when new orders come in (that weren't suppressed)
+  useEffect(() => {
+    if (unacknowledgedOrders.length === 0) {
+      // Clear suppression when all orders are acknowledged
+      setAlarmSuppressed(false);
+      suppressedOrderIdsRef.current.clear();
+      return;
+    }
+
+    // Check if any new order is NOT in the suppressed set
+    const hasNewUnsuppressedOrder = unacknowledgedOrders.some(
+      order => !suppressedOrderIdsRef.current.has(order.id)
+    );
+
+    if (hasNewUnsuppressedOrder) {
+      // New order came in - re-enable alarm
+      setAlarmSuppressed(false);
+    }
+  }, [unacknowledgedOrders]);
+
   // Monitor for new orders - AUTO-TRIGGER IMMEDIATELY
   useEffect(() => {
-    // Clear interval if no unacknowledged orders
-    if (unacknowledgedOrders.length === 0) {
-      lastAlertedOrderIdRef.current = null;
+    // Clear interval if no unacknowledged orders OR alarm is suppressed
+    if (unacknowledgedOrders.length === 0 || alarmSuppressed) {
+      if (unacknowledgedOrders.length === 0) {
+        lastAlertedOrderIdRef.current = null;
+      }
       if (intervalRef.current) {
         clearInterval(intervalRef.current);
         intervalRef.current = null;
@@ -326,7 +373,7 @@ export default function NewOrderAlerts({
 
     // Get the newest unacknowledged order
     const newestOrder = unacknowledgedOrders[0];
-    
+
     // ALWAYS start alarm if there are unacknowledged orders
     // Don't wait for new order ID - trigger immediately if interval not running!
     const isNewOrder = newestOrder.id !== lastAlertedOrderIdRef.current;
@@ -384,7 +431,7 @@ export default function NewOrderAlerts({
     return () => {
       // Don't clear interval here - only clear when orders are acknowledged
     };
-  }, [unacknowledgedOrders, playAlertSound]);
+  }, [unacknowledgedOrders, playAlertSound, alarmSuppressed]);
 
   const handleTestSound = () => {
     playAlertSound();
@@ -657,16 +704,11 @@ export default function NewOrderAlerts({
               {/* Acknowledge button */}
               <button
                 onClick={() => {
-                  unacknowledgedOrders.forEach(order => onAcknowledge(order.id));
+                  // IMMEDIATELY stop alarm and hide modal - don't wait for API
+                  stopAlarmNow();
                   setShowModal(false);
-                  if (modalFlashIntervalRef.current) {
-                    clearInterval(modalFlashIntervalRef.current);
-                    modalFlashIntervalRef.current = null;
-                  }
-                  if (modalAutoDismissTimeoutRef.current) {
-                    clearTimeout(modalAutoDismissTimeoutRef.current);
-                    modalAutoDismissTimeoutRef.current = null;
-                  }
+                  // Call API in background - UI is already updated
+                  unacknowledgedOrders.forEach(order => onAcknowledge(order.id));
                 }}
                 className="w-full bg-green-600 hover:bg-green-700 text-white text-4xl font-black py-6 rounded-xl shadow-2xl transform hover:scale-105 transition-all active:scale-95"
                 style={{ minHeight: '80px' }}
@@ -691,7 +733,7 @@ export default function NewOrderAlerts({
       {renderModal()}
       {renderUnlockButton()}
       {/* Persistent Notification Banner */}
-      {unacknowledgedOrders.length > 0 && (
+      {unacknowledgedOrders.length > 0 && !alarmSuppressed && (
         <div
           className={`fixed top-0 left-0 right-0 z-50 ${
             settings.flashingEnabled && !isMuted ? 'animate-pulse' : ''
@@ -739,6 +781,10 @@ export default function NewOrderAlerts({
                   </button>
                   <button
                     onClick={() => {
+                      // IMMEDIATELY stop alarm - don't wait for API
+                      stopAlarmNow();
+                      setShowModal(false);
+                      // Call API in background
                       unacknowledgedOrders.forEach(order => onAcknowledge(order.id));
                     }}
                     className="px-4 py-1.5 bg-white text-red-600 hover:bg-gray-100 rounded font-medium text-sm transition-colors"
