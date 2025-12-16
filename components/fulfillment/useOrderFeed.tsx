@@ -29,6 +29,21 @@ export function useOrderFeed({ feedUrl, initialOrders }: Options) {
     forceTick((tick) => tick + 1);
   };
 
+  // Optimistically update an order's status in local state (for instant UI feedback)
+  const optimisticUpdateOrder = (orderId: string, updates: Partial<FulfillmentOrder>) => {
+    setOrders((prev) => {
+      const next = prev.map((order) =>
+        order.id === orderId ? { ...order, ...updates } : order
+      );
+      return sortOrders(next);
+    });
+    // Remove from new order IDs if status is being changed (order is being processed)
+    if (updates.status) {
+      newOrderIdsRef.current.delete(orderId);
+      forceTick((tick) => tick + 1);
+    }
+  };
+
   useEffect(() => {
     setOrders(sortOrders(initialOrders));
     newOrderIdsRef.current.clear();
@@ -149,5 +164,6 @@ export function useOrderFeed({ feedUrl, initialOrders }: Options) {
     newOrderCount: newOrderIdsRef.current.size,
     ackNewOrders,
     lastCreatedOrder,
+    optimisticUpdateOrder,
   };
 }

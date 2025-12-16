@@ -191,7 +191,7 @@ export default function FulfillmentDashboard({ initialOrders, feedUrl, scope }: 
       window.removeEventListener('orientationchange', checkTabletMode);
     };
   }, []);
-  const { orders, connected, newOrderCount, ackNewOrders, lastCreatedOrder } = useOrderFeed({
+  const { orders, connected, newOrderCount, ackNewOrders, lastCreatedOrder, optimisticUpdateOrder } = useOrderFeed({
     feedUrl,
     initialOrders,
   });
@@ -426,6 +426,10 @@ export default function FulfillmentDashboard({ initialOrders, feedUrl, scope }: 
   const handleAcceptById = (orderId: string) => {
     const order = orders.find(o => o.id === orderId);
     if (order) {
+      // OPTIMISTIC UPDATE: Immediately move order to "preparing" in the UI
+      // This provides instant visual feedback before the API call completes
+      optimisticUpdateOrder(orderId, { status: ACCEPT_TARGET_STATUS });
+      console.log(`[Accept] Optimistically moved order ${orderId.slice(-6)} to ${ACCEPT_TARGET_STATUS}`);
       void handleAction(order, ACCEPT_TARGET_STATUS);
     }
   };
