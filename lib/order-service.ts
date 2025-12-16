@@ -239,12 +239,34 @@ export async function createOrderFromPayload({
     for (const item of payload.items) {
       if (!item?.menuItemId) continue;
 
-      const menuItem = await prisma.menuItem.findUnique({
-        where: { id: item.menuItemId },
-        select: { tenantId: true },
-      });
+      // Check item source based on itemType
+      // Grocery/bakery items come from GroceryItem table, food items from MenuItem
+      let isValidItem = false;
+      let itemName: string | null = null;
 
-      if (!menuItem || menuItem.tenantId !== tenant.id) continue;
+      if (item.itemType === 'grocery' || item.itemType === 'bakery') {
+        // Validate against GroceryItem table
+        const groceryItem = await prisma.groceryItem.findUnique({
+          where: { id: item.menuItemId },
+          select: { tenantId: true, name: true },
+        });
+        if (groceryItem && groceryItem.tenantId === tenant.id) {
+          isValidItem = true;
+          itemName = groceryItem.name;
+        }
+      } else {
+        // Validate against MenuItem table (default for food)
+        const menuItem = await prisma.menuItem.findUnique({
+          where: { id: item.menuItemId },
+          select: { tenantId: true, name: true },
+        });
+        if (menuItem && menuItem.tenantId === tenant.id) {
+          isValidItem = true;
+          itemName = menuItem.name;
+        }
+      }
+
+      if (!isValidItem) continue;
 
       await prisma.orderItem.create({
         data: {
@@ -254,6 +276,7 @@ export async function createOrderFromPayload({
           price: Number(item.price || 0),
           notes: item.notes || null,
           itemType: item.itemType || null, // Track food/grocery/bakery for fulfillment
+          menuItemName: itemName, // Store name for display (supports both MenuItem and GroceryItem)
           tenantId: tenant.id,
         },
       });

@@ -230,17 +230,18 @@ model TaxRemittance {
 }
 
 model OrderItem {
-  id         String   @id @default(uuid())
-  menuItemId String
-  tenantId   String
-  orderId    String
-  quantity   Int
-  price      Float
-  notes      String?
-  itemType   String?  // 'food', 'grocery', or 'bakery' - tracks item category for fulfillment
-  menuItem   MenuItem @relation(fields: [menuItemId], references: [id], onDelete: Cascade)
-  tenant     Tenant   @relation(fields: [tenantId], references: [id], onDelete: Cascade)
-  order      Order    @relation(fields: [orderId], references: [id], onDelete: Cascade)
+  id           String    @id @default(uuid())
+  menuItemId   String    // Can reference MenuItem.id or GroceryItem.id based on itemType
+  tenantId     String
+  orderId      String
+  quantity     Int
+  price        Float
+  notes        String?
+  itemType     String?   // 'food', 'grocery', or 'bakery' - tracks item category for fulfillment
+  menuItemName String?   // Denormalized name for display (since menuItemId may reference different tables)
+  menuItem     MenuItem? @relation(fields: [menuItemId], references: [id], onDelete: Cascade)
+  tenant       Tenant    @relation(fields: [tenantId], references: [id], onDelete: Cascade)
+  order        Order     @relation(fields: [orderId], references: [id], onDelete: Cascade)
 }
 
 model Tenant {

@@ -67,6 +67,7 @@ type OrderWithRelations = Omit<Order, 'acknowledgedAt'> & {
   items: Array<
     OrderItem & {
       itemType?: string | null; // Stored itemType from order creation
+      menuItemName?: string | null; // Denormalized name (works for both MenuItem and GroceryItem)
       menuItem?: {
         name: string;
         section?: {
@@ -138,7 +139,7 @@ export function serializeOrder(
         menuItemId: item.menuItemId,
         quantity: item.quantity,
         price: Number(item.price ?? 0),
-        menuItemName: item.menuItem?.name ?? null,
+        menuItemName: item.menuItemName ?? item.menuItem?.name ?? null, // Use stored name first, fallback to relation
         notes: item.notes ?? null,
         itemType,
       };
