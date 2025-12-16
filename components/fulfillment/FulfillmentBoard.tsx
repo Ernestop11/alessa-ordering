@@ -202,27 +202,27 @@ export default function FulfillmentBoard({
         }
       `}</style>
 
-      <div className={`grid gap-4 ${tabletMode ? 'grid-cols-2' : 'lg:grid-cols-4 md:grid-cols-2'}`}>
+      <div className={`grid gap-3 sm:gap-4 ${tabletMode ? 'grid-cols-2' : 'grid-cols-1 sm:grid-cols-2 lg:grid-cols-4'}`}>
         {COLUMNS.map((column) => (
           <section
             key={column.key}
             className={`rounded-2xl border-2 ${column.borderColor} ${column.bgColor} shadow-lg overflow-hidden`}
           >
             {/* Color-coded header */}
-            <header className={`${column.headerBg} text-white px-4 py-3`}>
+            <header className={`${column.headerBg} text-white px-3 sm:px-4 py-2 sm:py-3`}>
               <div className="flex items-center justify-between">
-                <div className="flex items-center gap-2">
-                  <span className="text-xl">{column.icon}</span>
-                  <h2 className="text-lg font-bold">{column.label}</h2>
+                <div className="flex items-center gap-1.5 sm:gap-2">
+                  <span className="text-lg sm:text-xl">{column.icon}</span>
+                  <h2 className="text-sm sm:text-lg font-bold">{column.label}</h2>
                 </div>
-                <span className={`${column.countBg} rounded-full px-3 py-1 text-lg font-bold shadow-inner`}>
+                <span className={`${column.countBg} rounded-full px-2 sm:px-3 py-0.5 sm:py-1 text-sm sm:text-lg font-bold shadow-inner`}>
                   {grouped[column.key].length}
                 </span>
               </div>
             </header>
 
             {/* Order cards - ticket stack style */}
-            <div className="ticket-stack flex min-h-[200px] flex-col gap-3 p-3 max-h-[500px] overflow-y-auto">
+            <div className="ticket-stack flex min-h-[120px] sm:min-h-[200px] flex-col gap-2 sm:gap-3 p-2 sm:p-3 max-h-[300px] sm:max-h-[500px] overflow-y-auto">
               {grouped[column.key].length === 0 ? (
                 <div className="flex-1 flex items-center justify-center">
                   <p className="rounded-xl border-2 border-dashed border-gray-300 px-6 py-8 text-center text-sm text-gray-400 bg-white/50">

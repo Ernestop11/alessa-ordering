@@ -33,7 +33,6 @@ export default function OrderCard({ order, scope, onAccept, onMarkReady, onCompl
   const canMarkReady = status === 'preparing';
   const canComplete = status === 'ready' || status === 'preparing';
   const canCancel = status !== 'completed' && status !== 'cancelled';
-  const canRefund = status === 'completed' || status === 'cancelled';
   const hasModifiers = order.items.some(item => item.notes) || order.notes;
 
   const customerLabel = useMemo(() => {
@@ -42,169 +41,9 @@ export default function OrderCard({ order, scope, onAccept, onMarkReady, onCompl
     return 'Guest';
   }, [order.customerName, order.customer]);
 
-  // Detail Modal - FULL SCREEN TICKET for kitchen use
-  const renderDetailModal = () => {
-    if (!showModal) return null;
-
-    return (
-      <div
-        className="fixed inset-0 z-[9999] flex items-center justify-center bg-black/80"
-        onClick={() => setShowModal(false)}
-      >
-        <div
-          className="bg-white rounded-3xl shadow-2xl w-[95vw] h-[95vh] max-w-4xl flex flex-col"
-          onClick={(e) => e.stopPropagation()}
-        >
-          {/* HEADER - Large order number */}
-          <header className={`px-8 py-6 rounded-t-3xl flex-shrink-0 ${
-            isNew || canAccept
-              ? 'bg-red-500'
-              : status === 'preparing'
-                ? 'bg-amber-500'
-                : status === 'ready'
-                  ? 'bg-green-500'
-                  : 'bg-gray-500'
-          }`}>
-            <div className="flex items-center justify-between text-white">
-              <div>
-                <h2 className="text-5xl font-black">#{order.id.slice(-6).toUpperCase()}</h2>
-                <p className="text-2xl mt-2 opacity-90">
-                  {formatTime(order.createdAt)} · {isDelivery ? '🚗 DELIVERY' : '🏪 PICKUP'}
-                </p>
-              </div>
-              <button
-                onClick={() => setShowModal(false)}
-                className="w-16 h-16 rounded-full bg-white/20 hover:bg-white/30 flex items-center justify-center text-4xl font-bold transition"
-              >
-                ×
-              </button>
-            </div>
-            {/* Customer */}
-            <div className="mt-4 pt-4 border-t border-white/30">
-              <p className="text-3xl font-bold">{customerLabel}</p>
-              {(order.customerEmail || order.customerPhone) && (
-                <p className="text-xl opacity-80 mt-1">
-                  {[order.customerEmail, order.customerPhone].filter(Boolean).join(' · ')}
-                </p>
-              )}
-            </div>
-          </header>
-
-          {/* ITEMS - Large, scrollable if needed */}
-          <div className="flex-1 overflow-y-auto px-8 py-6">
-            <ul className="space-y-6">
-              {order.items.map((item) => (
-                <li key={item.id}>
-                  <div className="flex items-center gap-4">
-                    <span className="bg-gray-900 text-white text-3xl font-black rounded-xl w-16 h-16 flex items-center justify-center">
-                      {item.quantity}
-                    </span>
-                    <span className="text-3xl font-bold text-gray-900">{item.menuItemName || 'Menu Item'}</span>
-                  </div>
-                  {/* Modifiers - VERY LARGE AND PROMINENT */}
-                  {item.notes && (
-                    <div className="mt-3 ml-20 bg-orange-100 border-l-8 border-orange-500 px-6 py-4 rounded-r-xl">
-                      <p className="text-2xl font-black text-orange-800">
-                        ⚠️ {item.notes}
-                      </p>
-                    </div>
-                  )}
-                </li>
-              ))}
-            </ul>
-
-            {/* Order Notes */}
-            {order.notes && (
-              <div className="mt-8 bg-amber-50 border-4 border-amber-400 rounded-2xl px-6 py-5">
-                <p className="text-lg font-black text-amber-700 uppercase mb-2">📝 SPECIAL INSTRUCTIONS</p>
-                <p className="text-2xl font-bold text-amber-900">{order.notes}</p>
-              </div>
-            )}
-          </div>
-
-          {/* FOOTER - Total and Actions */}
-          <div className="flex-shrink-0 bg-gray-100 px-8 py-6 rounded-b-3xl">
-            {/* Total */}
-            <div className="flex items-center justify-between mb-6">
-              <span className="text-2xl text-gray-600 font-medium">Total</span>
-              <span className="text-5xl font-black text-gray-900">{formatCurrency(order.totalAmount)}</span>
-            </div>
-
-            {/* Action Buttons - HUGE for easy tapping */}
-            <div className="grid grid-cols-2 gap-4">
-              {/* Print Button */}
-              <button
-                type="button"
-                onClick={() => onPrint(order)}
-                className="bg-gray-700 hover:bg-gray-800 active:bg-gray-900 text-white font-black py-6 px-6 rounded-2xl shadow-lg transition text-2xl flex items-center justify-center gap-3"
-              >
-                🖨️ PRINT
-              </button>
-
-              {/* Primary Action */}
-              {canAccept && (
-                <button
-                  type="button"
-                  onClick={() => {
-                    onAccept(order);
-                    setShowModal(false);
-                  }}
-                  className="bg-green-600 hover:bg-green-700 active:bg-green-800 text-white font-black py-6 px-6 rounded-2xl shadow-lg transition text-2xl"
-                >
-                  ✓ START
-                </button>
-              )}
-              {canMarkReady && (
-                <button
-                  type="button"
-                  onClick={() => {
-                    onMarkReady(order);
-                    setShowModal(false);
-                  }}
-                  className="bg-emerald-500 hover:bg-emerald-600 active:bg-emerald-700 text-white font-black py-6 px-6 rounded-2xl shadow-lg transition text-2xl"
-                >
-                  ✓ READY
-                </button>
-              )}
-              {canComplete && !canMarkReady && !canAccept && (
-                <button
-                  type="button"
-                  onClick={() => {
-                    onComplete(order);
-                    setShowModal(false);
-                  }}
-                  className="bg-blue-600 hover:bg-blue-700 active:bg-blue-800 text-white font-black py-6 px-6 rounded-2xl shadow-lg transition text-2xl"
-                >
-                  DONE
-                </button>
-              )}
-
-              {/* Close/Cancel row */}
-              {canCancel && onCancel && (
-                <button
-                  type="button"
-                  onClick={() => {
-                    onCancel(order);
-                    setShowModal(false);
-                  }}
-                  className="border-4 border-red-400 text-red-700 font-bold py-4 px-6 rounded-2xl hover:bg-red-50 transition text-xl"
-                >
-                  Cancel
-                </button>
-              )}
-              <button
-                type="button"
-                onClick={() => setShowModal(false)}
-                className="bg-gray-300 hover:bg-gray-400 text-gray-800 font-bold py-4 px-6 rounded-2xl transition text-xl col-span-1"
-              >
-                Close
-              </button>
-            </div>
-          </div>
-        </div>
-      </div>
-    );
-  };
+  // Suppress unused variable warnings
+  void scope;
+  void onRefund;
 
   // Kitchen mode: extra large cards (existing behavior)
   if (kitchenMode) {
@@ -273,10 +112,156 @@ export default function OrderCard({ order, scope, onAccept, onMarkReady, onCompl
   }
 
   // CLEAN PREVIEW CARD - Click to open detail modal
-  // Simple, clean look - shows essential info only
   return (
     <>
-      {renderDetailModal()}
+      {/* FULL SCREEN MODAL - Rendered as sibling, uses fixed positioning */}
+      {showModal && (
+        <div
+          className="fixed inset-0 bg-black/80 flex items-center justify-center p-4"
+          style={{
+            zIndex: 999999,
+            position: 'fixed',
+            top: 0,
+            left: 0,
+            right: 0,
+            bottom: 0,
+          }}
+          onClick={() => setShowModal(false)}
+        >
+          <div
+            className="bg-white rounded-3xl shadow-2xl flex flex-col w-full max-w-3xl overflow-hidden"
+            style={{
+              maxHeight: '95vh',
+              minHeight: '60vh',
+            }}
+            onClick={(e) => e.stopPropagation()}
+          >
+            {/* HEADER */}
+            <div className={`px-6 py-5 flex-shrink-0 ${
+              isNew || canAccept ? 'bg-red-500' :
+              status === 'preparing' ? 'bg-amber-500' :
+              status === 'ready' ? 'bg-green-500' :
+              'bg-gray-500'
+            }`}>
+              <div className="flex items-center justify-between text-white">
+                <div>
+                  <h2 className="text-4xl font-black">#{order.id.slice(-6).toUpperCase()}</h2>
+                  <p className="text-xl mt-1 opacity-90">
+                    {formatTime(order.createdAt)} · {isDelivery ? '🚗 DELIVERY' : '🏪 PICKUP'}
+                  </p>
+                </div>
+                <button
+                  onClick={() => setShowModal(false)}
+                  className="w-12 h-12 rounded-full bg-white/20 hover:bg-white/30 flex items-center justify-center text-3xl font-bold"
+                >
+                  ×
+                </button>
+              </div>
+              <div className="mt-3 pt-3 border-t border-white/30">
+                <p className="text-2xl font-bold">{customerLabel}</p>
+                {(order.customerEmail || order.customerPhone) && (
+                  <p className="text-lg opacity-80 mt-1">
+                    {[order.customerEmail, order.customerPhone].filter(Boolean).join(' · ')}
+                  </p>
+                )}
+              </div>
+            </div>
+
+            {/* ITEMS */}
+            <div className="flex-1 overflow-y-auto px-6 py-5">
+              <ul className="space-y-4">
+                {order.items.map((item) => (
+                  <li key={item.id}>
+                    <div className="flex items-center gap-3">
+                      <span className="bg-gray-900 text-white text-2xl font-black rounded-xl w-12 h-12 flex items-center justify-center flex-shrink-0">
+                        {item.quantity}
+                      </span>
+                      <span className="text-2xl font-bold text-gray-900">{item.menuItemName || 'Menu Item'}</span>
+                    </div>
+                    {item.notes && (
+                      <div className="mt-2 ml-16 bg-orange-100 border-l-4 border-orange-500 px-4 py-3 rounded-r-lg">
+                        <p className="text-xl font-black text-orange-800">⚠️ {item.notes}</p>
+                      </div>
+                    )}
+                  </li>
+                ))}
+              </ul>
+
+              {order.notes && (
+                <div className="mt-6 bg-amber-50 border-4 border-amber-400 rounded-xl px-5 py-4">
+                  <p className="text-base font-black text-amber-700 uppercase mb-1">📝 SPECIAL INSTRUCTIONS</p>
+                  <p className="text-xl font-bold text-amber-900">{order.notes}</p>
+                </div>
+              )}
+            </div>
+
+            {/* FOOTER */}
+            <div className="flex-shrink-0 bg-gray-100 px-6 py-5">
+              <div className="flex items-center justify-between mb-4">
+                <span className="text-xl text-gray-600 font-medium">Total</span>
+                <span className="text-4xl font-black text-gray-900">{formatCurrency(order.totalAmount)}</span>
+              </div>
+
+              <div className="grid grid-cols-2 gap-3">
+                <button
+                  type="button"
+                  onClick={() => onPrint(order)}
+                  className="bg-gray-700 hover:bg-gray-800 active:bg-gray-900 text-white font-black py-5 px-4 rounded-xl shadow-lg text-xl flex items-center justify-center gap-2"
+                >
+                  🖨️ PRINT
+                </button>
+
+                {canAccept && (
+                  <button
+                    type="button"
+                    onClick={() => { onAccept(order); setShowModal(false); }}
+                    className="bg-green-600 hover:bg-green-700 active:bg-green-800 text-white font-black py-5 px-4 rounded-xl shadow-lg text-xl"
+                  >
+                    ✓ START
+                  </button>
+                )}
+                {canMarkReady && (
+                  <button
+                    type="button"
+                    onClick={() => { onMarkReady(order); setShowModal(false); }}
+                    className="bg-emerald-500 hover:bg-emerald-600 active:bg-emerald-700 text-white font-black py-5 px-4 rounded-xl shadow-lg text-xl"
+                  >
+                    ✓ READY
+                  </button>
+                )}
+                {canComplete && !canMarkReady && !canAccept && (
+                  <button
+                    type="button"
+                    onClick={() => { onComplete(order); setShowModal(false); }}
+                    className="bg-blue-600 hover:bg-blue-700 active:bg-blue-800 text-white font-black py-5 px-4 rounded-xl shadow-lg text-xl"
+                  >
+                    DONE
+                  </button>
+                )}
+
+                {canCancel && onCancel && (
+                  <button
+                    type="button"
+                    onClick={() => { onCancel(order); setShowModal(false); }}
+                    className="border-4 border-red-400 text-red-700 font-bold py-4 px-4 rounded-xl hover:bg-red-50 text-lg"
+                  >
+                    Cancel
+                  </button>
+                )}
+                <button
+                  type="button"
+                  onClick={() => setShowModal(false)}
+                  className="bg-gray-300 hover:bg-gray-400 text-gray-800 font-bold py-4 px-4 rounded-xl text-lg"
+                >
+                  Close
+                </button>
+              </div>
+            </div>
+          </div>
+        </div>
+      )}
+
+      {/* PREVIEW CARD */}
       <article
         className={`rounded-xl border-2 bg-white shadow-sm transition cursor-pointer hover:shadow-lg hover:scale-[1.02] ${
           isNew || canAccept
@@ -291,7 +276,6 @@ export default function OrderCard({ order, scope, onAccept, onMarkReady, onCompl
         }`}
         onClick={() => setShowModal(true)}
       >
-        {/* Simple Header */}
         <header className={`px-4 py-2 rounded-t-lg ${
           isNew || canAccept
             ? 'bg-red-500 text-white'
@@ -309,9 +293,7 @@ export default function OrderCard({ order, scope, onAccept, onMarkReady, onCompl
           </div>
         </header>
 
-        {/* Body - Clean and simple */}
         <div className="px-4 py-3">
-          {/* Customer */}
           <div className="flex items-center justify-between mb-2">
             <p className="font-bold text-gray-900">{customerLabel}</p>
             <span className="text-xs px-2 py-0.5 rounded bg-gray-100 text-gray-600 font-medium">
@@ -319,12 +301,10 @@ export default function OrderCard({ order, scope, onAccept, onMarkReady, onCompl
             </span>
           </div>
 
-          {/* Items summary */}
           <p className="text-sm text-gray-600">
             {order.items.length} item{order.items.length > 1 ? 's' : ''} · {formatCurrency(order.totalAmount)}
           </p>
 
-          {/* Modifier indicator */}
           {hasModifiers && (
             <div className="mt-2 flex items-center gap-1 text-orange-600">
               <span className="text-sm">⚠️</span>
@@ -333,7 +313,6 @@ export default function OrderCard({ order, scope, onAccept, onMarkReady, onCompl
           )}
         </div>
 
-        {/* Tap hint */}
         <div className="px-4 py-2 bg-gray-50 border-t rounded-b-lg">
           <p className="text-xs text-gray-400 text-center font-medium">Tap to view details</p>
         </div>

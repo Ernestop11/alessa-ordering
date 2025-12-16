@@ -21,6 +21,8 @@ export function useOrderFeed({ feedUrl, initialOrders }: Options) {
   const [connected, setConnected] = useState(false);
   const [lastCreatedOrder, setLastCreatedOrder] = useState<FulfillmentOrder | null>(null);
   const newOrderIdsRef = useRef<Set<string>>(new Set());
+  const knownOrderIdsRef = useRef<Set<string>>(new Set(initialOrders.map(o => o.id))); // Track all known orders
+  const isFirstPollRef = useRef(true); // Skip "new order" detection on first poll
   const [, forceTick] = useState(0);
 
   const ackNewOrders = () => {
@@ -46,8 +48,11 @@ export function useOrderFeed({ feedUrl, initialOrders }: Options) {
 
   useEffect(() => {
     setOrders(sortOrders(initialOrders));
+    // Update known orders with initial orders
+    initialOrders.forEach(o => knownOrderIdsRef.current.add(o.id));
     newOrderIdsRef.current.clear();
     setLastCreatedOrder(null);
+    isFirstPollRef.current = true; // Reset first poll flag when initialOrders change
   }, [initialOrders]);
 
   useEffect(() => {
@@ -67,6 +72,8 @@ export function useOrderFeed({ feedUrl, initialOrders }: Options) {
         const data: FulfillmentEvent = JSON.parse(event.data);
         if (data.type === 'init' && Array.isArray(data.orders)) {
           setOrders(sortOrders(data.orders));
+          // Mark all init orders as known (no alerts for these)
+          data.orders.forEach((o: FulfillmentOrder) => knownOrderIdsRef.current.add(o.id));
           newOrderIdsRef.current.clear();
           forceTick((tick) => tick + 1);
           return;
@@ -85,10 +92,15 @@ export function useOrderFeed({ feedUrl, initialOrders }: Options) {
           });
 
           if (data.type === 'order.created') {
-            newOrderIdsRef.current.add(data.order.id);
-            setLastCreatedOrder(data.order);
-            forceTick((tick) => tick + 1);
+            // Only trigger alert if this is truly a new order we haven't seen
+            if (!knownOrderIdsRef.current.has(data.order.id)) {
+              knownOrderIdsRef.current.add(data.order.id);
+              newOrderIdsRef.current.add(data.order.id);
+              setLastCreatedOrder(data.order);
+              forceTick((tick) => tick + 1);
+            }
           } else if (data.type === 'order.updated') {
+            knownOrderIdsRef.current.add(data.order.id);
             setLastCreatedOrder((current) =>
               current && current.id === data.order!.id ? data.order! : current,
             );
@@ -109,7 +121,6 @@ export function useOrderFeed({ feedUrl, initialOrders }: Options) {
         const baseUrl = feedUrl.replace('/stream', '');
         const separator = baseUrl.includes('?') ? '&' : '?';
         const pollUrl = `${baseUrl}${separator}t=${Date.now()}`;
-        console.log('[OrderFeed] Polling:', pollUrl);
         const response = await fetch(pollUrl, { credentials: 'include' }); // Include cookies for auth
         if (!response.ok) {
           console.error('[OrderFeed] Polling failed:', response.status, response.statusText);
@@ -117,38 +128,43 @@ export function useOrderFeed({ feedUrl, initialOrders }: Options) {
         }
         const data = await response.json();
         if (Array.isArray(data)) {
-          console.log('[OrderFeed] Got', data.length, 'orders from polling');
-          setOrders((prev) => {
-            const previousIds = new Set(prev.map(o => o.id));
-            const currentOrderIds = new Set(data.map((o: FulfillmentOrder) => o.id));
+          // On first poll after page load, just sync orders without triggering "new order" alerts
+          if (isFirstPollRef.current) {
+            console.log('[OrderFeed] First poll - syncing', data.length, 'orders (no alerts)');
+            isFirstPollRef.current = false;
+            // Add all fetched orders to known orders
+            data.forEach((o: FulfillmentOrder) => knownOrderIdsRef.current.add(o.id));
+            setOrders(sortOrders(data));
+            setConnected(true);
+            return;
+          }
 
-            // Find truly new orders (not in previous list)
-            const newOrders = data.filter((o: FulfillmentOrder) => !previousIds.has(o.id));
+          // Find truly new orders (not in knownOrderIds - this persists across renders)
+          const newOrders = data.filter((o: FulfillmentOrder) => !knownOrderIdsRef.current.has(o.id));
 
-            if (newOrders.length > 0) {
-              console.log(`[OrderFeed] ${newOrders.length} new order(s) detected via polling`);
-              newOrders.forEach((order: FulfillmentOrder) => {
-                newOrderIdsRef.current.add(order.id);
-                setLastCreatedOrder(order);
-              });
-              forceTick((tick) => tick + 1);
-            }
+          if (newOrders.length > 0) {
+            console.log(`[OrderFeed] ${newOrders.length} NEW order(s) detected via polling`);
+            newOrders.forEach((order: FulfillmentOrder) => {
+              knownOrderIdsRef.current.add(order.id); // Mark as known
+              newOrderIdsRef.current.add(order.id); // Mark as new (for UI)
+              setLastCreatedOrder(order);
+            });
+            forceTick((tick) => tick + 1);
+          }
 
-            // Remove orders that are no longer in the feed (optional cleanup)
-            const removedOrders = prev.filter(o => !currentOrderIds.has(o.id));
-            if (removedOrders.length > 0) {
-              removedOrders.forEach(o => newOrderIdsRef.current.delete(o.id));
-            }
+          // Update orders list
+          setOrders(sortOrders(data));
 
-            return sortOrders(data);
-          });
+          // Also add any orders we might have missed to known orders
+          data.forEach((o: FulfillmentOrder) => knownOrderIdsRef.current.add(o.id));
+
           setConnected(true);
         }
       } catch (err) {
         console.error('[Polling] Failed to fetch orders', err);
         setConnected(false);
       }
-    }, 2000); // Changed from 5000 to 2000 (2 seconds) for faster detection
+    }, 2000); // 2 seconds for fast detection
 
     return () => {
       closed = true;

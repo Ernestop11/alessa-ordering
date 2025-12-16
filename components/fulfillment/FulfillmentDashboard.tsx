@@ -738,111 +738,126 @@ export default function FulfillmentDashboard({ initialOrders, feedUrl, scope }: 
         onSettingsChange={setAlertSettings}
       />
 
-      <header className="space-y-4 rounded-2xl border border-gray-200 bg-white px-6 py-4 shadow-sm">
-        <div className="flex flex-wrap items-center justify-between gap-4">
-          <div>
-            <h1 className="text-xl font-semibold text-gray-900">Fulfillment Dashboard</h1>
-            <p className="text-sm text-gray-500">
-              Monitor live orders, trigger printing, and progress tickets through each stage.
-            </p>
-          </div>
-          <div className="flex items-center gap-3">
-          <Link
-            href="/admin/menu"
-            className="inline-flex items-center gap-2 rounded-full border border-gray-200 bg-gray-50 px-3 py-1 text-xs font-semibold text-gray-600 hover:border-gray-300 hover:text-gray-900 hover:bg-gray-100"
-            title="Go to Menu Editor"
-          >
-            <svg className="h-4 w-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-              <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M10 19l-7-7m0 0l7-7m-7 7h18" />
-            </svg>
-            Menu Editor
-          </Link>
-          <span
-            className={`flex items-center gap-2 rounded-full px-3 py-1 text-xs font-semibold ${
-              connected ? 'bg-emerald-100 text-emerald-700' : 'bg-red-100 text-red-700'
-            }`}
-          >
-            <span className="h-2 w-2 rounded-full bg-current" />
-            {connected ? 'Live' : 'Offline'}
-          </span>
-          <div className="flex items-center gap-2">
-            <span className="text-sm text-gray-600">New orders</span>
-            <span className="rounded-full bg-blue-600 px-2 py-0.5 text-sm font-semibold text-white">
-              {newOrderCount}
-            </span>
-            <button
-              type="button"
-              onClick={ackNewOrders}
-              className="rounded-full border border-gray-200 px-3 py-1 text-xs font-semibold text-gray-600 hover:border-gray-300 hover:text-gray-900"
+      <header className="space-y-3 sm:space-y-4 rounded-2xl border border-gray-200 bg-white px-4 sm:px-6 py-3 sm:py-4 shadow-sm">
+        {/* Mobile: Stack vertically, Desktop: Side by side */}
+        <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-3 sm:gap-4">
+          {/* Title and status row */}
+          <div className="flex items-center justify-between sm:justify-start gap-3">
+            <div className="min-w-0">
+              <h1 className="text-lg sm:text-xl font-semibold text-gray-900 truncate">Fulfillment</h1>
+              <p className="text-xs sm:text-sm text-gray-500 hidden sm:block">
+                Monitor live orders and progress tickets.
+              </p>
+            </div>
+            {/* Connection status - always visible */}
+            <span
+              className={`flex-shrink-0 flex items-center gap-1.5 sm:gap-2 rounded-full px-2 sm:px-3 py-1 text-xs font-semibold ${
+                connected ? 'bg-emerald-100 text-emerald-700' : 'bg-red-100 text-red-700'
+              }`}
             >
-              Acknowledge
-            </button>
+              <span className="h-2 w-2 rounded-full bg-current" />
+              {connected ? 'Live' : 'Offline'}
+            </span>
           </div>
+
+          {/* New orders badge + acknowledge - always visible */}
+          <div className="flex items-center justify-between sm:justify-end gap-2 sm:gap-3">
+            <div className="flex items-center gap-2">
+              <span className="text-xs sm:text-sm text-gray-600">New</span>
+              <span className="rounded-full bg-blue-600 px-2 py-0.5 text-xs sm:text-sm font-semibold text-white min-w-[24px] text-center">
+                {newOrderCount}
+              </span>
+              <button
+                type="button"
+                onClick={ackNewOrders}
+                className="rounded-full border border-gray-200 px-2 sm:px-3 py-1 text-xs font-semibold text-gray-600 hover:border-gray-300 hover:text-gray-900"
+              >
+                Ack
+              </button>
+            </div>
+
+            {/* Menu Editor link - icon only on mobile */}
+            <Link
+              href="/admin/menu"
+              className="inline-flex items-center gap-1 sm:gap-2 rounded-full border border-gray-200 bg-gray-50 px-2 sm:px-3 py-1 text-xs font-semibold text-gray-600 hover:border-gray-300 hover:text-gray-900 hover:bg-gray-100"
+              title="Go to Menu Editor"
+            >
+              <svg className="h-4 w-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M10 19l-7-7m0 0l7-7m-7 7h18" />
+              </svg>
+              <span className="hidden sm:inline">Menu</span>
+            </Link>
+          </div>
+        </div>
+
+        {/* Action buttons - horizontal scroll on mobile */}
+        <div className="flex gap-2 overflow-x-auto pb-1 -mx-4 px-4 sm:mx-0 sm:px-0 sm:overflow-visible sm:flex-wrap">
           {notificationsSupported && (
             <button
               type="button"
               onClick={handleEnableNotifications}
               disabled={notificationsEnabled}
-              className={`inline-flex items-center rounded-full border px-3 py-1 text-xs font-semibold ${
+              className={`flex-shrink-0 inline-flex items-center rounded-full border px-2 sm:px-3 py-1 text-xs font-semibold whitespace-nowrap ${
                 notificationsEnabled
                   ? 'border-emerald-200 bg-emerald-50 text-emerald-700'
                   : 'border-gray-200 bg-gray-50 text-gray-600 hover:border-gray-300 hover:text-gray-900'
               }`}
             >
-              {notificationsEnabled ? 'Notifications On' : 'Enable Notifications'}
+              {notificationsEnabled ? '🔔 On' : '🔔 Notify'}
             </button>
           )}
           {isInstallable && (
             <button
               type="button"
               onClick={handleInstallPWA}
-              className="inline-flex items-center gap-2 rounded-full border border-blue-200 bg-blue-50 px-3 py-1 text-xs font-semibold text-blue-700 hover:border-blue-300 hover:bg-blue-100"
+              className="flex-shrink-0 inline-flex items-center gap-1 rounded-full border border-blue-200 bg-blue-50 px-2 sm:px-3 py-1 text-xs font-semibold text-blue-700 hover:border-blue-300 hover:bg-blue-100 whitespace-nowrap"
               title="Install app for easier access"
             >
-              <svg className="h-4 w-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+              <svg className="h-3 w-3 sm:h-4 sm:w-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                 <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 4v16m8-8H4" />
               </svg>
-              Install App
+              Install
             </button>
           )}
           <button
             type="button"
             onClick={toggleKioskMode}
-            className={`inline-flex items-center gap-2 rounded-full border px-3 py-1 text-xs font-semibold ${
+            className={`flex-shrink-0 inline-flex items-center gap-1 rounded-full border px-2 sm:px-3 py-1 text-xs font-semibold whitespace-nowrap ${
               kioskMode
                 ? 'border-purple-200 bg-purple-50 text-purple-700'
                 : 'border-gray-200 bg-gray-50 text-gray-600 hover:border-gray-300 hover:text-gray-900'
             }`}
-            title={kioskMode ? 'Exit kiosk mode (screen stays on)' : 'Enter kiosk mode (fullscreen, screen stays on)'}
+            title={kioskMode ? 'Exit kiosk mode' : 'Enter kiosk mode'}
           >
-            <svg className="h-4 w-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+            <svg className="h-3 w-3 sm:h-4 sm:w-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
               {kioskMode ? (
                 <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9 9V4.5M9 9H4.5M9 9L3.75 3.75M9 15v4.5M9 15H4.5M9 15l-5.25 5.25M15 9h4.5M15 9V4.5M15 9l5.25-5.25M15 15h4.5M15 15v4.5m0-4.5l5.25 5.25" />
               ) : (
                 <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M3.75 3.75v4.5m0-4.5h4.5m-4.5 0L9 9M3.75 20.25v-4.5m0 4.5h4.5m-4.5 0L9 15M20.25 3.75h-4.5m4.5 0v4.5m0-4.5L15 9m5.25 11.25h-4.5m4.5 0v-4.5m0 4.5L15 15" />
               )}
             </svg>
-            {kioskMode ? 'Exit Kiosk' : 'Kiosk Mode'}
+            {kioskMode ? 'Exit' : 'Kiosk'}
           </button>
           <button
             type="button"
             onClick={() => setKitchenMode(!kitchenMode)}
-            className={`inline-flex items-center gap-2 rounded-full border px-3 py-1 text-xs font-semibold ${
+            className={`flex-shrink-0 inline-flex items-center gap-1 rounded-full border px-2 sm:px-3 py-1 text-xs font-semibold whitespace-nowrap ${
               kitchenMode
                 ? 'border-orange-200 bg-orange-50 text-orange-700'
                 : 'border-gray-200 bg-gray-50 text-gray-600 hover:border-gray-300 hover:text-gray-900'
             }`}
-            title={kitchenMode ? 'Switch to standard view' : 'Switch to large kitchen display (for older eyes)'}
+            title={kitchenMode ? 'Switch to standard view' : 'Switch to kitchen display'}
           >
-            <svg className="h-4 w-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+            <svg className="h-3 w-3 sm:h-4 sm:w-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
               <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M15 12a3 3 0 11-6 0 3 3 0 016 0z" />
               <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M2.458 12C3.732 7.943 7.523 5 12 5c4.478 0 8.268 2.943 9.542 7-1.274 4.057-5.064 7-9.542 7-4.477 0-8.268-2.943-9.542-7z" />
             </svg>
-            {kitchenMode ? 'Standard View' : 'Kitchen Display'}
+            {kitchenMode ? 'Standard' : 'Kitchen'}
           </button>
-          </div>
         </div>
-        <div className="flex gap-2 border-b border-gray-200">
+
+        {/* Tabs */}
+        <div className="flex gap-1 sm:gap-2 border-b border-gray-200 -mx-4 px-4 sm:mx-0 sm:px-0 overflow-x-auto">
           <button
             onClick={() => setActiveTab('orders')}
             className={`px-4 py-2 text-sm font-medium ${
