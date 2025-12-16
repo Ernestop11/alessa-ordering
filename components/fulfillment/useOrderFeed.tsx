@@ -90,36 +90,44 @@ export function useOrderFeed({ feedUrl, initialOrders }: Options) {
     const pollInterval = setInterval(async () => {
       if (closed) return;
       try {
-        const response = await fetch(feedUrl.replace('/stream', '') + '?t=' + Date.now()); // Cache bust
-        if (response.ok) {
-          const data = await response.json();
-          if (Array.isArray(data)) {
-            setOrders((prev) => {
-              const previousIds = new Set(prev.map(o => o.id));
-              const currentOrderIds = new Set(data.map((o: FulfillmentOrder) => o.id));
-              
-              // Find truly new orders (not in previous list)
-              const newOrders = data.filter((o: FulfillmentOrder) => !previousIds.has(o.id));
-              
-              if (newOrders.length > 0) {
-                console.log(`[OrderFeed] ${newOrders.length} new order(s) detected via polling`);
-                newOrders.forEach((order: FulfillmentOrder) => {
-                  newOrderIdsRef.current.add(order.id);
-                  setLastCreatedOrder(order);
-                });
-                forceTick((tick) => tick + 1);
-              }
-              
-              // Remove orders that are no longer in the feed (optional cleanup)
-              const removedOrders = prev.filter(o => !currentOrderIds.has(o.id));
-              if (removedOrders.length > 0) {
-                removedOrders.forEach(o => newOrderIdsRef.current.delete(o.id));
-              }
-              
-              return sortOrders(data);
-            });
-            setConnected(true);
-          }
+        // Build polling URL: remove /stream and add cache buster
+        const baseUrl = feedUrl.replace('/stream', '');
+        const separator = baseUrl.includes('?') ? '&' : '?';
+        const pollUrl = `${baseUrl}${separator}t=${Date.now()}`;
+        console.log('[OrderFeed] Polling:', pollUrl);
+        const response = await fetch(pollUrl, { credentials: 'include' }); // Include cookies for auth
+        if (!response.ok) {
+          console.error('[OrderFeed] Polling failed:', response.status, response.statusText);
+          return;
+        }
+        const data = await response.json();
+        if (Array.isArray(data)) {
+          console.log('[OrderFeed] Got', data.length, 'orders from polling');
+          setOrders((prev) => {
+            const previousIds = new Set(prev.map(o => o.id));
+            const currentOrderIds = new Set(data.map((o: FulfillmentOrder) => o.id));
+
+            // Find truly new orders (not in previous list)
+            const newOrders = data.filter((o: FulfillmentOrder) => !previousIds.has(o.id));
+
+            if (newOrders.length > 0) {
+              console.log(`[OrderFeed] ${newOrders.length} new order(s) detected via polling`);
+              newOrders.forEach((order: FulfillmentOrder) => {
+                newOrderIdsRef.current.add(order.id);
+                setLastCreatedOrder(order);
+              });
+              forceTick((tick) => tick + 1);
+            }
+
+            // Remove orders that are no longer in the feed (optional cleanup)
+            const removedOrders = prev.filter(o => !currentOrderIds.has(o.id));
+            if (removedOrders.length > 0) {
+              removedOrders.forEach(o => newOrderIdsRef.current.delete(o.id));
+            }
+
+            return sortOrders(data);
+          });
+          setConnected(true);
         }
       } catch (err) {
         console.error('[Polling] Failed to fetch orders', err);
