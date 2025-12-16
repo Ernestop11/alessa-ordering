@@ -8,6 +8,7 @@ import { useOrderFeed } from './useOrderFeed';
 import type { FulfillmentOrder } from './types';
 import CateringInquiriesTab from './CateringInquiriesTab';
 import PrinterSettings from './PrinterSettings';
+import RefundModal from './RefundModal';
 import { useAutoPrint } from './useAutoPrint';
 import { printOrderClientSide, isBluetoothPrintingAvailable, type PrinterConfig } from '@/lib/client-printer';
 
@@ -163,6 +164,7 @@ export default function FulfillmentDashboard({ initialOrders, feedUrl, scope }: 
   const [kioskMode, setKioskMode] = useState(false);
   const [wakeLock, setWakeLock] = useState<any>(null);
   const [kitchenMode, setKitchenMode] = useState(false); // Large UI for kitchen display
+  const [refundOrder, setRefundOrder] = useState<FulfillmentOrder | null>(null); // Order being refunded
   const [alertSettings, setAlertSettings] = useState<AlertSettings>({
     enabled: true,
     volume: 1.0, // Maximum volume for kitchen
@@ -449,24 +451,18 @@ export default function FulfillmentDashboard({ initialOrders, feedUrl, scope }: 
     }
   };
 
-  const handleRefund = async (order: FulfillmentOrder) => {
-    if (!confirm(`Refund order ${order.id.slice(-6).toUpperCase()}? This will process a Stripe refund.`)) return;
-    setBusyOrderId(order.id);
-    try {
-      const res = await fetch(`/api/admin/orders/${order.id}/refund`, {
-        method: 'POST',
-      });
-      if (!res.ok) {
-        const error = await res.json();
-        throw new Error(error.error || 'Failed to process refund');
-      }
-      await patchOrderStatus(order.id, 'cancelled');
-    } catch (err: any) {
-      console.error('Failed to refund order', err);
-      setError(err.message || 'Failed to process refund');
-    } finally {
-      setBusyOrderId(null);
+  // Open refund modal instead of simple confirm
+  const handleRefund = (order: FulfillmentOrder) => {
+    setRefundOrder(order);
+  };
+
+  // Called when refund is successfully processed
+  const handleRefundComplete = () => {
+    if (refundOrder) {
+      // Refresh the order status - it may have been cancelled for full refunds
+      optimisticUpdateOrder(refundOrder.id, { status: 'cancelled' });
     }
+    setRefundOrder(null);
   };
 
   const sendToBluetoothPrinterClient = async (deviceId: string, receiptData: string): Promise<void> => {
@@ -731,6 +727,15 @@ export default function FulfillmentDashboard({ initialOrders, feedUrl, scope }: 
 
   return (
     <div className="space-y-6">
+      {/* Refund Modal */}
+      {refundOrder && (
+        <RefundModal
+          order={refundOrder}
+          onClose={() => setRefundOrder(null)}
+          onRefundComplete={handleRefundComplete}
+        />
+      )}
+
       <NewOrderAlerts
         unacknowledgedOrders={unacknowledgedOrders}
         onAcknowledge={handleAcknowledge}
