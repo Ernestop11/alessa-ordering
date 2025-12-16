@@ -1,6 +1,7 @@
 "use client";
 
 import { useEffect, useMemo, useRef, useState } from 'react';
+import Link from 'next/link';
 import FulfillmentBoard from './FulfillmentBoard';
 import NewOrderAlerts, { type AlertSettings } from './NewOrderAlerts';
 import { useOrderFeed } from './useOrderFeed';
@@ -736,7 +737,7 @@ export default function FulfillmentDashboard({ initialOrders, feedUrl, scope }: 
             </p>
           </div>
           <div className="flex items-center gap-3">
-          <a
+          <Link
             href="/admin/menu-editor"
             className="inline-flex items-center gap-2 rounded-full border border-gray-200 bg-gray-50 px-3 py-1 text-xs font-semibold text-gray-600 hover:border-gray-300 hover:text-gray-900 hover:bg-gray-100"
             title="Go to Menu Editor"
@@ -745,7 +746,7 @@ export default function FulfillmentDashboard({ initialOrders, feedUrl, scope }: 
               <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M10 19l-7-7m0 0l7-7m-7 7h18" />
             </svg>
             Menu Editor
-          </a>
+          </Link>
           <span
             className={`flex items-center gap-2 rounded-full px-3 py-1 text-xs font-semibold ${
               connected ? 'bg-emerald-100 text-emerald-700' : 'bg-red-100 text-red-700'
