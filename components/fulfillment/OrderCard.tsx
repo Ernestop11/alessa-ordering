@@ -26,15 +26,15 @@ function formatTime(value: string) {
   return date.toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' });
 }
 
-// Status color mapping
+// Status color mapping with light backgrounds
 const STATUS_COLORS = {
-  new: { bg: '#dc2626', text: 'white', label: 'NEW ORDER' },
-  pending: { bg: '#dc2626', text: 'white', label: 'NEW ORDER' },
-  confirmed: { bg: '#dc2626', text: 'white', label: 'CONFIRMED' },
-  preparing: { bg: '#f59e0b', text: 'white', label: 'PREPARING' },
-  ready: { bg: '#16a34a', text: 'white', label: 'READY' },
-  completed: { bg: '#64748b', text: 'white', label: 'COMPLETED' },
-  cancelled: { bg: '#991b1b', text: 'white', label: 'CANCELLED' },
+  new: { bg: '#dc2626', text: 'white', label: 'NEW ORDER', lightBg: '#fef2f2' },
+  pending: { bg: '#dc2626', text: 'white', label: 'NEW ORDER', lightBg: '#fef2f2' },
+  confirmed: { bg: '#dc2626', text: 'white', label: 'CONFIRMED', lightBg: '#fef2f2' },
+  preparing: { bg: '#f59e0b', text: 'white', label: 'PREPARING', lightBg: '#fffbeb' },
+  ready: { bg: '#16a34a', text: 'white', label: 'READY', lightBg: '#f0fdf4' },
+  completed: { bg: '#64748b', text: 'white', label: 'COMPLETED', lightBg: '#f8fafc' },
+  cancelled: { bg: '#991b1b', text: 'white', label: 'CANCELLED', lightBg: '#fef2f2' },
 };
 
 function getStatusColor(status: string, isNew: boolean) {
@@ -42,6 +42,107 @@ function getStatusColor(status: string, isNew: boolean) {
     return STATUS_COLORS.new;
   }
   return STATUS_COLORS[status as keyof typeof STATUS_COLORS] || STATUS_COLORS.pending;
+}
+
+// Parse modifiers from notes string into styled categories
+function parseModifiers(notes: string | null | undefined): { removes: string[]; adds: string[]; others: string[] } {
+  if (!notes) return { removes: [], adds: [], others: [] };
+
+  const removes: string[] = [];
+  const adds: string[] = [];
+  const others: string[] = [];
+
+  // Split by comma, semicolon, or " - "
+  const parts = notes.split(/[,;]|(?:\s+-\s+)/).map(p => p.trim()).filter(Boolean);
+
+  for (const part of parts) {
+    const lower = part.toLowerCase();
+    // Check for "no X", "without X", "hold the X"
+    if (lower.startsWith('no ') || lower.startsWith('without ') || lower.startsWith('hold ') || lower.includes(' no ')) {
+      removes.push(part);
+    }
+    // Check for "extra X", "add X", "+$X", "(+$X)"
+    else if (lower.startsWith('extra ') || lower.startsWith('add ') || lower.includes('+$') || lower.includes('(+') || lower.includes('double')) {
+      adds.push(part);
+    }
+    // Everything else
+    else {
+      others.push(part);
+    }
+  }
+
+  return { removes, adds, others };
+}
+
+// Modifier tag component
+function ModifierTag({ text, type }: { text: string; type: 'remove' | 'add' | 'other' }) {
+  const styles = {
+    remove: {
+      bg: '#fef2f2',
+      border: '#fecaca',
+      text: '#991b1b',
+      icon: '✕',
+    },
+    add: {
+      bg: '#f0fdf4',
+      border: '#bbf7d0',
+      text: '#166534',
+      icon: '＋',
+    },
+    other: {
+      bg: '#fefce8',
+      border: '#fef08a',
+      text: '#854d0e',
+      icon: '•',
+    },
+  };
+
+  const style = styles[type];
+
+  return (
+    <span
+      style={{
+        display: 'inline-flex',
+        alignItems: 'center',
+        gap: '4px',
+        padding: '4px 10px',
+        borderRadius: '6px',
+        fontSize: '0.875rem',
+        fontWeight: 600,
+        backgroundColor: style.bg,
+        border: `1px solid ${style.border}`,
+        color: style.text,
+        marginRight: '6px',
+        marginBottom: '6px',
+      }}
+    >
+      <span style={{ fontWeight: 700 }}>{style.icon}</span>
+      {text}
+    </span>
+  );
+}
+
+// Render all modifiers for an item
+function ItemModifiers({ notes }: { notes: string | null | undefined }) {
+  const { removes, adds, others } = parseModifiers(notes);
+
+  if (removes.length === 0 && adds.length === 0 && others.length === 0) {
+    return null;
+  }
+
+  return (
+    <div style={{ marginTop: '8px', display: 'flex', flexWrap: 'wrap' }}>
+      {removes.map((mod, i) => (
+        <ModifierTag key={`r-${i}`} text={mod} type="remove" />
+      ))}
+      {adds.map((mod, i) => (
+        <ModifierTag key={`a-${i}`} text={mod} type="add" />
+      ))}
+      {others.map((mod, i) => (
+        <ModifierTag key={`o-${i}`} text={mod} type="other" />
+      ))}
+    </div>
+  );
 }
 
 // FULL-SCREEN TICKET MODAL
@@ -54,6 +155,7 @@ function OrderDetailModal({
   onComplete,
   onPrint,
   onCancel,
+  onRefund,
 }: {
   order: FulfillmentOrder;
   isNew: boolean;
@@ -63,8 +165,10 @@ function OrderDetailModal({
   onComplete: (order: FulfillmentOrder) => void;
   onPrint: (order: FulfillmentOrder) => void;
   onCancel?: (order: FulfillmentOrder) => void;
+  onRefund?: (order: FulfillmentOrder) => void;
 }) {
   const [mounted, setMounted] = useState(false);
+  const [showMoreOptions, setShowMoreOptions] = useState(false);
 
   useEffect(() => {
     setMounted(true);
@@ -80,8 +184,8 @@ function OrderDetailModal({
   const isDelivery = order.fulfillmentMethod === 'delivery';
   const canAccept = status === 'pending' || status === 'confirmed';
   const canMarkReady = status === 'preparing';
-  const canComplete = status === 'ready' || status === 'preparing';
   const canCancel = status !== 'completed' && status !== 'cancelled';
+  const canRefund = (status === 'completed' || status === 'cancelled') && onRefund;
   const customerLabel = order.customerName || order.customer?.name || 'Guest';
   const statusColor = getStatusColor(status, isNew);
 
@@ -212,61 +316,57 @@ function OrderDetailModal({
           </h3>
           {order.items.map((item, idx) => (
             <div key={item.id} style={{
-              display: 'flex',
-              alignItems: 'flex-start',
-              gap: '12px',
-              padding: '12px 0',
-              borderBottom: idx < order.items.length - 1 ? '1px solid #f3f4f6' : 'none',
+              padding: '16px',
+              marginBottom: idx < order.items.length - 1 ? '12px' : '0',
+              backgroundColor: item.notes ? '#fafafa' : 'transparent',
+              borderRadius: '12px',
+              border: item.notes ? '1px solid #e5e7eb' : 'none',
             }}>
-              <span style={{
-                backgroundColor: '#111',
-                color: 'white',
-                width: '36px',
-                height: '36px',
-                borderRadius: '8px',
-                display: 'flex',
-                alignItems: 'center',
-                justifyContent: 'center',
-                fontWeight: 900,
-                fontSize: '1.125rem',
-                flexShrink: 0,
-              }}>
-                {item.quantity}
-              </span>
-              <div style={{ flex: 1 }}>
-                <p style={{ fontSize: '1.125rem', fontWeight: 600, color: '#111', margin: 0 }}>
-                  {item.menuItemName || 'Menu Item'}
-                </p>
-                {item.notes && (
-                  <p style={{
-                    fontSize: '0.875rem',
-                    color: '#ea580c',
-                    fontWeight: 600,
-                    marginTop: '4px',
-                    backgroundColor: '#fff7ed',
-                    padding: '6px 10px',
-                    borderRadius: '6px',
-                    display: 'inline-block',
-                  }}>
-                    ⚠️ {item.notes}
+              <div style={{ display: 'flex', alignItems: 'flex-start', gap: '12px' }}>
+                <span style={{
+                  backgroundColor: statusColor.bg,
+                  color: 'white',
+                  minWidth: '40px',
+                  height: '40px',
+                  borderRadius: '10px',
+                  display: 'flex',
+                  alignItems: 'center',
+                  justifyContent: 'center',
+                  fontWeight: 900,
+                  fontSize: '1.25rem',
+                  flexShrink: 0,
+                }}>
+                  {item.quantity}
+                </span>
+                <div style={{ flex: 1 }}>
+                  <p style={{ fontSize: '1.125rem', fontWeight: 700, color: '#111', margin: 0, lineHeight: 1.3 }}>
+                    {item.menuItemName || 'Menu Item'}
                   </p>
-                )}
+                  <p style={{ fontSize: '0.875rem', color: '#666', margin: '2px 0 0 0' }}>
+                    {formatCurrency(item.price)} each
+                  </p>
+                  <ItemModifiers notes={item.notes} />
+                </div>
               </div>
             </div>
           ))}
 
+          {/* Order-level special instructions */}
           {order.notes && (
             <div style={{
-              marginTop: '16px',
-              padding: '12px',
+              marginTop: '20px',
+              padding: '16px',
               backgroundColor: '#fef3c7',
-              borderRadius: '8px',
-              borderLeft: '4px solid #f59e0b',
+              borderRadius: '12px',
+              border: '2px solid #fcd34d',
             }}>
-              <p style={{ fontSize: '0.75rem', fontWeight: 700, color: '#92400e', textTransform: 'uppercase', margin: '0 0 4px 0' }}>
-                Special Instructions
-              </p>
-              <p style={{ fontSize: '1rem', fontWeight: 600, color: '#78350f', margin: 0 }}>
+              <div style={{ display: 'flex', alignItems: 'center', gap: '8px', marginBottom: '8px' }}>
+                <span style={{ fontSize: '1.25rem' }}>📋</span>
+                <p style={{ fontSize: '0.875rem', fontWeight: 800, color: '#92400e', textTransform: 'uppercase', letterSpacing: '0.5px', margin: 0 }}>
+                  Order Notes
+                </p>
+              </div>
+              <p style={{ fontSize: '1.125rem', fontWeight: 600, color: '#78350f', margin: 0, lineHeight: 1.5 }}>
                 {order.notes}
               </p>
             </div>
@@ -279,112 +379,156 @@ function OrderDetailModal({
         backgroundColor: 'white',
         padding: '16px',
         borderTop: '1px solid #e5e7eb',
-        display: 'flex',
-        gap: '12px',
-        flexWrap: 'wrap',
       }}>
-        {/* Print always visible */}
-        <button
-          onClick={() => onPrint(order)}
-          style={{
-            flex: '0 0 auto',
-            padding: '14px 20px',
-            borderRadius: '12px',
-            border: '2px solid #e5e7eb',
-            backgroundColor: 'white',
-            color: '#374151',
-            fontWeight: 700,
-            fontSize: '1rem',
-            cursor: 'pointer',
+        {/* Primary actions row */}
+        <div style={{ display: 'flex', gap: '12px', marginBottom: showMoreOptions ? '12px' : '0' }}>
+          {/* Primary action based on status */}
+          {canAccept && (
+            <button
+              onClick={() => { onAccept(order); onClose(); }}
+              style={{
+                flex: 1,
+                padding: '16px 24px',
+                borderRadius: '12px',
+                border: 'none',
+                backgroundColor: '#16a34a',
+                color: 'white',
+                fontWeight: 900,
+                fontSize: '1.125rem',
+                cursor: 'pointer',
+                textTransform: 'uppercase',
+                letterSpacing: '0.5px',
+              }}
+            >
+              ✓ Accept & Start
+            </button>
+          )}
+
+          {canMarkReady && (
+            <button
+              onClick={() => { onMarkReady(order); onClose(); }}
+              style={{
+                flex: 1,
+                padding: '16px 24px',
+                borderRadius: '12px',
+                border: 'none',
+                backgroundColor: '#16a34a',
+                color: 'white',
+                fontWeight: 900,
+                fontSize: '1.125rem',
+                cursor: 'pointer',
+                textTransform: 'uppercase',
+                letterSpacing: '0.5px',
+              }}
+            >
+              ✓ Mark Ready
+            </button>
+          )}
+
+          {status === 'ready' && (
+            <button
+              onClick={() => { onComplete(order); onClose(); }}
+              style={{
+                flex: 1,
+                padding: '16px 24px',
+                borderRadius: '12px',
+                border: 'none',
+                backgroundColor: '#2563eb',
+                color: 'white',
+                fontWeight: 900,
+                fontSize: '1.125rem',
+                cursor: 'pointer',
+                textTransform: 'uppercase',
+                letterSpacing: '0.5px',
+              }}
+            >
+              Complete Order
+            </button>
+          )}
+
+          {/* More options toggle - subtle */}
+          <button
+            onClick={() => setShowMoreOptions(!showMoreOptions)}
+            style={{
+              padding: '14px 16px',
+              borderRadius: '12px',
+              border: '1px solid #e5e7eb',
+              backgroundColor: showMoreOptions ? '#f3f4f6' : 'white',
+              color: '#6b7280',
+              fontWeight: 600,
+              fontSize: '1.25rem',
+              cursor: 'pointer',
+            }}
+            title="More options"
+          >
+            ⋯
+          </button>
+        </div>
+
+        {/* Secondary options - only shown when expanded */}
+        {showMoreOptions && (
+          <div style={{
             display: 'flex',
-            alignItems: 'center',
-            gap: '8px',
-          }}
-        >
-          🖨️ Print
-        </button>
+            gap: '10px',
+            paddingTop: '12px',
+            borderTop: '1px solid #e5e7eb',
+            flexWrap: 'wrap',
+          }}>
+            <button
+              onClick={() => onPrint(order)}
+              style={{
+                padding: '10px 16px',
+                borderRadius: '8px',
+                border: '1px solid #e5e7eb',
+                backgroundColor: 'white',
+                color: '#374151',
+                fontWeight: 600,
+                fontSize: '0.875rem',
+                cursor: 'pointer',
+                display: 'flex',
+                alignItems: 'center',
+                gap: '6px',
+              }}
+            >
+              🖨️ Print Ticket
+            </button>
 
-        {/* Primary action based on status */}
-        {canAccept && (
-          <button
-            onClick={() => { onAccept(order); onClose(); }}
-            style={{
-              flex: 1,
-              padding: '16px 24px',
-              borderRadius: '12px',
-              border: 'none',
-              backgroundColor: '#16a34a',
-              color: 'white',
-              fontWeight: 900,
-              fontSize: '1.125rem',
-              cursor: 'pointer',
-              textTransform: 'uppercase',
-              letterSpacing: '0.5px',
-            }}
-          >
-            ✓ Accept & Start
-          </button>
-        )}
+            {canCancel && onCancel && (
+              <button
+                onClick={() => { onCancel(order); onClose(); }}
+                style={{
+                  padding: '10px 16px',
+                  borderRadius: '8px',
+                  border: '1px solid #fecaca',
+                  backgroundColor: '#fef2f2',
+                  color: '#dc2626',
+                  fontWeight: 600,
+                  fontSize: '0.875rem',
+                  cursor: 'pointer',
+                }}
+              >
+                Cancel Order
+              </button>
+            )}
 
-        {canMarkReady && (
-          <button
-            onClick={() => { onMarkReady(order); onClose(); }}
-            style={{
-              flex: 1,
-              padding: '16px 24px',
-              borderRadius: '12px',
-              border: 'none',
-              backgroundColor: '#16a34a',
-              color: 'white',
-              fontWeight: 900,
-              fontSize: '1.125rem',
-              cursor: 'pointer',
-              textTransform: 'uppercase',
-              letterSpacing: '0.5px',
-            }}
-          >
-            ✓ Mark Ready
-          </button>
-        )}
-
-        {status === 'ready' && (
-          <button
-            onClick={() => { onComplete(order); onClose(); }}
-            style={{
-              flex: 1,
-              padding: '16px 24px',
-              borderRadius: '12px',
-              border: 'none',
-              backgroundColor: '#2563eb',
-              color: 'white',
-              fontWeight: 900,
-              fontSize: '1.125rem',
-              cursor: 'pointer',
-              textTransform: 'uppercase',
-              letterSpacing: '0.5px',
-            }}
-          >
-            Complete Order
-          </button>
-        )}
-
-        {canCancel && onCancel && (
-          <button
-            onClick={() => { onCancel(order); onClose(); }}
-            style={{
-              flex: '0 0 auto',
-              padding: '14px 20px',
-              borderRadius: '12px',
-              border: '2px solid #fca5a5',
-              backgroundColor: 'white',
-              color: '#dc2626',
-              fontWeight: 700,
-              fontSize: '1rem',
-              cursor: 'pointer',
-            }}
-          >
-            Cancel
-          </button>
+            {canRefund && (
+              <button
+                onClick={() => { onRefund(order); onClose(); }}
+                style={{
+                  padding: '10px 16px',
+                  borderRadius: '8px',
+                  border: '1px solid #ddd6fe',
+                  backgroundColor: '#f5f3ff',
+                  color: '#7c3aed',
+                  fontWeight: 600,
+                  fontSize: '0.875rem',
+                  cursor: 'pointer',
+                }}
+              >
+                💳 Issue Refund
+              </button>
+            )}
+          </div>
         )}
       </div>
     </div>
@@ -401,6 +545,7 @@ export default function OrderCard({ order, scope, onAccept, onMarkReady, onCompl
   const canAccept = status === 'pending' || status === 'confirmed';
   const canMarkReady = status === 'preparing';
   const statusColor = getStatusColor(status, isNew);
+  const hasModifiers = order.notes || order.items.some(i => i.notes);
 
   const customerLabel = useMemo(() => {
     if (order.customerName) return order.customerName;
@@ -409,7 +554,6 @@ export default function OrderCard({ order, scope, onAccept, onMarkReady, onCompl
   }, [order.customerName, order.customer]);
 
   void scope;
-  void onRefund;
 
   // Kitchen mode
   if (kitchenMode) {
@@ -429,6 +573,7 @@ export default function OrderCard({ order, scope, onAccept, onMarkReady, onCompl
             onComplete={onComplete}
             onPrint={onPrint}
             onCancel={onCancel}
+            onRefund={onRefund}
           />
         )}
         <div className="p-4">
@@ -446,6 +591,12 @@ export default function OrderCard({ order, scope, onAccept, onMarkReady, onCompl
           </div>
           <p className="font-semibold text-gray-800">{customerLabel}</p>
           <p className="text-sm text-gray-500 mt-1">{order.items.length} items · {formatCurrency(order.totalAmount)}</p>
+          {hasModifiers && (
+            <div className="mt-2 flex items-center gap-1 text-amber-600">
+              <span className="text-sm">📋</span>
+              <span className="text-xs font-semibold">Special instructions</span>
+            </div>
+          )}
         </div>
         <div className="px-4 pb-4 flex gap-2">
           {canAccept && (
@@ -458,9 +609,6 @@ export default function OrderCard({ order, scope, onAccept, onMarkReady, onCompl
               Ready
             </button>
           )}
-          <button onClick={(e) => { e.stopPropagation(); onPrint(order); }} className="px-4 bg-gray-200 text-gray-700 font-bold py-3 rounded-lg">
-            🖨️
-          </button>
         </div>
       </article>
     );
@@ -479,6 +627,7 @@ export default function OrderCard({ order, scope, onAccept, onMarkReady, onCompl
           onComplete={onComplete}
           onPrint={onPrint}
           onCancel={onCancel}
+          onRefund={onRefund}
         />
       )}
 
@@ -505,8 +654,11 @@ export default function OrderCard({ order, scope, onAccept, onMarkReady, onCompl
             <span className="text-sm text-gray-600">{order.items.length} items</span>
             <span className="font-bold text-gray-900">{formatCurrency(order.totalAmount)}</span>
           </div>
-          {(order.notes || order.items.some(i => i.notes)) && (
-            <div className="mt-2 text-xs text-orange-600 font-medium">⚠️ Special instructions</div>
+          {hasModifiers && (
+            <div className="mt-2 flex items-center gap-1 text-amber-600">
+              <span className="text-sm">📋</span>
+              <span className="text-xs font-semibold">Special instructions</span>
+            </div>
           )}
         </div>
       </article>
