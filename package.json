@@ -23,6 +23,12 @@
     "cap:sync": "npx cap sync",
     "cap:ios": "npx cap open ios",
     "build:ios": "npm run build && npx cap sync ios",
+    "deploy:ipad": "bash scripts/deploy-to-ipad.sh",
+    "xcode:diagnose": "bash scripts/xcode-deploy-diagnostic.sh",
+    "xcode:fix": "bash scripts/xcode-deploy-fix.sh",
+    "ipad:check": "bash scripts/check-ipad-connection.sh",
+    "ipad:wireless": "bash scripts/setup-wireless-deployment.sh",
+    "ipad:setup": "bash scripts/setup-wireless-now.sh",
     "test:stripe": "tsx scripts/test-stripe-config.ts",
     "generate:onboarding": "tsx scripts/generate-onboarding-link.ts",
     "check:account-mode": "tsx scripts/check-stripe-account-mode.ts",
@@ -30,7 +36,7 @@
     "verify:stripe-mode": "tsx scripts/verify-stripe-mode.ts"
   },
   "dependencies": {
-    "@capacitor-community/bluetooth-le": "^7.2.0",
+    "@capacitor-community/bluetooth-le": "^7.3.0",
     "@capacitor/cli": "^7.4.4",
     "@capacitor/core": "^7.4.4",
     "@capacitor/ios": "^7.4.4",

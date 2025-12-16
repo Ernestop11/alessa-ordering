@@ -1,7 +1,7 @@
 PODS:
   - Capacitor (7.4.4):
     - CapacitorCordova
-  - CapacitorCommunityBluetoothLe (7.2.0):
+  - CapacitorCommunityBluetoothLe (7.3.0):
     - Capacitor
   - CapacitorCordova (7.4.4)
 
@@ -20,7 +20,7 @@ EXTERNAL SOURCES:
 
 SPEC CHECKSUMS:
   Capacitor: 358dd1c3fdd71d969547b17e159fd8a7736cb45f
-  CapacitorCommunityBluetoothLe: a8a3b904ef86aee80d4e22b8aa3a4b07e9fe5067
+  CapacitorCommunityBluetoothLe: 41f9dec8a4c16ab6b81e56402b6047fc19b4735d
   CapacitorCordova: bf648a636f3c153f652d312ae145fb508b6ffced
 
 PODFILE CHECKSUM: 76fc7effa5ee8a59363cbeb5754b229c51a9b525

@@ -3,6 +3,7 @@ import type { Metadata, Viewport } from 'next'
 import type { CSSProperties } from 'react'
 import { headers } from 'next/headers'
 import CartLauncher from '../components/CartLauncher'
+import KioskMode from '../components/KioskMode'
 import { Providers } from './providers'
 import { getTenantSlugFromHeaders, requireTenant } from '../lib/tenant'
 import { getStaticTenantTheme } from '../lib/tenant-theme-map'
@@ -229,6 +230,7 @@ export default async function RootLayout({
       <body className="font-sans antialiased" style={themeVars}>
         <Providers>
           <TenantThemeProvider tenant={tenantTheme}>
+            <KioskMode />
             {children}
             <CartLauncher />
           </TenantThemeProvider>

@@ -12,6 +12,7 @@ interface Props {
   onPrint: (order: FulfillmentOrder) => void;
   onCancel?: (order: FulfillmentOrder) => void;
   onRefund?: (order: FulfillmentOrder) => void;
+  kitchenMode?: boolean; // Large UI for kitchen tablet
 }
 
 function formatCurrency(value: number) {
@@ -23,7 +24,7 @@ function formatTime(value: string) {
   return `${date.toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' })}`;
 }
 
-export default function OrderCard({ order, scope, onAccept, onMarkReady, onComplete, onPrint, onCancel, onRefund }: Props) {
+export default function OrderCard({ order, scope, onAccept, onMarkReady, onComplete, onPrint, onCancel, onRefund, kitchenMode = false }: Props) {
   const status = (order.status ?? '').toLowerCase();
   const isDelivery = order.fulfillmentMethod === 'delivery';
   const canAccept = status === 'pending' || status === 'confirmed';
@@ -38,6 +39,130 @@ export default function OrderCard({ order, scope, onAccept, onMarkReady, onCompl
     return 'Guest';
   }, [order.customerName, order.customer]);
 
+  // Kitchen mode: extra large text and buttons for visibility
+  if (kitchenMode) {
+    return (
+      <article className={`rounded-2xl border-4 bg-white p-6 shadow-lg transition ${
+        canAccept ? 'border-blue-400 bg-blue-50' :
+        canMarkReady ? 'border-amber-400 bg-amber-50' :
+        status === 'ready' ? 'border-emerald-400 bg-emerald-50' :
+        'border-gray-300'
+      }`}>
+        {/* Order header - LARGE */}
+        <header className="flex items-center justify-between mb-4">
+          <div>
+            <h2 className="text-3xl font-black text-gray-900">
+              #{order.id.slice(-6).toUpperCase()}
+            </h2>
+            <p className="text-xl font-bold text-gray-700 mt-1">
+              {customerLabel}
+            </p>
+          </div>
+          <div className="text-right">
+            <span className={`inline-block rounded-full px-4 py-2 text-xl font-bold ${
+              status === 'pending' || status === 'confirmed'
+                ? 'bg-blue-600 text-white'
+                : status === 'preparing'
+                  ? 'bg-amber-500 text-white'
+                  : status === 'ready'
+                    ? 'bg-emerald-500 text-white'
+                    : 'bg-gray-500 text-white'
+            }`}>
+              {status.toUpperCase()}
+            </span>
+            <p className="text-lg text-gray-600 mt-2">
+              {formatTime(order.createdAt)} · {isDelivery ? '🚗 DELIVERY' : '🏪 PICKUP'}
+            </p>
+          </div>
+        </header>
+
+        {/* Items - LARGE LIST */}
+        <div className="bg-white rounded-xl p-4 mb-4 border-2 border-gray-200">
+          <ul className="space-y-3">
+            {order.items.map((item) => (
+              <li key={item.id} className="flex items-center text-2xl">
+                <span className="bg-gray-900 text-white rounded-full w-10 h-10 flex items-center justify-center font-bold mr-3">
+                  {item.quantity}
+                </span>
+                <span className="font-semibold text-gray-900">{item.menuItemName || 'Menu Item'}</span>
+              </li>
+            ))}
+          </ul>
+        </div>
+
+        {/* Notes - VERY VISIBLE */}
+        {order.notes && (
+          <div className="bg-yellow-200 border-4 border-yellow-400 rounded-xl p-4 mb-4">
+            <p className="text-xl font-bold text-yellow-900">📝 NOTES:</p>
+            <p className="text-2xl font-semibold text-yellow-800 mt-1">{order.notes}</p>
+          </div>
+        )}
+
+        {/* Total */}
+        <div className="text-3xl font-black text-gray-900 mb-4">
+          Total: {formatCurrency(order.totalAmount)}
+        </div>
+
+        {/* ACTION BUTTONS - HUGE */}
+        <div className="grid grid-cols-2 gap-3">
+          {canAccept && (
+            <button
+              type="button"
+              onClick={() => onAccept(order)}
+              className="col-span-2 bg-green-600 hover:bg-green-700 active:bg-green-800 text-white text-3xl font-black py-6 rounded-2xl shadow-lg transform active:scale-95 transition"
+            >
+              ✓ ACCEPT ORDER
+            </button>
+          )}
+          {canMarkReady && (
+            <button
+              type="button"
+              onClick={() => onMarkReady(order)}
+              className="col-span-2 bg-emerald-500 hover:bg-emerald-600 active:bg-emerald-700 text-white text-3xl font-black py-6 rounded-2xl shadow-lg transform active:scale-95 transition"
+            >
+              ✓ MARK READY
+            </button>
+          )}
+          {canComplete && (
+            <button
+              type="button"
+              onClick={() => onComplete(order)}
+              className="bg-blue-600 hover:bg-blue-700 active:bg-blue-800 text-white text-2xl font-bold py-4 rounded-xl shadow transform active:scale-95 transition"
+            >
+              COMPLETE
+            </button>
+          )}
+          <button
+            type="button"
+            onClick={() => onPrint(order)}
+            className="bg-gray-700 hover:bg-gray-800 active:bg-gray-900 text-white text-2xl font-bold py-4 rounded-xl shadow transform active:scale-95 transition"
+          >
+            🖨️ PRINT
+          </button>
+          {canCancel && onCancel && (
+            <button
+              type="button"
+              onClick={() => onCancel(order)}
+              className="bg-red-100 hover:bg-red-200 border-2 border-red-400 text-red-700 text-xl font-bold py-3 rounded-xl transform active:scale-95 transition"
+            >
+              CANCEL
+            </button>
+          )}
+          {canRefund && onRefund && (
+            <button
+              type="button"
+              onClick={() => onRefund(order)}
+              className="bg-red-600 hover:bg-red-700 text-white text-xl font-bold py-3 rounded-xl shadow transform active:scale-95 transition"
+            >
+              💰 REFUND
+            </button>
+          )}
+        </div>
+      </article>
+    );
+  }
+
+  // Standard mode (desktop)
   return (
     <article className="rounded-xl border border-gray-200 bg-white px-4 py-3 shadow-sm transition hover:border-blue-200 hover:shadow-md">
       <header className="flex items-start justify-between gap-3">

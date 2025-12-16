@@ -6,6 +6,7 @@ import { formatReceiptForPrinter } from '@/lib/printer-service';
 
 interface Props {
   tenantId?: string;
+  onBack?: () => void;
 }
 
 async function sendToBluetoothPrinter(deviceId: string, receiptData: string): Promise<void> {
@@ -122,7 +123,7 @@ async function sendToNetworkPrinter(ipAddress: string, port: number, receiptData
   }
 }
 
-export default function PrinterSettings({ tenantId }: Props) {
+export default function PrinterSettings({ tenantId, onBack }: Props) {
   const [printerConfig, setPrinterConfig] = useState<PrinterConfig | null>(null);
   const [autoPrintEnabled, setAutoPrintEnabled] = useState(false);
   const [loading, setLoading] = useState(true);
@@ -251,7 +252,19 @@ export default function PrinterSettings({ tenantId }: Props) {
     <div className="space-y-6">
       <div className="bg-white rounded-lg shadow p-6">
         <div className="flex items-center justify-between mb-4">
+          {onBack && (
+            <button
+              onClick={onBack}
+              className="flex items-center gap-2 text-gray-600 hover:text-gray-900 mr-4"
+            >
+              <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M15 19l-7-7 7-7" />
+              </svg>
+              <span className="text-sm font-medium">Back to Orders</span>
+            </button>
+          )}
           <h2 className="text-xl font-bold">Printer Setup</h2>
+          {onBack && <div className="w-32" />} {/* Spacer for alignment */}
         </div>
 
         {error && (

@@ -7,8 +7,9 @@ const config: CapacitorConfig = {
   server: {
     androidScheme: 'https',
     iosScheme: 'https',
-    // Use the Las Reinas admin login page
-    url: 'https://lasreinas.alessacloud.com/login',
+    // Load fulfillment dashboard directly for kiosk mode
+    // Will redirect to login if not authenticated, then back to fulfillment
+    url: process.env.CAPACITOR_SERVER_URL || 'https://lasreinas.alessacloud.com/admin/fulfillment',
     cleartext: false,
   },
   ios: {

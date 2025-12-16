@@ -159,6 +159,9 @@ export default function FulfillmentDashboard({ initialOrders, feedUrl, scope }: 
   const [tabletMode, setTabletMode] = useState(false);
   const [deferredPrompt, setDeferredPrompt] = useState<any>(null);
   const [isInstallable, setIsInstallable] = useState(false);
+  const [kioskMode, setKioskMode] = useState(false);
+  const [wakeLock, setWakeLock] = useState<any>(null);
+  const [kitchenMode, setKitchenMode] = useState(false); // Large UI for kitchen display
   const [alertSettings, setAlertSettings] = useState<AlertSettings>({
     enabled: true,
     volume: 1.0, // Maximum volume for kitchen
@@ -597,6 +600,106 @@ export default function FulfillmentDashboard({ initialOrders, feedUrl, scope }: 
     setDeferredPrompt(null);
   };
 
+  // Kiosk mode: fullscreen + screen wake lock
+  const toggleKioskMode = async () => {
+    if (!isClient) return;
+
+    if (!kioskMode) {
+      // Enter kiosk mode
+      try {
+        // Request fullscreen
+        const elem = document.documentElement;
+        if (elem.requestFullscreen) {
+          await elem.requestFullscreen();
+        } else if ((elem as any).webkitRequestFullscreen) {
+          await (elem as any).webkitRequestFullscreen();
+        }
+
+        // Request screen wake lock to prevent sleep
+        if ('wakeLock' in navigator) {
+          try {
+            const lock = await (navigator as any).wakeLock.request('screen');
+            setWakeLock(lock);
+            console.log('[Kiosk] Wake lock acquired');
+          } catch (err) {
+            console.warn('[Kiosk] Wake lock not available:', err);
+          }
+        }
+
+        setKioskMode(true);
+      } catch (err) {
+        console.error('[Kiosk] Failed to enter kiosk mode:', err);
+      }
+    } else {
+      // Exit kiosk mode
+      try {
+        if (document.fullscreenElement) {
+          await document.exitFullscreen();
+        } else if ((document as any).webkitFullscreenElement) {
+          await (document as any).webkitExitFullscreen();
+        }
+
+        // Release wake lock
+        if (wakeLock) {
+          await wakeLock.release();
+          setWakeLock(null);
+          console.log('[Kiosk] Wake lock released');
+        }
+
+        setKioskMode(false);
+      } catch (err) {
+        console.error('[Kiosk] Failed to exit kiosk mode:', err);
+      }
+    }
+  };
+
+  // Listen for fullscreen changes (user might exit via Escape key)
+  useEffect(() => {
+    if (!isClient) return;
+
+    const handleFullscreenChange = () => {
+      const isFullscreen = !!(document.fullscreenElement || (document as any).webkitFullscreenElement);
+      if (!isFullscreen && kioskMode) {
+        // User exited fullscreen, also release wake lock
+        if (wakeLock) {
+          wakeLock.release().catch(console.error);
+          setWakeLock(null);
+        }
+        setKioskMode(false);
+      }
+    };
+
+    document.addEventListener('fullscreenchange', handleFullscreenChange);
+    document.addEventListener('webkitfullscreenchange', handleFullscreenChange);
+
+    return () => {
+      document.removeEventListener('fullscreenchange', handleFullscreenChange);
+      document.removeEventListener('webkitfullscreenchange', handleFullscreenChange);
+    };
+  }, [isClient, kioskMode, wakeLock]);
+
+  // Re-acquire wake lock if released (e.g., when tab becomes visible again)
+  useEffect(() => {
+    if (!isClient || !kioskMode) return;
+
+    const handleVisibilityChange = async () => {
+      if (document.visibilityState === 'visible' && kioskMode && !wakeLock) {
+        if ('wakeLock' in navigator) {
+          try {
+            const lock = await (navigator as any).wakeLock.request('screen');
+            setWakeLock(lock);
+            console.log('[Kiosk] Wake lock re-acquired');
+          } catch (err) {
+            console.warn('[Kiosk] Failed to re-acquire wake lock:', err);
+          }
+        }
+      }
+    };
+
+    document.addEventListener('visibilitychange', handleVisibilityChange);
+    return () => document.removeEventListener('visibilitychange', handleVisibilityChange);
+  }, [isClient, kioskMode, wakeLock]);
+
   const handleAcknowledge = async (orderId: string) => {
     try {
       const response = await fetch(`/api/admin/fulfillment/orders/${orderId}/acknowledge`, {
@@ -681,6 +784,41 @@ export default function FulfillmentDashboard({ initialOrders, feedUrl, scope }: 
               Install App
             </button>
           )}
+          <button
+            type="button"
+            onClick={toggleKioskMode}
+            className={`inline-flex items-center gap-2 rounded-full border px-3 py-1 text-xs font-semibold ${
+              kioskMode
+                ? 'border-purple-200 bg-purple-50 text-purple-700'
+                : 'border-gray-200 bg-gray-50 text-gray-600 hover:border-gray-300 hover:text-gray-900'
+            }`}
+            title={kioskMode ? 'Exit kiosk mode (screen stays on)' : 'Enter kiosk mode (fullscreen, screen stays on)'}
+          >
+            <svg className="h-4 w-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+              {kioskMode ? (
+                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9 9V4.5M9 9H4.5M9 9L3.75 3.75M9 15v4.5M9 15H4.5M9 15l-5.25 5.25M15 9h4.5M15 9V4.5M15 9l5.25-5.25M15 15h4.5M15 15v4.5m0-4.5l5.25 5.25" />
+              ) : (
+                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M3.75 3.75v4.5m0-4.5h4.5m-4.5 0L9 9M3.75 20.25v-4.5m0 4.5h4.5m-4.5 0L9 15M20.25 3.75h-4.5m4.5 0v4.5m0-4.5L15 9m5.25 11.25h-4.5m4.5 0v-4.5m0 4.5L15 15" />
+              )}
+            </svg>
+            {kioskMode ? 'Exit Kiosk' : 'Kiosk Mode'}
+          </button>
+          <button
+            type="button"
+            onClick={() => setKitchenMode(!kitchenMode)}
+            className={`inline-flex items-center gap-2 rounded-full border px-3 py-1 text-xs font-semibold ${
+              kitchenMode
+                ? 'border-orange-200 bg-orange-50 text-orange-700'
+                : 'border-gray-200 bg-gray-50 text-gray-600 hover:border-gray-300 hover:text-gray-900'
+            }`}
+            title={kitchenMode ? 'Switch to standard view' : 'Switch to large kitchen display (for older eyes)'}
+          >
+            <svg className="h-4 w-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+              <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M15 12a3 3 0 11-6 0 3 3 0 016 0z" />
+              <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M2.458 12C3.732 7.943 7.523 5 12 5c4.478 0 8.268 2.943 9.542 7-1.274 4.057-5.064 7-9.542 7-4.477 0-8.268-2.943-9.542-7z" />
+            </svg>
+            {kitchenMode ? 'Standard View' : 'Kitchen Display'}
+          </button>
           </div>
         </div>
         <div className="flex gap-2 border-b border-gray-200">
@@ -743,6 +881,7 @@ export default function FulfillmentDashboard({ initialOrders, feedUrl, scope }: 
             onCancel={handleCancel}
             onRefund={handleRefund}
             tabletMode={tabletMode}
+            kitchenMode={kitchenMode}
           />
           <footer className="rounded-2xl border border-dashed border-gray-300 bg-gray-50 px-4 py-3 text-xs text-gray-500">
             Showing {orders.length} orders · {newOrders.length} waiting acceptance.
@@ -751,7 +890,7 @@ export default function FulfillmentDashboard({ initialOrders, feedUrl, scope }: 
       ) : activeTab === 'inquiries' ? (
         <CateringInquiriesTab />
       ) : (
-        <PrinterSettings />
+        <PrinterSettings onBack={() => setActiveTab('orders')} />
       )}
     </div>
   );
