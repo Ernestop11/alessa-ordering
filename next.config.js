@@ -85,6 +85,22 @@ const nextConfig = {
           },
         ],
       },
+      {
+        source: '/.well-known/apple-app-site-association',
+        headers: [
+          {
+            key: 'Content-Type',
+            value: 'application/json',
+          },
+          {
+            key: 'Cache-Control',
+            value: 'public, max-age=3600',
+          },
+        ],
+      },
+          },
+        ],
+      },
       // Prevent caching on order pages for instant updates
       {
         source: '/order',

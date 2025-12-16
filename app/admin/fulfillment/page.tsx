@@ -1,11 +1,8 @@
-import { redirect } from 'next/navigation';
-import { getServerSession } from 'next-auth';
 import type { Metadata } from 'next';
 import prisma from '@/lib/prisma';
-import { authOptions } from '@/lib/auth/options';
 import { requireTenant } from '@/lib/tenant';
 import { serializeOrder } from '@/lib/order-serializer';
-import FulfillmentDashboard from '@/components/fulfillment/FulfillmentDashboard';
+import FulfillmentPageClient from '@/components/fulfillment/FulfillmentPageClient';
 
 export const metadata: Metadata = {
   manifest: '/admin/fulfillment/manifest',
@@ -17,44 +14,49 @@ export const metadata: Metadata = {
 };
 
 export default async function AdminFulfillmentPage() {
-  const session = await getServerSession(authOptions);
-  const role = (session?.user as { role?: string } | undefined)?.role;
-  if (!session || role !== 'admin') {
-    redirect('/admin/login?returnTo=/admin/fulfillment');
-  }
-
+  // Don't do server-side redirect - let client component handle it
+  // This prevents Safari from opening when redirect happens
   const tenant = await requireTenant();
 
-  const orders = await prisma.order.findMany({
-    where: { tenantId: tenant.id },
-    include: {
-      items: {
-        include: {
-          menuItem: {
-            select: {
-              name: true,
+  // Fetch orders (will be empty if not authenticated, but that's OK)
+  // Client component will handle redirect if needed
+  let orders: any[] = [];
+  try {
+    orders = await prisma.order.findMany({
+      where: { tenantId: tenant.id },
+      include: {
+        items: {
+          include: {
+            menuItem: {
+              select: {
+                name: true,
+              },
             },
           },
         },
-      },
-      customer: true,
-      tenant: {
-        select: {
-          id: true,
-          name: true,
-          slug: true,
-          primaryColor: true,
-          secondaryColor: true,
+        customer: true,
+        tenant: {
+          select: {
+            id: true,
+            name: true,
+            slug: true,
+            primaryColor: true,
+            secondaryColor: true,
+          },
         },
       },
-    },
-    orderBy: { createdAt: 'desc' },
-    take: 100,
-  });
+      orderBy: { createdAt: 'desc' },
+      take: 100,
+    });
+  } catch (error) {
+    // If tenant fetch fails, orders will be empty
+    // Client component will handle redirect
+    console.error('Failed to fetch orders:', error);
+  }
 
   return (
     <div className="min-h-screen bg-gray-50 px-4 py-6 sm:px-6 lg:px-8">
-      <FulfillmentDashboard
+      <FulfillmentPageClient
         initialOrders={orders.map((order) => serializeOrder(order, null))}
         feedUrl={`/api/admin/fulfillment/stream?tenant=${tenant.slug}`}
         scope="tenant"

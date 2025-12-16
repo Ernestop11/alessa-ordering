@@ -1,0 +1,23 @@
+{
+  "applinks": {
+    "apps": [],
+    "details": [
+      {
+        "appID": "TEAM_ID.com.alessa.ordering",
+        "paths": [
+          "*",
+          "/admin/fulfillment*",
+          "/admin/*",
+          "/order*",
+          "/customer/*"
+        ]
+      }
+    ]
+  },
+  "webcredentials": {
+    "apps": [
+      "TEAM_ID.com.alessa.ordering"
+    ]
+  }
+}
+

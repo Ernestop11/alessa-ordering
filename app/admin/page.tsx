@@ -1,49 +1,22 @@
 import { getServerSession } from 'next-auth'
-import { redirect } from 'next/navigation'
 import { authOptions } from '@/lib/auth/options'
 import { requireTenant } from '@/lib/tenant'
 import prisma from '@/lib/prisma'
-import AdminDashboardHome from '@/components/admin/AdminDashboardHome'
-import { headers } from 'next/headers'
-
-const ROOT_DOMAIN = process.env.ROOT_DOMAIN || 'alessacloud.com'
+import AdminPageClient from '@/components/admin/AdminPageClient'
 
 export default async function AdminPage() {
-  const session = await getServerSession(authOptions)
-
-  if (!session) {
-    redirect('/admin/login')
-  }
-
-  const role = (session.user as { role?: string; tenantSlug?: string } | undefined)?.role
-  const tenantSlug = (session.user as { tenantSlug?: string } | undefined)?.tenantSlug
-
-  // Always redirect super admins to super admin dashboard
-  if (role === 'super_admin') {
-    redirect('https://alessacloud.com/super-admin')
-  }
-
-  if (role !== 'admin' && role !== 'super_admin') {
-    redirect('/')
-  }
-
-  // Check if we're on root domain - if so, redirect tenant admin to their subdomain
-  // This prevents "Root domain accessed" error from requireTenant()
-  const headersList = headers()
-  const host = headersList.get('host') || ''
-  const hostname = host.split(':')[0]
+  // Don't do server-side redirects - let client component handle it
+  // This prevents Safari from opening when redirect happens
   
-  if ((hostname === ROOT_DOMAIN || hostname === `www.${ROOT_DOMAIN}`) && tenantSlug) {
-    // Redirect tenant admin to their subdomain before calling requireTenant()
-    redirect(`https://${tenantSlug}.alessacloud.com/admin`)
+  // Try to get tenant (will fail if on root domain, but that's OK - client will handle)
+  let tenant = null;
+  try {
+    tenant = await requireTenant();
+  } catch (error) {
+    // If tenant fetch fails (e.g., on root domain), tenant will be null
+    // Client component will handle redirect
+    console.error('Failed to fetch tenant:', error);
   }
-
-  // If we're on root domain without tenant slug, redirect to login
-  if (hostname === ROOT_DOMAIN || hostname === `www.${ROOT_DOMAIN}`) {
-    redirect('/admin/login')
-  }
-
-  const tenant = await requireTenant()
   
   // Get Stripe status
   const stripeStatus = tenant.integrations?.stripeAccountId 
@@ -55,35 +28,54 @@ export default async function AdminPage() {
     ? { connected: true, storeId: tenant.integrations.doorDashStoreId }
     : { connected: false, storeId: null }
 
-  // Get order stats
-  const orderStats = await prisma.order.aggregate({
-    where: { tenantId: tenant.id },
-    _count: { id: true },
-    _sum: { totalAmount: true },
-  })
+  // Fetch data (will be empty if tenant is null, but that's OK)
+  let orderStats = { _count: { id: 0 }, _sum: { totalAmount: 0 } };
+  let recentOrders: any[] = [];
+  let menuItemCount = 0;
+  let stripeStatus = { connected: false, accountId: null };
+  let doordashStatus = { connected: false, storeId: null };
 
-  const recentOrders = await prisma.order.findMany({
-    where: { tenantId: tenant.id },
-    orderBy: { createdAt: 'desc' },
-    take: 5,
-    include: {
-      customer: {
-        select: {
-          name: true,
-          phone: true,
+  if (tenant) {
+    try {
+      orderStats = await prisma.order.aggregate({
+        where: { tenantId: tenant.id },
+        _count: { id: true },
+        _sum: { totalAmount: true },
+      });
+
+      recentOrders = await prisma.order.findMany({
+        where: { tenantId: tenant.id },
+        orderBy: { createdAt: 'desc' },
+        take: 5,
+        include: {
+          customer: {
+            select: {
+              name: true,
+              phone: true,
+            },
+          },
         },
-      },
-    },
-  })
+      });
 
-  // Check how many menu items exist
-  const menuItemCount = await prisma.menuItem.count({
-    where: { tenantId: tenant.id },
-  })
+      menuItemCount = await prisma.menuItem.count({
+        where: { tenantId: tenant.id },
+      });
+
+      stripeStatus = tenant.integrations?.stripeAccountId 
+        ? { connected: true, accountId: tenant.integrations.stripeAccountId }
+        : { connected: false, accountId: null };
+
+      doordashStatus = tenant.integrations?.doorDashStoreId
+        ? { connected: true, storeId: tenant.integrations.doorDashStoreId }
+        : { connected: false, storeId: null };
+    } catch (error) {
+      console.error('Failed to fetch admin data:', error);
+    }
+  }
 
   return (
-    <AdminDashboardHome
-      tenant={tenant}
+    <AdminPageClient
+      tenant={tenant || ({} as any)}
       stripeStatus={stripeStatus}
       doordashStatus={doordashStatus}
       menuItemCount={menuItemCount}

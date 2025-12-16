@@ -216,10 +216,109 @@ export default async function RootLayout({
     })();
   `;
 
+  const preventExternalBrowserScript = `
+    (function() {
+      // Detect if we're in a Capacitor app
+      var isCapacitor = typeof window !== 'undefined' && !!(window.Capacitor);
+      
+      if (isCapacitor) {
+        console.log('[Capacitor] Preventing external browser opening');
+        
+        // Store original location
+        var originalLocation = window.location;
+        var currentOrigin = originalLocation.origin;
+        
+        // Intercept window.location.href assignments
+        try {
+          Object.defineProperty(window, 'location', {
+            get: function() {
+              return originalLocation;
+            },
+            set: function(url) {
+              if (typeof url === 'string') {
+                if (url.indexOf('http://') === 0 || url.indexOf('https://') === 0) {
+                  // Full URL - check if same origin
+                  if (url.indexOf(currentOrigin) === 0) {
+                    // Same origin - navigate in app using relative path
+                    var path = url.replace(currentOrigin, '');
+                    console.log('[Capacitor] Converting same-origin URL to relative path:', path);
+                    originalLocation.href = path;
+                  } else {
+                    // Different origin - block it
+                    console.warn('[Capacitor] Blocked external URL navigation:', url);
+                    // Don't navigate - stay in app
+                  }
+                } else {
+                  // Relative path - allow it
+                  originalLocation.href = url;
+                }
+              } else {
+                originalLocation.href = url;
+              }
+            },
+            configurable: true
+          });
+        } catch (e) {
+          console.warn('[Capacitor] Could not intercept window.location:', e);
+        }
+        
+        // Intercept window.open calls
+        var originalOpen = window.open;
+        window.open = function(url, target, features) {
+          if (url && typeof url === 'string' && (url.indexOf('http://') === 0 || url.indexOf('https://') === 0)) {
+            // If it's an external URL, try to navigate within the app instead
+            if (url.indexOf(currentOrigin) === 0) {
+              // Same origin - use relative path
+              var path = url.replace(currentOrigin, '');
+              console.log('[Capacitor] Converting window.open to relative navigation:', path);
+              window.location.href = path;
+              return null;
+            } else {
+              // Different origin - log warning but allow (might be necessary for OAuth, etc.)
+              console.warn('[Capacitor] External URL opened:', url);
+              return originalOpen.call(window, url, target, features);
+            }
+          }
+          return originalOpen.call(window, url, target, features);
+        };
+        
+        // Prevent links with target="_blank" from opening externally (when ready)
+        if (document.readyState === 'loading') {
+          document.addEventListener('DOMContentLoaded', function() {
+            setupLinkInterception();
+          });
+        } else {
+          setupLinkInterception();
+        }
+        
+        function setupLinkInterception() {
+          document.addEventListener('click', function(e) {
+            var target = e.target;
+            while (target && target.nodeName !== 'A') {
+              target = target.parentElement;
+            }
+            if (target && target.getAttribute('target') === '_blank') {
+              var href = target.getAttribute('href');
+              if (href && (href.indexOf('http://') === 0 || href.indexOf('https://') === 0)) {
+                if (href.indexOf(currentOrigin) === 0) {
+                  // Same origin - prevent default and navigate in-app
+                  e.preventDefault();
+                  var path = href.replace(currentOrigin, '');
+                  window.location.href = path;
+                }
+              }
+            }
+          }, true);
+        }
+      }
+    })();
+  `;
+
   return (
     <html lang="en">
       <head>
         <script dangerouslySetInnerHTML={{ __html: cacheCleanupScript }} />
+        <script dangerouslySetInnerHTML={{ __html: preventExternalBrowserScript }} />
         <link rel="manifest" href="/manifest.json" />
         <meta name="theme-color" content={tenantTheme.themeColor || tenantTheme.primaryColor} />
         <meta name="mobile-web-app-capable" content="yes" />
