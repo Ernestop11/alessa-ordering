@@ -42,72 +42,69 @@ export default function OrderCard({ order, scope, onAccept, onMarkReady, onCompl
     return 'Guest';
   }, [order.customerName, order.customer]);
 
-  // Detail Modal - Large ticket view with all info and actions
+  // Detail Modal - FULL SCREEN TICKET for kitchen use
   const renderDetailModal = () => {
     if (!showModal) return null;
 
     return (
       <div
-        className="fixed inset-0 z-[9999] flex items-center justify-center bg-black/60 p-4"
+        className="fixed inset-0 z-[9999] flex items-center justify-center bg-black/80"
         onClick={() => setShowModal(false)}
       >
         <div
-          className="bg-white rounded-2xl shadow-2xl max-w-2xl w-full max-h-[90vh] overflow-y-auto"
+          className="bg-white rounded-3xl shadow-2xl w-[95vw] h-[95vh] max-w-4xl flex flex-col"
           onClick={(e) => e.stopPropagation()}
         >
-          {/* Modal Header - Color coded by status */}
-          <header className={`px-6 py-4 rounded-t-2xl ${
+          {/* HEADER - Large order number */}
+          <header className={`px-8 py-6 rounded-t-3xl flex-shrink-0 ${
             isNew || canAccept
-              ? 'bg-red-500 text-white'
+              ? 'bg-red-500'
               : status === 'preparing'
-                ? 'bg-amber-500 text-white'
+                ? 'bg-amber-500'
                 : status === 'ready'
-                  ? 'bg-green-500 text-white'
-                  : 'bg-gray-500 text-white'
+                  ? 'bg-green-500'
+                  : 'bg-gray-500'
           }`}>
-            <div className="flex items-center justify-between">
+            <div className="flex items-center justify-between text-white">
               <div>
-                <h2 className="text-3xl font-black">#{order.id.slice(-6).toUpperCase()}</h2>
-                <p className="text-lg opacity-90 mt-1">{formatTime(order.createdAt)} · {isDelivery ? '🚗 Delivery' : '🏪 Pickup'}</p>
+                <h2 className="text-5xl font-black">#{order.id.slice(-6).toUpperCase()}</h2>
+                <p className="text-2xl mt-2 opacity-90">
+                  {formatTime(order.createdAt)} · {isDelivery ? '🚗 DELIVERY' : '🏪 PICKUP'}
+                </p>
               </div>
               <button
                 onClick={() => setShowModal(false)}
-                className="text-white/80 hover:text-white text-3xl font-bold"
+                className="w-16 h-16 rounded-full bg-white/20 hover:bg-white/30 flex items-center justify-center text-4xl font-bold transition"
               >
                 ×
               </button>
             </div>
+            {/* Customer */}
+            <div className="mt-4 pt-4 border-t border-white/30">
+              <p className="text-3xl font-bold">{customerLabel}</p>
+              {(order.customerEmail || order.customerPhone) && (
+                <p className="text-xl opacity-80 mt-1">
+                  {[order.customerEmail, order.customerPhone].filter(Boolean).join(' · ')}
+                </p>
+              )}
+            </div>
           </header>
 
-          {/* Customer Info */}
-          <div className="px-6 py-4 bg-gray-50 border-b">
-            <p className="text-xl font-bold text-gray-900">{customerLabel}</p>
-            {(order.customerEmail || order.customerPhone) && (
-              <p className="text-sm text-gray-600 mt-1">
-                {[order.customerEmail, order.customerPhone].filter(Boolean).join(' · ')}
-              </p>
-            )}
-            {scope === 'platform' && order.tenant && (
-              <p className="text-sm font-medium text-indigo-600 mt-1">📍 {order.tenant.name}</p>
-            )}
-          </div>
-
-          {/* Items List - Large and clear */}
-          <div className="px-6 py-4">
-            <h3 className="text-sm font-bold text-gray-500 uppercase mb-3">Order Items</h3>
-            <ul className="space-y-4">
+          {/* ITEMS - Large, scrollable if needed */}
+          <div className="flex-1 overflow-y-auto px-8 py-6">
+            <ul className="space-y-6">
               {order.items.map((item) => (
-                <li key={item.id} className="border-l-4 border-gray-300 pl-4">
-                  <div className="flex items-center gap-3">
-                    <span className="bg-gray-900 text-white text-xl font-black rounded-lg px-3 py-1 min-w-[40px] text-center">
+                <li key={item.id}>
+                  <div className="flex items-center gap-4">
+                    <span className="bg-gray-900 text-white text-3xl font-black rounded-xl w-16 h-16 flex items-center justify-center">
                       {item.quantity}
                     </span>
-                    <span className="text-xl font-semibold text-gray-900">{item.menuItemName || 'Menu Item'}</span>
+                    <span className="text-3xl font-bold text-gray-900">{item.menuItemName || 'Menu Item'}</span>
                   </div>
-                  {/* Modifiers - VERY PROMINENT */}
+                  {/* Modifiers - VERY LARGE AND PROMINENT */}
                   {item.notes && (
-                    <div className="mt-2 ml-12 bg-orange-100 border-l-4 border-orange-500 px-4 py-3 rounded-r-lg">
-                      <p className="text-lg font-bold text-orange-800">
+                    <div className="mt-3 ml-20 bg-orange-100 border-l-8 border-orange-500 px-6 py-4 rounded-r-xl">
+                      <p className="text-2xl font-black text-orange-800">
                         ⚠️ {item.notes}
                       </p>
                     </div>
@@ -118,77 +115,71 @@ export default function OrderCard({ order, scope, onAccept, onMarkReady, onCompl
 
             {/* Order Notes */}
             {order.notes && (
-              <div className="mt-6 bg-amber-50 border-2 border-amber-300 rounded-xl px-4 py-3">
-                <p className="text-sm font-bold text-amber-700 uppercase mb-1">📝 Special Instructions</p>
-                <p className="text-lg font-semibold text-amber-900">{order.notes}</p>
+              <div className="mt-8 bg-amber-50 border-4 border-amber-400 rounded-2xl px-6 py-5">
+                <p className="text-lg font-black text-amber-700 uppercase mb-2">📝 SPECIAL INSTRUCTIONS</p>
+                <p className="text-2xl font-bold text-amber-900">{order.notes}</p>
               </div>
             )}
           </div>
 
-          {/* Total */}
-          <div className="px-6 py-4 bg-gray-50 border-t">
-            <div className="flex items-center justify-between">
-              <span className="text-lg text-gray-600">Total</span>
-              <span className="text-3xl font-black text-gray-900">{formatCurrency(order.totalAmount)}</span>
+          {/* FOOTER - Total and Actions */}
+          <div className="flex-shrink-0 bg-gray-100 px-8 py-6 rounded-b-3xl">
+            {/* Total */}
+            <div className="flex items-center justify-between mb-6">
+              <span className="text-2xl text-gray-600 font-medium">Total</span>
+              <span className="text-5xl font-black text-gray-900">{formatCurrency(order.totalAmount)}</span>
             </div>
-          </div>
 
-          {/* Action Buttons - Large and clear */}
-          <div className="px-6 py-4 bg-gray-100 rounded-b-2xl space-y-3">
-            {/* Print Button */}
-            <button
-              type="button"
-              onClick={() => {
-                onPrint(order);
-              }}
-              className="w-full bg-gray-700 hover:bg-gray-800 text-white font-bold py-4 px-6 rounded-xl shadow-lg transition flex items-center justify-center gap-3 text-xl"
-            >
-              <svg className="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M17 17h2a2 2 0 002-2v-4a2 2 0 00-2-2H5a2 2 0 00-2 2v4a2 2 0 002 2h2m2 4h6a2 2 0 002-2v-4a2 2 0 00-2-2H9a2 2 0 00-2 2v4a2 2 0 002 2zm8-12V5a2 2 0 00-2-2H9a2 2 0 00-2 2v4h10z" />
-              </svg>
-              PRINT TICKET
-            </button>
-
-            {/* Primary Action */}
-            {canAccept && (
+            {/* Action Buttons - HUGE for easy tapping */}
+            <div className="grid grid-cols-2 gap-4">
+              {/* Print Button */}
               <button
                 type="button"
-                onClick={() => {
-                  onAccept(order);
-                  setShowModal(false);
-                }}
-                className="w-full bg-green-600 hover:bg-green-700 text-white font-black py-5 px-6 rounded-xl shadow-lg transition text-2xl uppercase"
+                onClick={() => onPrint(order)}
+                className="bg-gray-700 hover:bg-gray-800 active:bg-gray-900 text-white font-black py-6 px-6 rounded-2xl shadow-lg transition text-2xl flex items-center justify-center gap-3"
               >
-                ✓ START PREPARING
+                🖨️ PRINT
               </button>
-            )}
-            {canMarkReady && (
-              <button
-                type="button"
-                onClick={() => {
-                  onMarkReady(order);
-                  setShowModal(false);
-                }}
-                className="w-full bg-emerald-500 hover:bg-emerald-600 text-white font-black py-5 px-6 rounded-xl shadow-lg transition text-2xl uppercase"
-              >
-                ✓ MARK READY
-              </button>
-            )}
-            {canComplete && !canMarkReady && (
-              <button
-                type="button"
-                onClick={() => {
-                  onComplete(order);
-                  setShowModal(false);
-                }}
-                className="w-full bg-blue-600 hover:bg-blue-700 text-white font-bold py-4 px-6 rounded-xl shadow-lg transition text-xl uppercase"
-              >
-                COMPLETE ORDER
-              </button>
-            )}
 
-            {/* Secondary Actions */}
-            <div className="flex gap-3 pt-2">
+              {/* Primary Action */}
+              {canAccept && (
+                <button
+                  type="button"
+                  onClick={() => {
+                    onAccept(order);
+                    setShowModal(false);
+                  }}
+                  className="bg-green-600 hover:bg-green-700 active:bg-green-800 text-white font-black py-6 px-6 rounded-2xl shadow-lg transition text-2xl"
+                >
+                  ✓ START
+                </button>
+              )}
+              {canMarkReady && (
+                <button
+                  type="button"
+                  onClick={() => {
+                    onMarkReady(order);
+                    setShowModal(false);
+                  }}
+                  className="bg-emerald-500 hover:bg-emerald-600 active:bg-emerald-700 text-white font-black py-6 px-6 rounded-2xl shadow-lg transition text-2xl"
+                >
+                  ✓ READY
+                </button>
+              )}
+              {canComplete && !canMarkReady && !canAccept && (
+                <button
+                  type="button"
+                  onClick={() => {
+                    onComplete(order);
+                    setShowModal(false);
+                  }}
+                  className="bg-blue-600 hover:bg-blue-700 active:bg-blue-800 text-white font-black py-6 px-6 rounded-2xl shadow-lg transition text-2xl"
+                >
+                  DONE
+                </button>
+              )}
+
+              {/* Close/Cancel row */}
               {canCancel && onCancel && (
                 <button
                   type="button"
@@ -196,27 +187,15 @@ export default function OrderCard({ order, scope, onAccept, onMarkReady, onCompl
                     onCancel(order);
                     setShowModal(false);
                   }}
-                  className="flex-1 border-2 border-red-300 text-red-700 font-semibold py-3 px-4 rounded-xl hover:bg-red-50 transition"
+                  className="border-4 border-red-400 text-red-700 font-bold py-4 px-6 rounded-2xl hover:bg-red-50 transition text-xl"
                 >
-                  Cancel Order
-                </button>
-              )}
-              {canRefund && onRefund && (
-                <button
-                  type="button"
-                  onClick={() => {
-                    onRefund(order);
-                    setShowModal(false);
-                  }}
-                  className="flex-1 bg-red-600 hover:bg-red-700 text-white font-semibold py-3 px-4 rounded-xl shadow transition"
-                >
-                  💰 Refund
+                  Cancel
                 </button>
               )}
               <button
                 type="button"
                 onClick={() => setShowModal(false)}
-                className="flex-1 bg-gray-200 hover:bg-gray-300 text-gray-700 font-semibold py-3 px-4 rounded-xl transition"
+                className="bg-gray-300 hover:bg-gray-400 text-gray-800 font-bold py-4 px-6 rounded-2xl transition text-xl col-span-1"
               >
                 Close
               </button>
