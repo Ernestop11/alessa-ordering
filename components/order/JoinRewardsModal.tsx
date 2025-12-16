@@ -12,14 +12,17 @@ interface JoinRewardsModalProps {
 }
 
 export default function JoinRewardsModal({ open, onClose, onSuccess, tenantSlug, initialMode = 'join' }: JoinRewardsModalProps) {
-  const [mode, setMode] = useState<'join' | 'login' | 'verify'>(initialMode);
+  const [mode, setMode] = useState<'join' | 'login'>(initialMode);
   const [name, setName] = useState("");
   const [email, setEmail] = useState("");
   const [phone, setPhone] = useState("");
-  const [token, setToken] = useState("");
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState<string | null>(null);
-  const [status, setStatus] = useState<string | null>(null);
+
+  // Reset mode when modal opens with different initialMode
+  if (open && mode !== initialMode && !loading) {
+    setMode(initialMode);
+  }
 
   if (!open) return null;
 
@@ -27,9 +30,7 @@ export default function JoinRewardsModal({ open, onClose, onSuccess, tenantSlug,
     setName("");
     setEmail("");
     setPhone("");
-    setToken("");
     setError(null);
-    setStatus(null);
   };
 
   const switchMode = (newMode: 'join' | 'login') => {
@@ -37,7 +38,7 @@ export default function JoinRewardsModal({ open, onClose, onSuccess, tenantSlug,
     setMode(newMode);
   };
 
-  // Handle Join/Enroll
+  // Handle Join/Enroll (new member)
   const handleJoin = async (e: React.FormEvent) => {
     e.preventDefault();
     if (!email && !phone) {
@@ -73,8 +74,8 @@ export default function JoinRewardsModal({ open, onClose, onSuccess, tenantSlug,
     }
   };
 
-  // Handle Login Request (send code)
-  const handleLoginRequest = async (e: React.FormEvent) => {
+  // Handle Login (existing member - direct login with email/phone)
+  const handleLogin = async (e: React.FormEvent) => {
     e.preventDefault();
     if (!email && !phone) {
       setError("Please provide your email or phone number");
@@ -83,10 +84,9 @@ export default function JoinRewardsModal({ open, onClose, onSuccess, tenantSlug,
 
     setLoading(true);
     setError(null);
-    setStatus(null);
 
     try {
-      const res = await fetch(`/api/customers/login/request?tenant=${tenantSlug}`, {
+      const res = await fetch("/api/rewards/login", {
         method: "POST",
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify({ email: email || undefined, phone: phone || undefined }),
@@ -94,55 +94,17 @@ export default function JoinRewardsModal({ open, onClose, onSuccess, tenantSlug,
 
       const data = await res.json();
       if (!res.ok) {
-        throw new Error(data.error || "Failed to send login code");
+        throw new Error(data.error || "Login failed");
       }
 
-      // Check if dev mode returned a debug token
-      const debugToken: string | undefined = data.debugToken;
-      if (debugToken) {
-        setToken(debugToken);
-        setStatus("Development mode: Code prefilled below.");
-      } else {
-        setStatus(data.message || "Check your email or phone for your login code.");
-      }
-      setMode('verify');
-    } catch (err) {
-      setError(err instanceof Error ? err.message : "Failed to send login code");
-    } finally {
-      setLoading(false);
-    }
-  };
-
-  // Handle Login Verify (submit code)
-  const handleLoginVerify = async (e: React.FormEvent) => {
-    e.preventDefault();
-    if (!token) {
-      setError("Please enter the code you received");
-      return;
-    }
-
-    setLoading(true);
-    setError(null);
-
-    try {
-      const res = await fetch(`/api/customers/login/verify?tenant=${tenantSlug}`, {
-        method: "POST",
-        headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({ token }),
-      });
-
-      if (!res.ok) {
-        throw new Error("Invalid or expired code");
-      }
-
-      setStatus("Logged in! Loading your rewards...");
+      // Success - refresh page to show member UI
       if (onSuccess) onSuccess();
       onClose();
       setTimeout(() => {
         window.location.reload();
       }, 500);
     } catch (err) {
-      setError(err instanceof Error ? err.message : "Invalid code");
+      setError(err instanceof Error ? err.message : "Login failed");
     } finally {
       setLoading(false);
     }
@@ -162,54 +124,45 @@ export default function JoinRewardsModal({ open, onClose, onSuccess, tenantSlug,
         {/* Header */}
         <div className="text-center mb-6">
           <div className="mx-auto mb-4 flex h-16 w-16 items-center justify-center rounded-full bg-gradient-to-br from-amber-400 to-yellow-400 text-3xl">
-            {mode === 'verify' ? '📧' : '🎁'}
+            {mode === 'login' ? '👋' : '🎁'}
           </div>
           <h2 className="text-2xl font-black text-gray-900">
-            {mode === 'join' && 'Join Rewards'}
-            {mode === 'login' && 'Member Login'}
-            {mode === 'verify' && 'Enter Your Code'}
+            {mode === 'join' ? 'Join Rewards' : 'Welcome Back!'}
           </h2>
           <p className="mt-2 text-sm text-gray-600">
-            {mode === 'join' && 'Start earning points on every order!'}
-            {mode === 'login' && "We'll send you a one-time login code"}
-            {mode === 'verify' && 'Check your email or phone for the code'}
+            {mode === 'join'
+              ? 'Start earning points on every order!'
+              : 'Sign in to view your points and rewards'}
           </p>
         </div>
 
-        {/* Tab Switcher (only for join/login) */}
-        {mode !== 'verify' && (
-          <div className="flex rounded-xl bg-white/50 p-1 mb-6">
-            <button
-              type="button"
-              onClick={() => switchMode('join')}
-              className={`flex-1 py-2 px-4 rounded-lg text-sm font-bold transition ${
-                mode === 'join'
-                  ? 'bg-white text-gray-900 shadow-sm'
-                  : 'text-gray-500 hover:text-gray-700'
-              }`}
-            >
-              New Member
-            </button>
-            <button
-              type="button"
-              onClick={() => switchMode('login')}
-              className={`flex-1 py-2 px-4 rounded-lg text-sm font-bold transition ${
-                mode === 'login'
-                  ? 'bg-white text-gray-900 shadow-sm'
-                  : 'text-gray-500 hover:text-gray-700'
-              }`}
-            >
-              Sign In
-            </button>
-          </div>
-        )}
+        {/* Tab Switcher */}
+        <div className="flex rounded-xl bg-white/50 p-1 mb-6">
+          <button
+            type="button"
+            onClick={() => switchMode('join')}
+            className={`flex-1 py-2 px-4 rounded-lg text-sm font-bold transition ${
+              mode === 'join'
+                ? 'bg-white text-gray-900 shadow-sm'
+                : 'text-gray-500 hover:text-gray-700'
+            }`}
+          >
+            New Member
+          </button>
+          <button
+            type="button"
+            onClick={() => switchMode('login')}
+            className={`flex-1 py-2 px-4 rounded-lg text-sm font-bold transition ${
+              mode === 'login'
+                ? 'bg-white text-gray-900 shadow-sm'
+                : 'text-gray-500 hover:text-gray-700'
+            }`}
+          >
+            Sign In
+          </button>
+        </div>
 
-        {/* Status/Error Messages */}
-        {status && (
-          <div className="rounded-xl bg-green-50 border border-green-200 px-4 py-3 text-sm text-green-700 mb-4">
-            {status}
-          </div>
-        )}
+        {/* Error Messages */}
         {error && (
           <div className="rounded-xl bg-red-50 border border-red-200 px-4 py-3 text-sm text-red-700 mb-4">
             {error}
@@ -268,12 +221,12 @@ export default function JoinRewardsModal({ open, onClose, onSuccess, tenantSlug,
           </form>
         )}
 
-        {/* LOGIN FORM */}
+        {/* LOGIN FORM - Direct login with email/phone */}
         {mode === 'login' && (
-          <form onSubmit={handleLoginRequest} className="space-y-4">
+          <form onSubmit={handleLogin} className="space-y-4">
             <div>
               <label className="block text-sm font-semibold text-gray-700 mb-1">
-                Email or Phone
+                Email
               </label>
               <input
                 type="email"
@@ -287,6 +240,9 @@ export default function JoinRewardsModal({ open, onClose, onSuccess, tenantSlug,
             <div className="text-center text-sm text-gray-500">or</div>
 
             <div>
+              <label className="block text-sm font-semibold text-gray-700 mb-1">
+                Phone
+              </label>
               <input
                 type="tel"
                 value={phone}
@@ -301,43 +257,12 @@ export default function JoinRewardsModal({ open, onClose, onSuccess, tenantSlug,
               disabled={loading || (!email && !phone)}
               className="w-full rounded-xl bg-gradient-to-r from-amber-400 to-yellow-400 px-6 py-4 text-lg font-black text-black shadow-lg transition hover:scale-105 disabled:opacity-50"
             >
-              {loading ? "Sending..." : "Send Login Code"}
-            </button>
-          </form>
-        )}
-
-        {/* VERIFY CODE FORM */}
-        {mode === 'verify' && (
-          <form onSubmit={handleLoginVerify} className="space-y-4">
-            <div>
-              <label className="block text-sm font-semibold text-gray-700 mb-1">
-                One-Time Code
-              </label>
-              <input
-                type="text"
-                value={token}
-                onChange={(e) => setToken(e.target.value)}
-                className="w-full rounded-xl border-2 border-gray-200 bg-white px-4 py-3 text-gray-900 text-center text-xl tracking-widest focus:border-amber-400 focus:outline-none"
-                placeholder="Enter code"
-                autoComplete="one-time-code"
-              />
-            </div>
-
-            <button
-              type="submit"
-              disabled={loading || !token}
-              className="w-full rounded-xl bg-gradient-to-r from-amber-400 to-yellow-400 px-6 py-4 text-lg font-black text-black shadow-lg transition hover:scale-105 disabled:opacity-50"
-            >
-              {loading ? "Verifying..." : "Log In"}
+              {loading ? "Signing in..." : "Sign In"}
             </button>
 
-            <button
-              type="button"
-              onClick={() => setMode('login')}
-              className="w-full text-sm text-gray-500 hover:text-gray-700"
-            >
-              Didn't receive code? Try again
-            </button>
+            <p className="text-center text-xs text-gray-500">
+              Don't have an account? Switch to "New Member" above
+            </p>
           </form>
         )}
       </div>
