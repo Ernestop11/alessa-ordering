@@ -6,6 +6,7 @@ export interface SerializedOrderItem {
   quantity: number;
   price: number;
   menuItemName?: string | null;
+  notes?: string | null; // Item-specific modifiers like "no onions", "extra cheese"
 }
 
 export interface SerializedCustomer {
@@ -117,6 +118,7 @@ export function serializeOrder(
       quantity: item.quantity,
       price: Number(item.price ?? 0),
       menuItemName: item.menuItem?.name ?? null,
+      notes: item.notes ?? null,
     })),
     customer: order.customer
       ? {

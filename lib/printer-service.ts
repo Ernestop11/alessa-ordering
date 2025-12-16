@@ -320,48 +320,85 @@ export async function sendToBluetoothPrinter(
   if (typeof window !== 'undefined') {
     const { Capacitor } = require('@capacitor/core');
     if (Capacitor.isNativePlatform()) {
-      // Use Capacitor Bluetooth plugin for iOS/Android
+      // Use Capacitor Bluetooth LE plugin for iOS/Android
       try {
-        const { BluetoothLE } = require('@capacitor-community/bluetooth-le');
+        const { BleClient } = require('@capacitor-community/bluetooth-le');
+        
+        // Initialize BLE client if not already initialized
+        try {
+          await BleClient.initialize();
+        } catch (e) {
+          // Already initialized, ignore
+        }
         
         // Connect to device
-        await BluetoothLE.connect({ address: deviceId });
+        await BleClient.connect(deviceId, () => {
+          console.log('[Bluetooth Printer] Device disconnected');
+        });
         
-        // Find the serial port service (SPP)
-        const services = await BluetoothLE.discover({ address: deviceId });
-        const sppService = services.services?.find(
-          (s: any) => s.uuid.toLowerCase() === '00001101-0000-1000-8000-00805f9b34fb'
+        // Discover services
+        const services = await BleClient.getServices(deviceId);
+        
+        // Find the serial port service (SPP) - Star printers use this
+        const sppServiceUuid = '00001101-0000-1000-8000-00805f9b34fb';
+        const sppService = services.find(
+          (s: any) => s.uuid.toLowerCase() === sppServiceUuid.toLowerCase()
         );
         
         if (!sppService) {
-          throw new Error('Serial Port Profile service not found');
+          // Try to find any service that might work
+          const firstService = services[0];
+          if (!firstService) {
+            throw new Error('No services found on device');
+          }
+          console.warn('[Bluetooth Printer] SPP service not found, using first service:', firstService.uuid);
+          const serviceUuid = firstService.uuid;
+          
+          // Get characteristics for this service (they're in the service object)
+          const characteristics = firstService.characteristics || [];
+          const writeChar = characteristics.find(
+            (c: any) => c.properties?.write || c.properties?.writeWithoutResponse
+          );
+          
+          if (!writeChar) {
+            throw new Error('Write characteristic not found');
+          }
+          
+          // Convert data to bytes and write in chunks (BLE has 20-byte limit)
+          const bytes = stringToBytes(data);
+          const chunkSize = 20;
+          const { numbersToDataView } = require('@capacitor-community/bluetooth-le');
+          
+          for (let i = 0; i < bytes.length; i += chunkSize) {
+            const chunk = bytes.slice(i, i + chunkSize);
+            const dataView = numbersToDataView(Array.from(chunk));
+            await BleClient.write(deviceId, serviceUuid, writeChar.uuid, dataView);
+          }
+        } else {
+          // Get characteristics for SPP service (they're in the service object)
+          const characteristics = sppService.characteristics || [];
+          const writeChar = characteristics.find(
+            (c: any) => c.properties?.write || c.properties?.writeWithoutResponse
+          );
+          
+          if (!writeChar) {
+            throw new Error('Write characteristic not found');
+          }
+          
+          // Convert data to bytes and write in chunks (BLE has 20-byte limit)
+          const bytes = stringToBytes(data);
+          const chunkSize = 20;
+          const { numbersToDataView } = require('@capacitor-community/bluetooth-le');
+          
+          for (let i = 0; i < bytes.length; i += chunkSize) {
+            const chunk = bytes.slice(i, i + chunkSize);
+            const dataView = numbersToDataView(Array.from(chunk));
+            await BleClient.write(deviceId, sppServiceUuid, writeChar.uuid, dataView);
+          }
         }
-        
-        // Find the characteristic for writing data
-        const characteristics = await BluetoothLE.characteristics({ 
-          address: deviceId,
-          service: sppService.uuid 
-        });
-        
-        const writeChar = characteristics.characteristics?.find(
-          (c: any) => c.properties?.write || c.properties?.writeWithoutResponse
-        );
-        
-        if (!writeChar) {
-          throw new Error('Write characteristic not found');
-        }
-        
-        // Convert data to bytes and write
-        const bytes = stringToBytes(data);
-        await BluetoothLE.write({
-          address: deviceId,
-          service: sppService.uuid,
-          characteristic: writeChar.uuid,
-          value: Array.from(bytes).map(b => b.toString(16).padStart(2, '0')).join(''),
-        });
         
         // Disconnect
-        await BluetoothLE.disconnect({ address: deviceId });
+        await BleClient.disconnect(deviceId);
         
         return;
       } catch (error) {

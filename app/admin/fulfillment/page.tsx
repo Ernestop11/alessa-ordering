@@ -20,7 +20,7 @@ export default async function AdminFulfillmentPage() {
   const session = await getServerSession(authOptions);
   const role = (session?.user as { role?: string } | undefined)?.role;
   if (!session || role !== 'admin') {
-    redirect('/admin/login');
+    redirect('/admin/login?returnTo=/admin/fulfillment');
   }
 
   const tenant = await requireTenant();
@@ -53,7 +53,7 @@ export default async function AdminFulfillmentPage() {
   });
 
   return (
-    <div className="px-4 py-6 sm:px-6 lg:px-8">
+    <div className="min-h-screen bg-gray-50 px-4 py-6 sm:px-6 lg:px-8">
       <FulfillmentDashboard
         initialOrders={orders.map((order) => serializeOrder(order, null))}
         feedUrl={`/api/admin/fulfillment/stream?tenant=${tenant.slug}`}

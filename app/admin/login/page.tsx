@@ -31,12 +31,25 @@ export default function LoginPage() {
       const role = user?.role;
       const tenantSlug = user?.tenantSlug;
       
+      // Check if we came from fulfillment dashboard (for kiosk mode)
+      const returnTo = new URLSearchParams(window.location.search).get('returnTo') || 
+                       sessionStorage.getItem('returnTo') || 
+                       '/admin/fulfillment';
+      
       if (role === 'super_admin') {
         // Super admin → redirect to super admin dashboard on root domain
         window.location.href = 'https://alessacloud.com/super-admin';
-      } else if (role === 'admin' && tenantSlug) {
-        // Tenant admin → redirect to tenant subdomain admin dashboard
-        window.location.href = `https://${tenantSlug}.alessacloud.com/admin`;
+      } else if (role === 'admin') {
+        // Tenant admin → redirect to fulfillment dashboard (for kiosk mode)
+        // Or admin dashboard if not from fulfillment
+        if (returnTo.includes('fulfillment')) {
+          window.location.href = returnTo;
+        } else if (tenantSlug) {
+          window.location.href = `https://${tenantSlug}.alessacloud.com/admin`;
+        } else {
+          router.push('/admin/fulfillment');
+          router.refresh();
+        }
       } else {
         // Fallback: redirect to /admin (will handle tenant resolution via middleware)
         router.push('/admin');

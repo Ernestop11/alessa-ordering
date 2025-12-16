@@ -80,11 +80,18 @@ export default function OrderCard({ order, scope, onAccept, onMarkReady, onCompl
         <div className="bg-white rounded-xl p-4 mb-4 border-2 border-gray-200">
           <ul className="space-y-3">
             {order.items.map((item) => (
-              <li key={item.id} className="flex items-center text-2xl">
-                <span className="bg-gray-900 text-white rounded-full w-10 h-10 flex items-center justify-center font-bold mr-3">
-                  {item.quantity}
-                </span>
-                <span className="font-semibold text-gray-900">{item.menuItemName || 'Menu Item'}</span>
+              <li key={item.id}>
+                <div className="flex items-center text-2xl">
+                  <span className="bg-gray-900 text-white rounded-full w-10 h-10 flex items-center justify-center font-bold mr-3">
+                    {item.quantity}
+                  </span>
+                  <span className="font-semibold text-gray-900">{item.menuItemName || 'Menu Item'}</span>
+                </div>
+                {item.notes && (
+                  <div className="ml-14 mt-1 bg-orange-100 border-2 border-orange-300 rounded-lg px-3 py-2">
+                    <span className="text-lg font-bold text-orange-800">⚠️ {item.notes}</span>
+                  </div>
+                )}
               </li>
             ))}
           </ul>
@@ -148,16 +155,30 @@ export default function OrderCard({ order, scope, onAccept, onMarkReady, onCompl
               CANCEL
             </button>
           )}
-          {canRefund && onRefund && (
-            <button
-              type="button"
-              onClick={() => onRefund(order)}
-              className="bg-red-600 hover:bg-red-700 text-white text-xl font-bold py-3 rounded-xl shadow transform active:scale-95 transition"
-            >
-              💰 REFUND
-            </button>
-          )}
         </div>
+
+        {/* Refund button - separate section, requires completed/cancelled status */}
+        {canRefund && onRefund && (
+          <div className="mt-4 pt-4 border-t-2 border-gray-200">
+            <details className="group">
+              <summary className="cursor-pointer text-sm text-gray-500 hover:text-gray-700 list-none flex items-center gap-2">
+                <svg className="w-4 h-4 transition-transform group-open:rotate-90" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9 5l7 7-7 7" />
+                </svg>
+                More Actions
+              </summary>
+              <div className="mt-3">
+                <button
+                  type="button"
+                  onClick={() => onRefund(order)}
+                  className="bg-red-600 hover:bg-red-700 text-white text-lg font-bold px-4 py-2 rounded-xl shadow transform active:scale-95 transition"
+                >
+                  💰 Process Refund
+                </button>
+              </div>
+            </details>
+          </div>
+        )}
       </article>
     );
   }
@@ -212,10 +233,17 @@ export default function OrderCard({ order, scope, onAccept, onMarkReady, onCompl
             </p>
           )}
         </div>
-        <ul className="space-y-1">
+        <ul className="space-y-2">
           {order.items.map((item) => (
-            <li key={item.id} className="text-sm text-gray-700">
-              <span className="font-medium text-gray-900">{item.quantity}×</span> {item.menuItemName || 'Menu Item'}
+            <li key={item.id}>
+              <div className="text-sm text-gray-700">
+                <span className="font-medium text-gray-900">{item.quantity}×</span> {item.menuItemName || 'Menu Item'}
+              </div>
+              {item.notes && (
+                <p className="ml-4 mt-0.5 text-xs font-medium text-orange-700 bg-orange-50 rounded px-2 py-1 border border-orange-200">
+                  ⚠️ {item.notes}
+                </p>
+              )}
             </li>
           ))}
         </ul>
@@ -263,17 +291,31 @@ export default function OrderCard({ order, scope, onAccept, onMarkReady, onCompl
               Cancel
             </button>
           )}
-          {canRefund && onRefund && (
-            <button
-              type="button"
-              onClick={() => onRefund(order)}
-              className="rounded-full bg-red-600 px-3 py-1.5 text-xs font-semibold text-white shadow hover:bg-red-700"
-            >
-              Refund
-            </button>
-          )}
         </div>
       </footer>
+
+      {/* Refund button - separate section in collapsible, requires completed/cancelled status */}
+      {canRefund && onRefund && (
+        <div className="mt-3 pt-3 border-t border-gray-100">
+          <details className="group">
+            <summary className="cursor-pointer text-xs text-gray-400 hover:text-gray-600 list-none flex items-center gap-1">
+              <svg className="w-3 h-3 transition-transform group-open:rotate-90" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9 5l7 7-7 7" />
+              </svg>
+              More Actions
+            </summary>
+            <div className="mt-2">
+              <button
+                type="button"
+                onClick={() => onRefund(order)}
+                className="rounded-full bg-red-600 px-3 py-1.5 text-xs font-semibold text-white shadow hover:bg-red-700"
+              >
+                💰 Process Refund
+              </button>
+            </div>
+          </details>
+        </div>
+      )}
     </article>
   );
 }

@@ -14,6 +14,7 @@ export interface FulfillmentOrderItem {
   quantity: number;
   price: number;
   menuItemName?: string | null;
+  notes?: string | null; // Item-specific modifiers like "no onions", "extra cheese"
 }
 
 export interface FulfillmentCustomer {
