@@ -979,6 +979,7 @@ export default function OrderPageClient({
   const [isHeroTransitioning, setIsHeroTransitioning] = useState(false);
   const [showMembershipPanel, setShowMembershipPanel] = useState(false);
   const [showJoinModal, setShowJoinModal] = useState(false);
+  const [joinModalMode, setJoinModalMode] = useState<'join' | 'login'>('join');
   const [showCateringPanel, setShowCateringPanel] = useState(false);
   const [cateringName, setCateringName] = useState('');
   const [cateringEmail, setCateringEmail] = useState('');
@@ -2084,14 +2085,14 @@ export default function OrderPageClient({
                           </div>
 
                           <button
-                            onClick={() => { setShowProfileMenu(false); setShowJoinModal(true); }}
+                            onClick={() => { setShowProfileMenu(false); setJoinModalMode('join'); setShowJoinModal(true); }}
                             className="w-full py-3 rounded-xl bg-[#C41E3A] text-white font-bold hover:bg-[#A01830] transition-all"
                           >
                             Join Now - It&apos;s Free!
                           </button>
 
                           <button
-                            onClick={() => { setShowProfileMenu(false); setShowJoinModal(true); }}
+                            onClick={() => { setShowProfileMenu(false); setJoinModalMode('login'); setShowJoinModal(true); }}
                             className="w-full mt-2 py-2 text-sm text-white/60 hover:text-white transition-all"
                           >
                             Already a member? Sign In
@@ -4560,6 +4561,7 @@ export default function OrderPageClient({
       <JoinRewardsModal
         open={showJoinModal}
         onClose={() => setShowJoinModal(false)}
+        initialMode={joinModalMode}
         onSuccess={async () => {
           // Refresh customer data
           try {

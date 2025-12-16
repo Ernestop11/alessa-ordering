@@ -51,7 +51,9 @@
       "Bash(open:*)",
       "Bash(npm install:*)",
       "Bash(grep:*)",
-      "Bash(find:*)"
+      "Bash(find:*)",
+      "Bash(git branch:*)",
+      "Bash(dig:*)"
     ],
     "deny": [],
     "ask": []
