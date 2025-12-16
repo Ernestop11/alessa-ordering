@@ -36,15 +36,31 @@ export default function LoginPage() {
                        sessionStorage.getItem('returnTo') || 
                        '/admin/fulfillment';
       
+      // Check if we're in a Capacitor native app - use relative navigation to stay in WebView
+      const isCapacitor = typeof window !== 'undefined' && !!(window as any).Capacitor;
+
       if (role === 'super_admin') {
-        // Super admin → redirect to super admin dashboard on root domain
-        window.location.href = 'https://alessacloud.com/super-admin';
+        // Super admin → redirect to super admin dashboard
+        if (isCapacitor) {
+          // In Capacitor, stay in WebView with relative path
+          router.push('/super-admin');
+          router.refresh();
+        } else {
+          // On web, can redirect to root domain
+          window.location.href = 'https://alessacloud.com/super-admin';
+        }
       } else if (role === 'admin') {
         // Tenant admin → redirect to fulfillment dashboard (for kiosk mode)
         // Or admin dashboard if not from fulfillment
         if (returnTo.includes('fulfillment')) {
-          window.location.href = returnTo;
-        } else if (tenantSlug) {
+          // Use relative path to stay in Capacitor WebView
+          const relativePath = returnTo.startsWith('http')
+            ? new URL(returnTo).pathname
+            : returnTo;
+          router.push(relativePath);
+          router.refresh();
+        } else if (tenantSlug && !isCapacitor) {
+          // Only do cross-domain redirect on web, not in Capacitor
           window.location.href = `https://${tenantSlug}.alessacloud.com/admin`;
         } else {
           router.push('/admin/fulfillment');

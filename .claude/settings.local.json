@@ -49,7 +49,9 @@
       "Bash(git tag:*)",
       "Bash(npx cap:*)",
       "Bash(open:*)",
-      "Bash(npm install:*)"
+      "Bash(npm install:*)",
+      "Bash(grep:*)",
+      "Bash(find:*)"
     ],
     "deny": [],
     "ask": []
