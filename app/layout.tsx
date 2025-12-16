@@ -191,16 +191,14 @@ export default async function RootLayout({
   // Force cache clear script - runs once per session to ensure fresh content
   const cacheCleanupScript = `
     (function() {
-      var cleared = sessionStorage.getItem('sw-cleared-v6');
+      var cleared = sessionStorage.getItem('sw-cleared-v7');
       if (!cleared && 'serviceWorker' in navigator) {
-        // Clear all caches
+        // Clear all caches - AGGRESSIVE: delete everything
         if ('caches' in window) {
           caches.keys().then(function(names) {
             names.forEach(function(name) {
-              if (name.indexOf('v6-2025-12-14') === -1) {
-                console.log('[Cleanup] Deleting cache:', name);
-                caches.delete(name);
-              }
+              console.log('[Cleanup] Deleting cache:', name);
+              caches.delete(name);
             });
           });
         }
@@ -210,7 +208,7 @@ export default async function RootLayout({
             reg.update();
           });
         });
-        sessionStorage.setItem('sw-cleared-v6', 'true');
+        sessionStorage.setItem('sw-cleared-v7', 'true');
         console.log('[Cleanup] Cache cleanup complete');
       }
     })();
