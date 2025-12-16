@@ -191,7 +191,7 @@ export default async function RootLayout({
   // Force cache clear script - runs once per session to ensure fresh content
   const cacheCleanupScript = `
     (function() {
-      var cleared = sessionStorage.getItem('sw-cleared-v9');
+      var cleared = sessionStorage.getItem('sw-cleared-v10');
       if (!cleared && 'serviceWorker' in navigator) {
         // Clear all caches - AGGRESSIVE: delete everything
         if ('caches' in window) {
@@ -209,8 +209,8 @@ export default async function RootLayout({
             console.log('[Cleanup] Unregistered service worker');
           });
         });
-        sessionStorage.setItem('sw-cleared-v9', 'true');
-        console.log('[Cleanup] Cache cleanup complete v9');
+        sessionStorage.setItem('sw-cleared-v10', 'true');
+        console.log('[Cleanup] Cache cleanup complete v10');
         // Force reload after clearing
         setTimeout(function() { location.reload(); }, 500);
       }

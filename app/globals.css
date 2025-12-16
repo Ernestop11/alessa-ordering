@@ -123,3 +123,17 @@ html.ada-reduced-motion *::after {
   transition: none !important;
   scroll-behavior: auto !important;
 }
+
+/* Hide sticky/fixed elements when modal is open */
+body.modal-open header[class*="sticky"],
+body.modal-open div[class*="sticky"],
+body.modal-open nav[class*="sticky"],
+body.modal-open header[class*="fixed"],
+body.modal-open div[class*="fixed"]:not(#order-detail-modal-backdrop):not(#order-detail-modal-backdrop *) {
+  z-index: 1 !important;
+}
+
+/* Ensure modal backdrop is above everything */
+#order-detail-modal-backdrop {
+  isolation: isolate;
+}

@@ -52,8 +52,11 @@ function OrderDetailModal({
     setMounted(true);
     // Prevent body scroll when modal is open
     document.body.style.overflow = 'hidden';
+    // Add class to hide sticky elements
+    document.body.classList.add('modal-open');
     return () => {
       document.body.style.overflow = '';
+      document.body.classList.remove('modal-open');
     };
   }, []);
 

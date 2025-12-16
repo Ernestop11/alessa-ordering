@@ -23,6 +23,7 @@ export function useOrderFeed({ feedUrl, initialOrders }: Options) {
   const newOrderIdsRef = useRef<Set<string>>(new Set());
   const knownOrderIdsRef = useRef<Set<string>>(new Set(initialOrders.map(o => o.id))); // Track all known orders
   const isFirstPollRef = useRef(true); // Skip "new order" detection on first poll
+  const initGracePeriodRef = useRef(true); // Grace period after init to ignore "new" events
   const [, forceTick] = useState(0);
 
   const ackNewOrders = () => {
@@ -53,6 +54,13 @@ export function useOrderFeed({ feedUrl, initialOrders }: Options) {
     newOrderIdsRef.current.clear();
     setLastCreatedOrder(null);
     isFirstPollRef.current = true; // Reset first poll flag when initialOrders change
+    initGracePeriodRef.current = true; // Reset grace period
+    // End grace period after 5 seconds (enough time for init events to settle)
+    const graceTimer = setTimeout(() => {
+      initGracePeriodRef.current = false;
+      console.log('[OrderFeed] Grace period ended - now detecting new orders');
+    }, 5000);
+    return () => clearTimeout(graceTimer);
   }, [initialOrders]);
 
   useEffect(() => {
@@ -76,10 +84,14 @@ export function useOrderFeed({ feedUrl, initialOrders }: Options) {
           data.orders.forEach((o: FulfillmentOrder) => knownOrderIdsRef.current.add(o.id));
           newOrderIdsRef.current.clear();
           forceTick((tick) => tick + 1);
+          console.log('[OrderFeed] SSE init received -', data.orders.length, 'orders marked as known');
           return;
         }
 
         if ((data.type === 'order.created' || data.type === 'order.updated') && data.order) {
+          // Always add to known orders first
+          knownOrderIdsRef.current.add(data.order.id);
+
           setOrders((prev) => {
             const next = [...prev];
             const index = next.findIndex((order) => order.id === data.order!.id);
@@ -92,15 +104,16 @@ export function useOrderFeed({ feedUrl, initialOrders }: Options) {
           });
 
           if (data.type === 'order.created') {
-            // Only trigger alert if this is truly a new order we haven't seen
-            if (!knownOrderIdsRef.current.has(data.order.id)) {
-              knownOrderIdsRef.current.add(data.order.id);
+            // Only trigger alert if NOT in grace period and we haven't alerted for this order
+            if (!initGracePeriodRef.current && !newOrderIdsRef.current.has(data.order.id)) {
+              console.log('[OrderFeed] SSE new order detected:', data.order.id.slice(-6));
               newOrderIdsRef.current.add(data.order.id);
               setLastCreatedOrder(data.order);
               forceTick((tick) => tick + 1);
+            } else if (initGracePeriodRef.current) {
+              console.log('[OrderFeed] SSE order.created ignored (grace period):', data.order.id.slice(-6));
             }
           } else if (data.type === 'order.updated') {
-            knownOrderIdsRef.current.add(data.order.id);
             setLastCreatedOrder((current) =>
               current && current.id === data.order!.id ? data.order! : current,
             );
@@ -142,7 +155,8 @@ export function useOrderFeed({ feedUrl, initialOrders }: Options) {
           // Find truly new orders (not in knownOrderIds - this persists across renders)
           const newOrders = data.filter((o: FulfillmentOrder) => !knownOrderIdsRef.current.has(o.id));
 
-          if (newOrders.length > 0) {
+          // Only alert for new orders if NOT in grace period
+          if (newOrders.length > 0 && !initGracePeriodRef.current) {
             console.log(`[OrderFeed] ${newOrders.length} NEW order(s) detected via polling`);
             newOrders.forEach((order: FulfillmentOrder) => {
               knownOrderIdsRef.current.add(order.id); // Mark as known
@@ -150,6 +164,12 @@ export function useOrderFeed({ feedUrl, initialOrders }: Options) {
               setLastCreatedOrder(order);
             });
             forceTick((tick) => tick + 1);
+          } else if (newOrders.length > 0) {
+            // Still mark as known but don't alert during grace period
+            console.log(`[OrderFeed] ${newOrders.length} order(s) added to known (grace period - no alert)`);
+            newOrders.forEach((order: FulfillmentOrder) => {
+              knownOrderIdsRef.current.add(order.id);
+            });
           }
 
           // Update orders list
