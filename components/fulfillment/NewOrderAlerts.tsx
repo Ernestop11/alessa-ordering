@@ -125,6 +125,7 @@ export default function NewOrderAlerts({
   const [audioUnlocked, setAudioUnlocked] = useState(false); // Track unlock state for UI
   const [showModal, setShowModal] = useState(false);
   const [flashingColor, setFlashingColor] = useState(0); // For cycling colors in strobe mode
+  const [alarmSuppressed, setAlarmSuppressed] = useState(false); // Suppress alarm after acknowledge
   const audioContextRef = useRef<AudioContext | null>(null);
   const customAudioRef = useRef<HTMLAudioElement | null>(null);
   const lastAlertedOrderIdRef = useRef<string | null>(null);
@@ -133,6 +134,7 @@ export default function NewOrderAlerts({
   const modalFlashIntervalRef = useRef<number | null>(null);
   const modalAutoDismissTimeoutRef = useRef<number | null>(null);
   const lastModalOrderIdRef = useRef<string | null>(null);
+  const suppressedOrderIdsRef = useRef<Set<string>>(new Set()); // Track which orders were acknowledged
 
   // Initialize audio context and unlock it aggressively - ESPECIALLY for PWA
   useEffect(() => {
@@ -324,9 +326,32 @@ export default function NewOrderAlerts({
       return;
     }
 
+    // If alarm is suppressed (user clicked acknowledge), don't start alarm
+    if (alarmSuppressed) {
+      console.log('[Alarm] Alarm suppressed - not starting');
+      if (intervalRef.current) {
+        clearInterval(intervalRef.current);
+        intervalRef.current = null;
+      }
+      return;
+    }
+
+    // Check if all current orders are in the suppressed list
+    const allOrdersSuppressed = unacknowledgedOrders.every(
+      order => suppressedOrderIdsRef.current.has(order.id)
+    );
+    if (allOrdersSuppressed) {
+      console.log('[Alarm] All orders suppressed - not starting alarm');
+      if (intervalRef.current) {
+        clearInterval(intervalRef.current);
+        intervalRef.current = null;
+      }
+      return;
+    }
+
     // Get the newest unacknowledged order
     const newestOrder = unacknowledgedOrders[0];
-    
+
     // ALWAYS start alarm if there are unacknowledged orders
     // Don't wait for new order ID - trigger immediately if interval not running!
     const isNewOrder = newestOrder.id !== lastAlertedOrderIdRef.current;
@@ -337,7 +362,7 @@ export default function NewOrderAlerts({
       if (isNewOrder) {
         lastAlertedOrderIdRef.current = newestOrder.id;
       }
-      
+
       // Ensure audio is unlocked before playing
       const unlockAndPlay = async () => {
         try {
@@ -352,14 +377,14 @@ export default function NewOrderAlerts({
         } catch (e) {
           console.error('[Alarm] Failed to unlock before play:', e);
         }
-        
+
         // Play immediately after unlocking
         console.log('[Alarm] Triggering alarm for unacknowledged orders:', unacknowledgedOrders.length);
         playAlertSound();
       };
-      
+
       unlockAndPlay();
-      
+
       // Clear existing interval
       if (intervalRef.current) {
         clearInterval(intervalRef.current);
@@ -367,6 +392,15 @@ export default function NewOrderAlerts({
 
       // Start continuous alarm - repeat every 2.5 seconds
       intervalRef.current = window.setInterval(() => {
+        // Check if suppressed or no orders
+        if (alarmSuppressed || unacknowledgedOrders.length === 0) {
+          console.log('[Alarm] Stopping interval - suppressed or no orders');
+          if (intervalRef.current) {
+            clearInterval(intervalRef.current);
+            intervalRef.current = null;
+          }
+          return;
+        }
         // Check again if there are still unacknowledged orders
         if (unacknowledgedOrders.length > 0) {
           console.log('[Alarm] Continuous alarm trigger - unacknowledged:', unacknowledgedOrders.length);
@@ -384,7 +418,7 @@ export default function NewOrderAlerts({
     return () => {
       // Don't clear interval here - only clear when orders are acknowledged
     };
-  }, [unacknowledgedOrders, playAlertSound]);
+  }, [unacknowledgedOrders, playAlertSound, alarmSuppressed]);
 
   const handleTestSound = () => {
     playAlertSound();
@@ -581,16 +615,40 @@ export default function NewOrderAlerts({
     setShowModal(false);
     lastAlertedOrderIdRef.current = null;
     lastModalOrderIdRef.current = null;
+    // Set suppression flag to prevent alarm from restarting
+    setAlarmSuppressed(true);
   };
 
   // Handle acknowledge click - stops alarm IMMEDIATELY then notifies parent
   const handleAcknowledgeClick = () => {
-    console.log('[Alarm] Acknowledge clicked - stopping alarm');
+    console.log('[Alarm] Acknowledge clicked - stopping alarm and suppressing');
+    // Track which orders are being acknowledged so alarm doesn't restart for them
+    unacknowledgedOrders.forEach(order => {
+      suppressedOrderIdsRef.current.add(order.id);
+    });
     // FIRST: Stop the alarm immediately (before any async operations)
     stopAlarmNow();
     // THEN: Notify parent to update the orders
     unacknowledgedOrders.forEach(order => onAcknowledge(order.id));
   };
+
+  // Reset suppression when there are truly new orders (not in suppressed list)
+  useEffect(() => {
+    if (unacknowledgedOrders.length === 0) {
+      // All orders acknowledged - clear suppression
+      setAlarmSuppressed(false);
+      suppressedOrderIdsRef.current.clear();
+    } else {
+      // Check if there are any NEW orders not in suppressed list
+      const hasNewUnsuppressedOrders = unacknowledgedOrders.some(
+        order => !suppressedOrderIdsRef.current.has(order.id)
+      );
+      if (hasNewUnsuppressedOrders) {
+        // New order came in - allow alarm again
+        setAlarmSuppressed(false);
+      }
+    }
+  }, [unacknowledgedOrders]);
 
   // Render full-screen flashing modal
   const renderModal = () => {
