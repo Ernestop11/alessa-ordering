@@ -734,7 +734,6 @@ export default function FulfillmentDashboard({ initialOrders, feedUrl, scope }: 
       <NewOrderAlerts
         unacknowledgedOrders={unacknowledgedOrders}
         onAcknowledge={handleAcknowledge}
-        onAcceptOrder={handleAcceptById}
         settings={alertSettings}
         onSettingsChange={setAlertSettings}
       />

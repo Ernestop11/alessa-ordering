@@ -703,24 +703,29 @@ export default function NewOrderAlerts({
                 )}
               </div>
               
-              {/* Accept All button - acknowledges AND moves to preparing */}
+              {/* TAP TARGET - Just acknowledges (stops alarm), order goes to NEW ORDERS queue */}
               <button
                 onClick={() => {
                   // IMMEDIATELY stop alarm and hide modal - don't wait for API
                   stopAlarmNow();
                   setShowModal(false);
-                  // Call APIs in background - acknowledge AND accept each order
+                  // Only acknowledge - DO NOT accept (order stays in NEW ORDERS)
                   unacknowledgedOrders.forEach(order => {
                     onAcknowledge(order.id);
-                    if (onAcceptOrder) {
-                      onAcceptOrder(order.id);
-                    }
                   });
                 }}
-                className="w-full bg-green-600 hover:bg-green-700 text-white text-4xl font-black py-6 rounded-xl shadow-2xl transform hover:scale-105 transition-all active:scale-95"
-                style={{ minHeight: '80px' }}
+                className="w-full bg-white hover:bg-gray-100 text-gray-900 rounded-xl shadow-2xl transform hover:scale-105 transition-all active:scale-95 p-8"
+                style={{ minHeight: '120px' }}
               >
-                ✓ ACCEPT ALL ORDERS
+                {/* Large tap target visual */}
+                <div className="flex flex-col items-center justify-center gap-4">
+                  <div className="w-24 h-24 rounded-full border-8 border-red-500 flex items-center justify-center bg-red-50 animate-pulse">
+                    <svg className="w-12 h-12 text-red-500" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={3}>
+                      <path strokeLinecap="round" strokeLinejoin="round" d="M7 11.5V14m0-2.5v-6a1.5 1.5 0 113 0m-3 6a1.5 1.5 0 00-3 0v2a7.5 7.5 0 0015 0v-5a1.5 1.5 0 00-3 0m-6-3V11m0-5.5v-1a1.5 1.5 0 013 0v1m0 0V11m0-5.5a1.5 1.5 0 013 0v3m0 0V11" />
+                    </svg>
+                  </div>
+                  <span className="text-2xl font-black uppercase tracking-wider">TAP TO VIEW ORDERS</span>
+                </div>
               </button>
               
               {modalAutoDismiss && (
@@ -791,17 +796,14 @@ export default function NewOrderAlerts({
                       // IMMEDIATELY stop alarm - don't wait for API
                       stopAlarmNow();
                       setShowModal(false);
-                      // Call APIs in background - acknowledge AND accept
+                      // Only acknowledge - order stays in NEW ORDERS
                       unacknowledgedOrders.forEach(order => {
                         onAcknowledge(order.id);
-                        if (onAcceptOrder) {
-                          onAcceptOrder(order.id);
-                        }
                       });
                     }}
                     className="px-4 py-1.5 bg-white text-red-600 hover:bg-gray-100 rounded font-medium text-sm transition-colors"
                   >
-                    Accept All
+                    View Orders
                   </button>
                 </div>
               </div>

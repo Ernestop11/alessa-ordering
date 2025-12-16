@@ -184,150 +184,180 @@ export default function OrderCard({ order, scope, onAccept, onMarkReady, onCompl
     );
   }
 
-  // Standard mode (desktop) - with color-coded status styling
-  // Colors go from LOUD (new/urgent) → MUTED (done)
+  // KITCHEN TICKET STYLE - Color-coded modifiers, prominent actions
+  // Colors: NEW (red/urgent) → PREPARING (amber) → READY (green) → DONE (slate/muted)
   return (
-    <article className={`rounded-xl border-2 px-4 py-3 shadow-sm transition hover:shadow-md ${
+    <article className={`rounded-xl border-2 shadow-sm transition hover:shadow-md overflow-hidden ${
       isNew
-        ? 'border-red-400 bg-red-50 hover:border-red-500 shadow-red-100'
+        ? 'border-red-400 bg-white hover:border-red-500 shadow-red-100'
         : status === 'preparing'
-          ? 'border-amber-300 bg-amber-50 hover:border-amber-400'
+          ? 'border-amber-400 bg-white hover:border-amber-500'
           : status === 'ready'
-            ? 'border-green-200 bg-green-50 hover:border-green-300'
+            ? 'border-green-400 bg-white hover:border-green-500'
             : status === 'completed'
-              ? 'border-slate-200 bg-slate-50 hover:border-slate-300'
+              ? 'border-slate-300 bg-slate-50 hover:border-slate-400'
               : 'border-gray-200 bg-white hover:border-gray-300'
     }`}>
-      <header className="flex items-start justify-between gap-3">
-        <div className="space-y-1">
-          <div className="flex items-center gap-2">
-            <span className="text-sm font-semibold text-gray-900">Order #{order.id.slice(-6).toUpperCase()}</span>
-            <span
-              className={`rounded-full px-2 py-0.5 text-xs font-semibold ${
-                status === 'pending' || status === 'confirmed'
-                  ? 'bg-blue-100 text-blue-700'
-                  : status === 'preparing'
-                    ? 'bg-amber-100 text-amber-700'
-                    : status === 'ready'
-                      ? 'bg-emerald-100 text-emerald-700'
-                      : status === 'completed'
-                        ? 'bg-gray-100 text-gray-700'
-                        : 'bg-slate-100 text-slate-700'
-              }`}
-            >
-              {status.toUpperCase()}
+      {/* TICKET HEADER - Order number and status prominently displayed */}
+      <header className={`px-4 py-2 ${
+        isNew
+          ? 'bg-red-500 text-white'
+          : status === 'preparing'
+            ? 'bg-amber-500 text-white'
+            : status === 'ready'
+              ? 'bg-green-500 text-white'
+              : status === 'completed'
+                ? 'bg-slate-400 text-white'
+                : 'bg-gray-100 text-gray-900'
+      }`}>
+        <div className="flex items-center justify-between">
+          <div className="flex items-center gap-3">
+            <span className="text-lg font-black">#{order.id.slice(-6).toUpperCase()}</span>
+            <span className="text-sm font-medium opacity-90">
+              {formatTime(order.createdAt)}
             </span>
           </div>
-          <p className="text-xs text-gray-500">
-            Placed at {formatTime(order.createdAt)} · {isDelivery ? 'Delivery' : 'Pickup'}
-          </p>
-          {scope === 'platform' && order.tenant && (
-            <p className="text-xs font-medium text-indigo-600">
-              {order.tenant.name} ({order.tenant.slug})
-            </p>
-          )}
+          <div className="flex items-center gap-2">
+            <span className={`px-2 py-0.5 rounded text-xs font-bold uppercase ${
+              isNew ? 'bg-white/20' : 'bg-black/10'
+            }`}>
+              {isDelivery ? '🚗 DELIVERY' : '🏪 PICKUP'}
+            </span>
+          </div>
         </div>
-        <button
-          type="button"
-          onClick={() => onPrint(order)}
-          className="rounded-full border border-gray-200 bg-gray-50 px-3 py-1 text-xs font-semibold text-gray-600 hover:border-gray-300 hover:text-gray-900"
-        >
-          Print
-        </button>
       </header>
 
-      <div className="mt-3 space-y-2">
-        <div>
-          <p className="text-sm font-medium text-gray-900">{customerLabel}</p>
-          {(order.customerEmail || order.customerPhone) && (
-            <p className="text-xs text-gray-500">
-              {[order.customerEmail, order.customerPhone].filter(Boolean).join(' · ')}
-            </p>
-          )}
-        </div>
-        <ul className="space-y-2">
-          {order.items.map((item) => (
-            <li key={item.id}>
-              <div className="text-sm text-gray-700">
-                <span className="font-medium text-gray-900">{item.quantity}×</span> {item.menuItemName || 'Menu Item'}
-              </div>
-              {item.notes && (
-                <p className="ml-4 mt-0.5 text-xs font-medium text-orange-700 bg-orange-50 rounded px-2 py-1 border border-orange-200">
-                  ⚠️ {item.notes}
-                </p>
-              )}
-            </li>
-          ))}
-        </ul>
-        {order.notes && (
-          <p className="rounded-lg bg-amber-50 px-3 py-2 text-xs text-amber-800">{order.notes}</p>
+      {/* CUSTOMER INFO */}
+      <div className="px-4 py-2 border-b border-gray-100 bg-gray-50">
+        <p className="text-sm font-bold text-gray-900">{customerLabel}</p>
+        {(order.customerEmail || order.customerPhone) && (
+          <p className="text-xs text-gray-500">
+            {[order.customerEmail, order.customerPhone].filter(Boolean).join(' · ')}
+          </p>
+        )}
+        {scope === 'platform' && order.tenant && (
+          <p className="text-xs font-medium text-indigo-600 mt-1">
+            📍 {order.tenant.name}
+          </p>
         )}
       </div>
 
-      <footer className="mt-3 flex flex-wrap items-center justify-between gap-2">
-        <div className="text-sm font-semibold text-gray-900">{formatCurrency(order.totalAmount)}</div>
+      {/* ITEMS LIST - Kitchen ticket style with color-coded modifiers */}
+      <div className="px-4 py-3">
+        <ul className="space-y-3">
+          {order.items.map((item) => (
+            <li key={item.id} className="border-l-4 border-gray-300 pl-3">
+              <div className="flex items-start justify-between">
+                <div className="flex-1">
+                  <div className="flex items-center gap-2">
+                    <span className="bg-gray-900 text-white text-sm font-black rounded px-2 py-0.5 min-w-[28px] text-center">
+                      {item.quantity}
+                    </span>
+                    <span className="font-semibold text-gray-900">{item.menuItemName || 'Menu Item'}</span>
+                  </div>
+                  {/* MODIFIERS/NOTES - Color-coded for visibility */}
+                  {item.notes && (
+                    <div className="mt-2 ml-8">
+                      <div className="bg-orange-100 border-2 border-orange-400 rounded-lg px-3 py-2">
+                        <p className="text-sm font-bold text-orange-800 flex items-start gap-2">
+                          <span className="text-lg">⚠️</span>
+                          <span>{item.notes}</span>
+                        </p>
+                      </div>
+                    </div>
+                  )}
+                </div>
+              </div>
+            </li>
+          ))}
+        </ul>
+
+        {/* ORDER NOTES - Very prominent */}
+        {order.notes && (
+          <div className="mt-4 bg-yellow-100 border-2 border-yellow-400 rounded-lg px-3 py-2">
+            <p className="text-xs font-bold text-yellow-800 uppercase mb-1">📝 Special Instructions</p>
+            <p className="text-sm font-semibold text-yellow-900">{order.notes}</p>
+          </div>
+        )}
+      </div>
+
+      {/* TOTAL */}
+      <div className="px-4 py-2 border-t border-gray-100 bg-gray-50">
+        <div className="flex items-center justify-between">
+          <span className="text-sm text-gray-600">Total</span>
+          <span className="text-lg font-black text-gray-900">{formatCurrency(order.totalAmount)}</span>
+        </div>
+      </div>
+
+      {/* ACTION BUTTONS - Large and prominent for kitchen use */}
+      <div className="px-4 py-3 bg-gray-100 border-t border-gray-200">
         <div className="flex flex-wrap items-center gap-2">
+          {/* PRINT BUTTON - Always visible and prominent */}
+          <button
+            type="button"
+            onClick={() => onPrint(order)}
+            className="flex-1 min-w-[80px] bg-gray-700 hover:bg-gray-800 text-white font-bold py-2 px-4 rounded-lg shadow transition flex items-center justify-center gap-2"
+          >
+            <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+              <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M17 17h2a2 2 0 002-2v-4a2 2 0 00-2-2H5a2 2 0 00-2 2v4a2 2 0 002 2h2m2 4h6a2 2 0 002-2v-4a2 2 0 00-2-2H9a2 2 0 00-2 2v4a2 2 0 002 2zm8-12V5a2 2 0 00-2-2H9a2 2 0 00-2 2v4h10z" />
+            </svg>
+            PRINT
+          </button>
+
+          {/* PRIMARY ACTION - Accept/Ready/Complete */}
           {canAccept && (
             <button
               type="button"
               onClick={() => onAccept(order)}
-              className="rounded-full bg-blue-600 px-3 py-1.5 text-xs font-semibold text-white shadow hover:bg-blue-700"
+              className="flex-[2] bg-green-600 hover:bg-green-700 text-white font-black py-2 px-4 rounded-lg shadow transition text-sm uppercase"
             >
-              Accept Order
+              ✓ START PREPARING
             </button>
           )}
           {canMarkReady && (
             <button
               type="button"
               onClick={() => onMarkReady(order)}
-              className="rounded-full bg-emerald-500 px-3 py-1.5 text-xs font-semibold text-white shadow hover:bg-emerald-600"
+              className="flex-[2] bg-emerald-500 hover:bg-emerald-600 text-white font-black py-2 px-4 rounded-lg shadow transition text-sm uppercase"
             >
-              Mark Ready
+              ✓ MARK READY
             </button>
           )}
-          {canComplete && (
+          {canComplete && !canMarkReady && (
             <button
               type="button"
               onClick={() => onComplete(order)}
-              className="rounded-full border border-gray-300 px-3 py-1.5 text-xs font-semibold text-gray-700 hover:border-gray-400 hover:text-gray-900"
+              className="flex-[2] bg-blue-600 hover:bg-blue-700 text-white font-bold py-2 px-4 rounded-lg shadow transition text-sm uppercase"
             >
-              Complete
-            </button>
-          )}
-          {canCancel && onCancel && (
-            <button
-              type="button"
-              onClick={() => onCancel(order)}
-              className="rounded-full border border-red-300 px-3 py-1.5 text-xs font-semibold text-red-700 hover:border-red-400 hover:bg-red-50"
-            >
-              Cancel
+              COMPLETE
             </button>
           )}
         </div>
-      </footer>
 
-      {/* Refund button - separate section in collapsible, requires completed/cancelled status */}
-      {canRefund && onRefund && (
-        <div className="mt-3 pt-3 border-t border-gray-100">
-          <details className="group">
-            <summary className="cursor-pointer text-xs text-gray-400 hover:text-gray-600 list-none flex items-center gap-1">
-              <svg className="w-3 h-3 transition-transform group-open:rotate-90" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9 5l7 7-7 7" />
-              </svg>
-              More Actions
-            </summary>
-            <div className="mt-2">
+        {/* SECONDARY ACTIONS - Cancel/Refund */}
+        {(canCancel || canRefund) && (
+          <div className="mt-2 flex gap-2">
+            {canCancel && onCancel && (
+              <button
+                type="button"
+                onClick={() => onCancel(order)}
+                className="flex-1 border-2 border-red-300 text-red-700 font-semibold py-1.5 px-3 rounded-lg text-xs hover:bg-red-50 transition"
+              >
+                Cancel Order
+              </button>
+            )}
+            {canRefund && onRefund && (
               <button
                 type="button"
                 onClick={() => onRefund(order)}
-                className="rounded-full bg-red-600 px-3 py-1.5 text-xs font-semibold text-white shadow hover:bg-red-700"
+                className="flex-1 bg-red-600 hover:bg-red-700 text-white font-semibold py-1.5 px-3 rounded-lg text-xs shadow transition"
               >
-                💰 Process Refund
+                💰 Refund
               </button>
-            </div>
-          </details>
-        </div>
-      )}
+            )}
+          </div>
+        )}
+      </div>
     </article>
   );
 }
