@@ -2,7 +2,7 @@
 
 import { useMemo, useState, useEffect } from 'react';
 import { createPortal } from 'react-dom';
-import type { FulfillmentOrder } from './types';
+import type { FulfillmentOrder, FulfillmentOrderItem, ItemType } from './types';
 
 interface Props {
   order: FulfillmentOrder;
@@ -119,6 +119,128 @@ function ModifierTag({ text, type }: { text: string; type: 'remove' | 'add' | 'o
       <span style={{ fontWeight: 700 }}>{style.icon}</span>
       {text}
     </span>
+  );
+}
+
+// Group items by type (food, grocery, bakery)
+function groupItemsByType(items: FulfillmentOrderItem[]): {
+  food: FulfillmentOrderItem[];
+  grocery: FulfillmentOrderItem[];
+  bakery: FulfillmentOrderItem[];
+} {
+  const grouped = { food: [] as FulfillmentOrderItem[], grocery: [] as FulfillmentOrderItem[], bakery: [] as FulfillmentOrderItem[] };
+
+  for (const item of items) {
+    const type = item.itemType || 'food'; // Default to food if not specified
+    if (type === 'grocery') grouped.grocery.push(item);
+    else if (type === 'bakery') grouped.bakery.push(item);
+    else grouped.food.push(item);
+  }
+
+  return grouped;
+}
+
+// Section styles for item groups
+const ITEM_SECTION_STYLES = {
+  food: {
+    label: 'Food Items',
+    emoji: '🍽️',
+    headerBg: 'transparent',
+    headerBorder: 'transparent',
+    itemBg: 'transparent',
+    quantityBg: '#6b7280',
+  },
+  grocery: {
+    label: 'Grocery Items',
+    emoji: '🛒',
+    headerBg: 'linear-gradient(135deg, #dcfce7 0%, #bbf7d0 100%)',
+    headerBorder: '#86efac',
+    itemBg: 'linear-gradient(135deg, #f0fdf4 0%, #dcfce7 100%)',
+    quantityBg: '#16a34a',
+  },
+  bakery: {
+    label: 'Bakery Items',
+    emoji: '🥐',
+    headerBg: 'linear-gradient(135deg, #fef3c7 0%, #fde68a 100%)',
+    headerBorder: '#fcd34d',
+    itemBg: 'linear-gradient(135deg, #fffbeb 0%, #fef3c7 100%)',
+    quantityBg: '#d97706',
+  },
+};
+
+// Section header for item groups
+function ItemSectionHeader({ type, count }: { type: ItemType; count: number }) {
+  const c = ITEM_SECTION_STYLES[type];
+
+  return (
+    <div style={{
+      padding: '10px 14px',
+      marginBottom: '12px',
+      borderRadius: '10px',
+      background: c.headerBg,
+      border: c.headerBorder !== 'transparent' ? `2px solid ${c.headerBorder}` : 'none',
+      display: 'flex',
+      alignItems: 'center',
+      gap: '8px',
+    }}>
+      <span style={{ fontSize: '1.25rem' }}>{c.emoji}</span>
+      <span style={{ fontWeight: 700, fontSize: '0.875rem', color: '#374151', textTransform: 'uppercase', letterSpacing: '0.5px' }}>
+        {c.label}
+      </span>
+      <span style={{
+        marginLeft: 'auto',
+        backgroundColor: c.quantityBg,
+        color: 'white',
+        padding: '2px 8px',
+        borderRadius: '10px',
+        fontSize: '0.75rem',
+        fontWeight: 700,
+      }}>
+        {count}
+      </span>
+    </div>
+  );
+}
+
+// Render a single order item row
+function OrderItemRow({ item, itemType, isLast }: { item: FulfillmentOrderItem; itemType: ItemType; isLast: boolean }) {
+  const styles = ITEM_SECTION_STYLES[itemType];
+
+  return (
+    <div style={{
+      padding: '16px',
+      marginBottom: isLast ? '0' : '12px',
+      background: itemType !== 'food' ? styles.itemBg : (item.notes ? '#fafafa' : 'transparent'),
+      borderRadius: '12px',
+      border: itemType !== 'food' ? `1px solid ${styles.headerBorder}` : (item.notes ? '1px solid #e5e7eb' : 'none'),
+    }}>
+      <div style={{ display: 'flex', alignItems: 'flex-start', gap: '12px' }}>
+        <span style={{
+          backgroundColor: styles.quantityBg,
+          color: 'white',
+          minWidth: '40px',
+          height: '40px',
+          borderRadius: '10px',
+          display: 'flex',
+          alignItems: 'center',
+          justifyContent: 'center',
+          fontWeight: 900,
+          fontSize: '1.25rem',
+          flexShrink: 0,
+        }}>
+          {item.quantity}
+        </span>
+        <div style={{ flex: 1 }}>
+          <p style={{ fontSize: '1.125rem', fontWeight: 700, color: '#111', margin: 0, lineHeight: 1.3 }}>
+            {item.menuItemName || 'Menu Item'}
+          </p>
+          <p style={{ fontSize: '0.875rem', color: '#666', margin: '2px 0 0 0' }}>
+            {formatCurrency(item.price)} each
+          </p>
+          <ItemModifiers notes={item.notes} />
+        </div>
+      </div>
+    </div>
   );
 }
 
@@ -302,7 +424,7 @@ function OrderDetailModal({
           </div>
         </div>
 
-        {/* ORDER ITEMS */}
+        {/* ORDER ITEMS - Grouped by type */}
         <div style={{
           backgroundColor: 'white',
           borderRadius: '16px',
@@ -314,42 +436,46 @@ function OrderDetailModal({
           <h3 style={{ fontSize: '0.75rem', fontWeight: 700, color: '#999', textTransform: 'uppercase', letterSpacing: '1px', margin: '0 0 12px 0' }}>
             Order Items
           </h3>
-          {order.items.map((item, idx) => (
-            <div key={item.id} style={{
-              padding: '16px',
-              marginBottom: idx < order.items.length - 1 ? '12px' : '0',
-              backgroundColor: item.notes ? '#fafafa' : 'transparent',
-              borderRadius: '12px',
-              border: item.notes ? '1px solid #e5e7eb' : 'none',
-            }}>
-              <div style={{ display: 'flex', alignItems: 'flex-start', gap: '12px' }}>
-                <span style={{
-                  backgroundColor: statusColor.bg,
-                  color: 'white',
-                  minWidth: '40px',
-                  height: '40px',
-                  borderRadius: '10px',
-                  display: 'flex',
-                  alignItems: 'center',
-                  justifyContent: 'center',
-                  fontWeight: 900,
-                  fontSize: '1.25rem',
-                  flexShrink: 0,
-                }}>
-                  {item.quantity}
-                </span>
-                <div style={{ flex: 1 }}>
-                  <p style={{ fontSize: '1.125rem', fontWeight: 700, color: '#111', margin: 0, lineHeight: 1.3 }}>
-                    {item.menuItemName || 'Menu Item'}
-                  </p>
-                  <p style={{ fontSize: '0.875rem', color: '#666', margin: '2px 0 0 0' }}>
-                    {formatCurrency(item.price)} each
-                  </p>
-                  <ItemModifiers notes={item.notes} />
-                </div>
-              </div>
-            </div>
-          ))}
+
+          {/* Render items grouped by type */}
+          {(() => {
+            const grouped = groupItemsByType(order.items);
+            const hasMultipleTypes = (grouped.food.length > 0 ? 1 : 0) + (grouped.grocery.length > 0 ? 1 : 0) + (grouped.bakery.length > 0 ? 1 : 0) > 1;
+
+            return (
+              <>
+                {/* Food items */}
+                {grouped.food.length > 0 && (
+                  <div style={{ marginBottom: grouped.grocery.length > 0 || grouped.bakery.length > 0 ? '20px' : '0' }}>
+                    {hasMultipleTypes && <ItemSectionHeader type="food" count={grouped.food.length} />}
+                    {grouped.food.map((item, idx) => (
+                      <OrderItemRow key={item.id} item={item} itemType="food" isLast={idx === grouped.food.length - 1} />
+                    ))}
+                  </div>
+                )}
+
+                {/* Grocery items - with green styling */}
+                {grouped.grocery.length > 0 && (
+                  <div style={{ marginBottom: grouped.bakery.length > 0 ? '20px' : '0' }}>
+                    <ItemSectionHeader type="grocery" count={grouped.grocery.length} />
+                    {grouped.grocery.map((item, idx) => (
+                      <OrderItemRow key={item.id} item={item} itemType="grocery" isLast={idx === grouped.grocery.length - 1} />
+                    ))}
+                  </div>
+                )}
+
+                {/* Bakery items - with amber styling */}
+                {grouped.bakery.length > 0 && (
+                  <div>
+                    <ItemSectionHeader type="bakery" count={grouped.bakery.length} />
+                    {grouped.bakery.map((item, idx) => (
+                      <OrderItemRow key={item.id} item={item} itemType="bakery" isLast={idx === grouped.bakery.length - 1} />
+                    ))}
+                  </div>
+                )}
+              </>
+            );
+          })()}
 
           {/* Order-level special instructions */}
           {order.notes && (
@@ -547,6 +673,17 @@ export default function OrderCard({ order, scope, onAccept, onMarkReady, onCompl
   const statusColor = getStatusColor(status, isNew);
   const hasModifiers = order.notes || order.items.some(i => i.notes);
 
+  // Check for grocery/bakery items
+  const itemTypes = useMemo(() => {
+    const grouped = groupItemsByType(order.items);
+    return {
+      hasGrocery: grouped.grocery.length > 0,
+      hasBakery: grouped.bakery.length > 0,
+      groceryCount: grouped.grocery.length,
+      bakeryCount: grouped.bakery.length,
+    };
+  }, [order.items]);
+
   const customerLabel = useMemo(() => {
     if (order.customerName) return order.customerName;
     if (order.customer?.name) return order.customer.name;
@@ -591,6 +728,21 @@ export default function OrderCard({ order, scope, onAccept, onMarkReady, onCompl
           </div>
           <p className="font-semibold text-gray-800">{customerLabel}</p>
           <p className="text-sm text-gray-500 mt-1">{order.items.length} items · {formatCurrency(order.totalAmount)}</p>
+          {/* Item type indicators */}
+          {(itemTypes.hasGrocery || itemTypes.hasBakery) && (
+            <div className="mt-2 flex flex-wrap gap-1">
+              {itemTypes.hasGrocery && (
+                <span className="inline-flex items-center gap-1 px-2 py-0.5 rounded-full text-xs font-bold bg-gradient-to-r from-green-100 to-green-200 text-green-700 border border-green-300">
+                  🛒 {itemTypes.groceryCount} grocery
+                </span>
+              )}
+              {itemTypes.hasBakery && (
+                <span className="inline-flex items-center gap-1 px-2 py-0.5 rounded-full text-xs font-bold bg-gradient-to-r from-amber-100 to-amber-200 text-amber-700 border border-amber-300">
+                  🥐 {itemTypes.bakeryCount} bakery
+                </span>
+              )}
+            </div>
+          )}
           {hasModifiers && (
             <div className="mt-2 flex items-center gap-1 text-amber-600">
               <span className="text-sm">📋</span>
@@ -654,6 +806,21 @@ export default function OrderCard({ order, scope, onAccept, onMarkReady, onCompl
             <span className="text-sm text-gray-600">{order.items.length} items</span>
             <span className="font-bold text-gray-900">{formatCurrency(order.totalAmount)}</span>
           </div>
+          {/* Item type indicators for compact view */}
+          {(itemTypes.hasGrocery || itemTypes.hasBakery) && (
+            <div className="mt-2 flex flex-wrap gap-1">
+              {itemTypes.hasGrocery && (
+                <span className="inline-flex items-center gap-1 px-2 py-0.5 rounded-full text-xs font-bold bg-gradient-to-r from-green-100 to-green-200 text-green-700 border border-green-300">
+                  🛒 {itemTypes.groceryCount}
+                </span>
+              )}
+              {itemTypes.hasBakery && (
+                <span className="inline-flex items-center gap-1 px-2 py-0.5 rounded-full text-xs font-bold bg-gradient-to-r from-amber-100 to-amber-200 text-amber-700 border border-amber-300">
+                  🥐 {itemTypes.bakeryCount}
+                </span>
+              )}
+            </div>
+          )}
           {hasModifiers && (
             <div className="mt-2 flex items-center gap-1 text-amber-600">
               <span className="text-sm">📋</span>

@@ -42,6 +42,11 @@ export async function GET(request: NextRequest) {
                 menuItem: {
                   select: {
                     name: true,
+                    section: {
+                      select: {
+                        type: true,
+                      },
+                    },
                   },
                 },
               },

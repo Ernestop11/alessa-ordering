@@ -1,5 +1,8 @@
 import type { Order, OrderItem, Customer, Tenant } from '@prisma/client';
 
+// Item types for categorization (matches cart itemType)
+export type ItemType = 'food' | 'grocery' | 'bakery';
+
 export interface SerializedOrderItem {
   id: string;
   menuItemId: string;
@@ -7,6 +10,7 @@ export interface SerializedOrderItem {
   price: number;
   menuItemName?: string | null;
   notes?: string | null; // Item-specific modifiers like "no onions", "extra cheese"
+  itemType?: ItemType | null; // food, grocery, or bakery
 }
 
 export interface SerializedCustomer {
@@ -64,6 +68,9 @@ type OrderWithRelations = Omit<Order, 'acknowledgedAt'> & {
     OrderItem & {
       menuItem?: {
         name: string;
+        section?: {
+          type: string;
+        } | null;
       } | null;
     }
   >;
@@ -112,14 +119,24 @@ export function serializeOrder(
     deliveryAddress: deliveryAddress ?? null,
     createdAt: order.createdAt.toISOString(),
     updatedAt: order.updatedAt.toISOString(),
-    items: order.items.map((item) => ({
-      id: item.id,
-      menuItemId: item.menuItemId,
-      quantity: item.quantity,
-      price: Number(item.price ?? 0),
-      menuItemName: item.menuItem?.name ?? null,
-      notes: item.notes ?? null,
-    })),
+    items: order.items.map((item) => {
+      // Map section type to itemType
+      const sectionType = item.menuItem?.section?.type;
+      let itemType: ItemType | null = null;
+      if (sectionType === 'GROCERY') itemType = 'grocery';
+      else if (sectionType === 'BAKERY') itemType = 'bakery';
+      else if (sectionType) itemType = 'food'; // Default to food for RESTAURANT, etc.
+
+      return {
+        id: item.id,
+        menuItemId: item.menuItemId,
+        quantity: item.quantity,
+        price: Number(item.price ?? 0),
+        menuItemName: item.menuItem?.name ?? null,
+        notes: item.notes ?? null,
+        itemType,
+      };
+    }),
     customer: order.customer
       ? {
           id: order.customer.id,

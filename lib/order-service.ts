@@ -308,7 +308,15 @@ export async function createOrderFromPayload({
     include: {
       items: {
         include: {
-          menuItem: true,
+          menuItem: {
+            include: {
+              section: {
+                select: {
+                  type: true,
+                },
+              },
+            },
+          },
         },
       },
       customer: true,

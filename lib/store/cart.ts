@@ -6,6 +6,9 @@ export interface CartAddon {
   price: number;
 }
 
+// Item types for categorization in orders
+export type CartItemType = 'food' | 'grocery' | 'bakery';
+
 export interface CartItem {
   id: string;
   name: string;
@@ -17,6 +20,7 @@ export interface CartItem {
   addons?: CartAddon[];
   note?: string | null;
   isUpsell?: boolean;
+  itemType?: CartItemType; // Track if this is food, grocery, or bakery
 }
 
 interface CartStore {

@@ -24,6 +24,11 @@ export async function GET() {
           menuItem: {
             select: {
               name: true,
+              section: {
+                select: {
+                  type: true,
+                },
+              },
             },
           },
         },

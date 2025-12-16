@@ -8,6 +8,8 @@ export interface FulfillmentTenant {
   secondaryColor?: string | null;
 }
 
+export type ItemType = 'food' | 'grocery' | 'bakery';
+
 export interface FulfillmentOrderItem {
   id: string;
   menuItemId: string;
@@ -15,6 +17,7 @@ export interface FulfillmentOrderItem {
   price: number;
   menuItemName?: string | null;
   notes?: string | null; // Item-specific modifiers like "no onions", "extra cheese"
+  itemType?: ItemType | null; // food, grocery, or bakery - for color-coding in fulfillment
 }
 
 export interface FulfillmentCustomer {

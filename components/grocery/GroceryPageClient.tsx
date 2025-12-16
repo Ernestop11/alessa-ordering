@@ -127,6 +127,7 @@ export default function GroceryPageClient({
       quantity: 1,
       image: item.image,
       description: item.description,
+      itemType: variant === 'bakery' ? 'bakery' : 'grocery', // Track item type for fulfillment
     });
   };
 
@@ -271,6 +272,7 @@ export default function GroceryPageClient({
                               quantity: 1,
                               image: special.image,
                               description: special.description,
+                              itemType: variant === 'bakery' ? 'bakery' : 'grocery',
                             })}
                             className="bg-white text-gray-900 px-8 py-5 rounded-2xl text-xl md:text-2xl font-black hover:bg-gray-100 transition shadow-2xl flex items-center justify-center gap-3 max-w-md"
                           >
@@ -412,6 +414,7 @@ export default function GroceryPageClient({
                           quantity: 1,
                           image: bundle.image,
                           description: bundle.description,
+                          itemType: variant === 'bakery' ? 'bakery' : 'grocery',
                         })}
                         className="w-full bg-gradient-to-r from-yellow-400 to-yellow-500 hover:from-yellow-500 hover:to-yellow-600 text-gray-900 font-black py-4 px-4 rounded-xl transition flex items-center justify-center gap-2 shadow-xl text-lg"
                       >
