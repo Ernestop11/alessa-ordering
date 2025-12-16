@@ -191,7 +191,7 @@ export default async function RootLayout({
   // Force cache clear script - runs once per session to ensure fresh content
   const cacheCleanupScript = `
     (function() {
-      var cleared = sessionStorage.getItem('sw-cleared-v7');
+      var cleared = sessionStorage.getItem('sw-cleared-v8');
       if (!cleared && 'serviceWorker' in navigator) {
         // Clear all caches - AGGRESSIVE: delete everything
         if ('caches' in window) {
@@ -202,14 +202,17 @@ export default async function RootLayout({
             });
           });
         }
-        // Force service worker update
+        // Force service worker update and unregister all
         navigator.serviceWorker.getRegistrations().then(function(registrations) {
           registrations.forEach(function(reg) {
-            reg.update();
+            reg.unregister();
+            console.log('[Cleanup] Unregistered service worker');
           });
         });
-        sessionStorage.setItem('sw-cleared-v7', 'true');
-        console.log('[Cleanup] Cache cleanup complete');
+        sessionStorage.setItem('sw-cleared-v8', 'true');
+        console.log('[Cleanup] Cache cleanup complete v8');
+        // Force reload after clearing
+        setTimeout(function() { location.reload(); }, 500);
       }
     })();
   `;
