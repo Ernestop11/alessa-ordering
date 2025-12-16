@@ -98,9 +98,6 @@ const nextConfig = {
           },
         ],
       },
-          },
-        ],
-      },
       // Prevent caching on order pages for instant updates
       {
         source: '/order',
