@@ -8,19 +8,46 @@ import { useSession } from 'next-auth/react';
  * For iOS, this works in conjunction with:
  * 1. iPad Settings > Display & Brightness > Auto-Lock > Never
  * 2. Guided Access mode (triple-click home button)
+ *
+ * Also handles Capacitor splash screen hiding when content is ready.
  */
 export default function KioskMode() {
   const { data: session, status } = useSession();
 
+  // Hide Capacitor splash screen when the app is ready
+  useEffect(() => {
+    if (typeof window !== 'undefined') {
+      // Check if we're running in a Capacitor native app
+      const isCapacitor = !!(window as any).Capacitor;
+
+      if (isCapacitor) {
+        // Dynamically import and hide splash screen
+        import('@capacitor/splash-screen')
+          .then(({ SplashScreen }) => {
+            // Small delay to ensure the page content is rendered
+            setTimeout(() => {
+              SplashScreen.hide().catch((err: Error) => {
+                console.log('[KioskMode] Splash screen hide error (safe to ignore):', err.message);
+              });
+            }, 500);
+          })
+          .catch(() => {
+            // SplashScreen plugin not available - that's fine
+            console.log('[KioskMode] SplashScreen plugin not available');
+          });
+      }
+    }
+  }, []);
+
   useEffect(() => {
     // Keep screen awake using NoSleep API (works in WebView)
     let noSleep: any = null;
-    
+
     // Try to use NoSleep.js if available (for web)
     if (typeof window !== 'undefined') {
       // For Capacitor iOS, the native AppDelegate already handles isIdleTimerDisabled
       // This is a fallback for web version
-      
+
       // Prevent screen sleep using visibility API and wake lock (if available)
       const preventSleep = () => {
         // Use Wake Lock API if available (modern browsers)

@@ -20,12 +20,13 @@ const config: CapacitorConfig = {
   },
   plugins: {
     SplashScreen: {
-      launchShowDuration: 2000,
-      launchAutoHide: true,
+      launchShowDuration: 0, // Don't auto-hide - let the web app hide it when ready
+      launchAutoHide: false, // Manual control for better UX with remote content
       backgroundColor: '#ffffff',
       androidSplashResourceName: 'splash',
       androidScaleType: 'CENTER_CROP',
-      showSpinner: false,
+      showSpinner: true, // Show spinner while loading remote content
+      spinnerColor: '#3498db',
     },
   },
 };

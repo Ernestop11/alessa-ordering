@@ -2,23 +2,61 @@
 <html lang="en">
 <head>
   <meta charset="UTF-8">
-  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0, viewport-fit=cover">
   <title>Alessa Ordering</title>
-  <script>
-    // Redirect to the Next.js app
-    // In production, this will be replaced by the actual Next.js build
-    if (window.location.hostname === 'localhost' || window.location.hostname === '127.0.0.1') {
-      window.location.href = 'http://localhost:3001';
-    } else {
-      // For production, the server URL in capacitor.config.ts will handle this
-      window.location.href = '/';
+  <style>
+    body {
+      margin: 0;
+      padding: 0;
+      display: flex;
+      justify-content: center;
+      align-items: center;
+      min-height: 100vh;
+      background: #ffffff;
+      font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif;
     }
-  </script>
+    .loading {
+      text-align: center;
+      color: #666;
+    }
+    .loading p {
+      margin: 16px 0;
+      font-size: 16px;
+    }
+    .spinner {
+      width: 40px;
+      height: 40px;
+      border: 3px solid #f3f3f3;
+      border-top: 3px solid #3498db;
+      border-radius: 50%;
+      animation: spin 1s linear infinite;
+      margin: 0 auto;
+    }
+    @keyframes spin {
+      0% { transform: rotate(0deg); }
+      100% { transform: rotate(360deg); }
+    }
+  </style>
 </head>
 <body>
-  <p>Loading Alessa Ordering...</p>
+  <div class="loading">
+    <div class="spinner"></div>
+    <p>Loading Alessa Ordering...</p>
+  </div>
+  <script>
+    // This page is the fallback for Capacitor when server.url is configured
+    // It should only show briefly while the remote content loads
+    // If we're still here after 5 seconds, something went wrong
+    setTimeout(function() {
+      var el = document.querySelector('.loading p');
+      if (el) {
+        el.textContent = 'Taking longer than expected... Please check your network connection.';
+      }
+    }, 5000);
+  </script>
 </body>
 </html>
+
 
 
 

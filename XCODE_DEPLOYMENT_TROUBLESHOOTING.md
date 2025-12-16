@@ -415,3 +415,4 @@ npx cap open ios
 **Tested with:** Xcode 15+, iPadOS 16+, Capacitor 7+
 
 
+
