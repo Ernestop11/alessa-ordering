@@ -126,6 +126,7 @@ export default function NewOrderAlerts({
   const [showModal, setShowModal] = useState(false);
   const [flashingColor, setFlashingColor] = useState(0); // For cycling colors in strobe mode
   const [alarmSuppressed, setAlarmSuppressed] = useState(false); // Suppress alarm after acknowledge
+  const [visuallyAcknowledged, setVisuallyAcknowledged] = useState(false); // Hide all UI immediately on tap
   const audioContextRef = useRef<AudioContext | null>(null);
   const customAudioRef = useRef<HTMLAudioElement | null>(null);
   const lastAlertedOrderIdRef = useRef<string | null>(null);
@@ -617,26 +618,29 @@ export default function NewOrderAlerts({
     lastModalOrderIdRef.current = null;
     // Set suppression flag to prevent alarm from restarting
     setAlarmSuppressed(true);
+    // Hide the header banner immediately too
+    setVisuallyAcknowledged(true);
   };
 
   // Handle acknowledge click - stops alarm IMMEDIATELY then notifies parent
   const handleAcknowledgeClick = () => {
-    console.log('[Alarm] Acknowledge clicked - stopping alarm and suppressing');
+    console.log('[Alarm] Acknowledge clicked - stopping alarm, suppressing, and hiding all UI');
     // Track which orders are being acknowledged so alarm doesn't restart for them
     unacknowledgedOrders.forEach(order => {
       suppressedOrderIdsRef.current.add(order.id);
     });
-    // FIRST: Stop the alarm immediately (before any async operations)
+    // FIRST: Stop the alarm and hide ALL UI immediately (before any async operations)
     stopAlarmNow();
-    // THEN: Notify parent to update the orders
+    // THEN: Notify parent to update the orders (async - don't wait for it)
     unacknowledgedOrders.forEach(order => onAcknowledge(order.id));
   };
 
   // Reset suppression when there are truly new orders (not in suppressed list)
   useEffect(() => {
     if (unacknowledgedOrders.length === 0) {
-      // All orders acknowledged - clear suppression
+      // All orders acknowledged - clear suppression and visual state
       setAlarmSuppressed(false);
+      setVisuallyAcknowledged(false);
       suppressedOrderIdsRef.current.clear();
     } else {
       // Check if there are any NEW orders not in suppressed list
@@ -644,15 +648,16 @@ export default function NewOrderAlerts({
         order => !suppressedOrderIdsRef.current.has(order.id)
       );
       if (hasNewUnsuppressedOrders) {
-        // New order came in - allow alarm again
+        // New order came in - allow alarm and show UI again
         setAlarmSuppressed(false);
+        setVisuallyAcknowledged(false);
       }
     }
   }, [unacknowledgedOrders]);
 
   // Render full-screen flashing modal
   const renderModal = () => {
-    if (!showModal || !modalAlertEnabled || unacknowledgedOrders.length === 0) return null;
+    if (!showModal || !modalAlertEnabled || unacknowledgedOrders.length === 0 || visuallyAcknowledged) return null;
 
     return (
       <>
@@ -766,8 +771,8 @@ export default function NewOrderAlerts({
     <>
       {renderModal()}
       {renderUnlockButton()}
-      {/* Persistent Notification Banner */}
-      {unacknowledgedOrders.length > 0 && (
+      {/* Persistent Notification Banner - hide immediately when visually acknowledged */}
+      {unacknowledgedOrders.length > 0 && !visuallyAcknowledged && (
         <div
           className={`fixed top-0 left-0 right-0 z-50 ${
             settings.flashingEnabled && !isMuted ? 'animate-pulse' : ''
