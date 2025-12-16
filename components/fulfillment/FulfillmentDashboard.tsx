@@ -736,6 +736,16 @@ export default function FulfillmentDashboard({ initialOrders, feedUrl, scope }: 
             </p>
           </div>
           <div className="flex items-center gap-3">
+          <a
+            href="/admin/menu-editor"
+            className="inline-flex items-center gap-2 rounded-full border border-gray-200 bg-gray-50 px-3 py-1 text-xs font-semibold text-gray-600 hover:border-gray-300 hover:text-gray-900 hover:bg-gray-100"
+            title="Go to Menu Editor"
+          >
+            <svg className="h-4 w-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+              <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M10 19l-7-7m0 0l7-7m-7 7h18" />
+            </svg>
+            Menu Editor
+          </a>
           <span
             className={`flex items-center gap-2 rounded-full px-3 py-1 text-xs font-semibold ${
               connected ? 'bg-emerald-100 text-emerald-700' : 'bg-red-100 text-red-700'
