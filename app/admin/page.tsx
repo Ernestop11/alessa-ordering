@@ -17,16 +17,6 @@ export default async function AdminPage() {
     // Client component will handle redirect
     console.error('Failed to fetch tenant:', error);
   }
-  
-  // Get Stripe status
-  const stripeStatus = tenant.integrations?.stripeAccountId 
-    ? { connected: true, accountId: tenant.integrations.stripeAccountId }
-    : { connected: false, accountId: null }
-
-  // Get DoorDash status
-  const doordashStatus = tenant.integrations?.doorDashStoreId
-    ? { connected: true, storeId: tenant.integrations.doorDashStoreId }
-    : { connected: false, storeId: null }
 
   // Fetch data (will be empty if tenant is null, but that's OK)
   let orderStats = { _count: { id: 0 }, _sum: { totalAmount: 0 } };
