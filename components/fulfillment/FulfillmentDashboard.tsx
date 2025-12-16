@@ -738,7 +738,7 @@ export default function FulfillmentDashboard({ initialOrders, feedUrl, scope }: 
           </div>
           <div className="flex items-center gap-3">
           <Link
-            href="/admin/menu-editor"
+            href="/admin/menu"
             className="inline-flex items-center gap-2 rounded-full border border-gray-200 bg-gray-50 px-3 py-1 text-xs font-semibold text-gray-600 hover:border-gray-300 hover:text-gray-900 hover:bg-gray-100"
             title="Go to Menu Editor"
           >
