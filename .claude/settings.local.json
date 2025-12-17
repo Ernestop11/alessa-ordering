@@ -58,7 +58,10 @@
       "Bash(pod install)",
       "Bash(pod repo update:*)",
       "Bash(pod install:*)",
-      "Bash(xargs -I{} sh -c \"git show {}:components/order/OrderPageClient.tsx 2>/dev/null | grep -l \"\"Sign Out\\|sign.out\\|logout\"\" && echo {}\")"
+      "Bash(xargs -I{} sh -c \"git show {}:components/order/OrderPageClient.tsx 2>/dev/null | grep -l \"\"Sign Out\\|sign.out\\|logout\"\" && echo {}\")",
+      "Bash(timeout 30 npm run build:*)",
+      "Bash(timeout 60 npm run build:*)",
+      "Bash(timeout 120 npm run build:*)"
     ],
     "deny": [],
     "ask": []

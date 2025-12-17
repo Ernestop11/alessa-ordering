@@ -1921,6 +1921,555 @@ export default function OrderPageClient({
   // Profile menu state
   const [showProfileMenu, setShowProfileMenu] = useState(false);
 
+  // ===========================================
+  // POSITION-BASED SECTION RENDERING
+  // ===========================================
+  // Get sorted sections by position for dynamic rendering
+  const sortedSections = useMemo(() => {
+    if (!frontendUISections || frontendUISections.length === 0) return [];
+    return [...frontendUISections]
+      .filter(s => s.enabled)
+      .sort((a, b) => a.position - b.position);
+  }, [frontendUISections]);
+
+  // Render Hero Section
+  const renderHeroSection = () => {
+    const heroConfig = frontendUISections.find(s => s.type === 'hero');
+    if (heroConfig && !heroConfig.enabled) return null;
+
+    return (
+      <section key="hero-section" className="relative overflow-hidden min-h-[500px] md:min-h-[600px]">
+        {/* Rich Holiday Red Background */}
+        <div className="absolute inset-0 bg-gradient-to-br from-[#8B0000] via-[#B22222] to-[#6B0F0F]" />
+
+        {/* Animated Fire/Glow Texture Overlay */}
+        <div className="absolute inset-0 opacity-30" style={{
+          backgroundImage: `url("data:image/svg+xml,%3Csvg viewBox='0 0 400 400' xmlns='http://www.w3.org/2000/svg'%3E%3Cfilter id='noiseFilter'%3E%3CfeTurbulence type='fractalNoise' baseFrequency='0.9' numOctaves='3' stitchTiles='stitch'/%3E%3C/filter%3E%3Crect width='100%25' height='100%25' filter='url(%23noiseFilter)'/%3E%3C/svg%3E")`,
+          mixBlendMode: 'overlay'
+        }} />
+
+        {/* LED Glow Effects */}
+        <div className="absolute inset-0 pointer-events-none">
+          <div className="absolute top-1/2 left-1/2 -translate-x-1/2 -translate-y-1/2 w-[150%] h-[150%] bg-[radial-gradient(ellipse_at_center,rgba(255,215,0,0.15)_0%,transparent_50%)]" />
+          <div className="absolute top-0 left-0 right-0 h-40 bg-gradient-to-b from-[#FF4444]/50 via-[#FF1744]/30 to-transparent" />
+          <div className="absolute bottom-0 left-0 right-0 h-40 bg-gradient-to-t from-[#FF4444]/50 via-[#FF1744]/30 to-transparent" />
+        </div>
+
+        {/* Content */}
+        <div className="relative z-10 mx-auto max-w-7xl px-4 py-12 md:py-20">
+          <div className="grid md:grid-cols-2 gap-8 items-center">
+            <div className="flex flex-col justify-center text-center md:text-left">
+              <div className="inline-flex items-center gap-2 mb-6 justify-center md:justify-start">
+                <span className="relative px-5 py-2 rounded-full bg-gradient-to-r from-[#FFD700] to-[#FFA500] text-[#8B0000] text-xs font-black uppercase tracking-wide shadow-xl overflow-hidden">
+                  <span className="relative z-10">✨ Holiday Special ✨</span>
+                </span>
+              </div>
+              <h2 className="text-5xl md:text-6xl lg:text-7xl font-black text-white mb-6 leading-[0.9] drop-shadow-[0_4px_20px_rgba(0,0,0,0.5)]">
+                {personality.heroTitle}
+              </h2>
+              <p className="text-lg md:text-xl text-white/90 mb-8 leading-relaxed max-w-lg mx-auto md:mx-0 drop-shadow-lg">
+                {tenant.heroSubtitle || tenant.tagline || 'Authentic flavors crafted with passion'}
+              </p>
+              <div className="flex flex-wrap gap-4 justify-center md:justify-start">
+                <button
+                  onClick={() => {
+                    const firstSection = navSections[0];
+                    if (firstSection) {
+                      const element = document.getElementById(`section-${firstSection.id}`);
+                      if (element) {
+                        const offset = 100;
+                        const elementPosition = element.getBoundingClientRect().top + window.scrollY;
+                        window.scrollTo({ top: elementPosition - offset, behavior: isSafariBrowser ? 'auto' : 'smooth' });
+                      }
+                    }
+                  }}
+                  className="group relative inline-flex items-center gap-3 rounded-full bg-gradient-to-r from-[#FFD700] to-[#FFA500] px-10 py-5 text-lg font-black text-[#8B0000] shadow-2xl shadow-[#FFD700]/40 hover:shadow-[#FFD700]/60 transition-all hover:scale-105 overflow-hidden"
+                >
+                  <span className="relative z-10">ORDER NOW</span>
+                  <svg className="w-6 h-6 group-hover:translate-x-1 transition-transform relative z-10" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M13 7l5 5m0 0l-5 5m5-5H6" />
+                  </svg>
+                </button>
+                <button
+                  onClick={() => {
+                    const menuEl = document.getElementById('menu');
+                    if (menuEl) menuEl.scrollIntoView({ behavior: isSafariBrowser ? 'auto' : 'smooth' });
+                  }}
+                  className="inline-flex items-center gap-2 rounded-full border-2 border-white/60 bg-white/10 backdrop-blur-md px-10 py-5 text-lg font-bold text-white hover:bg-white/25 hover:border-white transition-all"
+                >
+                  VIEW MENU
+                </button>
+              </div>
+            </div>
+            <div className="relative flex items-center justify-center">
+              <div className="relative w-full max-w-md mx-auto">
+                <div className="absolute inset-0 rounded-full bg-gradient-to-br from-[#FFD700]/60 to-[#FF6B6B]/40 blur-[80px] scale-125 animate-pulse" style={{ animationDuration: '2s' }} />
+                <div className="relative aspect-square rounded-[40px] overflow-hidden border-4 border-[#FFD700]/50 shadow-[0_0_60px_rgba(255,215,0,0.3)] bg-[#2a2a2a]">
+                  {carouselItems[0]?.displayImage ? (
+                    <Image
+                      src={carouselItems[0].displayImage}
+                      alt="Featured dish"
+                      fill
+                      className="object-cover"
+                      sizes="(max-width: 768px) 100vw, 450px"
+                    />
+                  ) : (
+                    <div className="flex items-center justify-center h-full text-8xl">🍽️</div>
+                  )}
+                  <div className="absolute inset-0 bg-gradient-to-t from-[#8B0000]/60 via-transparent to-transparent" />
+                  <div className="absolute top-4 right-4 px-4 py-2 rounded-full bg-gradient-to-r from-[#FF4444] to-[#FF6B00] text-white text-sm font-black shadow-lg animate-pulse flex items-center gap-1.5">
+                    🔥 HOT
+                  </div>
+                </div>
+                {carouselItems[0]?.price && (
+                  <div className="absolute -bottom-6 left-1/2 -translate-x-1/2 px-8 py-3 rounded-2xl bg-gradient-to-r from-[#FFD700] to-[#FFA500] text-[#8B0000] font-black text-xl shadow-2xl shadow-[#FFD700]/40">
+                    From ${carouselItems[0].price.toFixed(2)}
+                  </div>
+                )}
+              </div>
+            </div>
+          </div>
+        </div>
+        <div className="absolute bottom-0 left-0 right-0 h-16 bg-[#0d0d0d]" style={{ clipPath: 'ellipse(60% 100% at 50% 100%)' }} />
+      </section>
+    );
+  };
+
+  // Render Quick Info Bar
+  const renderQuickInfoBar = () => {
+    const quickInfoConfig = frontendUISections.find(s => s.type === 'quickInfo');
+    if (quickInfoConfig && !quickInfoConfig.enabled) return null;
+
+    return (
+      <div key="quick-info-bar" className="bg-[#2a2a2a] py-4 border-y border-white/5">
+        <div className="mx-auto max-w-7xl px-4">
+          <div className="flex flex-wrap justify-center gap-8 text-center">
+            <div className="px-4">
+              <p className="text-2xl font-bold text-white">{personality.totalItems}</p>
+              <p className="text-xs text-white/40 uppercase tracking-wide">Items</p>
+            </div>
+            <div className="h-10 w-px bg-white/10 hidden sm:block" />
+            <div className="px-4">
+              <p className="text-2xl font-bold text-white">{hoursDisplay || hoursSummary || 'Open'}</p>
+              <p className="text-xs text-white/40 uppercase tracking-wide">Hours</p>
+            </div>
+            <div className="h-10 w-px bg-white/10 hidden sm:block" />
+            <div className="px-4">
+              <p className="text-2xl font-bold text-white">{locationDisplay || locationSummary || 'Local'}</p>
+              <p className="text-xs text-white/40 uppercase tracking-wide">Location</p>
+            </div>
+          </div>
+        </div>
+      </div>
+    );
+  };
+
+  // Render Featured Carousel
+  const renderFeaturedCarousel = () => {
+    if (carouselItems.length === 0) return null;
+
+    const featuredCarouselConfig = getSectionConfig('featuredCarousel');
+    const carouselTitle = featuredCarouselConfig?.content?.title || frontendConfig?.featuredCarousel?.title || 'Chef Recommends';
+    const carouselSubtitle = featuredCarouselConfig?.content?.subtitle || frontendConfig?.featuredCarousel?.subtitle || 'Handpicked favorites from our kitchen';
+
+    if (featuredCarouselConfig && !featuredCarouselConfig.enabled) return null;
+
+    return (
+      <div key="featured-carousel">
+        <FeaturedCarousel
+          items={carouselItems}
+          onAddToCart={handleCarouselAddToCart}
+          title={carouselTitle}
+          subtitle={carouselSubtitle}
+        />
+      </div>
+    );
+  };
+
+  // Render a promotional banner by type
+  const renderPromoBanner = (section: FrontendUISection) => {
+    const config = section.content;
+    const type = section.type;
+
+    // Grocery Banner
+    if (type === 'groceryBanner') {
+      return (
+        <div
+          key={section.id}
+          className="mb-10 relative overflow-hidden rounded-3xl p-1"
+          style={{ background: config.gradientFrom && config.gradientTo ? `linear-gradient(to right, ${config.gradientFrom}, ${config.gradientTo})` : 'linear-gradient(to right, #065f46, #059669, #047857)' }}
+        >
+          <div className="relative overflow-hidden rounded-[22px] bg-gradient-to-br from-green-950 to-green-900 p-6 md:p-8">
+            <div className="relative grid md:grid-cols-2 gap-6 items-center">
+              <div>
+                {config.badge && (
+                  <div className="inline-block px-4 py-1.5 rounded-full bg-green-400/20 text-green-300 text-xs font-bold uppercase tracking-wider mb-3">
+                    {config.badge}
+                  </div>
+                )}
+                <h3 className="text-3xl md:text-4xl font-black text-white mb-3">
+                  {config.title || 'Visit Our Grocery Store'}
+                </h3>
+                <p className="text-white/70 mb-4">{config.subtitle || config.description}</p>
+                {config.buttonText && config.buttonLink && (
+                  <a href={config.buttonLink} className="inline-flex items-center gap-2 px-8 py-4 rounded-full bg-green-500 text-white font-black text-lg shadow-xl hover:bg-green-400 transition-colors">
+                    {config.buttonText}
+                    <svg className="w-5 h-5" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                      <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M13 7l5 5m0 0l-5 5m5-5H6" />
+                    </svg>
+                  </a>
+                )}
+              </div>
+              {config.image && (
+                <div className="relative h-48 md:h-64 rounded-2xl overflow-hidden">
+                  <img src={config.image} alt={config.title || 'Grocery'} className="w-full h-full object-cover" />
+                </div>
+              )}
+            </div>
+          </div>
+        </div>
+      );
+    }
+
+    // Panaderia Banner
+    if (type === 'panaderiaBanner') {
+      return (
+        <div
+          key={section.id}
+          className="mb-10 relative overflow-hidden rounded-3xl p-1"
+          style={{ background: config.gradientFrom && config.gradientTo ? `linear-gradient(to right, ${config.gradientFrom}, ${config.gradientTo})` : 'linear-gradient(to right, #d97706, #f59e0b, #fbbf24)' }}
+        >
+          <div className="relative overflow-hidden rounded-[22px] bg-gradient-to-br from-amber-950 to-amber-900 p-6 md:p-8">
+            <div className="relative grid md:grid-cols-2 gap-6 items-center">
+              <div>
+                {config.badge && (
+                  <div className="inline-block px-4 py-1.5 rounded-full bg-amber-400/20 text-amber-300 text-xs font-bold uppercase tracking-wider mb-3">
+                    {config.badge}
+                  </div>
+                )}
+                <h3 className="text-3xl md:text-4xl font-black text-white mb-3">
+                  {config.title || 'Fresh Bakery'}
+                </h3>
+                <p className="text-white/70 mb-4">{config.subtitle || config.description}</p>
+                {config.buttonText && config.buttonLink && (
+                  <a href={config.buttonLink} className="inline-flex items-center gap-2 px-8 py-4 rounded-full bg-amber-500 text-white font-black text-lg shadow-xl hover:bg-amber-400 transition-colors">
+                    {config.buttonText}
+                    <svg className="w-5 h-5" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                      <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M13 7l5 5m0 0l-5 5m5-5H6" />
+                    </svg>
+                  </a>
+                )}
+              </div>
+              {config.image && (
+                <div className="relative h-48 md:h-64 rounded-2xl overflow-hidden">
+                  <img src={config.image} alt={config.title || 'Bakery'} className="w-full h-full object-cover" />
+                </div>
+              )}
+            </div>
+          </div>
+        </div>
+      );
+    }
+
+    // WeCookBanner
+    if (type === 'weCookBanner') {
+      return (
+        <div
+          key={section.id}
+          className="mb-10 relative overflow-hidden rounded-3xl"
+          style={{
+            background: config.gradientFrom && config.gradientTo
+              ? `linear-gradient(to right, ${config.gradientFrom}, ${config.gradientTo})`
+              : config.backgroundColor || 'linear-gradient(to right, #1a1a1a, #2a2a2a, #1a1a1a)',
+          }}
+        >
+          <div className="relative p-8 md:p-12">
+            <div className="relative text-center">
+              {config.title && (
+                <h3 className="text-4xl md:text-6xl font-black mb-4 tracking-tight" style={{ color: config.textColor || '#ffffff' }}>
+                  {config.title}
+                </h3>
+              )}
+              {(config.description || config.subtitle) && (
+                <p className="text-xl mb-6 max-w-2xl mx-auto" style={{ color: config.textColor ? `${config.textColor}CC` : 'rgba(255,255,255,0.7)' }}>
+                  {config.description || config.subtitle}
+                </p>
+              )}
+            </div>
+          </div>
+        </div>
+      );
+    }
+
+    // Deal Strip
+    if (type === 'dealStrip') {
+      return (
+        <div
+          key={section.id}
+          className="mb-10 relative overflow-hidden rounded-2xl"
+          style={{
+            background: config.gradientFrom && config.gradientTo
+              ? `linear-gradient(to right, ${config.gradientFrom}, ${config.gradientTo})`
+              : config.backgroundColor || 'linear-gradient(to right, #FFD700, #FFA500)',
+          }}
+        >
+          <div className="relative px-6 py-4 flex flex-wrap items-center justify-center gap-4 md:gap-8">
+            {config.title && (
+              <span className="text-lg md:text-2xl font-black" style={{ color: config.textColor || '#8B0000' }}>
+                {config.title}
+              </span>
+            )}
+            {config.subtitle && (
+              <span className="text-sm md:text-lg" style={{ color: config.textColor ? `${config.textColor}DD` : '#8B0000CC' }}>
+                {config.subtitle}
+              </span>
+            )}
+            {config.buttonText && (
+              <button className="px-6 py-2 rounded-full bg-[#8B0000] text-white font-bold hover:bg-[#6B0000] transition-colors">
+                {config.buttonText}
+              </button>
+            )}
+          </div>
+        </div>
+      );
+    }
+
+    // Quality Banner
+    if (type === 'qualityBanner') {
+      return (
+        <div
+          key={section.id}
+          className="mb-10 relative overflow-hidden rounded-3xl p-8 md:p-10 border"
+          style={{
+            background: config.gradientFrom && config.gradientTo
+              ? `linear-gradient(to right, ${config.gradientFrom}, ${config.gradientTo})`
+              : config.backgroundColor || 'linear-gradient(to right, rgba(6,78,59,0.8), rgba(5,150,105,0.8), rgba(4,120,87,0.8))',
+            borderColor: config.textColor ? `${config.textColor}33` : 'rgba(16,185,129,0.2)',
+          }}
+        >
+          <div className="relative flex flex-col md:flex-row items-center justify-between gap-6">
+            <div className="text-center md:text-left">
+              {config.badge && (
+                <div className="inline-flex items-center gap-2 px-4 py-1.5 rounded-full text-xs font-bold uppercase tracking-wider mb-3"
+                  style={{ backgroundColor: config.textColor ? `${config.textColor}20` : 'rgba(16,185,129,0.2)', color: config.textColor || '#10b981' }}>
+                  {config.badge}
+                </div>
+              )}
+              {config.title && (
+                <h3 className="text-2xl md:text-3xl font-black mb-2" style={{ color: config.textColor || '#ffffff' }}>
+                  {config.title}
+                </h3>
+              )}
+              {config.subtitle && (
+                <p className="text-lg" style={{ color: config.textColor ? `${config.textColor}99` : 'rgba(255,255,255,0.6)' }}>
+                  {config.subtitle}
+                </p>
+              )}
+            </div>
+          </div>
+        </div>
+      );
+    }
+
+    // Reviews Strip
+    if (type === 'reviewsStrip') {
+      return (
+        <div
+          key={section.id}
+          className="mb-10 relative overflow-hidden rounded-2xl border p-6 md:p-8"
+          style={{
+            background: config.gradientFrom && config.gradientTo
+              ? `linear-gradient(to right, ${config.gradientFrom}, ${config.gradientTo})`
+              : config.backgroundColor || 'linear-gradient(to right, rgba(88,28,135,0.5), rgba(190,24,93,0.5), rgba(88,28,135,0.5))',
+            borderColor: config.textColor ? `${config.textColor}33` : 'rgba(168,85,247,0.2)',
+          }}
+        >
+          <div className="relative flex flex-col md:flex-row items-center justify-between gap-6">
+            <div className="text-center md:text-left">
+              <div className="flex items-center justify-center md:justify-start gap-1 mb-2">
+                {'⭐'.repeat(5)}
+              </div>
+              {config.title && (
+                <p className="text-lg font-medium mb-2" style={{ color: config.textColor ? `${config.textColor}CC` : 'rgba(255,255,255,0.8)' }}>
+                  &ldquo;{config.title}&rdquo;
+                </p>
+              )}
+              {config.subtitle && (
+                <p className="text-sm" style={{ color: config.textColor ? `${config.textColor}80` : 'rgba(255,255,255,0.5)' }}>
+                  {config.subtitle}
+                </p>
+              )}
+            </div>
+            {config.buttonText && (
+              <button className="px-6 py-2 rounded-full font-bold transition-colors"
+                style={{ backgroundColor: config.textColor || '#a855f7', color: '#ffffff' }}>
+                {config.buttonText}
+              </button>
+            )}
+          </div>
+        </div>
+      );
+    }
+
+    // Promo Banner 1
+    if (type === 'promoBanner1') {
+      const featuredBundle = popularPackages.find(pkg =>
+        (pkg.category === 'bundle' || pkg.category === 'popular') && pkg.available
+      ) || popularPackages[0];
+
+      if (!featuredBundle && !config.title) return null;
+
+      const displayImage = config.image || featuredBundle?.image || cycleFallbackImage(40);
+      const title = config.title || featuredBundle?.name || '';
+      const description = config.description || config.subtitle || featuredBundle?.description || '';
+      const buttonText = config.buttonText || 'Order Bundle';
+      const badge = config.badge || featuredBundle?.badge;
+
+      return (
+        <div
+          key={section.id}
+          className="mb-10 relative overflow-hidden rounded-3xl p-1"
+          style={{
+            background: config.gradientFrom && config.gradientTo
+              ? `linear-gradient(to right, ${config.gradientFrom}, ${config.gradientTo})`
+              : config.backgroundColor || 'linear-gradient(to right, #8B0000, #B22222, #6B0F0F)',
+          }}
+        >
+          <div className="relative overflow-hidden rounded-[22px] bg-gradient-to-br from-[#1a0a0a] to-[#2a1515] p-6 md:p-8">
+            <div className="relative grid md:grid-cols-2 gap-6 items-center">
+              <div>
+                {badge && (
+                  <span className="inline-block px-4 py-1.5 rounded-full bg-[#FFD700]/20 text-[#FFD700] text-xs font-bold uppercase tracking-wider mb-4">
+                    {badge}
+                  </span>
+                )}
+                {title && (
+                  <h3 className="text-3xl md:text-4xl font-black text-white mb-3">{title}</h3>
+                )}
+                {description && (
+                  <p className="text-white/70 mb-4">{description}</p>
+                )}
+                {buttonText && (
+                  <button
+                    onClick={() => {
+                      if (config.buttonLink) {
+                        window.location.href = config.buttonLink;
+                      } else if (featuredBundle) {
+                        setShowCateringPanel(false);
+                        setCustomModal({
+                          item: {
+                            id: featuredBundle.id,
+                            name: featuredBundle.name,
+                            description: featuredBundle.description,
+                            price: featuredBundle.price || featuredBundle.pricePerGuest,
+                            category: 'bundle',
+                            available: featuredBundle.available,
+                            displayImage: displayImage,
+                            sectionType: 'SPECIAL',
+                            displayGallery: featuredBundle.gallery && featuredBundle.gallery.length > 0 ? featuredBundle.gallery : [displayImage],
+                          },
+                          config: {
+                            removals: featuredBundle.customizationRemovals || [],
+                            addons: featuredBundle.customizationAddons || [],
+                          },
+                        });
+                      }
+                    }}
+                    className="mt-6 inline-flex items-center gap-2 px-8 py-4 rounded-full bg-gradient-to-r from-[#FFD700] to-[#FFA500] text-[#8B0000] font-black text-lg shadow-xl hover:scale-105 transition-transform"
+                  >
+                    {buttonText}
+                    <svg className="w-5 h-5" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                      <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M13 7l5 5m0 0l-5 5m5-5H6" />
+                    </svg>
+                  </button>
+                )}
+              </div>
+              {displayImage && (
+                <div className="relative h-48 md:h-64 rounded-2xl overflow-hidden bg-gradient-to-br from-[#2a1515] to-[#1a0a0a]">
+                  <img src={displayImage} alt={title} className="w-full h-full object-cover" onError={(e) => { (e.target as HTMLImageElement).src = cycleFallbackImage(40); }} />
+                </div>
+              )}
+            </div>
+          </div>
+        </div>
+      );
+    }
+
+    return null;
+  };
+
+  // Get the position of menuSections for splitting render
+  const menuSectionsPosition = useMemo(() => {
+    const menuSection = frontendUISections.find(s => s.type === 'menuSections');
+    return menuSection?.position ?? 4; // Default position if not found
+  }, [frontendUISections]);
+
+  // Banner types for position-based rendering
+  const bannerTypes = useMemo(() => ['promoBanner1', 'groceryBanner', 'panaderiaBanner', 'weCookBanner', 'dealStrip', 'qualityBanner', 'reviewsStrip'], []);
+
+  // Render sections BEFORE the menu (hero, quickInfo, featuredCarousel, and banners with position < menuSections)
+  const renderSectionsBeforeMenu = () => {
+    const elements: JSX.Element[] = [];
+    const sectionsBeforeMenu = sortedSections.filter(s => s.position < menuSectionsPosition);
+
+    for (const section of sectionsBeforeMenu) {
+      if (section.type === 'hero') {
+        const heroEl = renderHeroSection();
+        if (heroEl) elements.push(heroEl);
+      } else if (section.type === 'quickInfo') {
+        const quickInfoEl = renderQuickInfoBar();
+        if (quickInfoEl) elements.push(quickInfoEl);
+      } else if (section.type === 'featuredCarousel') {
+        const carouselEl = renderFeaturedCarousel();
+        if (carouselEl) elements.push(carouselEl);
+      } else if (bannerTypes.includes(section.type)) {
+        const bannerEl = renderPromoBanner(section);
+        if (bannerEl) elements.push(bannerEl);
+      }
+    }
+
+    return elements;
+  };
+
+  // Render sections AFTER the menu (banners with position > menuSections)
+  const renderSectionsAfterMenu = () => {
+    const elements: JSX.Element[] = [];
+    const sectionsAfterMenu = sortedSections.filter(s => s.position > menuSectionsPosition && bannerTypes.includes(s.type));
+
+    for (const section of sectionsAfterMenu) {
+      const bannerEl = renderPromoBanner(section);
+      if (bannerEl) elements.push(bannerEl);
+    }
+
+    return elements;
+  };
+
+  // Master renderer: renders ALL sections in position order (for debugging/full page control)
+  const renderSectionsByPosition = () => {
+    const renderedSections: JSX.Element[] = [];
+
+    for (const section of sortedSections) {
+      if (section.type === 'hero') {
+        const heroEl = renderHeroSection();
+        if (heroEl) renderedSections.push(heroEl);
+      } else if (section.type === 'quickInfo') {
+        const quickInfoEl = renderQuickInfoBar();
+        if (quickInfoEl) renderedSections.push(quickInfoEl);
+      } else if (section.type === 'featuredCarousel') {
+        const carouselEl = renderFeaturedCarousel();
+        if (carouselEl) renderedSections.push(carouselEl);
+      } else if (section.type === 'menuSections') {
+        // Menu sections placeholder - actual content rendered separately
+        renderedSections.push(<div key="menu-placeholder" id="menu-sections-placeholder" />);
+      } else if (bannerTypes.includes(section.type)) {
+        const bannerEl = renderPromoBanner(section);
+        if (bannerEl) renderedSections.push(bannerEl);
+      }
+    }
+
+    return renderedSections;
+  };
+
   return (
     <div className="min-h-screen bg-[#0d0d0d] text-white relative overflow-hidden">
       {/* Ambient LED Glow Effects */}
@@ -2177,192 +2726,8 @@ export default function OrderPageClient({
         </div>
       </header>
 
-
-      {/* Hero Section - Macy's Holiday Red Style with INTENSE Sparkles & Decorations */}
-      <section className="relative overflow-hidden min-h-[500px] md:min-h-[600px]">
-        {/* Rich Holiday Red Background */}
-        <div className="absolute inset-0 bg-gradient-to-br from-[#8B0000] via-[#B22222] to-[#6B0F0F]" />
-
-        {/* Animated Fire/Glow Texture Overlay */}
-        <div className="absolute inset-0 opacity-30" style={{
-          backgroundImage: `url("data:image/svg+xml,%3Csvg viewBox='0 0 400 400' xmlns='http://www.w3.org/2000/svg'%3E%3Cfilter id='noiseFilter'%3E%3CfeTurbulence type='fractalNoise' baseFrequency='0.9' numOctaves='3' stitchTiles='stitch'/%3E%3C/filter%3E%3Crect width='100%25' height='100%25' filter='url(%23noiseFilter)'/%3E%3C/svg%3E")`,
-          mixBlendMode: 'overlay'
-        }} />
-
-        {/* LED Glow Effects - More Intense */}
-        <div className="absolute inset-0 pointer-events-none">
-          {/* Radial glow from center */}
-          <div className="absolute top-1/2 left-1/2 -translate-x-1/2 -translate-y-1/2 w-[150%] h-[150%] bg-[radial-gradient(ellipse_at_center,rgba(255,215,0,0.15)_0%,transparent_50%)]" />
-
-          {/* Edge glows - Stronger */}
-          <div className="absolute top-0 left-0 right-0 h-40 bg-gradient-to-b from-[#FF4444]/50 via-[#FF1744]/30 to-transparent" />
-          <div className="absolute bottom-0 left-0 right-0 h-40 bg-gradient-to-t from-[#FF4444]/50 via-[#FF1744]/30 to-transparent" />
-          <div className="absolute top-0 bottom-0 left-0 w-40 bg-gradient-to-r from-[#FF4444]/50 via-[#FF1744]/30 to-transparent" />
-          <div className="absolute top-0 bottom-0 right-0 w-40 bg-gradient-to-l from-[#FF4444]/50 via-[#FF1744]/30 to-transparent" />
-
-          {/* Floating Sparkle Stars - Scattered */}
-          {[...Array(20)].map((_, i) => (
-            <div
-              key={`sparkle-${i}`}
-              className="absolute w-1 h-1 bg-[#FFD700] rounded-full animate-pulse"
-              style={{
-                left: `${Math.random() * 100}%`,
-                top: `${Math.random() * 100}%`,
-                animationDuration: `${1 + Math.random() * 2}s`,
-                animationDelay: `${Math.random() * 2}s`,
-                boxShadow: '0 0 6px 2px rgba(255,215,0,0.8)',
-              }}
-            />
-          ))}
-
-          {/* Large Corner Sparkle Bursts */}
-          <div className="absolute top-8 left-8 w-32 h-32 bg-[#FFD700]/40 rounded-full blur-3xl animate-pulse" style={{ animationDuration: '2s' }} />
-          <div className="absolute top-12 right-12 w-24 h-24 bg-[#FFD700]/35 rounded-full blur-2xl animate-pulse" style={{ animationDuration: '2.5s', animationDelay: '0.5s' }} />
-          <div className="absolute bottom-16 left-16 w-20 h-20 bg-[#FFD700]/30 rounded-full blur-2xl animate-pulse" style={{ animationDuration: '3s', animationDelay: '1s' }} />
-          <div className="absolute bottom-8 right-8 w-28 h-28 bg-[#FFD700]/40 rounded-full blur-3xl animate-pulse" style={{ animationDuration: '2.2s', animationDelay: '1.5s' }} />
-
-          {/* Star burst decorations */}
-          <div className="absolute top-20 left-[20%] text-4xl animate-bounce" style={{ animationDuration: '3s' }}>✨</div>
-          <div className="absolute top-32 right-[15%] text-3xl animate-bounce" style={{ animationDuration: '2.5s', animationDelay: '0.5s' }}>⭐</div>
-          <div className="absolute bottom-24 left-[10%] text-2xl animate-bounce" style={{ animationDuration: '2.8s', animationDelay: '1s' }}>✨</div>
-          <div className="absolute bottom-32 right-[25%] text-3xl animate-bounce" style={{ animationDuration: '3.2s', animationDelay: '0.3s' }}>🌟</div>
-
-          {/* Diagonal light rays */}
-          <div className="absolute top-0 left-1/4 w-1 h-full bg-gradient-to-b from-[#FFD700]/20 via-transparent to-transparent transform -skew-x-12" />
-          <div className="absolute top-0 right-1/3 w-0.5 h-full bg-gradient-to-b from-[#FFD700]/15 via-transparent to-transparent transform skew-x-12" />
-        </div>
-
-        {/* Content */}
-        <div className="relative z-10 mx-auto max-w-7xl px-4 py-12 md:py-20">
-          <div className="grid md:grid-cols-2 gap-8 items-center">
-            {/* Left side - Text Content */}
-            <div className="flex flex-col justify-center text-center md:text-left">
-              {/* Animated badge */}
-              <div className="inline-flex items-center gap-2 mb-6 justify-center md:justify-start">
-                <span className="relative px-5 py-2 rounded-full bg-gradient-to-r from-[#FFD700] to-[#FFA500] text-[#8B0000] text-xs font-black uppercase tracking-wide shadow-xl overflow-hidden">
-                  <span className="relative z-10">✨ Holiday Special ✨</span>
-                  <div className="absolute inset-0 bg-gradient-to-r from-transparent via-white/30 to-transparent animate-shimmer" style={{ animationDuration: '2s' }} />
-                </span>
-              </div>
-
-              <h2 className="text-5xl md:text-6xl lg:text-7xl font-black text-white mb-6 leading-[0.9] drop-shadow-[0_4px_20px_rgba(0,0,0,0.5)]">
-                {personality.heroTitle}
-              </h2>
-
-              <p className="text-lg md:text-xl text-white/90 mb-8 leading-relaxed max-w-lg mx-auto md:mx-0 drop-shadow-lg">
-                {tenant.heroSubtitle || tenant.tagline || 'Authentic flavors crafted with passion'}
-              </p>
-
-              <div className="flex flex-wrap gap-4 justify-center md:justify-start">
-                <button
-                  onClick={() => {
-                    const firstSection = navSections[0];
-                    if (firstSection) {
-                      const element = document.getElementById(`section-${firstSection.id}`);
-                      if (element) {
-                        const offset = 100; // Just header height
-                        const elementPosition = element.getBoundingClientRect().top + window.scrollY;
-                        window.scrollTo({ top: elementPosition - offset, behavior: isSafariBrowser ? 'auto' : 'smooth' });
-                      }
-                    }
-                  }}
-                  className="group relative inline-flex items-center gap-3 rounded-full bg-gradient-to-r from-[#FFD700] to-[#FFA500] px-10 py-5 text-lg font-black text-[#8B0000] shadow-2xl shadow-[#FFD700]/40 hover:shadow-[#FFD700]/60 transition-all hover:scale-105 overflow-hidden"
-                >
-                  <span className="relative z-10">ORDER NOW</span>
-                  <svg className="w-6 h-6 group-hover:translate-x-1 transition-transform relative z-10" fill="none" viewBox="0 0 24 24" stroke="currentColor">
-                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M13 7l5 5m0 0l-5 5m5-5H6" />
-                  </svg>
-                  <div className="absolute inset-0 bg-gradient-to-r from-transparent via-white/40 to-transparent -translate-x-full group-hover:translate-x-full transition-transform duration-700" />
-                </button>
-                <button
-                  onClick={() => {
-                    const menuEl = document.getElementById('menu');
-                    if (menuEl) menuEl.scrollIntoView({ behavior: isSafariBrowser ? 'auto' : 'smooth' });
-                  }}
-                  className="inline-flex items-center gap-2 rounded-full border-2 border-white/60 bg-white/10 backdrop-blur-md px-10 py-5 text-lg font-bold text-white hover:bg-white/25 hover:border-white transition-all"
-                >
-                  VIEW MENU
-                </button>
-              </div>
-            </div>
-
-            {/* Right side - Featured Image with Intense Holiday Glow */}
-            <div className="relative flex items-center justify-center">
-              <div className="relative w-full max-w-md mx-auto">
-                {/* Multiple glowing rings */}
-                <div className="absolute inset-0 rounded-full bg-gradient-to-br from-[#FFD700]/60 to-[#FF6B6B]/40 blur-[80px] scale-125 animate-pulse" style={{ animationDuration: '2s' }} />
-                <div className="absolute inset-0 rounded-full bg-[radial-gradient(circle,rgba(255,215,0,0.3)_0%,transparent_70%)] scale-150" />
-                <div className="absolute inset-[-20px] rounded-full border-2 border-[#FFD700]/40 animate-spin" style={{ animationDuration: '20s' }} />
-                <div className="absolute inset-[-10px] rounded-full border border-[#FFD700]/20 animate-spin" style={{ animationDuration: '15s', animationDirection: 'reverse' }} />
-
-                {/* Food image - Larger */}
-                <div className="relative aspect-square rounded-[40px] overflow-hidden border-4 border-[#FFD700]/50 shadow-[0_0_60px_rgba(255,215,0,0.3)] bg-[#2a2a2a]">
-                  {carouselItems[0]?.displayImage ? (
-                    <Image
-                      src={carouselItems[0].displayImage}
-                      alt="Featured dish"
-                      fill
-                      className="object-cover"
-                      sizes="(max-width: 768px) 100vw, 450px"
-                    />
-                  ) : (
-                    <div className="flex items-center justify-center h-full text-8xl">🍽️</div>
-                  )}
-                  {/* Overlay gradient */}
-                  <div className="absolute inset-0 bg-gradient-to-t from-[#8B0000]/60 via-transparent to-transparent" />
-
-                  {/* Hot badge with flame icon */}
-                  <div className="absolute top-4 right-4 px-4 py-2 rounded-full bg-gradient-to-r from-[#FF4444] to-[#FF6B00] text-white text-sm font-black shadow-lg animate-pulse flex items-center gap-1.5">
-                    <svg className="w-4 h-4" fill="currentColor" viewBox="0 0 20 20">
-                      <path fillRule="evenodd" d="M12.395 2.553a1 1 0 00-1.45-.385c-.345.23-.614.558-.822.88-.214.33-.403.713-.57 1.116-.334.804-.614 1.768-.84 2.734a31.365 31.365 0 00-.613 3.58 2.64 2.64 0 01-.945-1.067c-.328-.68-.398-1.534-.398-2.654A1 1 0 005.05 6.05 6.981 6.981 0 003 11a7 7 0 1011.95-4.95c-.592-.591-.98-.985-1.348-1.467-.363-.476-.724-1.063-1.207-2.03zM12.12 15.12A3 3 0 017 13s.879.5 2.5.5c0-1 .5-4 1.25-4.5.5 1 .786 1.293 1.371 1.879A2.99 2.99 0 0113 13a2.99 2.99 0 01-.879 2.121z" clipRule="evenodd" />
-                    </svg>
-                    HOT
-                  </div>
-                </div>
-
-                {/* Price badge - More prominent */}
-                {carouselItems[0]?.price && (
-                  <div className="absolute -bottom-6 left-1/2 -translate-x-1/2 px-8 py-3 rounded-2xl bg-gradient-to-r from-[#FFD700] to-[#FFA500] text-[#8B0000] font-black text-xl shadow-2xl shadow-[#FFD700]/40">
-                    From ${carouselItems[0].price.toFixed(2)}
-                  </div>
-                )}
-
-                {/* Floating visual effects instead of emojis */}
-                <div className="absolute -top-4 -left-4 w-12 h-12 rounded-full bg-gradient-to-br from-[#FFD700]/80 to-[#FF6B00]/60 blur-sm animate-pulse" style={{ animationDuration: '2s' }} />
-                <div className="absolute -top-2 -left-2 w-8 h-8 rounded-full border-2 border-[#FFD700]/60 animate-ping" style={{ animationDuration: '2s' }} />
-                <div className="absolute -bottom-2 -right-4 w-10 h-10 rounded-full bg-gradient-to-br from-[#FF6B6B]/70 to-[#FFD700]/50 blur-sm animate-pulse" style={{ animationDuration: '2.5s', animationDelay: '0.5s' }} />
-                <div className="absolute bottom-0 -right-2 w-6 h-6 rounded-full border-2 border-[#FF6B6B]/50 animate-ping" style={{ animationDuration: '2.5s', animationDelay: '0.5s' }} />
-              </div>
-            </div>
-          </div>
-        </div>
-
-        {/* Bottom curved edge */}
-        <div className="absolute bottom-0 left-0 right-0 h-16 bg-[#0d0d0d]" style={{ clipPath: 'ellipse(60% 100% at 50% 100%)' }} />
-      </section>
-
-      {/* Quick Info Bar */}
-      <div className="bg-[#2a2a2a] py-4 border-y border-white/5">
-        <div className="mx-auto max-w-7xl px-4">
-          <div className="flex flex-wrap justify-center gap-8 text-center">
-            <div className="px-4">
-              <p className="text-2xl font-bold text-white">{personality.totalItems}</p>
-              <p className="text-xs text-white/40 uppercase tracking-wide">Items</p>
-            </div>
-            <div className="h-10 w-px bg-white/10 hidden sm:block" />
-            <div className="px-4">
-              <p className="text-2xl font-bold text-white">{hoursDisplay || hoursSummary || 'Open'}</p>
-              <p className="text-xs text-white/40 uppercase tracking-wide">Hours</p>
-            </div>
-            <div className="h-10 w-px bg-white/10 hidden sm:block" />
-            <div className="px-4">
-              <p className="text-2xl font-bold text-white">{locationDisplay || locationSummary || 'Local'}</p>
-              <p className="text-xs text-white/40 uppercase tracking-wide">Location</p>
-            </div>
-          </div>
-
-        </div>
-      </div>
+      {/* Position-based sections BEFORE menu (hero, quickInfo, featuredCarousel, and early banners) */}
+      {renderSectionsBeforeMenu()}
 
       <main id="menu" className="mx-auto max-w-7xl space-y-10 px-4 py-8">
         {notification && (
@@ -2432,26 +2797,7 @@ export default function OrderPageClient({
         
         {/* Cart Launcher - Only rendered in root layout, header buttons trigger it */}
 
-        {carouselItems.length > 0 && (() => {
-          // Get featured carousel config from frontendUISections
-          const featuredCarouselConfig = getSectionConfig('featuredCarousel');
-          const carouselTitle = featuredCarouselConfig?.content?.title || frontendConfig?.featuredCarousel?.title || 'Chef Recommends';
-          const carouselSubtitle = featuredCarouselConfig?.content?.subtitle || frontendConfig?.featuredCarousel?.subtitle || 'Handpicked favorites from our kitchen';
-          
-          // Only show if enabled (default to enabled if no config)
-          if (featuredCarouselConfig && !featuredCarouselConfig.enabled) {
-            return null;
-          }
-
-          return (
-            <FeaturedCarousel
-              items={carouselItems}
-              onAddToCart={handleCarouselAddToCart}
-              title={carouselTitle}
-              subtitle={carouselSubtitle}
-            />
-          );
-        })()}
+        {/* FeaturedCarousel is now rendered by renderSectionsBeforeMenu() based on position */}
 
         {/* Menu Sections with Promotional Banners Between */}
         {/* Only render sections that are in navSections to ensure category buttons match */}
@@ -3618,6 +3964,9 @@ export default function OrderPageClient({
           );
         });
         })()}
+
+        {/* Position-based sections AFTER menu (banners with position > menuSections) */}
+        {renderSectionsAfterMenu()}
       </main>
 
       {/* Catering Slide-In Panel */}
