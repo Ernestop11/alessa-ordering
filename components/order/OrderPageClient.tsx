@@ -3036,13 +3036,18 @@ export default function OrderPageClient({
             .map((section) => {
               // Find the original index in enrichedSections for banner placement
               const originalIndex = enrichedSections.findIndex((s) => s.id === section.id);
-              const promoBanner = getPromoBannerForIndex(originalIndex);
 
           return (
           <div key={section.id}>
-            {/* Banner Slot 1 - After first menu section */}
-            {/* Renders any banner assigned to this slot based on position */}
-            {originalIndex === 1 && (() => {
+            {/* DISABLED: All slot-based banner rendering has been removed.
+                Banners are now ONLY rendered by renderSectionsBeforeMenu() and renderSectionsAfterMenu()
+                based on their position in frontendUISections.
+
+                This gives full control via the Menu Editor - drag sections to reorder,
+                toggle enabled/disabled, and everything syncs instantly. */}
+
+            {/* OLD SLOT 1 - REMOVED: promoBanner1 now renders via position system */}
+            {false && originalIndex === 1 && (() => {
               // If a non-promoBanner1 type is assigned to this slot, use universal renderer
               if (promoBanner && promoBanner.type !== 'promoBanner1') {
                 return renderUniversalBanner(promoBanner);
@@ -3253,8 +3258,8 @@ export default function OrderPageClient({
               );
             })()}
 
-            {/* Banner Slot 3 - After third menu section */}
-            {originalIndex === 3 && (() => {
+            {/* OLD SLOT 3 - REMOVED: weCookBanner now renders via position system */}
+            {false && originalIndex === 3 && (() => {
               const slotBanner = getPromoBannerForIndex(3);
               // Use universal renderer for any banner type assigned to this slot
               if (slotBanner && slotBanner.type !== 'weCookBanner') {
@@ -3408,8 +3413,8 @@ export default function OrderPageClient({
               );
             })()}
 
-            {/* Banner Slot 5 - After 5th menu section */}
-            {originalIndex === 5 && (() => {
+            {/* OLD SLOT 5 - REMOVED: dealStrip now renders via position system */}
+            {false && originalIndex === 5 && (() => {
               const slotBanner = getPromoBannerForIndex(5);
               // Use universal renderer for any banner type assigned to this slot
               if (slotBanner && slotBanner.type !== 'dealStrip') {
@@ -3522,8 +3527,8 @@ export default function OrderPageClient({
               );
             })()}
 
-            {/* Banner Slot 2 - After 2nd menu section */}
-            {originalIndex === 2 && (() => {
+            {/* OLD SLOT 2 - REMOVED: groceryBanner/panaderiaBanner now renders via position system */}
+            {false && originalIndex === 2 && (() => {
               const slotBanner = getPromoBannerForIndex(2);
               // Use universal renderer for any banner type (except groceryBanner/panaderiaBanner which have custom styling)
               if (slotBanner && !['groceryBanner', 'panaderiaBanner'].includes(slotBanner.type)) {
@@ -3680,8 +3685,8 @@ export default function OrderPageClient({
               );
             })()}
 
-            {/* Banner Slot 7 - After 7th menu section */}
-            {originalIndex === 7 && (() => {
+            {/* OLD SLOT 7 - REMOVED: qualityBanner now renders via position system */}
+            {false && originalIndex === 7 && (() => {
               const slotBanner = getPromoBannerForIndex(7);
               // Use universal renderer for any banner type assigned to this slot
               if (slotBanner && slotBanner.type !== 'qualityBanner') {
@@ -3782,8 +3787,8 @@ export default function OrderPageClient({
               );
             })()}
 
-            {/* Banner Slot 9 - After 9th menu section */}
-            {originalIndex === 9 && (() => {
+            {/* OLD SLOT 9 - REMOVED: reviewsStrip now renders via position system */}
+            {false && originalIndex === 9 && (() => {
               const slotBanner = getPromoBannerForIndex(9);
               // Use universal renderer for any banner type assigned to this slot
               if (slotBanner && slotBanner.type !== 'reviewsStrip') {
