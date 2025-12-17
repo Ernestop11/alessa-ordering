@@ -2431,14 +2431,25 @@ export default function OrderPageClient({
     return elements;
   };
 
-  // Render sections AFTER the menu (banners with position > menuSections)
+  // Render sections AFTER the menu (all section types with position > menuSections)
   const renderSectionsAfterMenu = () => {
     const elements: JSX.Element[] = [];
-    const sectionsAfterMenu = sortedSections.filter(s => s.position > menuSectionsPosition && bannerTypes.includes(s.type));
+    const sectionsAfterMenu = sortedSections.filter(s => s.position > menuSectionsPosition);
 
     for (const section of sectionsAfterMenu) {
-      const bannerEl = renderPromoBanner(section);
-      if (bannerEl) elements.push(bannerEl);
+      if (section.type === 'hero') {
+        const heroEl = renderHeroSection();
+        if (heroEl) elements.push(heroEl);
+      } else if (section.type === 'quickInfo') {
+        const quickInfoEl = renderQuickInfoBar();
+        if (quickInfoEl) elements.push(quickInfoEl);
+      } else if (section.type === 'featuredCarousel') {
+        const carouselEl = renderFeaturedCarousel();
+        if (carouselEl) elements.push(carouselEl);
+      } else if (bannerTypes.includes(section.type)) {
+        const bannerEl = renderPromoBanner(section);
+        if (bannerEl) elements.push(bannerEl);
+      }
     }
 
     return elements;
