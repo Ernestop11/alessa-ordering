@@ -2472,28 +2472,229 @@ export default function OrderPageClient({
           };
 
           // Create a map of section index to promotional banner
-          // Each banner type has a fixed position where it appears (after Nth menu section)
-          // The position in frontendUISections is for ordering in admin, not display position
+          // Banners are placed after menu sections based on their position in frontendUISections
+          // Position-based ordering: Lower position = appears earlier in the page
+
+          // Get all banner types (promotional sections that appear between menu sections)
+          const allBannerTypes = ['promoBanner1', 'groceryBanner', 'panaderiaBanner', 'weCookBanner', 'dealStrip', 'qualityBanner', 'reviewsStrip'];
+
+          // Get enabled banners sorted by their position in frontendUISections
+          const sortedBanners = frontendUISections
+            .filter(s => allBannerTypes.includes(s.type) && s.enabled)
+            .sort((a, b) => a.position - b.position);
+
+          // Fixed display slots: which menu section index each banner slot comes after
+          const bannerSlots = [1, 2, 3, 5, 7, 9]; // After 1st, 2nd, 3rd, 5th, 7th, 9th menu section
+
+          // Build a map: menu section index -> banner to display (position-based assignment)
+          const bannerMap = new Map<number, FrontendUISection>();
+          sortedBanners.forEach((banner, idx) => {
+            if (idx < bannerSlots.length) {
+              bannerMap.set(bannerSlots[idx], banner);
+            }
+          });
+
+          // Helper to get banner for a slot and check if it should render a specific type
           const getPromoBannerForIndex = (index: number): FrontendUISection | null => {
-            // Fixed mapping: which banner type appears after which menu section index
-            const bannerMap: Record<number, string[]> = {
-              1: ['promoBanner1'],                    // After 1st menu section
-              2: ['groceryBanner', 'panaderiaBanner'], // After 2nd menu section
-              3: ['weCookBanner'],                    // After 3rd menu section
-              5: ['dealStrip'],                       // After 5th menu section
-              7: ['qualityBanner'],                   // After 7th menu section
-              9: ['reviewsStrip'],                    // After 9th menu section
-            };
+            return bannerMap.get(index) || null;
+          };
 
-            const bannerTypes = bannerMap[index];
-            if (!bannerTypes) return null;
+          // Helper to check if a specific banner type should render at a specific slot
+          // Returns the banner if it's assigned to this slot, regardless of original type
+          const shouldRenderBannerAtSlot = (slotIndex: number, targetTypes: string[]): FrontendUISection | null => {
+            const banner = bannerMap.get(slotIndex);
+            if (!banner) return null;
+            // Return the banner if its type is in the target types
+            return targetTypes.includes(banner.type) ? banner : null;
+          };
 
-            // Find the first enabled banner of the allowed types for this position
-            for (const bannerType of bannerTypes) {
-              const banner = frontendUISections.find(s => s.type === bannerType && s.enabled);
-              if (banner) return banner;
+          // Universal banner renderer helper
+          const renderUniversalBanner = (banner: FrontendUISection): JSX.Element | null => {
+            const config = banner.content;
+            const type = banner.type;
+
+            // For grocery/panaderia banners - simple CTA banner
+            if (type === 'groceryBanner' || type === 'panaderiaBanner') {
+              const bgColor = type === 'groceryBanner'
+                ? (config.gradientFrom && config.gradientTo ? `linear-gradient(to right, ${config.gradientFrom}, ${config.gradientTo})` : 'linear-gradient(to right, #059669, #10b981, #34d399)')
+                : (config.gradientFrom && config.gradientTo ? `linear-gradient(to right, ${config.gradientFrom}, ${config.gradientTo})` : 'linear-gradient(to right, #d97706, #f59e0b, #fbbf24)');
+
+              return (
+                <div
+                  className="mb-10 relative overflow-hidden rounded-3xl p-1"
+                  style={{ background: config.backgroundColor || bgColor }}
+                >
+                  <div className="relative overflow-hidden rounded-[22px] bg-gradient-to-br from-[#1a1a1a] to-[#2a2a2a] p-6 md:p-8">
+                    <div className="relative flex flex-col md:flex-row items-center gap-6">
+                      <div className="flex-1 text-center md:text-left">
+                        {config.badge && (
+                          <span className="inline-block px-4 py-1.5 rounded-full bg-white/20 text-white text-xs font-bold uppercase tracking-wider mb-4">
+                            {config.badge}
+                          </span>
+                        )}
+                        <h3 className="text-3xl md:text-4xl font-black text-white mb-3">
+                          {config.title || (type === 'groceryBanner' ? 'Visit Our Grocery Store' : 'Fresh Bakery')}
+                        </h3>
+                        <p className="text-white/70 mb-4">
+                          {config.subtitle || config.description}
+                        </p>
+                        {config.buttonText && config.buttonLink && (
+                          <a
+                            href={config.buttonLink}
+                            className="inline-flex items-center gap-2 px-8 py-4 rounded-full bg-white text-gray-900 font-black text-lg shadow-xl hover:scale-105 transition-transform"
+                          >
+                            {config.buttonText}
+                            <svg className="w-5 h-5" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                              <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M13 7l5 5m0 0l-5 5m5-5H6" />
+                            </svg>
+                          </a>
+                        )}
+                      </div>
+                      {config.image && (
+                        <div className="relative w-32 h-32 md:w-48 md:h-48 rounded-2xl overflow-hidden">
+                          <img src={config.image} alt={config.title || ''} className="w-full h-full object-cover" />
+                        </div>
+                      )}
+                    </div>
+                  </div>
+                </div>
+              );
             }
 
+            // For weCookBanner - centered text banner
+            if (type === 'weCookBanner') {
+              return (
+                <div
+                  className="mb-10 relative overflow-hidden rounded-3xl"
+                  style={{
+                    background: config.gradientFrom && config.gradientTo
+                      ? `linear-gradient(to right, ${config.gradientFrom}, ${config.gradientTo})`
+                      : config.backgroundColor || 'linear-gradient(to right, #1a1a1a, #2a2a2a, #1a1a1a)',
+                  }}
+                >
+                  <div className="relative p-8 md:p-12">
+                    <div className="relative text-center">
+                      {config.title && (
+                        <h3
+                          className="text-4xl md:text-6xl font-black mb-4 tracking-tight"
+                          style={{ color: config.textColor || '#ffffff' }}
+                        >
+                          {config.title}
+                        </h3>
+                      )}
+                      {(config.description || config.subtitle) && (
+                        <p
+                          className="text-xl mb-6 max-w-2xl mx-auto"
+                          style={{ color: config.textColor ? `${config.textColor}CC` : 'rgba(255,255,255,0.7)' }}
+                        >
+                          {config.description || config.subtitle}
+                        </p>
+                      )}
+                    </div>
+                  </div>
+                </div>
+              );
+            }
+
+            // For dealStrip - compact strip banner
+            if (type === 'dealStrip') {
+              return (
+                <div
+                  className="mb-10 relative overflow-hidden rounded-2xl"
+                  style={{
+                    background: config.gradientFrom && config.gradientTo
+                      ? `linear-gradient(to right, ${config.gradientFrom}, ${config.gradientTo})`
+                      : config.backgroundColor || 'linear-gradient(to right, #FFD700, #FFA500)',
+                  }}
+                >
+                  <div className="relative px-6 py-4 flex flex-wrap items-center justify-center gap-4 md:gap-8">
+                    {config.title && (
+                      <span className="text-lg md:text-2xl font-black" style={{ color: config.textColor || '#8B0000' }}>
+                        {config.title}
+                      </span>
+                    )}
+                    {config.subtitle && (
+                      <span className="text-sm md:text-lg" style={{ color: config.textColor ? `${config.textColor}DD` : '#8B0000CC' }}>
+                        {config.subtitle}
+                      </span>
+                    )}
+                    {config.buttonText && (
+                      <button className="px-6 py-2 rounded-full bg-[#8B0000] text-white font-bold hover:bg-[#6B0000] transition-colors">
+                        {config.buttonText}
+                      </button>
+                    )}
+                  </div>
+                </div>
+              );
+            }
+
+            // For qualityBanner - image-heavy quality banner
+            if (type === 'qualityBanner') {
+              return (
+                <div
+                  className="mb-10 relative overflow-hidden rounded-3xl"
+                  style={{
+                    background: config.gradientFrom && config.gradientTo
+                      ? `linear-gradient(to right, ${config.gradientFrom}, ${config.gradientTo})`
+                      : config.backgroundColor || 'linear-gradient(to br, #1a1a1a, #2a2a2a)',
+                  }}
+                >
+                  <div className="relative p-6 md:p-8">
+                    <div className="flex flex-col md:flex-row items-center gap-6">
+                      <div className="flex-1 text-center md:text-left">
+                        {config.badge && (
+                          <span className="inline-block px-4 py-1.5 rounded-full bg-[#FFD700]/20 text-[#FFD700] text-xs font-bold uppercase tracking-wider mb-4">
+                            {config.badge}
+                          </span>
+                        )}
+                        {config.title && (
+                          <h3 className="text-3xl md:text-4xl font-black text-white mb-3">
+                            {config.title}
+                          </h3>
+                        )}
+                        {config.subtitle && (
+                          <p className="text-white/70">
+                            {config.subtitle}
+                          </p>
+                        )}
+                      </div>
+                    </div>
+                  </div>
+                </div>
+              );
+            }
+
+            // For reviewsStrip - testimonial strip
+            if (type === 'reviewsStrip') {
+              return (
+                <div
+                  className="mb-10 relative overflow-hidden rounded-2xl"
+                  style={{
+                    background: config.gradientFrom && config.gradientTo
+                      ? `linear-gradient(to right, ${config.gradientFrom}, ${config.gradientTo})`
+                      : config.backgroundColor || 'linear-gradient(to right, #2a2a2a, #1a1a1a)',
+                  }}
+                >
+                  <div className="relative px-6 py-6 text-center">
+                    <div className="flex items-center justify-center gap-1 mb-2">
+                      {'⭐'.repeat(5)}
+                    </div>
+                    {config.title && (
+                      <p className="text-lg md:text-xl font-semibold text-white italic mb-2">
+                        &ldquo;{config.title}&rdquo;
+                      </p>
+                    )}
+                    {config.subtitle && (
+                      <p className="text-sm text-white/60">
+                        {config.subtitle}
+                      </p>
+                    )}
+                  </div>
+                </div>
+              );
+            }
+
+            // For promoBanner1 - return null (handled separately with bundle logic)
             return null;
           };
           
@@ -2506,9 +2707,14 @@ export default function OrderPageClient({
 
           return (
           <div key={section.id}>
-            {/* Promotional Billboard Banner - After first section - Dynamic from Bundles */}
+            {/* Banner Slot 1 - After first menu section */}
+            {/* Renders any banner assigned to this slot based on position */}
             {originalIndex === 1 && (() => {
-              // Use saved config if available, otherwise fallback to bundle logic
+              // If a non-promoBanner1 type is assigned to this slot, use universal renderer
+              if (promoBanner && promoBanner.type !== 'promoBanner1') {
+                return renderUniversalBanner(promoBanner);
+              }
+              // For promoBanner1, use the bundle-aware logic
               if (promoBanner && promoBanner.type === 'promoBanner1') {
                 const config = promoBanner.content;
                 // Get first bundle for fallback
@@ -2714,11 +2920,16 @@ export default function OrderPageClient({
               );
             })()}
 
-            {/* "WE COOK FOR YOU" Style Banner - After third section */}
+            {/* Banner Slot 3 - After third menu section */}
             {originalIndex === 3 && (() => {
-              const weCookBanner = getPromoBannerForIndex(3);
-              if (weCookBanner && weCookBanner.type === 'weCookBanner') {
-                const config = weCookBanner.content;
+              const slotBanner = getPromoBannerForIndex(3);
+              // Use universal renderer for any banner type assigned to this slot
+              if (slotBanner && slotBanner.type !== 'weCookBanner') {
+                return renderUniversalBanner(slotBanner);
+              }
+              // Original weCookBanner logic
+              if (slotBanner && slotBanner.type === 'weCookBanner') {
+                const config = slotBanner.content;
                 return (
                   <div 
                     className="mb-10 relative overflow-hidden rounded-3xl"
@@ -2864,11 +3075,16 @@ export default function OrderPageClient({
               );
             })()}
 
-            {/* Quick Deal Strip - After 5th section */}
+            {/* Banner Slot 5 - After 5th menu section */}
             {originalIndex === 5 && (() => {
-              const dealStrip = getPromoBannerForIndex(5);
-              if (dealStrip && dealStrip.type === 'dealStrip') {
-                const config = dealStrip.content;
+              const slotBanner = getPromoBannerForIndex(5);
+              // Use universal renderer for any banner type assigned to this slot
+              if (slotBanner && slotBanner.type !== 'dealStrip') {
+                return renderUniversalBanner(slotBanner);
+              }
+              // Original dealStrip logic
+              if (slotBanner && slotBanner.type === 'dealStrip') {
+                const config = slotBanner.content;
                 return (
                   <div 
                     className="mb-10 relative overflow-hidden rounded-2xl p-0.5"
@@ -2973,13 +3189,16 @@ export default function OrderPageClient({
               );
             })()}
 
-            {/* Grocery Store / Panaderia Banner - After 2nd section */}
+            {/* Banner Slot 2 - After 2nd menu section */}
             {originalIndex === 2 && (() => {
-              const storeBanner = getPromoBannerForIndex(2);
-
+              const slotBanner = getPromoBannerForIndex(2);
+              // Use universal renderer for any banner type (except groceryBanner/panaderiaBanner which have custom styling)
+              if (slotBanner && !['groceryBanner', 'panaderiaBanner'].includes(slotBanner.type)) {
+                return renderUniversalBanner(slotBanner);
+              }
               // Panaderia Banner (amber/orange theme)
-              if (storeBanner && storeBanner.type === 'panaderiaBanner') {
-                const config = storeBanner.content;
+              if (slotBanner && slotBanner.type === 'panaderiaBanner') {
+                const config = slotBanner.content;
                 return (
                   <div
                     className="mb-10 relative overflow-hidden rounded-3xl p-1"
@@ -3036,8 +3255,8 @@ export default function OrderPageClient({
               }
 
               // Grocery Banner (green theme)
-              if (storeBanner && storeBanner.type === 'groceryBanner') {
-                const config = storeBanner.content;
+              if (slotBanner && slotBanner.type === 'groceryBanner') {
+                const config = slotBanner.content;
                 return (
                   <div
                     className="mb-10 relative overflow-hidden rounded-3xl p-1"
@@ -3128,11 +3347,16 @@ export default function OrderPageClient({
               );
             })()}
 
-            {/* Fresh Quality Banner - After 7th section */}
+            {/* Banner Slot 7 - After 7th menu section */}
             {originalIndex === 7 && (() => {
-              const qualityBanner = getPromoBannerForIndex(7);
-              if (qualityBanner && qualityBanner.type === 'qualityBanner') {
-                const config = qualityBanner.content;
+              const slotBanner = getPromoBannerForIndex(7);
+              // Use universal renderer for any banner type assigned to this slot
+              if (slotBanner && slotBanner.type !== 'qualityBanner') {
+                return renderUniversalBanner(slotBanner);
+              }
+              // Original qualityBanner logic
+              if (slotBanner && slotBanner.type === 'qualityBanner') {
+                const config = slotBanner.content;
                 return (
                   <div 
                     className="mb-10 relative overflow-hidden rounded-3xl p-8 md:p-10 border"
@@ -3225,11 +3449,16 @@ export default function OrderPageClient({
               );
             })()}
 
-            {/* Customer Reviews Strip - After 9th section */}
+            {/* Banner Slot 9 - After 9th menu section */}
             {originalIndex === 9 && (() => {
-              const reviewsStrip = getPromoBannerForIndex(9);
-              if (reviewsStrip && reviewsStrip.type === 'reviewsStrip') {
-                const config = reviewsStrip.content;
+              const slotBanner = getPromoBannerForIndex(9);
+              // Use universal renderer for any banner type assigned to this slot
+              if (slotBanner && slotBanner.type !== 'reviewsStrip') {
+                return renderUniversalBanner(slotBanner);
+              }
+              // Original reviewsStrip logic
+              if (slotBanner && slotBanner.type === 'reviewsStrip') {
+                const config = slotBanner.content;
                 return (
                   <div 
                     className="mb-10 relative overflow-hidden rounded-2xl border p-6 md:p-8"
