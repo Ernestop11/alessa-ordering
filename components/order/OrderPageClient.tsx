@@ -4566,12 +4566,11 @@ export default function OrderPageClient({
             name: item.name,
             price: item.price,
             quantity: item.quantity,
-            image: item.image,
+            image: item.image || '',
             description: item.description,
           });
         }}
         onReorderAll={handleReorder}
-        showNotification={showNotification}
       />
       </div>{/* End main content wrapper */}
     </div>
