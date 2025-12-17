@@ -2463,6 +2463,21 @@ export default function OrderPageClient({
                 .sort((a, b) => (a.position ?? 999) - (b.position ?? 999))
             : [];
           
+          // Helper: Check if a section type is enabled
+          // Returns false if the section exists and is disabled, true otherwise (for backward compat)
+          const isSectionEnabled = (sectionType: string): boolean => {
+            const section = frontendUISections.find(s => s.type === sectionType);
+            // If section doesn't exist in config, default depends on the type:
+            // - Grocery/Panaderia: check enabledAddOns
+            // - Others: show by default for backward compatibility
+            if (!section) {
+              if (sectionType === 'groceryBanner') return enabledAddOns.includes('grocery');
+              if (sectionType === 'panaderiaBanner') return enabledAddOns.includes('panaderia');
+              return true; // Default: show if no config exists
+            }
+            return section.enabled !== false;
+          };
+
           // Create a map of section index to promotional banner
           // Use the sorted frontendUISections to determine which banners show where
           const getPromoBannerForIndex = (index: number): FrontendUISection | null => {
@@ -2624,6 +2639,9 @@ export default function OrderPageClient({
               }
 
               // Fallback to original bundle logic
+              // Check if promoBanner1 is enabled before showing fallback
+              if (!isSectionEnabled('promoBanner1')) return null;
+
               const featuredBundle = popularPackages.find(pkg =>
                 (pkg.category === 'bundle' || pkg.category === 'popular') && pkg.available
               ) || popularPackages[0];
@@ -2768,6 +2786,9 @@ export default function OrderPageClient({
               }
 
               // Fallback to original
+              // Check if weCookBanner is enabled before showing fallback
+              if (!isSectionEnabled('weCookBanner')) return null;
+
               // Get first bundle with category='bundle' or 'popular' that should be featured
               const featuredBundle = popularPackages.find(pkg =>
                 (pkg.category === 'bundle' || pkg.category === 'popular') && pkg.available
@@ -2944,6 +2965,9 @@ export default function OrderPageClient({
               }
 
               // Fallback to original
+              // Check if dealStrip is enabled before showing fallback
+              if (!isSectionEnabled('dealStrip')) return null;
+
               return (
                 <div className="mb-10 relative overflow-hidden rounded-2xl bg-gradient-to-r from-[#FFD700] via-[#FFA500] to-[#FFD700] p-0.5">
                   <div className="bg-[#1a1a1a] rounded-[14px] px-6 py-4">
@@ -3197,6 +3221,9 @@ export default function OrderPageClient({
               }
 
               // Fallback to original
+              // Check if qualityBanner is enabled before showing fallback
+              if (!isSectionEnabled('qualityBanner')) return null;
+
               return (
                 <div className="mb-10 relative overflow-hidden rounded-3xl">
                   <div className="relative bg-gradient-to-r from-emerald-900/80 via-emerald-800/80 to-emerald-900/80 p-8 md:p-10 border border-emerald-500/20">
@@ -3286,6 +3313,9 @@ export default function OrderPageClient({
               }
 
               // Fallback to original
+              // Check if reviewsStrip is enabled before showing fallback
+              if (!isSectionEnabled('reviewsStrip')) return null;
+
               return (
                 <div className="mb-10 relative overflow-hidden rounded-2xl bg-gradient-to-r from-purple-900/50 via-pink-900/50 to-purple-900/50 border border-purple-500/20 p-6 md:p-8">
                   <div className="relative flex flex-col md:flex-row items-center justify-between gap-6">
