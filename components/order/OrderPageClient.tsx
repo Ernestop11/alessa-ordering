@@ -2456,13 +2456,6 @@ export default function OrderPageClient({
         {/* Menu Sections with Promotional Banners Between */}
         {/* Only render sections that are in navSections to ensure category buttons match */}
         {(() => {
-          // Sort frontendUISections by position to get the correct order
-          const sortedUISections = frontendUISections && frontendUISections.length > 0
-            ? [...frontendUISections]
-                .filter(s => s.enabled)
-                .sort((a, b) => (a.position ?? 999) - (b.position ?? 999))
-            : [];
-          
           // Helper: Check if a section type is enabled
           // Returns false if the section exists and is disabled, true otherwise (for backward compat)
           const isSectionEnabled = (sectionType: string): boolean => {
@@ -2479,55 +2472,29 @@ export default function OrderPageClient({
           };
 
           // Create a map of section index to promotional banner
-          // Use the sorted frontendUISections to determine which banners show where
+          // Each banner type has a fixed position where it appears (after Nth menu section)
+          // The position in frontendUISections is for ordering in admin, not display position
           const getPromoBannerForIndex = (index: number): FrontendUISection | null => {
-            if (sortedUISections.length === 0) return null;
-            
-            // Find promotional banners (not menu sections) in sorted order
-            // IMPORTANT: Only include banners that are enabled
-            const promoBanners = sortedUISections.filter(s =>
-              s.enabled && (
-                s.type === 'promoBanner1' ||
-                s.type === 'groceryBanner' ||
-                s.type === 'panaderiaBanner' ||
-                s.type === 'weCookBanner' ||
-                s.type === 'dealStrip' ||
-                s.type === 'qualityBanner' ||
-                s.type === 'reviewsStrip' ||
-                s.type === 'weekendSpecials' ||
-                s.type === 'bundles' ||
-                s.type === 'aisles' ||
-                s.type === 'dailyFresh' ||
-                s.type === 'boxBuilder' ||
-                s.type === 'categories'
-              )
-            );
-            
-            // Legacy mapping for backward compatibility (if no position-based ordering)
-            if (promoBanners.length === 0) {
-              const bannerMap: Record<number, string> = {
-                1: 'promoBanner1',
-                2: 'groceryBanner',
-                3: 'weCookBanner',
-                5: 'dealStrip',
-                7: 'qualityBanner',
-                9: 'reviewsStrip',
-              };
-              const bannerType = bannerMap[index];
-              if (!bannerType) return null;
-              return frontendUISections.find(s => s.type === bannerType && s.enabled) || null;
+            // Fixed mapping: which banner type appears after which menu section index
+            const bannerMap: Record<number, string[]> = {
+              1: ['promoBanner1'],                    // After 1st menu section
+              2: ['groceryBanner', 'panaderiaBanner'], // After 2nd menu section
+              3: ['weCookBanner'],                    // After 3rd menu section
+              5: ['dealStrip'],                       // After 5th menu section
+              7: ['qualityBanner'],                   // After 7th menu section
+              9: ['reviewsStrip'],                    // After 9th menu section
+            };
+
+            const bannerTypes = bannerMap[index];
+            if (!bannerTypes) return null;
+
+            // Find the first enabled banner of the allowed types for this position
+            for (const bannerType of bannerTypes) {
+              const banner = frontendUISections.find(s => s.type === bannerType && s.enabled);
+              if (banner) return banner;
             }
-            
-            // Use position-based ordering: find banner that should appear at this section index
-            // Map section indices (0, 1, 2...) to banner positions
-            const bannerForIndex = promoBanners.find(banner => {
-              const bannerPosition = banner.position ?? 999;
-              // Banner should appear after section at index (bannerPosition - 1)
-              // e.g., position 1 = after first section (index 0), position 2 = after second section (index 1)
-              return bannerPosition === index + 1;
-            });
-            
-            return bannerForIndex || null;
+
+            return null;
           };
           
           return enrichedSections
