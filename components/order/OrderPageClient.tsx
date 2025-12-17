@@ -43,6 +43,7 @@ import FeaturedCarousel from './FeaturedCarousel';
 import CartLauncher from '../CartLauncher';
 import RewardsModal from './RewardsModal';
 import JoinRewardsModal from './JoinRewardsModal';
+import ReorderModal from './ReorderModal';
 import MenuSectionGrid from './MenuSectionGrid';
 import { isTimeSpecificActive, getTimeSpecificPrice, getTimeSpecificLabel, shouldShowItem } from '../../lib/menu-time-specific';
 
@@ -978,6 +979,7 @@ export default function OrderPageClient({
 
   const [isHeroTransitioning, setIsHeroTransitioning] = useState(false);
   const [showMembershipPanel, setShowMembershipPanel] = useState(false);
+  const [showReorderModal, setShowReorderModal] = useState(false);
   const [showJoinModal, setShowJoinModal] = useState(false);
   const [joinModalMode, setJoinModalMode] = useState<'join' | 'login'>('join');
   const [showCateringPanel, setShowCateringPanel] = useState(false);
@@ -4222,50 +4224,28 @@ export default function OrderPageClient({
                   </div>
                 )}
 
-                {/* Previous Orders with Re-order - Enhanced Visibility */}
+                {/* Reorder Button - Opens Full ReorderModal */}
                 {customerData && customerData.orders && customerData.orders.length > 0 && (
                   <div className="rounded-2xl border-2 border-amber-500/40 bg-gradient-to-br from-amber-500/10 via-yellow-500/10 to-amber-500/10 p-6 shadow-xl">
-                    <div className="flex items-center justify-between mb-4">
-                      <h4 className="text-xl font-black text-white flex items-center gap-2">
-                        <span className="text-2xl animate-pulse">🔄</span>
-                        Quick Re-Order
-                      </h4>
-                      <span className="text-xs text-white/70 bg-white/10 px-3 py-1 rounded-full">
-                        {customerData.orders.length} previous order{customerData.orders.length !== 1 ? 's' : ''}
-                      </span>
-                    </div>
-                    <div className="space-y-3 max-h-96 overflow-y-auto">
-                      {customerData.orders.map((order) => (
-                        <div key={order.id} className="rounded-xl border-2 border-amber-400/30 bg-white/10 p-4 hover:bg-white/20 transition-all hover:scale-[1.02] shadow-lg">
-                          <div className="flex items-center justify-between mb-3">
-                            <div>
-                              <p className="text-sm font-bold text-white">
-                                {new Date(order.createdAt).toLocaleDateString('en-US', { 
-                                  month: 'short', 
-                                  day: 'numeric', 
-                                  year: 'numeric' 
-                                })}
-                              </p>
-                              <p className="text-xs text-white/70 mt-1">
-                                {order.items.length} item{order.items.length !== 1 ? 's' : ''} · ${order.totalAmount.toFixed(2)}
-                              </p>
-                            </div>
-                            <span className={`text-xs px-2 py-1 rounded-full font-semibold ${
-                              order.status === 'completed' ? 'bg-green-500/30 text-green-300 border border-green-500/50' :
-                              order.status === 'pending' ? 'bg-yellow-500/30 text-yellow-300 border border-yellow-500/50' :
-                              'bg-gray-500/30 text-gray-300 border border-gray-500/50'
-                            }`}>
-                              {order.status}
-                            </span>
-                          </div>
-                          <button
-                            onClick={() => handleReorder(order)}
-                            className="w-full rounded-xl bg-gradient-to-r from-amber-400 via-yellow-400 to-amber-400 px-5 py-3 text-sm font-black text-black shadow-xl shadow-amber-500/50 transition-all hover:scale-105 hover:shadow-amber-500/70 active:scale-95"
-                          >
-                            ⚡ One-Click Re-Order
-                          </button>
-                        </div>
-                      ))}
+                    <div className="text-center space-y-4">
+                      <div className="mx-auto flex h-20 w-20 items-center justify-center rounded-full bg-gradient-to-br from-amber-400 to-yellow-400 text-4xl shadow-lg shadow-amber-500/30 animate-bounce">
+                        🛒
+                      </div>
+                      <div>
+                        <h4 className="text-xl font-black text-white">Your Favorites</h4>
+                        <p className="text-sm text-white/70 mt-1">
+                          {customerData.orders.length} previous order{customerData.orders.length !== 1 ? 's' : ''} ready to reorder
+                        </p>
+                      </div>
+                      <button
+                        onClick={() => {
+                          setShowMembershipPanel(false);
+                          setShowReorderModal(true);
+                        }}
+                        className="w-full rounded-xl bg-gradient-to-r from-amber-400 via-yellow-400 to-amber-400 px-5 py-4 text-lg font-black text-black shadow-xl shadow-amber-500/50 transition-all hover:scale-105 hover:shadow-amber-500/70 active:scale-95"
+                      >
+                        🔄 Open Reorder Menu
+                      </button>
                     </div>
                   </div>
                 )}
@@ -4575,6 +4555,23 @@ export default function OrderPageClient({
           }
         }}
         tenantSlug={tenantSlug}
+      />
+      <ReorderModal
+        open={showReorderModal}
+        onClose={() => setShowReorderModal(false)}
+        customerData={customerData}
+        onAddToCart={(item) => {
+          addToCart({
+            id: item.id,
+            name: item.name,
+            price: item.price,
+            quantity: item.quantity,
+            image: item.image,
+            description: item.description,
+          });
+        }}
+        onReorderAll={handleReorder}
+        showNotification={showNotification}
       />
       </div>{/* End main content wrapper */}
     </div>

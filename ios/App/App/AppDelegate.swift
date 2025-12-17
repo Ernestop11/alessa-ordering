@@ -10,6 +10,12 @@ class AppDelegate: UIResponder, UIApplicationDelegate {
         // Override point for customization after application launch.
         // Prevent screen from sleeping for kiosk mode
         UIApplication.shared.isIdleTimerDisabled = true
+
+        // Register Star Printer plugin
+        let bridge = (window?.rootViewController as? CAPBridgeViewController)?.bridge
+        bridge?.registerPluginInstance(StarPrinterPlugin())
+        print("[AppDelegate] StarPrinterPlugin registered")
+
         return true
     }
 

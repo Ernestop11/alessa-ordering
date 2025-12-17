@@ -1,13 +1,14 @@
 /**
  * Auto-Print Hook
  * Automatically prints new orders when they arrive
- * Uses client-side Bluetooth printing for Capacitor apps
+ * Uses Star Printer SDK for Capacitor native apps (Star TSP100III, etc.)
  */
 
 'use client';
 
 import { useEffect, useRef } from 'react';
-import { printOrderClientSide, isBluetoothPrintingAvailable, type PrinterConfig } from '@/lib/client-printer';
+import { printOrderClientSide, isBluetoothPrintingAvailable, disconnectStarPrinter, type PrinterConfig } from '@/lib/client-printer';
+import { isStarPrinterAvailable } from '@/lib/star-printer';
 import type { FulfillmentOrder } from './useOrderFeed';
 
 interface UseAutoPrintOptions {
@@ -29,6 +30,17 @@ interface UseAutoPrintOptions {
 export function useAutoPrint({ enabled, printerConfig, newOrder, tenant }: UseAutoPrintOptions) {
   const printedOrderIds = useRef<Set<string>>(new Set());
   const isPrinting = useRef(false);
+
+  // Cleanup Star Printer connection on unmount
+  useEffect(() => {
+    return () => {
+      if (isStarPrinterAvailable()) {
+        disconnectStarPrinter().catch(() => {
+          // Ignore cleanup errors
+        });
+      }
+    };
+  }, []);
 
   useEffect(() => {
     // Skip if auto-print is disabled
@@ -53,9 +65,10 @@ export function useAutoPrint({ enabled, printerConfig, newOrder, tenant }: UseAu
       return;
     }
 
-    // Check if Bluetooth is available
-    if (!isBluetoothPrintingAvailable()) {
-      console.warn('[Auto-Print] Bluetooth printing not available');
+    // Check if Bluetooth/Star Printer is available
+    const canPrint = isStarPrinterAvailable() || isBluetoothPrintingAvailable();
+    if (!canPrint) {
+      console.warn('[Auto-Print] Bluetooth/Star printing not available');
       return;
     }
 
@@ -65,7 +78,8 @@ export function useAutoPrint({ enabled, printerConfig, newOrder, tenant }: UseAu
       printedOrderIds.current.add(newOrder.id);
 
       try {
-        console.log('[Auto-Print] Printing order:', newOrder.id);
+        console.log('[Auto-Print] Printing order:', newOrder.id,
+          isStarPrinterAvailable() ? '(Star Printer)' : '(Web Bluetooth)');
 
         const result = await printOrderClientSide(newOrder, tenant, printerConfig);
 

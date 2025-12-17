@@ -1,6 +1,8 @@
 "use client";
 
 import { useState, useEffect } from 'react';
+import StarPrinter, { isStarPrinterAvailable, formatOrderForStarPrinter } from '@/lib/star-printer';
+import type { StarPrinterDevice } from '@/lib/star-printer';
 
 export type PrinterType = 'bluetooth' | 'network' | 'usb' | 'none';
 
@@ -61,24 +63,20 @@ export default function PrinterSetup({ currentConfig, onSave, onTest }: Props) {
 
   useEffect(() => {
     if (typeof window !== 'undefined') {
-      // Check if running in Capacitor
-      const { Capacitor } = require('@capacitor/core');
-      const native = Capacitor.isNativePlatform();
+      // Check if running in Capacitor with Star Printer support
+      const native = isStarPrinterAvailable();
+      console.log('[PrinterSetup] isStarPrinterAvailable:', native);
+      console.log('[PrinterSetup] window.Capacitor:', (window as any).Capacitor);
       setIsNativeApp(native);
-
-      if (native) {
-        // In native app, Bluetooth should be available via Capacitor plugin
-        setBluetoothAvailable(true);
-      } else {
-        // In web browser, check for Web Bluetooth
-        setBluetoothAvailable('bluetooth' in navigator);
-      }
+      setBluetoothAvailable(native); // Star printer only works in native app
     }
   }, []);
 
   const scanBluetoothPrinters = async () => {
-    if (!bluetoothAvailable) {
-      setError('Bluetooth is not available. Please use the native app on iOS/Android.');
+    console.log('[PrinterSetup] scanBluetoothPrinters called, isNativeApp:', isNativeApp);
+
+    if (!isNativeApp) {
+      setError('Star Printer requires the native iOS app. Please use the installed app on your iPad.');
       return;
     }
 
@@ -87,102 +85,63 @@ export default function PrinterSetup({ currentConfig, onSave, onTest }: Props) {
     setAvailableDevices([]);
 
     try {
-      if (isNativeApp) {
-        // Use Capacitor Bluetooth LE plugin
-        const { BleClient } = require('@capacitor-community/bluetooth-le');
+      // Use Star Printer plugin for Bluetooth Classic discovery
+      console.log('[PrinterSetup] Starting Star Printer discovery...');
 
-        // Initialize BLE client first
-        await BleClient.initialize();
-
-        // Request permissions (iOS will prompt for Bluetooth permission)
-        const isEnabled = await BleClient.isEnabled();
-        if (!isEnabled) {
-          throw new Error('Bluetooth is not enabled. Please enable Bluetooth in Settings.');
-        }
-
-        const foundDevices: any[] = [];
-
-        // Start scanning for BLE devices
-        await BleClient.requestLEScan(
-          {
-            // Scan for printer service UUIDs
-            services: [
-              ...KNOWN_VENDORS.brother.services,
-              ...KNOWN_VENDORS.star.services,
-            ],
-          },
-          (result) => {
-            // Called for each device found
-            console.log('Found device:', result);
-            if (result.device) {
-              const device = result.device;
-              // Check if we already have this device
-              if (!foundDevices.find(d => d.deviceId === device.deviceId)) {
-                foundDevices.push(device);
-                setAvailableDevices([...foundDevices]);
-
-                // Auto-select if it looks like a printer
-                if (device.name && (
-                  device.name.toLowerCase().includes('brother') ||
-                  device.name.toLowerCase().includes('star') ||
-                  device.name.toLowerCase().includes('print') ||
-                  device.name.toLowerCase().includes('tsp') ||
-                  device.name.toLowerCase().includes('ql-')
-                )) {
-                  setPrinterType('bluetooth');
-                  setPrinterName(device.name);
-                  setDeviceId(device.deviceId);
-                  setSuccess(`Found printer: ${device.name}`);
-                }
-              }
-            }
+      // Listen for printer found events
+      console.log('[PrinterSetup] Adding printerFound listener...');
+      const listener = await StarPrinter.addListener('printerFound', (event) => {
+        console.log('[PrinterSetup] Found printer event:', event);
+        setAvailableDevices((prev) => {
+          if (prev.find((d) => d.identifier === event.identifier)) {
+            return prev;
           }
-        );
-
-        // Stop scanning after 10 seconds
-        setTimeout(async () => {
-          try {
-            await BleClient.stopLEScan();
-          } catch (e) {
-            console.log('Stop scan error (may already be stopped):', e);
-          }
-          setScanning(false);
-          if (foundDevices.length === 0) {
-            setError('No Bluetooth devices found. Make sure your printer is powered on and in pairing mode.');
-          } else if (!deviceId) {
-            setSuccess(`Found ${foundDevices.length} device(s). Select one from the list.`);
-          }
-        }, 10000);
-      } else {
-        // Use Web Bluetooth API (desktop browsers)
-        const device = await ((navigator as any).bluetooth).requestDevice({
-          acceptAllDevices: true,
-          optionalServices: [
-            ...KNOWN_VENDORS.brother.services,
-            ...KNOWN_VENDORS.star.services,
-            ...KNOWN_VENDORS.escpos.services,
-          ],
+          return [...prev, { ...event, deviceId: event.identifier, name: `Star Printer (${event.identifier.slice(-8)})` }];
         });
+      });
 
-        if (device) {
-          setAvailableDevices([device]);
+      // Start discovery
+      console.log('[PrinterSetup] Calling StarPrinter.discoverPrinters()...');
+      const result = await StarPrinter.discoverPrinters();
+      console.log('[PrinterSetup] Discovery result:', JSON.stringify(result));
+
+      // Clean up listener
+      listener.remove();
+
+      setScanning(false);
+
+      if (result.printers && result.printers.length > 0) {
+        const printers = result.printers.map((p: StarPrinterDevice) => ({
+          deviceId: p.identifier,
+          identifier: p.identifier,
+          name: p.model ? `Star ${p.model}` : `Star Printer (${p.identifier.slice(-8)})`,
+          model: p.model,
+        }));
+        setAvailableDevices(printers);
+        console.log('[PrinterSetup] Mapped printers:', printers);
+
+        // Auto-select first printer
+        if (printers.length === 1) {
           setPrinterType('bluetooth');
-          setPrinterName(device.name || 'Unknown Printer');
-          setDeviceId(device.id);
-          setSuccess(`Found printer: ${device.name || 'Unknown'}`);
+          setPrinterName(printers[0].name);
+          setDeviceId(printers[0].identifier);
+          setModel('Star TSP100');
+          setSuccess(`Found printer: ${printers[0].name}`);
+        } else {
+          setSuccess(`Found ${printers.length} printer(s). Select one from the list.`);
         }
+      } else {
+        console.log('[PrinterSetup] No printers found in result');
+        setError('No Star printers found. Make sure your printer is powered on and paired in iPad Settings > Bluetooth.');
       }
     } catch (err) {
-      if (err instanceof Error) {
-        if (err.name === 'NotFoundError') {
-          setError('No printer selected');
-        } else if (err.name === 'NotSupportedError') {
-          setError('Bluetooth is not supported');
-        } else {
-          setError(`Bluetooth error: ${err.message}`);
-        }
-      }
+      console.error('[PrinterSetup] Discovery error:', err);
       setScanning(false);
+      if (err instanceof Error) {
+        setError(`Discovery error: ${err.message}`);
+      } else {
+        setError('Failed to discover printers. Make sure Bluetooth is enabled.');
+      }
     }
   };
 

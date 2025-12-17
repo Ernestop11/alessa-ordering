@@ -3,6 +3,7 @@
 import { useState, useEffect } from 'react';
 import PrinterSetup, { type PrinterConfig } from './PrinterSetup';
 import { formatReceiptForPrinter } from '@/lib/printer-service';
+import StarPrinter, { isStarPrinterAvailable, formatOrderForStarPrinter } from '@/lib/star-printer';
 
 interface Props {
   tenantId?: string;
@@ -182,7 +183,37 @@ export default function PrinterSettings({ tenantId, onBack }: Props) {
 
   const handleTestPrint = async (config: PrinterConfig) => {
     try {
-      // Get test receipt data from server
+      // For Star printers in native app, use Star Printer SDK directly
+      if (config.type === 'bluetooth' && config.deviceId && isStarPrinterAvailable()) {
+        console.log('[PrinterSettings] Using Star Printer SDK for test print');
+
+        // Connect to printer
+        await StarPrinter.connect({ identifier: config.deviceId });
+
+        // Format test receipt
+        const testReceipt = formatOrderForStarPrinter({
+          id: 'TEST-' + Date.now().toString().slice(-8),
+          customerName: 'Test Customer',
+          items: [
+            { name: 'Test Item 1', menuItemName: 'Test Item 1', quantity: 2, price: 9.99 },
+            { name: 'Test Item 2', menuItemName: 'Test Item 2', quantity: 1, price: 15.50 },
+          ],
+          totalAmount: 35.48,
+          subtotalAmount: 32.48,
+          taxAmount: 3.00,
+          fulfillmentMethod: 'pickup',
+          createdAt: new Date().toISOString(),
+        });
+
+        // Print test receipt
+        await StarPrinter.printRawText({ text: testReceipt, cut: true });
+
+        setSuccess('Test print sent successfully via Star Printer');
+        setTimeout(() => setSuccess(null), 3000);
+        return;
+      }
+
+      // Fallback: Get test receipt data from server for Web Bluetooth/Network
       const response = await fetch('/api/admin/fulfillment/printer/test', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },

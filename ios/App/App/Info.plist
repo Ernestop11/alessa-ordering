@@ -6,9 +6,16 @@
 	<string>This app needs Bluetooth access to connect to receipt printers for automatic order printing.</string>
 	<key>NSBluetoothAlwaysUsageDescription</key>
 	<string>This app needs Bluetooth access to connect to receipt printers for automatic order printing.</string>
+	<key>NSLocalNetworkUsageDescription</key>
+	<string>This app needs local network access to discover and communicate with receipt printers.</string>
+	<key>UISupportedExternalAccessoryProtocols</key>
+	<array>
+		<string>jp.star-m.starpro</string>
+	</array>
 	<key>UIBackgroundModes</key>
 	<array>
 		<string>bluetooth-central</string>
+		<string>external-accessory</string>
 	</array>
 	<key>CFBundleDevelopmentRegion</key>
 	<string>en</string>

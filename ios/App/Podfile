@@ -18,6 +18,9 @@ end
 target 'App' do
   capacitor_pods
   # Add your Pods here
+
+  # Note: StarIO10/StarXpand SDK is added via Swift Package Manager (not CocoaPods)
+  # In Xcode: File > Add Packages > https://github.com/star-micronics/StarXpand-SDK-iOS
 end
 
 post_install do |installer|

@@ -1,11 +1,16 @@
 /**
  * Client-Side Printer Utility
- * Handles Bluetooth printing using Capacitor on iOS/Android tablets
- * Falls back to Web Bluetooth API for desktop browsers
+ * Handles Bluetooth printing using Star Printer SDK on iOS/Android tablets
+ * Falls back to Web Bluetooth API for desktop browsers (limited support)
  */
 
 import { formatReceiptForPrinter, sendToBluetoothPrinter, stringToBytes } from './printer-service';
 import type { SerializedOrder } from './order-serializer';
+import StarPrinter, { isStarPrinterAvailable, formatOrderForStarPrinter } from './star-printer';
+
+// Track if we have an active Star Printer connection
+let starPrinterConnected = false;
+let connectedPrinterId: string | null = null;
 
 export interface PrinterConfig {
   type: 'bluetooth' | 'network' | 'usb' | 'none';
@@ -92,7 +97,7 @@ function formatOrderForPrint(order: SerializedOrder, tenant: TenantInfo) {
 }
 
 /**
- * Print order using client-side Bluetooth (Capacitor or Web Bluetooth)
+ * Print order using client-side Bluetooth (Star Printer SDK for Capacitor native apps)
  */
 export async function printOrderClientSide(
   order: SerializedOrder,
@@ -111,7 +116,12 @@ export async function printOrderClientSide(
   }
 
   try {
-    // Format order for printing
+    // Use Star Printer SDK for native apps (Star TSP100III and other Star printers)
+    if (isStarPrinterAvailable()) {
+      return await printWithStarPrinter(order, tenant, config);
+    }
+
+    // Fallback to Web Bluetooth for non-native environments
     const orderForPrint = formatOrderForPrint(order, tenant);
     const tenantForPrint = {
       name: tenant.name,
@@ -130,7 +140,7 @@ export async function printOrderClientSide(
       config.model || 'ESC/POS'
     );
 
-    // Send to Bluetooth printer
+    // Send to Bluetooth printer via Web Bluetooth
     await sendToBluetoothPrinter(config.deviceId, receiptData);
 
     return { success: true };
@@ -140,6 +150,92 @@ export async function printOrderClientSide(
       success: false,
       error: error instanceof Error ? error.message : 'Failed to print order',
     };
+  }
+}
+
+/**
+ * Print using Star Printer SDK (for Star TSP100III and other Star printers)
+ */
+async function printWithStarPrinter(
+  order: SerializedOrder,
+  tenant: TenantInfo,
+  config: PrinterConfig
+): Promise<{ success: boolean; error?: string }> {
+  try {
+    // Connect to printer if not already connected
+    if (!starPrinterConnected || connectedPrinterId !== config.deviceId) {
+      console.log('[Star Printer] Connecting to printer:', config.deviceId);
+
+      // Disconnect from any existing connection
+      if (starPrinterConnected) {
+        try {
+          await StarPrinter.disconnect();
+        } catch (e) {
+          // Ignore disconnect errors
+        }
+      }
+
+      await StarPrinter.connect({ identifier: config.deviceId! });
+      starPrinterConnected = true;
+      connectedPrinterId = config.deviceId!;
+      console.log('[Star Printer] Connected successfully');
+    }
+
+    // Format the receipt content
+    const receiptText = formatOrderForStarPrinter({
+      id: order.id,
+      customerName: order.customerName || order.customer?.name,
+      customerPhone: order.customerPhone || order.customer?.phone,
+      items: order.items.map((item) => ({
+        menuItemName: item.menuItemName,
+        name: item.menuItemName,
+        quantity: item.quantity || 1,
+        price: Number(item.price || 0),
+        notes: undefined,
+        itemType: item.itemType,
+      })),
+      totalAmount: Number(order.totalAmount || 0),
+      subtotalAmount: Number(order.subtotalAmount || 0),
+      taxAmount: Number(order.taxAmount || 0),
+      tipAmount: Number(order.tipAmount || 0),
+      notes: order.notes || undefined,
+      fulfillmentMethod: order.fulfillmentMethod,
+      createdAt: order.createdAt,
+    });
+
+    console.log('[Star Printer] Printing order:', order.id);
+
+    // Print using the Star printer
+    await StarPrinter.printRawText({ text: receiptText, cut: true });
+
+    console.log('[Star Printer] Print successful');
+    return { success: true };
+  } catch (error) {
+    console.error('[Star Printer] Error:', error);
+
+    // Reset connection state on error
+    starPrinterConnected = false;
+    connectedPrinterId = null;
+
+    return {
+      success: false,
+      error: error instanceof Error ? error.message : 'Failed to print with Star Printer',
+    };
+  }
+}
+
+/**
+ * Disconnect from Star Printer (call when leaving fulfillment page)
+ */
+export async function disconnectStarPrinter(): Promise<void> {
+  if (starPrinterConnected) {
+    try {
+      await StarPrinter.disconnect();
+    } catch (e) {
+      // Ignore errors
+    }
+    starPrinterConnected = false;
+    connectedPrinterId = null;
   }
 }
 
