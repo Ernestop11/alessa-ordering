@@ -2828,41 +2828,17 @@ export default function OrderPageClient({
             return section.enabled !== false;
           };
 
-          // Create a map of section index to promotional banner
-          // Banners are placed after menu sections based on their position in frontendUISections
-          // Position-based ordering: Lower position = appears earlier in the page
+          // DISABLED: Old banner slot system - banners are now rendered by renderSectionsAfterMenu()
+          // The position-based system handles all banner rendering to avoid duplicates
 
-          // Get all banner types (promotional sections that appear between menu sections)
-          const allBannerTypes = ['promoBanner1', 'groceryBanner', 'panaderiaBanner', 'weCookBanner', 'dealStrip', 'qualityBanner', 'reviewsStrip'];
-
-          // Get enabled banners sorted by their position in frontendUISections
-          const sortedBanners = frontendUISections
-            .filter(s => allBannerTypes.includes(s.type) && s.enabled)
-            .sort((a, b) => a.position - b.position);
-
-          // Fixed display slots: which menu section index each banner slot comes after
-          const bannerSlots = [1, 2, 3, 5, 7, 9]; // After 1st, 2nd, 3rd, 5th, 7th, 9th menu section
-
-          // Build a map: menu section index -> banner to display (position-based assignment)
-          const bannerMap = new Map<number, FrontendUISection>();
-          sortedBanners.forEach((banner, idx) => {
-            if (idx < bannerSlots.length) {
-              bannerMap.set(bannerSlots[idx], banner);
-            }
-          });
-
-          // Helper to get banner for a slot and check if it should render a specific type
+          // Helper returns null - banners are rendered after menu by renderSectionsAfterMenu()
           const getPromoBannerForIndex = (index: number): FrontendUISection | null => {
-            return bannerMap.get(index) || null;
+            return null; // Disabled - using position-based rendering instead
           };
 
-          // Helper to check if a specific banner type should render at a specific slot
-          // Returns the banner if it's assigned to this slot, regardless of original type
+          // DISABLED: Old slot-based banner helper
           const shouldRenderBannerAtSlot = (slotIndex: number, targetTypes: string[]): FrontendUISection | null => {
-            const banner = bannerMap.get(slotIndex);
-            if (!banner) return null;
-            // Return the banner if its type is in the target types
-            return targetTypes.includes(banner.type) ? banner : null;
+            return null; // Disabled - using position-based rendering instead
           };
 
           // Universal banner renderer helper
