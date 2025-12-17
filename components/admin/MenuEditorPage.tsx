@@ -810,11 +810,30 @@ export default function MenuEditorPage() {
     }
   };
 
+  // Map of section types to their parent add-on
+  const sectionToAddOn: Record<string, string> = {
+    groceryBanner: 'grocery',
+    weekendSpecials: 'grocery',
+    bundles: 'grocery',
+    aisles: 'grocery',
+    panaderiaBanner: 'panaderia',
+    dailyFresh: 'panaderia',
+    boxBuilder: 'panaderia',
+    categories: 'panaderia',
+    buildYourOwn: 'juicebar',
+  };
+
   // Toggle section enabled/disabled - INSTANT SYNC (same pattern as Accept Orders)
+  // Also syncs with Business Add-ons when toggling add-on related sections
   const handleToggleSection = async (sectionId: string, currentEnabled: boolean) => {
     setSyncStatus('syncing');
-    
+
     try {
+      // Find the section to get its type
+      const section = frontendUISections.find(s => s.id === sectionId);
+      const sectionType = section?.type;
+      const parentAddOn = sectionType ? sectionToAddOn[sectionType] : null;
+
       const res = await fetch(`/api/admin/frontend-ui-sections?t=${Date.now()}`, {
         method: 'PUT',
         headers: {
@@ -828,14 +847,44 @@ export default function MenuEditorPage() {
       });
 
       if (!res.ok) throw new Error('Failed to toggle');
-      
+
       const data = await res.json();
       setFrontendUISections(data.sections);
+
+      // If this section belongs to an add-on, sync the add-on state
+      if (parentAddOn) {
+        const newEnabled = !currentEnabled;
+        const isAddOnCurrentlyEnabled = enabledAddOns.includes(parentAddOn);
+
+        // Only update add-on if state is different
+        if (newEnabled !== isAddOnCurrentlyEnabled) {
+          // Toggle the add-on to match
+          await fetch(`/api/admin/addons?t=${Date.now()}`, {
+            method: 'PUT',
+            headers: {
+              'Content-Type': 'application/json',
+              'Cache-Control': 'no-cache, no-store, must-revalidate',
+            },
+            body: JSON.stringify({
+              addOnId: parentAddOn,
+              enabled: newEnabled,
+            }),
+          });
+
+          // Update local state
+          if (newEnabled) {
+            setEnabledAddOns([...enabledAddOns, parentAddOn]);
+          } else {
+            setEnabledAddOns(enabledAddOns.filter(id => id !== parentAddOn));
+          }
+        }
+      }
+
       setSyncStatus('synced');
-      
+
       // Trigger router refresh for immediate frontend update (same as Accept Orders)
       router.refresh();
-      
+
       setTimeout(() => setSyncStatus('idle'), 2000);
     } catch (err) {
       console.error('Failed to toggle section', err);

@@ -111,15 +111,23 @@ export async function PUT(req: Request) {
 
     // Update frontendUISections based on enable/disable
     let updatedSections = [...currentSections];
+    const addOnSections = getAddOnSections(addOnId);
 
     if (enabled) {
-      // Seed default sections for this add-on
-      const addOnSections = getAddOnSections(addOnId);
+      // Enable existing sections or seed new ones for this add-on
       const existingSectionTypes = new Set(
         currentSections.map((s: any) => s.type)
       );
 
-      // Create default sections for each add-on section type
+      // First, enable any existing sections of these types
+      updatedSections = updatedSections.map((section: any) => {
+        if (addOnSections.includes(section.type)) {
+          return { ...section, enabled: true, updatedAt: new Date().toISOString() };
+        }
+        return section;
+      });
+
+      // Then, create any missing sections
       addOnSections.forEach((sectionType, index) => {
         // Skip if section type already exists
         if (existingSectionTypes.has(sectionType)) {
@@ -142,16 +150,13 @@ export async function PUT(req: Request) {
         updatedSections.push(newSection);
       });
     } else {
-      // Remove sections with this source
-      updatedSections = updatedSections.filter(
-        (section: any) => section.source !== addOnId
-      );
-
-      // Re-index positions after removal
-      updatedSections = updatedSections.map((section: any, index: number) => ({
-        ...section,
-        position: index,
-      }));
+      // Disable (don't remove) sections associated with this add-on
+      updatedSections = updatedSections.map((section: any) => {
+        if (addOnSections.includes(section.type)) {
+          return { ...section, enabled: false, updatedAt: new Date().toISOString() };
+        }
+        return section;
+      });
     }
 
     // Update tenant settings
