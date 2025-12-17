@@ -57,7 +57,8 @@
       "Bash(npm search:*)",
       "Bash(pod install)",
       "Bash(pod repo update:*)",
-      "Bash(pod install:*)"
+      "Bash(pod install:*)",
+      "Bash(xargs -I{} sh -c \"git show {}:components/order/OrderPageClient.tsx 2>/dev/null | grep -l \"\"Sign Out\\|sign.out\\|logout\"\" && echo {}\")"
     ],
     "deny": [],
     "ask": []

@@ -2045,19 +2045,50 @@ export default function OrderPageClient({
                           </button>
 
                           <button
+                            onClick={() => {
+                              setShowProfileMenu(false);
+                              if (customerData?.orders && customerData.orders.length > 0) {
+                                setShowReorderModal(true);
+                              } else {
+                                setShowMembershipPanel(true);
+                              }
+                            }}
+                            className="w-full flex items-center gap-3 px-3 py-2.5 rounded-xl text-left text-white/80 hover:bg-white/5 transition-all"
+                          >
+                            <span className="text-lg">🔄</span>
+                            <span className="text-sm font-medium">Quick Reorder</span>
+                            {customerData?.orders && customerData.orders.length > 0 && (
+                              <span className="ml-auto text-xs bg-amber-500 text-black px-2 py-0.5 rounded-full font-bold">
+                                {customerData.orders.length}
+                              </span>
+                            )}
+                          </button>
+
+                          <button
                             onClick={() => { setShowProfileMenu(false); setShowMembershipPanel(true); }}
                             className="w-full flex items-center gap-3 px-3 py-2.5 rounded-xl text-left text-white/80 hover:bg-white/5 transition-all"
                           >
                             <span className="text-lg">📋</span>
-                            <span className="text-sm font-medium">Order History & Reorder</span>
+                            <span className="text-sm font-medium">Order History</span>
                           </button>
 
+                          <div className="border-t border-white/10 my-2"></div>
+
                           <button
-                            onClick={() => setShowProfileMenu(false)}
-                            className="w-full flex items-center gap-3 px-3 py-2.5 rounded-xl text-left text-white/80 hover:bg-white/5 transition-all"
+                            onClick={async () => {
+                              setShowProfileMenu(false);
+                              try {
+                                await fetch('/api/rewards/logout', { method: 'POST' });
+                                setCustomerData(null);
+                                showNotification('Signed out successfully');
+                              } catch (err) {
+                                console.error('Logout failed:', err);
+                              }
+                            }}
+                            className="w-full flex items-center gap-3 px-3 py-2.5 rounded-xl text-left text-red-400 hover:bg-red-500/10 transition-all"
                           >
-                            <span className="text-lg">⚙️</span>
-                            <span className="text-sm font-medium">Account Settings</span>
+                            <span className="text-lg">🚪</span>
+                            <span className="text-sm font-medium">Sign Out</span>
                           </button>
                         </div>
                       ) : (
@@ -3999,6 +4030,23 @@ export default function OrderPageClient({
                     <p className="text-sm leading-relaxed text-white/90 mt-4 bg-white/5 rounded-lg p-3 border border-white/10">
                       {membershipProgram?.heroCopy || 'Earn puntos with every order and unlock chef-curated rewards.'}
                     </p>
+
+                    {/* Sign Out Button */}
+                    <button
+                      onClick={async () => {
+                        try {
+                          await fetch('/api/rewards/logout', { method: 'POST' });
+                          setCustomerData(null);
+                          setShowMembershipPanel(false);
+                          showNotification('Signed out successfully');
+                        } catch (err) {
+                          console.error('Logout failed:', err);
+                        }
+                      }}
+                      className="mt-4 w-full rounded-xl border-2 border-red-500/30 bg-red-500/10 px-4 py-3 text-sm font-semibold text-red-300 hover:bg-red-500/20 hover:border-red-500/50 transition"
+                    >
+                      Sign Out
+                    </button>
                   </div>
                 )}
 
