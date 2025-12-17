@@ -188,7 +188,7 @@ async function getCateringTabConfig(tenantId: string) {
   });
 
   const config = (settings?.cateringTabConfig as any) || {
-    enabled: true,
+    enabled: false, // Default to disabled - must be explicitly enabled in CateringTabEditor
     label: 'Catering',
     icon: 'ChefHat',
     description: 'Full-service events, delivered',
@@ -395,12 +395,13 @@ export default async function OrderPage() {
   // Check if restaurant is open and get frontend UI sections
   const tenantSettings = await prisma.tenantSettings.findUnique({
     where: { tenantId: tenant.id },
-    select: { operatingHours: true, isOpen: true, frontendConfig: true },
+    select: { operatingHours: true, isOpen: true, frontendConfig: true, enabledAddOns: true },
   });
 
   // Get frontend UI sections from TenantSettings.frontendConfig
   const frontendConfig = (tenantSettings?.frontendConfig || {}) as any;
   const frontendUISections = frontendConfig.frontendUISections || [];
+  const enabledAddOns = tenantSettings?.enabledAddOns || [];
 
   const hoursValidation = validateOperatingHours(
     tenantSettings?.operatingHours as any,
@@ -428,6 +429,7 @@ export default async function OrderPage() {
         closedMessage={hoursValidation.message}
         frontendConfig={tenantSettings?.frontendConfig as any}
         frontendUISections={frontendUISections}
+        enabledAddOns={enabledAddOns}
       />
     </Suspense>
   );

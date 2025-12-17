@@ -175,6 +175,7 @@ interface OrderPageClientProps {
     };
   };
   frontendUISections?: FrontendUISection[];
+  enabledAddOns?: string[];
 }
 
 type LayoutView = 'grid' | 'list' | 'cards';
@@ -285,7 +286,7 @@ export default function OrderPageClient({
   sections,
   featuredItems = [],
   tenantSlug,
-  cateringTabConfig = { enabled: true, label: 'Catering', icon: 'ChefHat', description: 'Full-service events, delivered' },
+  cateringTabConfig = { enabled: false, label: 'Catering', icon: 'ChefHat', description: 'Full-service events, delivered' },
   cateringPackages: initialCateringPackages = [],
   rewardsData,
   customerRewardsData,
@@ -293,6 +294,7 @@ export default function OrderPageClient({
   closedMessage,
   frontendConfig,
   frontendUISections: initialFrontendUISections = [],
+  enabledAddOns: initialEnabledAddOns = [],
 }: OrderPageClientProps) {
   const searchParams = useSearchParams();
   const router = useRouter();
@@ -303,12 +305,15 @@ export default function OrderPageClient({
 
   // Client-side state for frontendUISections with polling (same pattern as Accept Orders)
   const [frontendUISections, setFrontendUISections] = useState<FrontendUISection[]>(initialFrontendUISections);
-  
-  // Poll for frontend sections updates (every 10 seconds, like Accept Orders polls every 30s)
+
+  // Client-side state for enabledAddOns (grocery, panaderia, catering, etc.)
+  const [enabledAddOns, setEnabledAddOns] = useState<string[]>(initialEnabledAddOns);
+
+  // Poll for frontend sections and enabledAddOns updates (every 10 seconds, like Accept Orders polls every 30s)
   useEffect(() => {
     const fetchSections = async () => {
       try {
-        const res = await fetch(`/api/frontend-ui-sections?t=${Date.now()}`, {
+        const res = await fetch(`/api/frontend-ui-sections?format=full&t=${Date.now()}`, {
           cache: 'no-store',
           headers: {
             'Cache-Control': 'no-cache, no-store, must-revalidate',
@@ -316,21 +321,25 @@ export default function OrderPageClient({
         });
         if (res.ok) {
           const data = await res.json();
-          if (Array.isArray(data)) {
-            setFrontendUISections(data);
+          // Handle full format response with sections and enabledAddOns
+          if (data.sections && Array.isArray(data.sections)) {
+            setFrontendUISections(data.sections);
+          }
+          if (data.enabledAddOns && Array.isArray(data.enabledAddOns)) {
+            setEnabledAddOns(data.enabledAddOns);
           }
         }
       } catch (err) {
         // Silently fail - don't spam console
       }
     };
-    
+
     // Initial fetch after mount
     const timeout = setTimeout(fetchSections, 2000);
-    
+
     // Poll every 10 seconds
     const interval = setInterval(fetchSections, 10000);
-    
+
     return () => {
       clearTimeout(timeout);
       clearInterval(interval);
@@ -1528,13 +1537,17 @@ export default function OrderPageClient({
   }, [cateringGalleryImages]);
 
   // Catering is enabled if:
-  // 1. Feature flag is set, OR
-  // 2. Catering tab config says it's enabled, OR
-  // 3. There are catering packages available
-  const cateringEnabled = 
-    (tenant.featureFlags?.includes('catering') ?? false) ||
-    (cateringTabConfig?.enabled !== false) ||
-    (initialCateringPackages && initialCateringPackages.length > 0);
+  // 1. 'catering' is in enabledAddOns (primary control from menu editor), OR
+  // 2. Catering tab config explicitly says it's enabled, OR
+  // 3. Feature flag is set AND not explicitly disabled
+  // Note: The enabledAddOns is the primary control from the menu editor
+  const cateringEnabled =
+    enabledAddOns.includes('catering') ||
+    cateringTabConfig?.enabled === true ||
+    (
+      (tenant.featureFlags?.includes('catering') ?? false) &&
+      cateringTabConfig?.enabled !== false
+    );
 
   const handleCateringSubmit = useCallback(async (e: React.FormEvent) => {
     e.preventDefault();
@@ -2456,20 +2469,23 @@ export default function OrderPageClient({
             if (sortedUISections.length === 0) return null;
             
             // Find promotional banners (not menu sections) in sorted order
+            // IMPORTANT: Only include banners that are enabled
             const promoBanners = sortedUISections.filter(s =>
-              s.type === 'promoBanner1' ||
-              s.type === 'groceryBanner' ||
-              s.type === 'panaderiaBanner' ||
-              s.type === 'weCookBanner' ||
-              s.type === 'dealStrip' ||
-              s.type === 'qualityBanner' ||
-              s.type === 'reviewsStrip' ||
-              s.type === 'weekendSpecials' ||
-              s.type === 'bundles' ||
-              s.type === 'aisles' ||
-              s.type === 'dailyFresh' ||
-              s.type === 'boxBuilder' ||
-              s.type === 'categories'
+              s.enabled && (
+                s.type === 'promoBanner1' ||
+                s.type === 'groceryBanner' ||
+                s.type === 'panaderiaBanner' ||
+                s.type === 'weCookBanner' ||
+                s.type === 'dealStrip' ||
+                s.type === 'qualityBanner' ||
+                s.type === 'reviewsStrip' ||
+                s.type === 'weekendSpecials' ||
+                s.type === 'bundles' ||
+                s.type === 'aisles' ||
+                s.type === 'dailyFresh' ||
+                s.type === 'boxBuilder' ||
+                s.type === 'categories'
+              )
             );
             
             // Legacy mapping for backward compatibility (if no position-based ordering)
@@ -3086,6 +3102,11 @@ export default function OrderPageClient({
               }
 
               // Fallback to original grocery banner if no specific banner configured
+              // Only show fallback if 'grocery' is in enabledAddOns
+              // This is the primary control - if grocery add-on is disabled, don't show any grocery banner
+              const groceryAddOnEnabled = enabledAddOns.includes('grocery');
+              if (!groceryAddOnEnabled) return null;
+
               return (
                 <div className="mb-10 relative overflow-hidden rounded-3xl bg-gradient-to-r from-green-700 via-green-600 to-green-700 p-1">
                   <div className="relative overflow-hidden rounded-[22px] bg-gradient-to-br from-green-950 to-green-900 p-6 md:p-8">

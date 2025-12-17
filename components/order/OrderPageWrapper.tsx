@@ -114,6 +114,7 @@ interface OrderPageWrapperProps {
     };
   };
   frontendUISections?: FrontendUISection[];
+  enabledAddOns?: string[];
 }
 
 // UI Version Toggle - Set to 'polished' for new UI, 'classic' for original
