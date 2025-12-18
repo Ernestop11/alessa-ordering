@@ -34,11 +34,12 @@ export default function CartDrawer() {
       {/* Slide-up drawer */}
       {open && (
         <div
-          className="fixed inset-0 bg-black/40 backdrop-blur-sm flex justify-end z-40"
+          className="fixed inset-0 bg-black/40 backdrop-blur-sm flex items-end sm:items-stretch sm:justify-end z-40"
           onClick={() => setOpen(false)}
         >
           <div
-            className="w-full sm:w-[420px] bg-white rounded-l-2xl shadow-2xl p-6 overflow-y-auto"
+            className="w-full sm:w-[420px] max-h-[90vh] bg-white rounded-t-2xl sm:rounded-l-2xl sm:rounded-tr-none shadow-2xl p-4 sm:p-6 overflow-y-auto"
+            style={{ paddingBottom: 'env(safe-area-inset-bottom, 16px)' }}
             onClick={(e) => e.stopPropagation()}
           >
             <div className="flex justify-between items-center mb-4">

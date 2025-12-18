@@ -522,7 +522,7 @@ export default function Cart() {
   }, [items.length]);
 
   return (
-    <div className="flex w-full max-w-lg flex-col gap-6 rounded-3xl border border-gray-100 bg-white p-6 shadow-xl md:p-8">
+    <div className="flex w-full max-w-lg flex-col gap-4 sm:gap-6 rounded-3xl border border-gray-100 bg-white p-4 sm:p-6 shadow-xl md:p-8">
       <header className="flex items-center justify-between">
         <div>
           <h2 className="text-2xl font-bold text-gray-900">Checkout</h2>
@@ -797,7 +797,7 @@ export default function Cart() {
 
               <div>
                 <p className="text-sm font-semibold text-gray-800">Tip the team</p>
-                <div className="mt-3 grid grid-cols-4 gap-3">
+                <div className="mt-3 grid grid-cols-2 sm:grid-cols-4 gap-2 sm:gap-3">
                   {TIP_OPTIONS.map((option) => (
                     <button
                       key={option}
@@ -905,8 +905,9 @@ export default function Cart() {
                 Earn {estimatedPoints} loyalty points with this order.
               </div>
             )}
+            {/* Hide debug info on mobile */}
             {paymentSessionId && checkoutStep === "payment" && (
-              <p className="text-xs text-gray-500">
+              <p className="hidden sm:block text-xs text-gray-500">
                 Payment session ID: <span className="font-mono">{paymentSessionId}</span>
               </p>
             )}

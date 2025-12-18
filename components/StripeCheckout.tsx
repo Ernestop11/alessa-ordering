@@ -183,11 +183,8 @@ export default function StripeCheckout({ clientSecret, successPath = "/order/suc
           ) : null}
           
           {/* ALWAYS render PaymentElement - match frontend UI styling */}
-          <div 
-            className="relative w-full bg-white rounded-lg border border-gray-200 p-4" 
-            style={{ 
-              minHeight: '350px',
-            }}
+          <div
+            className="relative w-full bg-white rounded-lg border border-gray-200 p-3 sm:p-4 min-h-[280px] sm:min-h-[350px]"
           >
             <PaymentElement 
               key={clientSecret}

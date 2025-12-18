@@ -233,7 +233,7 @@ export default function EnhancedCheckout({
       {/* Tip Selection */}
       <div className="space-y-3">
         <h3 className="font-medium text-gray-900">Add a Tip (Optional)</h3>
-        <div className="grid grid-cols-4 gap-2">
+        <div className="grid grid-cols-2 sm:grid-cols-4 gap-2">
           {[0, 10, 15, 20].map((percentage) => (
             <button
               key={percentage}
@@ -276,7 +276,7 @@ export default function EnhancedCheckout({
       </div>
 
       {/* Action Buttons */}
-      <div className="flex gap-3">
+      <div className="flex flex-col-reverse sm:flex-row gap-3">
         <button
           type="button"
           onClick={onBack}
