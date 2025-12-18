@@ -111,9 +111,13 @@ export default function StripeCheckout({ clientSecret, successPath = "/order/suc
     });
 
     pr.canMakePayment().then((result) => {
+      console.log('[Stripe] canMakePayment result:', result);
       if (result) {
+        console.log('[Stripe] Apple Pay available:', result.applePay);
+        console.log('[Stripe] Google Pay available:', result.googlePay);
         setPaymentRequest(pr);
       } else {
+        console.log('[Stripe] No payment request methods available');
         setPaymentRequest(null);
       }
     });
