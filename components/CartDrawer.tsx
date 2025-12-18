@@ -6,13 +6,14 @@ import { useCart } from "../lib/store/cart";
 import StripeCheckout, { StripeCheckoutWrapper } from "./StripeCheckout";
 import EnhancedCheckout, { CheckoutFormData } from "./EnhancedCheckout";
 
-type CreateIntentResponse = { clientSecret?: string; error?: string };
+type CreateIntentResponse = { clientSecret?: string; stripeAccount?: string; error?: string };
 type CheckoutStep = 'cart' | 'customer-info' | 'payment';
 
 export default function CartDrawer() {
   const [open, setOpen] = useState(false);
   const { items } = useCart();
   const [clientSecret, setClientSecret] = useState<string | null>(null);
+  const [stripeAccount, setStripeAccount] = useState<string | undefined>(undefined);
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState<string | null>(null);
   const [checkoutStep, setCheckoutStep] = useState<CheckoutStep>('cart');
@@ -120,6 +121,7 @@ export default function CartDrawer() {
                       const responseData: CreateIntentResponse = await res.json();
                       if (responseData.clientSecret) {
                         setClientSecret(responseData.clientSecret);
+                        setStripeAccount(responseData.stripeAccount);
                         setCheckoutStep('payment');
                       } else {
                         setError(responseData.error || "Failed to create payment intent");
@@ -149,7 +151,7 @@ export default function CartDrawer() {
                 >
                   ← Edit Information
                 </button>
-                <StripeCheckoutWrapper clientSecret={clientSecret} totalAmount={drawerTotal} />
+                <StripeCheckoutWrapper clientSecret={clientSecret} totalAmount={drawerTotal} stripeAccount={stripeAccount} />
               </div>
             )}
           </div>

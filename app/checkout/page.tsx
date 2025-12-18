@@ -23,6 +23,7 @@ export default function CheckoutPage() {
   const [orderType, setOrderType] = useState<'delivery' | 'pickup'>('delivery');
   const [loading, setLoading] = useState(false);
   const [clientSecret, setClientSecret] = useState<string | null>(null);
+  const [stripeAccount, setStripeAccount] = useState<string | undefined>(undefined);
   const [error, setError] = useState<string | null>(null);
 
   const handleCreatePaymentIntent = async () => {
@@ -40,28 +41,36 @@ export default function CheckoutPage() {
     setError(null);
 
     try {
-      const response = await fetch('/api/orders/create-payment-intent', {
+      // Build order payload for the payment intent API
+      const order = {
+        items: items.map((item) => ({
+          menuItemId: item.id,
+          quantity: item.quantity,
+          price: item.price,
+        })),
+        subtotalAmount: total(),
+        totalAmount: total(),
+        customerName: customerInfo.name,
+        customerEmail: customerInfo.email,
+        customerPhone: customerInfo.phone,
+        fulfillmentMethod: orderType,
+        deliveryAddress: orderType === 'delivery' ? customerInfo.address : undefined,
+      };
+
+      const response = await fetch('/api/payments/intent', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({
-          items: items.map((item) => ({
-            id: item.id,
-            name: item.name,
-            price: item.price,
-            quantity: item.quantity,
-          })),
-          customer: customerInfo,
-          orderType,
-          total: total(),
-        }),
+        body: JSON.stringify({ order }),
       });
 
       if (!response.ok) {
-        throw new Error('Failed to create payment intent');
+        const errorData = await response.json();
+        throw new Error(errorData.error || 'Failed to create payment intent');
       }
 
       const data = await response.json();
       setClientSecret(data.clientSecret);
+      setStripeAccount(data.stripeAccount);
     } catch (err) {
       setError(err instanceof Error ? err.message : 'An error occurred');
     } finally {
@@ -207,6 +216,7 @@ export default function CheckoutPage() {
                   clientSecret={clientSecret}
                   successPath={`/order/success?tenant=${tenantSlug}`}
                   totalAmount={total()}
+                  stripeAccount={stripeAccount}
                 />
               </div>
             )}
