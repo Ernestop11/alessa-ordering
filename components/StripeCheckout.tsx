@@ -62,51 +62,47 @@ export default function StripeCheckout({ clientSecret, successPath = "/order/suc
 
   useEffect(() => {
     if (!stripe || !totalAmount) {
+      console.log('[Stripe] PaymentRequest skipped - stripe:', !!stripe, 'totalAmount:', totalAmount);
       setPaymentRequest(null);
       return;
     }
+
+    console.log('[Stripe] Creating PaymentRequest for amount:', totalAmount);
+
     const pr = stripe.paymentRequest({
       country: "US",
       currency: "usd",
       total: {
-        label: `${tenant.name} Order`,
+        label: tenant.name || "Order",
         amount: Math.max(50, Math.round(totalAmount * 100)),
       },
       requestPayerName: true,
       requestPayerEmail: true,
     });
 
-    // Handle Apple Pay merchant validation
+    // Handle the paymentmethod event - this fires when user authorizes payment
     pr.on('paymentmethod', async (event) => {
-      // For Apple Pay, we need to validate the merchant
-      if (event.paymentMethod.type === 'apple_pay') {
-        try {
-          const validationResponse = await fetch('/api/payments/apple/validate', {
-            method: 'POST',
-            headers: { 'Content-Type': 'application/json' },
-            body: JSON.stringify({
-              validationURL: event.paymentMethod.applePay?.validationURL,
-            }),
-          });
+      console.log('[Stripe] PaymentMethod event received:', event.paymentMethod.type);
 
-          if (validationResponse.ok) {
-            const data = await validationResponse.json();
-            if (data.merchantSession) {
-              // Complete the payment method
-              event.complete('success');
-            } else {
-              event.complete('fail');
-            }
-          } else {
-            event.complete('fail');
-          }
-        } catch (error) {
-          console.error('[Apple Pay] Validation error:', error);
-          event.complete('fail');
-        }
+      // Confirm the payment with the PaymentIntent
+      const { error: confirmError, paymentIntent } = await stripe.confirmCardPayment(
+        clientSecret,
+        { payment_method: event.paymentMethod.id },
+        { handleActions: false }
+      );
+
+      if (confirmError) {
+        console.error('[Stripe] Payment confirmation error:', confirmError);
+        event.complete('fail');
       } else {
-        // For other payment methods, complete normally
         event.complete('success');
+        if (paymentIntent?.status === 'requires_action') {
+          // Handle 3D Secure
+          const { error } = await stripe.confirmCardPayment(clientSecret);
+          if (error) {
+            console.error('[Stripe] 3DS error:', error);
+          }
+        }
       }
     });
 
@@ -117,11 +113,11 @@ export default function StripeCheckout({ clientSecret, successPath = "/order/suc
         console.log('[Stripe] Google Pay available:', result.googlePay);
         setPaymentRequest(pr);
       } else {
-        console.log('[Stripe] No payment request methods available');
+        console.log('[Stripe] No payment request methods available - check: 1) Apple Pay set up on device, 2) Safari browser, 3) Domain registered with Stripe');
         setPaymentRequest(null);
       }
     });
-  }, [stripe, totalAmount, tenant.name]);
+  }, [stripe, totalAmount, tenant.name, clientSecret]);
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
