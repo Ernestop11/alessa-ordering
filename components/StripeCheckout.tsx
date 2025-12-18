@@ -1,8 +1,8 @@
 "use client";
 
-import { useState, useEffect } from "react";
+import { useState, useEffect, useMemo } from "react";
 import { useRouter } from "next/navigation";
-import type { PaymentRequest } from "@stripe/stripe-js";
+import type { PaymentRequest, Stripe } from "@stripe/stripe-js";
 import {
   PaymentElement,
   useStripe,
@@ -13,7 +13,23 @@ import {
 import { loadStripe } from "@stripe/stripe-js";
 import { useTenantTheme } from "./TenantThemeProvider";
 
-const stripePromise = loadStripe(process.env.NEXT_PUBLIC_STRIPE_PUBLISHABLE_KEY!);
+// Cache for stripe instances by account ID
+const stripePromiseCache: Record<string, Promise<Stripe | null>> = {};
+
+// Get or create a stripe instance for a specific account
+function getStripePromise(stripeAccount?: string): Promise<Stripe | null> {
+  const cacheKey = stripeAccount || 'platform';
+
+  if (!stripePromiseCache[cacheKey]) {
+    const options = stripeAccount ? { stripeAccount } : undefined;
+    stripePromiseCache[cacheKey] = loadStripe(
+      process.env.NEXT_PUBLIC_STRIPE_PUBLISHABLE_KEY!,
+      options
+    );
+  }
+
+  return stripePromiseCache[cacheKey];
+}
 
 interface StripeCheckoutProps {
   clientSecret: string;
@@ -253,18 +269,18 @@ interface StripeCheckoutWrapperProps {
 }
 
 export function StripeCheckoutWrapper({ clientSecret, successPath, totalAmount, stripeAccount }: StripeCheckoutWrapperProps) {
+  // Get the appropriate stripe instance for this account
+  const stripePromise = useMemo(() => {
+    if (stripeAccount) {
+      console.log('[Stripe] Using Stripe Connect account:', stripeAccount);
+    }
+    return getStripePromise(stripeAccount);
+  }, [stripeAccount]);
+
   if (!clientSecret) return null;
-  
-  // For Stripe Connect, pass the account ID to Elements
-  // This ensures the client_secret is validated against the correct account
-  const options: { clientSecret: string; stripeAccount?: string } = { clientSecret };
-  if (stripeAccount) {
-    options.stripeAccount = stripeAccount;
-    console.log('[Stripe] Using Stripe Connect account:', stripeAccount);
-  }
-  
+
   return (
-    <Elements stripe={stripePromise} options={options}>
+    <Elements stripe={stripePromise} options={{ clientSecret }}>
       <StripeCheckout clientSecret={clientSecret} successPath={successPath} totalAmount={totalAmount} />
     </Elements>
   );
