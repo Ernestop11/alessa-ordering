@@ -298,6 +298,11 @@ public class StarPrinterPlugin: CAPPlugin, CAPBridgedPlugin {
 
         let cut = call.getBool("cut") ?? true
 
+        // IMPORTANT: TSP100III series is a graphics-only printer
+        // It does NOT support actionPrintText - must use actionPrintImage
+        // For now, we'll try actionPrintText first (works on mC-Print, TSP650, etc.)
+        // If it fails with TSP100III, need to render text as image
+
         Task {
             do {
                 let builder = StarXpandCommand.StarXpandCommandBuilder()
@@ -318,7 +323,8 @@ public class StarPrinterPlugin: CAPPlugin, CAPBridgedPlugin {
 
                 call.resolve(["success": true])
             } catch {
-                call.reject("Print failed: \(error.localizedDescription)")
+                print("[StarPrinter] Print failed (may be TSP100III which requires image printing): \(error)")
+                call.reject("Print failed: \(error.localizedDescription). Note: TSP100III requires image-based printing, not text.")
             }
         }
     }
