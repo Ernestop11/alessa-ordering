@@ -1,7 +1,8 @@
 'use client';
 
 import { useState, useEffect } from 'react';
-import { Brain, Zap, TrendingUp, AlertCircle, CheckCircle2, Loader2, RefreshCw } from 'lucide-react';
+import { Brain, Zap, TrendingUp, AlertCircle, CheckCircle2, Loader2, RefreshCw, Wifi, WifiOff } from 'lucide-react';
+import { useAlfredWebSocket } from './useAlfredWebSocket';
 
 interface AlfredStatus {
   status: 'active' | 'thinking' | 'working' | 'idle' | 'offline';
@@ -23,16 +24,30 @@ interface AlfredStatus {
 }
 
 export default function AlfredPanel() {
+  // Try WebSocket first, fallback to polling
+  const { socket, status: wsStatus, connected: wsConnected } = useAlfredWebSocket();
   const [alfredStatus, setAlfredStatus] = useState<AlfredStatus | null>(null);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
   const [refreshing, setRefreshing] = useState(false);
 
+  // Use WebSocket status if available, otherwise poll
   useEffect(() => {
-    fetchAlfredStatus();
-    const interval = setInterval(fetchAlfredStatus, 10000); // Poll every 10s
-    return () => clearInterval(interval);
-  }, []);
+    if (wsStatus) {
+      setAlfredStatus(wsStatus);
+      setLoading(false);
+      setError(null);
+    }
+  }, [wsStatus]);
+
+  useEffect(() => {
+    // Fallback to polling if WebSocket not connected
+    if (!wsConnected) {
+      fetchAlfredStatus();
+      const interval = setInterval(fetchAlfredStatus, 10000); // Poll every 10s
+      return () => clearInterval(interval);
+    }
+  }, [wsConnected]);
 
   const fetchAlfredStatus = async () => {
     try {
@@ -79,26 +94,227 @@ export default function AlfredPanel() {
         body: JSON.stringify({ suggestionId }),
       });
       
-      if (res.ok) {
-        await fetchAlfredStatus();
+      if (!res.ok) {
+        const errorData = await res.json().catch(() => ({}));
+        throw new Error(errorData.message || 'Failed to apply suggestion');
       }
-    } catch (err) {
+
+      const data = await res.json();
+      console.log('Suggestion applied:', data);
+      
+      // Refresh status to update suggestions list
+      await fetchAlfredStatus();
+    } catch (err: any) {
       console.error('Failed to apply suggestion:', err);
+      setError(err.message || 'Failed to apply suggestion');
+    }
+  };
+
+  const handleApplyAllFixes = async () => {
+    if (!alfredStatus?.suggestions || alfredStatus.suggestions.length === 0) {
+      setError('No suggestions to apply');
+      return;
+    }
+
+    try {
+      setRefreshing(true);
+      setError(null);
+      
+      setAlfredStatus(prev => prev ? {
+        ...prev,
+        status: 'working',
+        currentTask: {
+          id: `apply-all-${Date.now()}`,
+          description: `Applying ${alfredStatus.suggestions.length} fixes...`,
+          progress: 0,
+        }
+      } : null);
+
+      // Apply all suggestions sequentially
+      let applied = 0;
+      const total = alfredStatus.suggestions.length;
+
+      for (const suggestion of alfredStatus.suggestions) {
+        try {
+          const res = await fetch('/api/alfred/apply', {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify({ suggestionId: suggestion.id }),
+          });
+
+          if (res.ok) {
+            applied++;
+            // Update progress
+            setAlfredStatus(prev => prev ? {
+              ...prev,
+              currentTask: prev.currentTask ? {
+                ...prev.currentTask,
+                progress: Math.round((applied / total) * 100),
+                description: `Applied ${applied} of ${total} fixes...`,
+              } : null,
+            } : null);
+          }
+        } catch (err) {
+          console.error(`Failed to apply suggestion ${suggestion.id}:`, err);
+        }
+      }
+
+      // Refresh status
+      await fetchAlfredStatus();
+      
+      setAlfredStatus(prev => prev ? {
+        ...prev,
+        status: 'active',
+        currentTask: null,
+        lastAction: `Applied ${applied} of ${total} fixes`,
+      } : null);
+
+    } catch (err: any) {
+      console.error('Failed to apply all fixes:', err);
+      setError(err.message || 'Failed to apply all fixes');
+      setAlfredStatus(prev => prev ? {
+        ...prev,
+        status: 'active',
+        currentTask: null,
+      } : null);
+    } finally {
+      setRefreshing(false);
     }
   };
 
   const handleTriggerImprovement = async () => {
     try {
       setRefreshing(true);
+      setError(null);
+      
+      // Update status to show it's working
+      setAlfredStatus(prev => prev ? {
+        ...prev,
+        status: 'working',
+        currentTask: {
+          id: `improve-${Date.now()}`,
+          description: 'Running improvement cycle...',
+          progress: 0,
+        }
+      } : null);
+
       const res = await fetch('/api/alfred/improve', {
         method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
       });
       
-      if (res.ok) {
-        await fetchAlfredStatus();
+      if (!res.ok) {
+        const errorData = await res.json().catch(() => ({}));
+        throw new Error(errorData.message || `HTTP ${res.status}`);
       }
-    } catch (err) {
+
+      const data = await res.json();
+      console.log('Improvement cycle result:', data);
+      
+      // Wait a moment then refresh status to get suggestions
+      setTimeout(async () => {
+        await fetchAlfredStatus();
+      }, 2000);
+    } catch (err: any) {
       console.error('Failed to trigger improvement:', err);
+      setError(err.message || 'Failed to trigger improvement cycle');
+      setAlfredStatus(prev => prev ? {
+        ...prev,
+        status: 'active',
+        currentTask: null,
+      } : null);
+    } finally {
+      setRefreshing(false);
+    }
+  };
+
+  const handleCleanCode = async () => {
+    try {
+      setRefreshing(true);
+      setError(null);
+      
+      setAlfredStatus(prev => prev ? {
+        ...prev,
+        status: 'working',
+        currentTask: {
+          id: `clean-${Date.now()}`,
+          description: 'Cleaning code...',
+          progress: 0,
+        }
+      } : null);
+
+      const res = await fetch('/api/alfred/clean', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ autoApply: false }),
+      });
+      
+      if (!res.ok) {
+        const errorData = await res.json().catch(() => ({}));
+        throw new Error(errorData.message || `HTTP ${res.status}`);
+      }
+
+      const data = await res.json();
+      console.log('Code cleaned:', data);
+      
+      // Refresh status after cleaning
+      setTimeout(async () => {
+        await fetchAlfredStatus();
+      }, 1000);
+    } catch (err: any) {
+      console.error('Failed to clean code:', err);
+      setError(err.message || 'Failed to clean code');
+      setAlfredStatus(prev => prev ? {
+        ...prev,
+        status: 'active',
+        currentTask: null,
+      } : null);
+    } finally {
+      setRefreshing(false);
+    }
+  };
+
+  const handleAnalyzeUI = async () => {
+    try {
+      setRefreshing(true);
+      setError(null);
+      
+      setAlfredStatus(prev => prev ? {
+        ...prev,
+        status: 'thinking',
+        currentTask: {
+          id: `ui-analyze-${Date.now()}`,
+          description: 'Analyzing UI components...',
+          progress: 0,
+        }
+      } : null);
+
+      const res = await fetch('/api/alfred/ui/analyze', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+      });
+      
+      if (!res.ok) {
+        const errorData = await res.json().catch(() => ({}));
+        throw new Error(errorData.message || `HTTP ${res.status}`);
+      }
+
+      const data = await res.json();
+      console.log('UI analysis:', data);
+      
+      setTimeout(async () => {
+        await fetchAlfredStatus();
+      }, 1000);
+    } catch (err: any) {
+      console.error('Failed to analyze UI:', err);
+      setError(err.message || 'Failed to analyze UI');
+      setAlfredStatus(prev => prev ? {
+        ...prev,
+        status: 'active',
+        currentTask: null,
+      } : null);
+    } finally {
+      setRefreshing(false);
     }
   };
 
@@ -151,6 +367,17 @@ export default function AlfredPanel() {
             >
               <RefreshCw className={`h-4 w-4 ${refreshing ? 'animate-spin' : ''}`} />
             </button>
+            {wsConnected ? (
+              <span className="flex items-center gap-1 text-xs text-green-600" title="WebSocket connected">
+                <Wifi className="h-3 w-3" />
+                <span className="hidden sm:inline">Live</span>
+              </span>
+            ) : (
+              <span className="flex items-center gap-1 text-xs text-gray-400" title="Polling mode">
+                <WifiOff className="h-3 w-3" />
+                <span className="hidden sm:inline">Polling</span>
+              </span>
+            )}
             <span className={`rounded-full px-4 py-2 text-sm font-semibold flex items-center gap-2 ${statusColors[alfredStatus?.status || 'offline']}`}>
               {statusIcons[alfredStatus?.status || 'offline']}
               {alfredStatus?.status.toUpperCase() || 'OFFLINE'}
@@ -212,13 +439,60 @@ export default function AlfredPanel() {
         )}
 
         {/* Actions */}
-        <div className="mt-4 flex gap-2">
+        <div className="mt-4 grid grid-cols-1 sm:grid-cols-3 gap-2">
           <button
-            onClick={handleTriggerImprovement}
-            disabled={refreshing || alfredStatus?.status === 'offline'}
-            className="flex-1 rounded-lg bg-gradient-to-r from-blue-600 to-purple-600 px-4 py-2 text-sm font-semibold text-white hover:from-blue-700 hover:to-purple-700 transition-all disabled:opacity-50 disabled:cursor-not-allowed shadow-md"
+            onClick={(e) => {
+              e.preventDefault();
+              e.stopPropagation();
+              handleTriggerImprovement();
+            }}
+            disabled={refreshing || alfredStatus?.status === 'offline' || alfredStatus?.status === 'working'}
+            className="rounded-lg bg-gradient-to-r from-blue-600 to-purple-600 px-4 py-2 text-sm font-semibold text-white hover:from-blue-700 hover:to-purple-700 transition-all disabled:opacity-50 disabled:cursor-not-allowed shadow-md active:scale-95"
           >
-            {refreshing ? 'Running...' : 'Trigger Improvement Cycle'}
+            {alfredStatus?.status === 'working' && alfredStatus?.currentTask?.description.includes('improvement') ? (
+              <span className="flex items-center gap-2">
+                <Loader2 className="h-4 w-4 animate-spin" />
+                Running...
+              </span>
+            ) : (
+              'Improvement Cycle'
+            )}
+          </button>
+          <button
+            onClick={(e) => {
+              e.preventDefault();
+              e.stopPropagation();
+              handleCleanCode();
+            }}
+            disabled={refreshing || alfredStatus?.status === 'offline' || alfredStatus?.status === 'working'}
+            className="rounded-lg bg-gradient-to-r from-green-600 to-emerald-600 px-4 py-2 text-sm font-semibold text-white hover:from-green-700 hover:to-emerald-700 transition-all disabled:opacity-50 disabled:cursor-not-allowed shadow-md active:scale-95"
+          >
+            {alfredStatus?.status === 'working' && alfredStatus?.currentTask?.description.includes('Cleaning') ? (
+              <span className="flex items-center gap-2">
+                <Loader2 className="h-4 w-4 animate-spin" />
+                Cleaning...
+              </span>
+            ) : (
+              'Clean Code'
+            )}
+          </button>
+          <button
+            onClick={(e) => {
+              e.preventDefault();
+              e.stopPropagation();
+              handleAnalyzeUI();
+            }}
+            disabled={refreshing || alfredStatus?.status === 'offline' || alfredStatus?.status === 'working' || alfredStatus?.status === 'thinking'}
+            className="rounded-lg bg-gradient-to-r from-orange-600 to-red-600 px-4 py-2 text-sm font-semibold text-white hover:from-orange-700 hover:to-red-700 transition-all disabled:opacity-50 disabled:cursor-not-allowed shadow-md active:scale-95"
+          >
+            {alfredStatus?.status === 'thinking' || (alfredStatus?.status === 'working' && alfredStatus?.currentTask?.description.includes('Analyzing')) ? (
+              <span className="flex items-center gap-2">
+                <Loader2 className="h-4 w-4 animate-spin" />
+                Analyzing...
+              </span>
+            ) : (
+              'Analyze UI'
+            )}
           </button>
         </div>
       </div>
@@ -226,10 +500,33 @@ export default function AlfredPanel() {
       {/* Suggestions */}
       {alfredStatus?.suggestions && alfredStatus.suggestions.length > 0 && (
         <div className="rounded-xl border border-gray-200 bg-white p-6 shadow-sm">
-          <h4 className="font-bold text-gray-900 mb-4 flex items-center gap-2">
-            <Zap className="h-5 w-5 text-yellow-600" />
-            Alfred's Suggestions ({alfredStatus.suggestions.length})
-          </h4>
+          <div className="flex items-center justify-between mb-4">
+            <h4 className="font-bold text-gray-900 flex items-center gap-2">
+              <Zap className="h-5 w-5 text-yellow-600" />
+              Alfred's Suggestions ({alfredStatus.suggestions.length})
+            </h4>
+            <button
+              onClick={(e) => {
+                e.preventDefault();
+                e.stopPropagation();
+                handleApplyAllFixes();
+              }}
+              disabled={refreshing || alfredStatus?.status === 'working'}
+              className="rounded-lg bg-gradient-to-r from-green-600 to-emerald-600 px-4 py-2 text-sm font-semibold text-white hover:from-green-700 hover:to-emerald-700 transition-all disabled:opacity-50 disabled:cursor-not-allowed shadow-md active:scale-95 flex items-center gap-2"
+            >
+              {refreshing && alfredStatus?.currentTask?.description.includes('Applying') ? (
+                <>
+                  <Loader2 className="h-4 w-4 animate-spin" />
+                  Applying...
+                </>
+              ) : (
+                <>
+                  <CheckCircle2 className="h-4 w-4" />
+                  Apply All Fixes
+                </>
+              )}
+            </button>
+          </div>
           <div className="space-y-3">
             {alfredStatus.suggestions.map((suggestion) => (
               <div
