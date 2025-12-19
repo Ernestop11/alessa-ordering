@@ -61,7 +61,10 @@
       "Bash(xargs -I{} sh -c \"git show {}:components/order/OrderPageClient.tsx 2>/dev/null | grep -l \"\"Sign Out\\|sign.out\\|logout\"\" && echo {}\")",
       "Bash(timeout 30 npm run build:*)",
       "Bash(timeout 60 npm run build:*)",
-      "Bash(timeout 120 npm run build:*)"
+      "Bash(timeout 120 npm run build:*)",
+      "Bash(openssl s_client:*)",
+      "Bash(openssl x509:*)",
+      "Bash(xargs:*)"
     ],
     "deny": [],
     "ask": []

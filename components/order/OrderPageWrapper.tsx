@@ -3,6 +3,7 @@
 import { useState, useEffect } from 'react';
 import dynamic from 'next/dynamic';
 import type { OrderMenuSection, OrderMenuItem } from './OrderPageClient';
+import type { TemplateSettings } from '@/lib/template-renderer';
 
 // Dynamic import with SSR disabled to prevent hydration mismatches
 // The OrderPageClient uses window/localStorage during render which causes glitches
@@ -115,6 +116,8 @@ interface OrderPageWrapperProps {
   };
   frontendUISections?: FrontendUISection[];
   enabledAddOns?: string[];
+  templateSettings?: TemplateSettings;
+  isPreview?: boolean;
 }
 
 // UI Version Toggle - Set to 'polished' for new UI, 'classic' for original

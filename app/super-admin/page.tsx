@@ -168,11 +168,57 @@ export default async function SuperAdminPage() {
     estimatedStripeVolume,
   } as const;
 
+  // Fetch global templates for onboarding
+  const globalTemplates = await prisma.tenantTemplate.findMany({
+    where: {
+      isGlobal: true,
+      tenantId: null,
+    },
+    include: {
+      settings: true,
+      _count: {
+        select: {
+          blocks: true,
+        },
+      },
+    },
+    orderBy: { name: 'asc' },
+  });
+
+  // Transform database templates to BusinessTemplate format
+  const templateIcons: Record<string, string> = {
+    RESTAURANT: '🍽️',
+    BAKERY: '🥖',
+    COFFEE_SHOP: '☕',
+    GYM: '💪',
+    CAR_SHOP: '🚗',
+    GROCERY: '🛒',
+    CUSTOM: '🎨',
+  };
+
+  const businessTemplates = globalTemplates.map((template) => ({
+    id: template.id,
+    name: template.name,
+    icon: templateIcons[template.type] || '📄',
+    description: `${template.type} template with ${template._count?.blocks || 0} blocks`,
+    colors: {
+      primary: template.settings?.primaryColor || '#dc2626',
+      secondary: template.settings?.secondaryColor || '#f59e0b',
+    },
+    features: [
+      template.type,
+      `${template._count?.blocks || 0} blocks`,
+      template.settings?.glowEffect ? 'Glow effects' : '',
+      template.settings?.animation ? 'Animations' : '',
+    ].filter(Boolean),
+  }));
+
   return (
     <SuperAdminDashboard
       initialTenants={summaries}
       initialMetrics={metrics}
       rootDomain={ROOT_DOMAIN}
+      initialTemplates={businessTemplates}
     />
   );
 }

@@ -46,6 +46,7 @@ model MenuItem {
   tenant                Tenant       @relation(fields: [tenantId], references: [id], onDelete: Cascade)
   section               MenuSection? @relation(fields: [menuSectionId], references: [id], onDelete: SetNull)
   orders                OrderItem[]
+  blockMenuItems        TenantBlockMenuItem[]
 }
 
 model CateringPackage {
@@ -297,6 +298,7 @@ model Tenant {
   convertedFromLead      Lead?              @relation("LeadToTenant")
   productSubscriptions   TenantProduct[]    @relation("TenantProducts")
   taxRemittances         TaxRemittance[]
+  template               TenantTemplate?
 
   @@index([status])
 }
@@ -1021,4 +1023,89 @@ model CRMNote {
   @@index([author])
   @@index([pinned])
   @@index([createdAt])
+}
+
+enum TemplateType {
+  RESTAURANT
+  BAKERY
+  COFFEE_SHOP
+  GROCERY
+  GYM
+  CAR_SHOP
+  CUSTOM
+}
+
+model TenantTemplate {
+  id              String   @id @default(cuid())
+  tenantId        String?  @unique
+  tenant          Tenant?  @relation(fields: [tenantId], references: [id])
+  name            String
+  type            TemplateType @default(RESTAURANT)
+  isGlobal        Boolean  @default(false)
+  blocks          TenantBlock[]
+  settings        TenantTemplateSettings?
+  createdAt       DateTime @default(now())
+  updatedAt       DateTime @updatedAt
+}
+
+model TenantBlock {
+  id              String   @id @default(cuid())
+  templateId      String
+  template        TenantTemplate @relation(fields: [templateId], references: [id], onDelete: Cascade)
+  type            String   // HERO, MENU_SECTION, FEATURED_ITEMS, etc.
+  title           String?
+  subtitle        String?
+  badgeText       String?
+  ctaText         String?
+  ctaLink         String?
+  config          Json     @default("{}")
+  position        Int      @default(0)
+  active          Boolean  @default(true)
+  menuItems       TenantBlockMenuItem[]
+  createdAt       DateTime @default(now())
+  updatedAt       DateTime @updatedAt
+}
+
+model TenantBlockMenuItem {
+  id              String   @id @default(cuid())
+  blockId         String
+  block           TenantBlock @relation(fields: [blockId], references: [id], onDelete: Cascade)
+  menuItemId      String
+  menuItem        MenuItem @relation(fields: [menuItemId], references: [id])
+  displayOrder    Int      @default(0)
+  createdAt       DateTime @default(now())
+
+  @@unique([blockId, menuItemId])
+}
+
+model TenantTemplateSettings {
+  id                  String   @id @default(cuid())
+  templateId          String   @unique
+  template            TenantTemplate @relation(fields: [templateId], references: [id], onDelete: Cascade)
+
+  // Background
+  backgroundGradient  String   @default("linear-gradient(180deg, #1c1917 0%, #292524 50%, #1c1917 100%)")
+  backgroundPattern   String?
+  patternOpacity      Float    @default(0.1)
+  patternSize         String?
+
+  // Colors
+  primaryColor        String   @default("#dc2626")
+  secondaryColor      String   @default("#f59e0b")
+
+  // Effects
+  animation           String?
+  glowEffect          Boolean  @default(false)
+  particleEffect      String?
+
+  // Card Styling
+  cardStyle           String   @default("dark-red")
+  cardImageEffect     String   @default("soft-shadow")
+  cardBackground      String?  // Custom uploaded background
+
+  // Typography
+  headingFont         String   @default("Bebas Neue")
+  bodyFont            String   @default("Inter")
+
+  updatedAt           DateTime @updatedAt
 }

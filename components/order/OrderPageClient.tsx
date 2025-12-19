@@ -46,6 +46,7 @@ import JoinRewardsModal from './JoinRewardsModal';
 import ReorderModal from './ReorderModal';
 import MenuSectionGrid from './MenuSectionGrid';
 import { isTimeSpecificActive, getTimeSpecificPrice, getTimeSpecificLabel, shouldShowItem } from '../../lib/menu-time-specific';
+import { generateCSSVariables, generatePageStyles, generatePatternStyles, getAnimationClass, type TemplateSettings } from '@/lib/template-renderer';
 
 interface CustomizationOption {
   id: string;
@@ -176,6 +177,8 @@ interface OrderPageClientProps {
   };
   frontendUISections?: FrontendUISection[];
   enabledAddOns?: string[];
+  templateSettings?: TemplateSettings;
+  isPreview?: boolean;
 }
 
 type LayoutView = 'grid' | 'list' | 'cards';
@@ -295,8 +298,11 @@ export default function OrderPageClient({
   frontendConfig,
   frontendUISections: initialFrontendUISections = [],
   enabledAddOns: initialEnabledAddOns = [],
+  templateSettings: initialTemplateSettings,
+  isPreview = false,
 }: OrderPageClientProps) {
   const searchParams = useSearchParams();
+  const [templateSettings, setTemplateSettings] = useState<TemplateSettings | undefined>(initialTemplateSettings);
   const router = useRouter();
   const tenant = useTenantTheme();
   const assets = getTenantAssets(tenantSlug || tenant.slug);
@@ -345,6 +351,40 @@ export default function OrderPageClient({
       clearInterval(interval);
     };
   }, []);
+
+  // Poll for template settings updates in preview mode (every 3 seconds)
+  useEffect(() => {
+    if (!isPreview || !tenantSlug) return;
+
+    const fetchTemplateSettings = async () => {
+      try {
+        const res = await fetch(`/api/preview/${tenantSlug}?t=${Date.now()}`, {
+          cache: 'no-store',
+          headers: {
+            'Cache-Control': 'no-cache, no-store, must-revalidate',
+          },
+        });
+        if (res.ok) {
+          const data = await res.json();
+          if (data.data) {
+            setTemplateSettings(data.data);
+          }
+        }
+      } catch (err) {
+        // Silently fail in preview mode
+      }
+    };
+
+    // Initial fetch immediately
+    fetchTemplateSettings();
+
+    // Poll every 3 seconds in preview mode
+    const interval = setInterval(fetchTemplateSettings, 3000);
+
+    return () => {
+      clearInterval(interval);
+    };
+  }, [isPreview, tenantSlug]);
 
   // Menu sections with real-time availability updates
   const [currentSections, setCurrentSections] = useState<OrderMenuSection[]>(sections);
@@ -2481,8 +2521,25 @@ export default function OrderPageClient({
     return renderedSections;
   };
 
+  // Apply template styles
+  const pageStyles = templateSettings ? generatePageStyles(templateSettings) : {}
+  const patternStyles = templateSettings ? generatePatternStyles(templateSettings) : null
+  const cssVars = templateSettings ? generateCSSVariables(templateSettings) : ''
+  const animationClass = templateSettings ? getAnimationClass(templateSettings.animation) : ''
+
   return (
-    <div className="min-h-screen bg-[#0d0d0d] text-white relative overflow-hidden">
+    <div
+      className={`min-h-screen text-white relative overflow-hidden ${animationClass}`}
+      style={{
+        ...pageStyles,
+        ...(cssVars ? { ['--template-vars' as any]: cssVars } : {}),
+      }}
+    >
+      {/* Pattern Overlay */}
+      {patternStyles && (
+        <div style={patternStyles} />
+      )}
+
       {/* Ambient LED Glow Effects */}
       <div className="fixed inset-0 pointer-events-none z-0">
         {/* Top-left red glow */}

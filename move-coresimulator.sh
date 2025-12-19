@@ -34,3 +34,6 @@ echo "   Source: $CORESIMULATOR_SOURCE"
 echo "   Destination: $CORESIMULATOR_DEST"
 
 
+
+
+

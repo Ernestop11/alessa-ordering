@@ -6,6 +6,7 @@ import { Suspense } from 'react';
 import OrderPageWrapper from '../../components/order/OrderPageWrapper';
 import { cookies } from 'next/headers';
 import { validateOperatingHours } from '@/lib/hours-validator';
+import { getTemplateSettings, type TemplateSettings } from '@/lib/template-renderer';
 
 // Force dynamic rendering to ensure tenant data is always fresh
 export const dynamic = 'force-dynamic'
@@ -381,8 +382,14 @@ async function getCustomerRewardsData(tenantId: string) {
   };
 }
 
-export default async function OrderPage() {
+export default async function OrderPage({
+  searchParams,
+}: {
+  searchParams: Promise<{ preview?: string }> | { preview?: string }
+}) {
   const tenant = await requireTenant();
+  const params = await Promise.resolve(searchParams || {})
+  const isPreview = params.preview === 'true'
 
   // Force fresh data on every request
   const sections = await getMenuSections(tenant.id);
@@ -391,6 +398,9 @@ export default async function OrderPage() {
   const cateringPackages = await getCateringPackages(tenant.id);
   const rewardsData = await getRewardsData(tenant.id);
   const customerRewardsData = await getCustomerRewardsData(tenant.id);
+
+  // Fetch template settings for preview mode
+  const templateSettings = await getTemplateSettings(tenant.id);
 
   // Check if restaurant is open and get frontend UI sections
   const tenantSettings = await prisma.tenantSettings.findUnique({
@@ -430,6 +440,8 @@ export default async function OrderPage() {
         frontendConfig={tenantSettings?.frontendConfig as any}
         frontendUISections={frontendUISections}
         enabledAddOns={enabledAddOns}
+        templateSettings={templateSettings}
+        isPreview={isPreview}
       />
     </Suspense>
   );

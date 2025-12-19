@@ -5,6 +5,7 @@ import { useCallback, useEffect, useMemo, useState } from 'react';
 import OnboardingWizard from './OnboardingWizard';
 import MLMAdminPanel from '../mlm/MLMAdminPanel';
 import CRMPanel from './CRMPanel';
+import TemplateLibrary from './TemplateLibrary';
 import TopMetricsBar from './dashboard/TopMetricsBar';
 import TenantsServicesPanel from './dashboard/TenantsServicesPanel';
 import PipelinePanel from './dashboard/PipelinePanel';
@@ -104,6 +105,7 @@ interface Props {
   initialTenants: TenantSummary[];
   initialMetrics: SuperMetrics;
   rootDomain: string;
+  initialTemplates?: BusinessTemplate[];
 }
 
 interface TenantListItem {
@@ -440,7 +442,7 @@ function toTenantForm(summary: TenantSummary): TenantForm {
   };
 }
 
-export default function SuperAdminDashboard({ initialTenants, initialMetrics, rootDomain }: Props) {
+export default function SuperAdminDashboard({ initialTenants, initialMetrics, rootDomain, initialTemplates }: Props) {
   const [activeTab, setActiveTab] = useState<SuperAdminTab>('dashboard');
   const [tenants, setTenants] = useState(initialTenants);
   const [metrics, setMetrics] = useState(initialMetrics);
@@ -1544,7 +1546,7 @@ export default function SuperAdminDashboard({ initialTenants, initialMetrics, ro
         {activeTab === 'onboarding' && (
           <section className="rounded-2xl border border-gray-200 bg-white p-8 shadow-sm">
             <OnboardingWizard
-              templates={BUSINESS_TEMPLATES}
+              templates={initialTemplates || BUSINESS_TEMPLATES}
               rootDomain={rootDomain}
               onCreateTenant={handleCreateTenant}
               loading={createLoading}
@@ -1562,52 +1564,45 @@ export default function SuperAdminDashboard({ initialTenants, initialMetrics, ro
         )}
 
         {activeTab === 'templates' && (
-          <section className="space-y-6">
-            <div>
-              <h2 className="text-2xl font-bold text-gray-900">Business Templates</h2>
-              <p className="mt-2 text-gray-600">Choose from pre-configured templates for different business types</p>
-            </div>
-            <div className="grid gap-6 md:grid-cols-2 lg:grid-cols-3">
-              {BUSINESS_TEMPLATES.map((template) => (
-                <div
-                  key={template.id}
-                  className="rounded-2xl border-2 border-gray-200 bg-white p-6 shadow-lg transition hover:scale-105 hover:shadow-xl"
-                >
-                  <div className="text-5xl mb-4">{template.icon}</div>
-                  <h3 className="text-xl font-bold text-gray-900">{template.name}</h3>
-                  <p className="mt-2 text-sm text-gray-600">{template.description}</p>
-                  <div className="mt-4 flex gap-2">
-                    <div
-                      className="h-8 w-8 rounded-full border-2 border-gray-300"
-                      style={{ backgroundColor: template.colors.primary }}
-                    />
-                    <div
-                      className="h-8 w-8 rounded-full border-2 border-gray-300"
-                      style={{ backgroundColor: template.colors.secondary }}
-                    />
-                  </div>
-                  <div className="mt-4 flex flex-wrap gap-2">
-                    {template.features.map((feature) => (
-                      <span
-                        key={feature}
-                        className="rounded-full bg-gray-100 px-3 py-1 text-xs font-medium text-gray-700"
-                      >
-                        {feature}
-                      </span>
-                    ))}
-                  </div>
-                  <button
-                    onClick={() => {
-                      setActiveTab('onboarding');
-                      setSelectedTemplate(template);
-                    }}
-                    className="mt-6 w-full rounded-lg bg-blue-600 px-4 py-2 text-sm font-semibold text-white transition hover:bg-blue-700"
-                  >
-                    Use This Template
-                  </button>
-                </div>
-              ))}
-            </div>
+          <section className="rounded-2xl border border-gray-200 bg-white p-6 shadow-sm">
+            <TemplateLibrary
+              onSelectTemplate={(templateId) => {
+                // Navigate to template builder or onboarding with template selected
+                console.log('Selected template:', templateId)
+                // Could navigate to onboarding with template pre-selected
+              }}
+              onImportTemplate={async (templateId, tenantId) => {
+                if (!tenantId) {
+                  alert('Please select a tenant first from the Tenants tab')
+                  return
+                }
+                try {
+                  const exportRes = await fetch(`/api/super/templates/export/${templateId}`)
+                  if (!exportRes.ok) throw new Error('Failed to export template')
+                  
+                  const templateData = await exportRes.json()
+                  
+                  const importRes = await fetch('/api/super/templates/import', {
+                    method: 'POST',
+                    headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify({
+                      templateData: templateData.data,
+                      tenantId,
+                    }),
+                  })
+                  
+                  if (importRes.ok) {
+                    alert('Template imported successfully!')
+                    await refreshTenants()
+                  } else {
+                    throw new Error('Failed to import template')
+                  }
+                } catch (error) {
+                  console.error('Error importing template:', error)
+                  alert('Failed to import template')
+                }
+              }}
+            />
           </section>
         )}
 
