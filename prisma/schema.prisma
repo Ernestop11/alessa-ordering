@@ -143,30 +143,37 @@ model GroceryBundle {
 }
 
 model Order {
-  id                String      @id @default(uuid())
-  tenantId          String
-  customerId        String?
-  subtotalAmount    Float?
-  taxAmount         Float?      @default(0)
-  deliveryFee       Float?      @default(0)
-  tipAmount         Float?      @default(0)
-  platformFee       Float?      @default(0)
-  totalAmount       Float
-  paymentIntentId   String?     @unique
-  status            String      @default("pending")
-  fulfillmentMethod String      @default("pickup")
-  deliveryPartner   String?
-  paymentMethod     String?
-  customerName      String?
-  customerEmail     String?
-  customerPhone     String?
-  notes             String?
-  acknowledgedAt    DateTime?
-  createdAt         DateTime    @default(now())
-  updatedAt         DateTime    @updatedAt
-  tenant            Tenant      @relation(fields: [tenantId], references: [id], onDelete: Cascade)
-  customer          Customer?   @relation(fields: [customerId], references: [id], onDelete: SetNull)
-  items             OrderItem[]
+  id                   String      @id @default(uuid())
+  tenantId             String
+  customerId           String?
+  subtotalAmount       Float?
+  taxAmount            Float?      @default(0)
+  deliveryFee          Float?      @default(0)
+  tipAmount            Float?      @default(0)
+  platformFee          Float?      @default(0)
+  totalAmount          Float
+  paymentIntentId      String?     @unique
+  status               String      @default("pending")
+  fulfillmentMethod    String      @default("pickup")
+  deliveryPartner      String?     // 'uber', 'doordash', 'self'
+  deliveryStatus       String?     // 'pending', 'picking_up', 'en_route', 'delivered', 'cancelled'
+  deliveryTrackingUrl  String?
+  uberDeliveryId       String?
+  doordashDeliveryId   String?
+  deliveryAddress      Json?       // Full address object for delivery
+  deliveryInstructions String?
+  deliveryQuoteId      String?     // Quote ID from delivery partner
+  paymentMethod        String?
+  customerName         String?
+  customerEmail        String?
+  customerPhone        String?
+  notes                String?
+  acknowledgedAt       DateTime?
+  createdAt            DateTime    @default(now())
+  updatedAt            DateTime    @updatedAt
+  tenant               Tenant      @relation(fields: [tenantId], references: [id], onDelete: Cascade)
+  customer             Customer?   @relation(fields: [customerId], references: [id], onDelete: SetNull)
+  items                OrderItem[]
 }
 
 model CateringInquiry {
