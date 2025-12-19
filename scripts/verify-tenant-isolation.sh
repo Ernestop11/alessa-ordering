@@ -102,3 +102,6 @@ ENDSSH
 echo ""
 echo "✅ Isolation check complete"
 
+
+
+

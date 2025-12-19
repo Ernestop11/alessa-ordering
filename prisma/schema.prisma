@@ -233,9 +233,94 @@ model TaxRemittance {
   updatedAt           DateTime  @updatedAt
   tenant              Tenant    @relation(fields: [tenantId], references: [id], onDelete: Cascade)
 
+  taxChecks       TaxCheck[]
+  achPayments     TaxAchPayment[]
+
   @@index([tenantId])
   @@index([status])
   @@index([periodStart, periodEnd])
+}
+
+// Accountant model for CPA portal
+model Accountant {
+  id               String   @id @default(uuid())
+  email            String   @unique
+  name             String
+  firmName         String?
+  phone            String?
+  magicLinkToken   String?  @unique
+  magicLinkExpiry  DateTime?
+  createdAt        DateTime @default(now())
+  updatedAt        DateTime @updatedAt
+
+  tenantAccess     AccountantTenantAccess[]
+}
+
+model AccountantTenantAccess {
+  id           String     @id @default(uuid())
+  accountantId String
+  tenantId     String
+  accessLevel  String     @default("view")  // view, export, manage
+  grantedAt    DateTime   @default(now())
+  grantedBy    String?    // admin user who granted access
+
+  accountant   Accountant @relation(fields: [accountantId], references: [id], onDelete: Cascade)
+  tenant       Tenant     @relation(fields: [tenantId], references: [id], onDelete: Cascade)
+
+  @@unique([accountantId, tenantId])
+  @@index([accountantId])
+  @@index([tenantId])
+}
+
+// Tax check printing
+model TaxCheck {
+  id              String   @id @default(uuid())
+  tenantId        String
+  tenant          Tenant   @relation(fields: [tenantId], references: [id], onDelete: Cascade)
+  remittanceId    String?
+  remittance      TaxRemittance? @relation(fields: [remittanceId], references: [id], onDelete: SetNull)
+
+  checkNumber     Int
+  payee           String   // "California CDTFA" etc
+  amount          Float
+  memo            String?
+  status          String   @default("pending")  // pending, printed, mailed, cleared
+  printedAt       DateTime?
+  clearedAt       DateTime?
+
+  createdAt       DateTime @default(now())
+  updatedAt       DateTime @updatedAt
+
+  @@index([tenantId])
+  @@index([remittanceId])
+  @@index([status])
+}
+
+// Remitian ACH integration
+model TaxAchPayment {
+  id              String   @id @default(uuid())
+  tenantId        String
+  tenant          Tenant   @relation(fields: [tenantId], references: [id], onDelete: Cascade)
+  remittanceId    String
+  remittance      TaxRemittance @relation(fields: [remittanceId], references: [id], onDelete: Cascade)
+
+  remitianPaymentId String?  // External Remitian ID
+  recipientType   String     // state, city, county
+  recipientName   String     // "California CDTFA"
+  routingNumber   String
+  accountNumber   String     // Encrypted
+  amount          Float
+  status          String     @default("pending")
+  processedAt     DateTime?
+  confirmationNo  String?
+  errorMessage    String?
+
+  createdAt       DateTime @default(now())
+  updatedAt       DateTime @updatedAt
+
+  @@index([tenantId])
+  @@index([remittanceId])
+  @@index([status])
 }
 
 model OrderItem {
@@ -280,6 +365,7 @@ model Tenant {
   subscriptionMonthlyFee Float              @default(0)
   subscriptionAddons     String[]           @default([])
   featureFlags           String[]           @default([])
+  stripeCustomerId       String?            // Stripe customer ID for subscriptions
   createdAt              DateTime           @default(now())
   updatedAt              DateTime           @updatedAt
   settings               TenantSettings?
@@ -306,6 +392,7 @@ model Tenant {
   convertedFromLead      Lead?              @relation("LeadToTenant")
   productSubscriptions   TenantProduct[]    @relation("TenantProducts")
   taxRemittances         TaxRemittance[]
+  accountantAccess       AccountantTenantAccess[]
   template               TenantTemplate?
   drivers                Driver[]
 
@@ -353,10 +440,22 @@ model TenantIntegration {
   tenantId                             String    @unique
   doorDashStoreId                      String?
   doorDashOAuthToken                   String?
+  // Uber Direct OAuth
+  uberOAuthAccessToken                 String?
+  uberOAuthRefreshToken                String?
+  uberOAuthExpiresAt                   DateTime?
+  uberMerchantId                       String?
+  uberOnboardingStatus                 String?   @default("not_connected") // not_connected, pending, connected, failed
   uberClientId                         String?
   uberClientSecret                     String?
   uberCustomerId                       String?
   uberSandbox                          Boolean?  @default(true)
+  // DoorDash Drive OAuth
+  doordashAccessToken                  String?
+  doordashRefreshToken                 String?
+  doordashExpiresAt                    DateTime?
+  doordashBusinessId                   String?
+  doordashOnboardingStatus             String?   @default("not_connected") // not_connected, pending, connected, failed
   cloverMerchantId                     String?
   cloverApiKey                         String?
   stripeAccountId                      String?
@@ -1020,40 +1119,106 @@ model Product {
   id            String          @id @default(uuid())
   name          String
   slug          String          @unique
-  type          ProductType
   description   String?
-  status        String          @default("active") // 'active', 'beta', 'coming_soon', 'deprecated'
-  monthlyPrice  Float?
-  setupFee      Float?
-  features      String[]        @default([])
-  icon          String? // Emoji or icon name
+  category      String          @default("core") // "core", "addon", "premium"
+  type          ProductType     // Keep for backward compatibility
+  icon          String? // Icon name or URL
   color         String? // Hex color for UI
-  order         Int             @default(0) // Display order
+
+  // Base pricing (fallback if no tiers)
+  monthlyPrice  Float?
+  setupFee      Float           @default(0)
+
+  // Features list
+  features      String[]        @default([])
+
+  // Stripe integration
+  stripeProductId String?
+
+  // Status
+  status        String          @default("active") // 'active', 'beta', 'coming_soon', 'deprecated'
+  isActive      Boolean         @default(true)
+  sortOrder     Int             @default(0)
+
   createdAt     DateTime        @default(now())
   updatedAt     DateTime        @updatedAt
+
+  pricingTiers  ProductPricingTier[]
   subscriptions TenantProduct[]
 
   @@index([type])
   @@index([status])
+  @@index([category])
+  @@index([isActive])
+}
+
+model ProductPricingTier {
+  id              String   @id @default(uuid())
+  productId       String
+  product         Product  @relation(fields: [productId], references: [id], onDelete: Cascade)
+
+  name            String   // "Basic", "Pro", "Enterprise"
+  slug            String   // "basic", "pro", "enterprise"
+  monthlyPrice    Float
+  yearlyPrice     Float?   // Optional annual discount
+  setupFee        Float    @default(0)
+
+  features        String[] // Features included in this tier
+  limits          Json?    // { orders: 500, users: 5 }
+
+  stripePriceId   String?  // Monthly price ID
+  stripeYearlyPriceId String?
+
+  isPopular       Boolean  @default(false)  // Show "Popular" badge
+  sortOrder       Int      @default(0)
+
+  createdAt       DateTime @default(now())
+  updatedAt       DateTime @updatedAt
+
+  tenantProducts  TenantProduct[]
+
+  @@unique([productId, slug])
+  @@index([productId])
+  @@index([isPopular])
 }
 
 // Tenant Product Subscriptions
 model TenantProduct {
   id           String    @id @default(uuid())
   tenantId     String
+  tenant       Tenant    @relation("TenantProducts", fields: [tenantId], references: [id], onDelete: Cascade)
   productId    String
-  status       String    @default("active") // 'active', 'paused', 'cancelled', 'trial', 'prepaid'
+  product      Product   @relation(fields: [productId], references: [id], onDelete: Cascade)
+  tierId       String?   // If using pricing tier
+  tier         ProductPricingTier? @relation(fields: [tierId], references: [id], onDelete: SetNull)
+
+  status       String    @default("active") // 'active', 'paused', 'cancelled', 'trial', 'prepaid', 'past_due'
+  billingCycle String    @default("monthly") // 'monthly', 'yearly'
+
+  // Stripe subscription
+  stripeSubscriptionId    String?
+  stripeSubscriptionItemId String?
+  currentPeriodStart      DateTime?
+  currentPeriodEnd        DateTime?
+
+  // Pricing snapshot (in case pricing changes)
+  monthlyAmount   Float
+
   subscribedAt DateTime  @default(now())
   cancelledAt  DateTime?
+  cancelReason String?
   trialEndsAt  DateTime?
   expiresAt    DateTime? // For prepaid subscriptions (e.g., Sept 9, 2027)
-  tenant       Tenant    @relation("TenantProducts", fields: [tenantId], references: [id], onDelete: Cascade)
-  product      Product   @relation(fields: [productId], references: [id], onDelete: Cascade)
+
+  createdAt     DateTime @default(now())
+  updatedAt     DateTime @updatedAt
 
   @@unique([tenantId, productId])
   @@index([tenantId])
   @@index([productId])
+  @@index([tierId])
   @@index([status])
+  @@index([billingCycle])
   @@index([expiresAt])
 }
 
