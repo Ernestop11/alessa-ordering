@@ -2,10 +2,10 @@ import { NextRequest, NextResponse } from 'next/server';
 import { requireTenant } from '@/lib/tenant';
 import prisma from '@/lib/prisma';
 import {
-  getUberAccessToken,
-  getUberCustomerId,
+  getUberCredentialsForTenant,
+  getUberAccessTokenForTenant,
   getUberApiBaseUrl,
-  isUberDirectConfigured,
+  isUberDirectConfiguredForTenant,
 } from '@/lib/uber/auth';
 
 /**
@@ -98,8 +98,11 @@ export async function POST(req: NextRequest) {
       );
     }
 
+    // Get credentials for this tenant (tenant-specific or global fallback)
+    const uberCredentials = getUberCredentialsForTenant(tenant.integrations, tenant.id);
+
     // Check if Uber Direct is configured
-    if (!isUberDirectConfigured()) {
+    if (!isUberDirectConfiguredForTenant(tenant.integrations)) {
       console.log('[Uber Direct Create] API not configured, using mock data');
 
       const deliveryId = `uber_mock_${Date.now()}`;
@@ -138,13 +141,13 @@ export async function POST(req: NextRequest) {
         trackingUrl,
         estimatedPickupTime: new Date(Date.now() + 15 * 60 * 1000).toISOString(),
         estimatedDropoffTime: new Date(Date.now() + 35 * 60 * 1000).toISOString(),
-        message: 'Mock delivery - Configure Uber credentials for live deliveries',
+        message: 'Mock delivery - Configure Uber Direct credentials in admin settings for live deliveries',
         mode: 'mock',
       });
     }
 
-    // Get access token
-    const accessToken = await getUberAccessToken();
+    // Get access token using tenant credentials
+    const accessToken = await getUberAccessTokenForTenant(uberCredentials!);
     if (!accessToken) {
       return NextResponse.json(
         { error: 'Failed to authenticate with Uber Direct API' },
@@ -152,7 +155,7 @@ export async function POST(req: NextRequest) {
       );
     }
 
-    const customerId = getUberCustomerId();
+    const customerId = uberCredentials!.customerId;
     const baseUrl = getUberApiBaseUrl();
 
     // Build Uber Direct delivery request
