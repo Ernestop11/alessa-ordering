@@ -1,8 +1,7 @@
 'use client';
 
 import { useState, useEffect } from 'react';
-import { Brain, Zap, TrendingUp, AlertCircle, CheckCircle2, Loader2, RefreshCw, Wifi, WifiOff } from 'lucide-react';
-import { useAlfredWebSocket } from './useAlfredWebSocket';
+import { Brain, Zap, TrendingUp, AlertCircle, CheckCircle2, Loader2, RefreshCw } from 'lucide-react';
 
 interface AlfredStatus {
   status: 'active' | 'thinking' | 'working' | 'idle' | 'offline';
@@ -24,30 +23,18 @@ interface AlfredStatus {
 }
 
 export default function AlfredPanel() {
-  // Try WebSocket first, fallback to polling
-  const { socket, status: wsStatus, connected: wsConnected } = useAlfredWebSocket();
   const [alfredStatus, setAlfredStatus] = useState<AlfredStatus | null>(null);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
   const [refreshing, setRefreshing] = useState(false);
 
-  // Use WebSocket status if available, otherwise poll
   useEffect(() => {
-    if (wsStatus) {
-      setAlfredStatus(wsStatus);
-      setLoading(false);
-      setError(null);
-    }
-  }, [wsStatus]);
-
-  useEffect(() => {
-    // Fallback to polling if WebSocket not connected
-    if (!wsConnected) {
-      fetchAlfredStatus();
-      const interval = setInterval(fetchAlfredStatus, 10000); // Poll every 10s
-      return () => clearInterval(interval);
-    }
-  }, [wsConnected]);
+    // Initial fetch
+    fetchAlfredStatus();
+    // Poll every 10 seconds
+    const interval = setInterval(fetchAlfredStatus, 10000);
+    return () => clearInterval(interval);
+  }, []);
 
   const fetchAlfredStatus = async () => {
     try {
@@ -367,17 +354,6 @@ export default function AlfredPanel() {
             >
               <RefreshCw className={`h-4 w-4 ${refreshing ? 'animate-spin' : ''}`} />
             </button>
-            {wsConnected ? (
-              <span className="flex items-center gap-1 text-xs text-green-600" title="WebSocket connected">
-                <Wifi className="h-3 w-3" />
-                <span className="hidden sm:inline">Live</span>
-              </span>
-            ) : (
-              <span className="flex items-center gap-1 text-xs text-gray-400" title="Polling mode">
-                <WifiOff className="h-3 w-3" />
-                <span className="hidden sm:inline">Polling</span>
-              </span>
-            )}
             <span className={`rounded-full px-4 py-2 text-sm font-semibold flex items-center gap-2 ${statusColors[alfredStatus?.status || 'offline']}`}>
               {statusIcons[alfredStatus?.status || 'offline']}
               {alfredStatus?.status.toUpperCase() || 'OFFLINE'}
