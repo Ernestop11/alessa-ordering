@@ -1107,5 +1107,12 @@ model TenantTemplateSettings {
   headingFont         String   @default("Bebas Neue")
   bodyFont            String   @default("Inter")
 
+  // Branding
+  logoUrl             String?
+  logoSize            String   @default("medium")
+  faviconUrl          String?
+  businessName        String?
+  tagline             String?
+
   updatedAt           DateTime @updatedAt
 }

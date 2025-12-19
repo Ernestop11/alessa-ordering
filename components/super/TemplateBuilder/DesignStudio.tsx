@@ -1,6 +1,7 @@
 'use client'
 
 import { useState, useEffect } from 'react'
+import BrandingPicker from './BrandingPicker'
 import GradientPicker from './GradientPicker'
 import PatternPicker from './PatternPicker'
 import EffectsPicker from './EffectsPicker'
@@ -23,6 +24,12 @@ interface TenantTemplateSettings {
   cardBackground: string | null
   headingFont: string
   bodyFont: string
+  // Branding
+  logoUrl: string | null
+  logoSize: 'small' | 'medium' | 'large'
+  faviconUrl: string | null
+  businessName: string | null
+  tagline: string | null
 }
 
 interface Props {
@@ -47,10 +54,16 @@ const DEFAULT_SETTINGS: TenantTemplateSettings = {
   cardBackground: null,
   headingFont: 'Bebas Neue',
   bodyFont: 'Inter',
+  // Branding defaults
+  logoUrl: null,
+  logoSize: 'medium',
+  faviconUrl: null,
+  businessName: null,
+  tagline: null,
 }
 
 export default function DesignStudio({ templateId, settings, onClose, onSave }: Props) {
-  const [activeTab, setActiveTab] = useState<'gradient' | 'pattern' | 'effects' | 'cards'>('gradient')
+  const [activeTab, setActiveTab] = useState<'branding' | 'gradient' | 'pattern' | 'effects' | 'cards'>('branding')
   const [localSettings, setLocalSettings] = useState<Partial<TenantTemplateSettings>>(
     settings || DEFAULT_SETTINGS
   )
@@ -107,6 +120,7 @@ export default function DesignStudio({ templateId, settings, onClose, onSave }: 
         <div className="bg-slate-850 border-b border-slate-700">
           <div className="flex">
             {[
+              { id: 'branding', label: 'Branding', icon: '🏷️', desc: 'Logo & identity' },
               { id: 'gradient', label: 'Gradients', icon: '🌈', desc: 'Background colors' },
               { id: 'pattern', label: 'Patterns', icon: '🔲', desc: 'Overlay patterns' },
               { id: 'effects', label: 'Effects', icon: '✨', desc: 'Animations' },
@@ -134,6 +148,14 @@ export default function DesignStudio({ templateId, settings, onClose, onSave }: 
 
         {/* Tab Content */}
         <div className="flex-1 overflow-y-auto p-6 bg-slate-900">
+          {activeTab === 'branding' && (
+            <BrandingPicker
+              settings={localSettings}
+              onChange={setLocalSettings}
+              templateId={templateId}
+            />
+          )}
+
           {activeTab === 'gradient' && (
             <GradientPicker
               settings={localSettings}

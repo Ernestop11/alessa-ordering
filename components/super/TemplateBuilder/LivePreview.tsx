@@ -1,6 +1,6 @@
 'use client'
 
-import { useState, useRef, useEffect } from 'react'
+import { useState, useRef, useEffect, useCallback } from 'react'
 
 interface Props {
   tenantSlug: string
@@ -11,45 +11,60 @@ export default function LivePreview({ tenantSlug, onRefresh }: Props) {
   const iframeRef = useRef<HTMLIFrameElement>(null)
   const [isAutoRefresh, setIsAutoRefresh] = useState(true)
   const [scale, setScale] = useState(100)
-  const [previewKey, setPreviewKey] = useState(0)
+  const [isLoading, setIsLoading] = useState(true)
 
   // Build preview URL based on tenant slug
   // Routes use /order, not /{tenantSlug}/order
   // Tenant is resolved via middleware from host/subdomain
-  const rootDomain = typeof window !== 'undefined' 
-    ? (window.location.hostname.includes('alessacloud.com') 
-        ? 'alessacloud.com' 
+  const rootDomain = typeof window !== 'undefined'
+    ? (window.location.hostname.includes('alessacloud.com')
+        ? 'alessacloud.com'
         : window.location.hostname.split('.').slice(-2).join('.'))
     : 'alessacloud.com'
-  
+
   // Map tenant slugs to their actual domains
   // lapoblanita -> lapoblanitamexicanfood.com (custom domain) or lapoblanita.alessacloud.com
   const tenantDomainMap: Record<string, string> = {
     'lapoblanita': 'lapoblanitamexicanfood.com',
     'lasreinas': 'lasreinascolusa.com',
   }
-  
+
   // For tenant-specific templates, use subdomain or custom domain
   // For global templates, use default tenant
   const effectiveSlug = tenantSlug === 'global' || !tenantSlug ? 'lapoblanita' : tenantSlug
   const domain = tenantDomainMap[effectiveSlug] || `${effectiveSlug}.${rootDomain}`
-  const previewUrl = `https://${domain}/order?preview=true&t=${Date.now()}`
+  const basePreviewUrl = `https://${domain}/order?preview=true`
 
-  // Auto-refresh every 3 seconds when enabled
+  // Soft refresh - reload iframe content without remounting
+  const softRefresh = useCallback(() => {
+    if (iframeRef.current) {
+      try {
+        // Try to reload the iframe content without full remount
+        const iframe = iframeRef.current
+        // Update src with new timestamp to bust cache
+        iframe.src = `${basePreviewUrl}&t=${Date.now()}`
+      } catch {
+        // Cross-origin fallback - update src attribute
+        iframeRef.current.src = `${basePreviewUrl}&t=${Date.now()}`
+      }
+    }
+    if (onRefresh) onRefresh()
+  }, [basePreviewUrl, onRefresh])
+
+  // Auto-refresh every 5 seconds when enabled (increased from 3s to reduce flicker)
   useEffect(() => {
     if (!isAutoRefresh) return
 
     const interval = setInterval(() => {
-      setPreviewKey(prev => prev + 1)
-      if (onRefresh) onRefresh()
-    }, 3000)
+      softRefresh()
+    }, 5000)
 
     return () => clearInterval(interval)
-  }, [isAutoRefresh, onRefresh])
+  }, [isAutoRefresh, softRefresh])
 
   const handleRefresh = () => {
-    setPreviewKey(prev => prev + 1)
-    if (onRefresh) onRefresh()
+    setIsLoading(true)
+    softRefresh()
   }
 
   const handleScaleChange = (newScale: number) => {
@@ -118,10 +133,10 @@ export default function LivePreview({ tenantSlug, onRefresh }: Props) {
           }}
         >
           <iframe
-            key={previewKey}
             ref={iframeRef}
-            src={previewUrl}
-            className="w-full h-full border-0"
+            src={`${basePreviewUrl}&t=${Date.now()}`}
+            onLoad={() => setIsLoading(false)}
+            className={`w-full h-full border-0 transition-opacity duration-300 ${isLoading ? 'opacity-50' : 'opacity-100'}`}
             style={{
               minHeight: '100vh',
             }}
