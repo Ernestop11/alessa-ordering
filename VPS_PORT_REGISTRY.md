@@ -1,7 +1,7 @@
 # 🔌 VPS Port Allocation Registry
 
 **VPS IP**: 77.243.85.8
-**Last Updated**: November 8, 2025
+**Last Updated**: December 19, 2025
 
 ---
 
@@ -14,6 +14,7 @@
 | **443** | HTTPS | Nginx | 🟢 Active | Nginx | SSL termination |
 | **3000** | azteka-api | Vite | 🟢 Active | azteka-dsd | Vite preview server |
 | **4000** | alessa-ordering | Next.js | 🟢 Active | alessa-ordering | **RESERVED - DO NOT USE** |
+| **4010** | alfred-ai | Next.js | 🟢 Active | alessa | AI Assistant (Alfred) |
 | **5432** | PostgreSQL | Database | 🟢 Active | System | Multiple databases |
 
 ---
