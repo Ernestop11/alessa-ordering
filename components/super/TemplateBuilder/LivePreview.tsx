@@ -13,7 +13,27 @@ export default function LivePreview({ tenantSlug, onRefresh }: Props) {
   const [scale, setScale] = useState(100)
   const [previewKey, setPreviewKey] = useState(0)
 
-  const previewUrl = `/${tenantSlug}/order?preview=true&t=${Date.now()}`
+  // Build preview URL based on tenant slug
+  // Routes use /order, not /{tenantSlug}/order
+  // Tenant is resolved via middleware from host/subdomain
+  const rootDomain = typeof window !== 'undefined' 
+    ? (window.location.hostname.includes('alessacloud.com') 
+        ? 'alessacloud.com' 
+        : window.location.hostname.split('.').slice(-2).join('.'))
+    : 'alessacloud.com'
+  
+  // Map tenant slugs to their actual domains
+  // lapoblanita -> lapoblanitamexicanfood.com (custom domain) or lapoblanita.alessacloud.com
+  const tenantDomainMap: Record<string, string> = {
+    'lapoblanita': 'lapoblanitamexicanfood.com',
+    'lasreinas': 'lasreinascolusa.com',
+  }
+  
+  // For tenant-specific templates, use subdomain or custom domain
+  // For global templates, use default tenant
+  const effectiveSlug = tenantSlug === 'global' || !tenantSlug ? 'lapoblanita' : tenantSlug
+  const domain = tenantDomainMap[effectiveSlug] || `${effectiveSlug}.${rootDomain}`
+  const previewUrl = `https://${domain}/order?preview=true&t=${Date.now()}`
 
   // Auto-refresh every 3 seconds when enabled
   useEffect(() => {

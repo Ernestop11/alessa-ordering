@@ -300,7 +300,9 @@ export default function TemplateBuilder({ template, tenantSlug, menuItems }: Pro
               <span>{showLivePreview ? '📺' : '👁️'}</span> {showLivePreview ? 'Hide Preview' : 'Preview'}
             </button>
             <a
-              href={`/${tenantSlug}/order`}
+              href={template.tenant?.slug 
+                ? `https://${template.tenant.slug}.alessacloud.com/order`
+                : `/order?tenant=${tenantSlug}`}
               target="_blank"
               className="px-4 py-2.5 bg-slate-700 hover:bg-slate-600 rounded-lg flex items-center gap-2 transition-colors font-medium"
             >
