@@ -1172,6 +1172,18 @@ export default function MenuEditorPage() {
                     🥐 Panaderia Items
                   </button>
                 )}
+                {enabledAddOns.includes('smp') && (
+                  <button
+                    onClick={() => setActiveTab('smp' as any)}
+                    className={`whitespace-nowrap py-4 px-1 border-b-2 font-medium text-sm ${
+                      (activeTab as string) === 'smp'
+                        ? 'border-blue-500 text-blue-600'
+                        : 'border-transparent text-gray-500 hover:text-gray-700 hover:border-gray-300'
+                    }`}
+                  >
+                    📺 Switch Menu Pro
+                  </button>
+                )}
                 <button
                   onClick={() => setActiveTab('frontend')}
                   className={`whitespace-nowrap py-4 px-1 border-b-2 font-medium text-sm ${
@@ -2185,6 +2197,179 @@ export default function MenuEditorPage() {
                   </div>
                 </div>
               )}
+            </div>
+          ) : (activeTab as string) === 'smp' ? (
+            <div className="space-y-6">
+              {/* SMP Dashboard Header */}
+              <div className="bg-gradient-to-r from-blue-600 via-indigo-600 to-purple-600 rounded-xl p-6 text-white">
+                <div className="flex items-center justify-between">
+                  <div>
+                    <h2 className="text-2xl font-bold flex items-center gap-3">
+                      📺 Switch Menu Pro
+                    </h2>
+                    <p className="text-blue-100 mt-1">
+                      Digital signage & TV menu displays with real-time sync
+                    </p>
+                  </div>
+                  <div className="flex items-center gap-3">
+                    <div className="bg-white/20 backdrop-blur rounded-lg px-4 py-2">
+                      <span className="text-sm text-blue-100">Sync Status</span>
+                      <div className="flex items-center gap-2 mt-1">
+                        <span className="w-2 h-2 rounded-full bg-green-400 animate-pulse"></span>
+                        <span className="font-semibold">Connected</span>
+                      </div>
+                    </div>
+                  </div>
+                </div>
+              </div>
+
+              {/* Quick Stats */}
+              <div className="grid grid-cols-1 md:grid-cols-4 gap-4">
+                <div className="bg-white rounded-xl border border-gray-200 p-4">
+                  <div className="flex items-center gap-3">
+                    <div className="w-10 h-10 rounded-lg bg-blue-100 flex items-center justify-center">
+                      <span className="text-xl">🍽️</span>
+                    </div>
+                    <div>
+                      <p className="text-sm text-gray-500">Menu Items</p>
+                      <p className="text-xl font-bold text-gray-900">{items.length}</p>
+                    </div>
+                  </div>
+                </div>
+                <div className="bg-white rounded-xl border border-gray-200 p-4">
+                  <div className="flex items-center gap-3">
+                    <div className="w-10 h-10 rounded-lg bg-green-100 flex items-center justify-center">
+                      <span className="text-xl">📂</span>
+                    </div>
+                    <div>
+                      <p className="text-sm text-gray-500">Sections</p>
+                      <p className="text-xl font-bold text-gray-900">{sections.length}</p>
+                    </div>
+                  </div>
+                </div>
+                <div className="bg-white rounded-xl border border-gray-200 p-4">
+                  <div className="flex items-center gap-3">
+                    <div className="w-10 h-10 rounded-lg bg-amber-100 flex items-center justify-center">
+                      <span className="text-xl">⭐</span>
+                    </div>
+                    <div>
+                      <p className="text-sm text-gray-500">Featured</p>
+                      <p className="text-xl font-bold text-gray-900">{items.filter(i => i.isFeatured).length}</p>
+                    </div>
+                  </div>
+                </div>
+                <div className="bg-white rounded-xl border border-gray-200 p-4">
+                  <div className="flex items-center gap-3">
+                    <div className="w-10 h-10 rounded-lg bg-purple-100 flex items-center justify-center">
+                      <span className="text-xl">📺</span>
+                    </div>
+                    <div>
+                      <p className="text-sm text-gray-500">TV Displays</p>
+                      <p className="text-xl font-bold text-gray-900">Active</p>
+                    </div>
+                  </div>
+                </div>
+              </div>
+
+              {/* Display Types */}
+              <div className="bg-white rounded-xl border border-gray-200 p-6">
+                <h3 className="text-lg font-semibold text-gray-900 mb-4">Display Endpoints</h3>
+                <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
+                  <div className="border-2 border-blue-200 bg-blue-50 rounded-lg p-4">
+                    <div className="flex items-center gap-3 mb-3">
+                      <span className="text-2xl">🍽️</span>
+                      <div>
+                        <h4 className="font-semibold text-gray-900">Menu Display</h4>
+                        <p className="text-xs text-gray-500">Full menu for TV screens</p>
+                      </div>
+                    </div>
+                    <p className="text-sm text-gray-600 mb-3">Shows your complete menu with sections, prices, and images. Perfect for wall-mounted TVs.</p>
+                    <code className="text-xs bg-white px-2 py-1 rounded border block truncate">
+                      /display/menu
+                    </code>
+                  </div>
+                  <div className="border-2 border-green-200 bg-green-50 rounded-lg p-4">
+                    <div className="flex items-center gap-3 mb-3">
+                      <span className="text-2xl">📋</span>
+                      <div>
+                        <h4 className="font-semibold text-gray-900">Orders Ready</h4>
+                        <p className="text-xs text-gray-500">Order pickup board</p>
+                      </div>
+                    </div>
+                    <p className="text-sm text-gray-600 mb-3">Real-time order status board. Shows orders being prepared and ready for pickup.</p>
+                    <code className="text-xs bg-white px-2 py-1 rounded border block truncate">
+                      /display/orders
+                    </code>
+                  </div>
+                  <div className="border-2 border-amber-200 bg-amber-50 rounded-lg p-4">
+                    <div className="flex items-center gap-3 mb-3">
+                      <span className="text-2xl">📢</span>
+                      <div>
+                        <h4 className="font-semibold text-gray-900">Promos & Specials</h4>
+                        <p className="text-xs text-gray-500">Promotional displays</p>
+                      </div>
+                    </div>
+                    <p className="text-sm text-gray-600 mb-3">Featured items, daily specials, and promotional banners on loop.</p>
+                    <code className="text-xs bg-white px-2 py-1 rounded border block truncate">
+                      /display/promos
+                    </code>
+                  </div>
+                </div>
+              </div>
+
+              {/* Sync Settings */}
+              <div className="bg-white rounded-xl border border-gray-200 p-6">
+                <h3 className="text-lg font-semibold text-gray-900 mb-4">Sync Configuration</h3>
+                <div className="space-y-4">
+                  <div className="flex items-center justify-between p-4 bg-gray-50 rounded-lg">
+                    <div>
+                      <h4 className="font-medium text-gray-900">Auto-Sync Menu Changes</h4>
+                      <p className="text-sm text-gray-500">Automatically update TV displays when you edit menu items</p>
+                    </div>
+                    <div className="relative w-12 h-6 rounded-full bg-green-500">
+                      <div className="absolute top-0.5 left-6 w-5 h-5 rounded-full bg-white shadow"></div>
+                    </div>
+                  </div>
+                  <div className="flex items-center justify-between p-4 bg-gray-50 rounded-lg">
+                    <div>
+                      <h4 className="font-medium text-gray-900">Real-Time Order Updates</h4>
+                      <p className="text-sm text-gray-500">Push order status changes instantly to order boards</p>
+                    </div>
+                    <div className="relative w-12 h-6 rounded-full bg-green-500">
+                      <div className="absolute top-0.5 left-6 w-5 h-5 rounded-full bg-white shadow"></div>
+                    </div>
+                  </div>
+                  <div className="flex items-center justify-between p-4 bg-gray-50 rounded-lg">
+                    <div>
+                      <h4 className="font-medium text-gray-900">Sync Interval</h4>
+                      <p className="text-sm text-gray-500">How often displays poll for updates (fallback)</p>
+                    </div>
+                    <select className="px-3 py-2 border border-gray-300 rounded-lg text-sm">
+                      <option value="10">10 seconds</option>
+                      <option value="30" selected>30 seconds</option>
+                      <option value="60">1 minute</option>
+                    </select>
+                  </div>
+                </div>
+              </div>
+
+              {/* Link to SMP Menu Builder */}
+              <div className="bg-gradient-to-r from-indigo-500 to-purple-600 rounded-xl p-6 text-white">
+                <div className="flex items-center justify-between">
+                  <div>
+                    <h3 className="text-lg font-bold">Open Menu Builder</h3>
+                    <p className="text-indigo-100 text-sm mt-1">
+                      Design your TV menu layouts with our drag-and-drop builder
+                    </p>
+                  </div>
+                  <a
+                    href="/smp/builder"
+                    className="bg-white text-indigo-600 px-6 py-3 rounded-lg font-semibold hover:bg-indigo-50 transition-colors"
+                  >
+                    Open Builder →
+                  </a>
+                </div>
+              </div>
             </div>
           ) : activeTab === 'frontend' ? (
             <div className="space-y-6">

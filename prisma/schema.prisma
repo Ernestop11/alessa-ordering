@@ -392,6 +392,8 @@ model Tenant {
   convertedFromLead      Lead?              @relation("LeadToTenant")
   productSubscriptions   TenantProduct[]    @relation("TenantProducts")
   taxRemittances         TaxRemittance[]
+  taxChecks              TaxCheck[]
+  taxAchPayments         TaxAchPayment[]
   accountantAccess       AccountantTenantAccess[]
   template               TenantTemplate?
   drivers                Driver[]
@@ -1202,7 +1204,7 @@ model TenantProduct {
   currentPeriodEnd        DateTime?
 
   // Pricing snapshot (in case pricing changes)
-  monthlyAmount   Float
+  monthlyAmount   Float    @default(0)
 
   subscribedAt DateTime  @default(now())
   cancelledAt  DateTime?

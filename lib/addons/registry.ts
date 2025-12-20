@@ -99,6 +99,24 @@ export const AVAILABLE_ADDONS: Record<string, AddOn> = {
       'menuSections',
     ],
   },
+  smp: {
+    id: 'smp',
+    name: 'Switch Menu Pro',
+    icon: '📺',
+    description: 'Digital signage & TV menu displays with real-time sync',
+    gradient: {
+      from: '#3b82f6', // Blue
+      via: '#6366f1', // Indigo
+      to: '#8b5cf6',  // Purple
+    },
+    status: 'active',
+    sections: [
+      'digitalMenuDisplay',
+      'ordersReadyBoard',
+      'promoDisplay',
+      'menuSync',
+    ],
+  },
 };
 
 /**
