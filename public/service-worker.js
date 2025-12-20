@@ -3,7 +3,7 @@
  * Provides offline support and caching
  */
 
-const CACHE_NAME = 'alessa-ordering-v6-2025-12-14';
+const CACHE_NAME = 'alessa-ordering-v7-2025-12-20';
 const OFFLINE_PAGE = '/offline.html';
 
 // Install event - cache only truly static files (NOT dynamic pages like /)

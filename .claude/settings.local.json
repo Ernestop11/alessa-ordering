@@ -74,7 +74,8 @@
       "Bash(sudo mkdir:*)",
       "Bash(sort:*)",
       "Bash(top:*)",
-      "Bash(code:*)"
+      "Bash(code:*)",
+      "Bash(md5:*)"
     ],
     "deny": [],
     "ask": []
