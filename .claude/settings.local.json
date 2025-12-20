@@ -64,7 +64,17 @@
       "Bash(timeout 120 npm run build:*)",
       "Bash(openssl s_client:*)",
       "Bash(openssl x509:*)",
-      "Bash(xargs:*)"
+      "Bash(xargs:*)",
+      "Bash(df:*)",
+      "Bash(diskutil list:*)",
+      "Bash(diskutil unmount:*)",
+      "Bash(diskutil mount:*)",
+      "Bash(# Clean more caches rm -rf ~/Library/Caches/com.apple.dt.* rm -rf ~/Library/Caches/typescript rm -rf ~/Library/Caches/pip # Clean old Next.js builds from other projects find /Users/ernestoponce -name \"\".next\"\" -type d -maxdepth 4)",
+      "Bash(# Remove duplicate alessa-ordering build and old builds rm -rf /Users/ernestoponce/dev/alessa-ordering/.next rm -rf /Users/ernestoponce/dev/azteka-dsd/.next # Also clean node_modules from inactive projects if they exist du -sh /Users/ernestoponce/dev/*/node_modules)",
+      "Bash(sudo mkdir:*)",
+      "Bash(sort:*)",
+      "Bash(top:*)",
+      "Bash(code:*)"
     ],
     "deny": [],
     "ask": []
