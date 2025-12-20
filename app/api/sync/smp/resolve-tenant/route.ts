@@ -12,9 +12,14 @@ import prisma from '@/lib/prisma';
  */
 
 // Mapping of SMP tenant IDs to Alessa tenant slugs/IDs
+// Both local dev and VPS IDs resolve to the same slug
 const TENANT_ALIAS_MAP: Record<string, string> = {
   'lasreinas-tenant-001': 'lasreinas',
   'lasreinas': 'lasreinas',
+  // Local dev UUID
+  '79bd3027-5520-480b-8979-2e37b21e58d0': 'lasreinas',
+  // VPS UUID
+  'f941ea79-5af8-4c33-bb17-9a98a992a232': 'lasreinas',
   // Add more mappings as needed
 };
 
