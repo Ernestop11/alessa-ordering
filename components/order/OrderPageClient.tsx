@@ -2565,18 +2565,20 @@ export default function OrderPageClient({
           <div className="flex items-center justify-between py-2">
             {/* Logo & Name */}
             <div className="flex items-center gap-4">
-              <div className="relative flex-shrink-0">
-                <div className="rounded-full bg-white p-1.5 shadow-md">
+              <div className="relative flex-shrink-0 group">
+                {/* Glowing ring effect */}
+                <div className="absolute -inset-1 bg-gradient-to-r from-amber-400 via-red-500 to-amber-400 rounded-full opacity-75 group-hover:opacity-100 blur-sm animate-pulse" />
+                <div className="relative rounded-full bg-white p-2 shadow-xl ring-2 ring-white/50">
                   {tenant.logoUrl ? (
                     <Image
                       src={tenant.logoUrl}
                       alt={`${tenant.name} logo`}
-                      width={48}
-                      height={48}
-                      className="h-12 w-12 rounded-full object-cover"
+                      width={64}
+                      height={64}
+                      className="h-16 w-16 rounded-full object-contain transition-transform duration-300 group-hover:scale-110"
                     />
                   ) : (
-                    <div className="flex h-12 w-12 items-center justify-center rounded-full bg-gradient-to-br from-red-600 to-amber-500 text-2xl">🍽️</div>
+                    <div className="flex h-16 w-16 items-center justify-center rounded-full bg-gradient-to-br from-red-600 to-amber-500 text-3xl">🍽️</div>
                   )}
                 </div>
               </div>

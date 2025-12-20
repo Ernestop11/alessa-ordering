@@ -75,7 +75,9 @@
       "Bash(sort:*)",
       "Bash(top:*)",
       "Bash(code:*)",
-      "Bash(md5:*)"
+      "Bash(md5:*)",
+      "Bash(unzip:*)",
+      "Bash(git -C /Users/ernestoponce/alessa-ordering push origin v1.1.0-lasreinas-verified)"
     ],
     "deny": [],
     "ask": []
