@@ -3,7 +3,6 @@ import { NextResponse } from 'next/server';
 const ALFRED_API_URL = process.env.ALFRED_API_URL || 'http://localhost:4010';
 
 export const dynamic = 'force-dynamic';
-export const revalidate = 0;
 
 export async function GET() {
   try {

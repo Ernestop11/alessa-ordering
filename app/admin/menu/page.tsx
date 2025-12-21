@@ -6,7 +6,6 @@ import MenuEditorPage from '@/components/admin/MenuEditorPage'
 
 // Force dynamic rendering to prevent caching
 export const dynamic = 'force-dynamic'
-export const revalidate = 0
 
 export default async function AdminMenuPage() {
   const session = await getServerSession(authOptions)

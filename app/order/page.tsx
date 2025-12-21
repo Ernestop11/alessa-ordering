@@ -10,7 +10,6 @@ import { getTemplateSettings, type TemplateSettings } from '@/lib/template-rende
 
 // Force dynamic rendering to ensure tenant data is always fresh
 export const dynamic = 'force-dynamic'
-export const revalidate = 0 // Disable all caching
 export const fetchCache = 'force-no-store' // Disable fetch caching
 
 // Add cache headers to prevent any caching

@@ -3,7 +3,6 @@ import { getTemplateSettings } from '@/lib/template-renderer'
 import prisma from '@/lib/prisma'
 
 export const dynamic = 'force-dynamic'
-export const revalidate = 0
 
 /**
  * Preview API endpoint - Returns current template settings for a tenant
