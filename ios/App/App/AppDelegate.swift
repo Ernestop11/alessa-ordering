@@ -11,10 +11,8 @@ class AppDelegate: UIResponder, UIApplicationDelegate {
         // Prevent screen from sleeping for kiosk mode
         UIApplication.shared.isIdleTimerDisabled = true
 
-        // Register Star Printer plugin
-        let bridge = (window?.rootViewController as? CAPBridgeViewController)?.bridge
-        bridge?.registerPluginInstance(StarPrinterPlugin())
-        print("[AppDelegate] StarPrinterPlugin registered")
+        // Note: StarPrinterPlugin is auto-registered via CAP_PLUGIN macro in StarPrinterPlugin.m
+        print("[AppDelegate] App launched - StarPrinterPlugin should be auto-registered via CAP_PLUGIN macro")
 
         return true
     }
