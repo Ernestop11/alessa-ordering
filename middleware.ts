@@ -24,6 +24,11 @@ export async function middleware(req: NextRequest) {
   let tenant: string | null = null;
 
   try {
+    // Skip tenant resolution for health check endpoint
+    if (url.pathname === '/api/health') {
+      return NextResponse.next();
+    }
+
     // Skip tenant resolution for root domain (show landing page)
     const hostname = host?.split(':')[0] || '';
     if (hostname === ROOT_DOMAIN || hostname === `www.${ROOT_DOMAIN}`) {
