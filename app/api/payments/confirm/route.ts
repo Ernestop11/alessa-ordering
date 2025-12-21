@@ -77,13 +77,20 @@ export async function POST(req: Request) {
       ? await stripe.paymentIntents.retrieve(session.paymentIntentId, {}, { stripeAccount: accountId })
       : await stripe.paymentIntents.retrieve(session.paymentIntentId);
 
-    if (paymentIntent.status !== 'succeeded') {
+    // Accept 'succeeded' or 'requires_capture' (for Apple Pay with manual capture)
+    if (paymentIntent.status !== 'succeeded' && paymentIntent.status !== 'requires_capture') {
       console.log('[confirm] Payment not yet succeeded:', paymentIntent.status);
       return NextResponse.json(
         { error: `Payment status: ${paymentIntent.status}`, status: paymentIntent.status },
         { status: 400 }
       );
     }
+
+    console.log('[confirm] Payment verified:', {
+      id: paymentIntent.id,
+      status: paymentIntent.status,
+      amount: paymentIntent.amount
+    });
 
     // Get full tenant info for order creation
     const fullTenant = await prisma.tenant.findUnique({
