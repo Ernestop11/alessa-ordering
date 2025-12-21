@@ -79,7 +79,8 @@
       "Bash(unzip:*)",
       "Bash(git -C /Users/ernestoponce/alessa-ordering push origin v1.1.0-lasreinas-verified)",
       "Bash(git log:*)",
-      "Bash(npm remove:*)"
+      "Bash(npm remove:*)",
+      "Bash(TZ=\"America/Los_Angeles\" date:*)"
     ],
     "deny": [],
     "ask": []
