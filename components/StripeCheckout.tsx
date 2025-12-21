@@ -151,89 +151,113 @@ export default function StripeCheckout({ clientSecret, successPath = "/order/suc
   };
 
   return (
-    <form onSubmit={handleSubmit} className="space-y-4">
+    <div className="space-y-4">
       {/* Show loading state while Stripe initializes */}
       {!stripe || !elements ? (
         <div className="flex items-center justify-center py-8">
           <div className="text-center">
             <div className="mx-auto h-6 w-6 animate-spin rounded-full border-2 border-gray-200 border-t-gray-600"></div>
-            <p className="mt-2 text-sm text-gray-600">Loading...</p>
+            <p className="mt-2 text-sm text-gray-600">Loading payment options...</p>
           </div>
         </div>
       ) : (
         <>
-          {/* Card Payment Form - Apple Pay is handled by checkout page */}
-          <div
-            className="relative w-full bg-white rounded-lg min-h-[250px]"
-          >
-            <PaymentElement 
-              key={clientSecret}
-              onReady={() => {
-                console.log('[Stripe] PaymentElement ready');
-                setPaymentElementReady(true);
-                setMessage(null);
-              }}
-              onLoadError={(error) => {
-                console.error('[Stripe] PaymentElement load error:', error);
-                const errorMessage = error?.error?.message || 'Failed to load payment form';
-                setMessage(`Payment form error: ${errorMessage}`);
-                setPaymentElementReady(false);
-              }}
-              onChange={(e) => {
-                if (e.complete) {
+          {/* Apple Pay / Google Pay Button - Show first when available */}
+          {paymentRequest && (
+            <div className="space-y-3">
+              <PaymentRequestButtonElement
+                options={{
+                  paymentRequest,
+                  style: {
+                    paymentRequestButton: {
+                      type: 'default',
+                      theme: 'dark',
+                      height: '48px',
+                    },
+                  },
+                }}
+              />
+              <div className="flex items-center gap-3">
+                <div className="flex-1 border-t border-gray-300"></div>
+                <span className="text-xs text-gray-500 font-medium">or pay with card</span>
+                <div className="flex-1 border-t border-gray-300"></div>
+              </div>
+            </div>
+          )}
+
+          {/* Card Payment Form */}
+          <form onSubmit={handleSubmit} className="space-y-4">
+            <div className="relative w-full bg-white rounded-lg min-h-[200px]">
+              <PaymentElement
+                key={clientSecret}
+                onReady={() => {
+                  console.log('[Stripe] PaymentElement ready');
                   setPaymentElementReady(true);
                   setMessage(null);
+                }}
+                onLoadError={(error) => {
+                  console.error('[Stripe] PaymentElement load error:', error);
+                  const errorMessage = error?.error?.message || 'Failed to load payment form';
+                  setMessage(`Payment form error: ${errorMessage}`);
+                  setPaymentElementReady(false);
+                }}
+                onChange={(e) => {
+                  if (e.complete) {
+                    setPaymentElementReady(true);
+                    setMessage(null);
+                  }
+                }}
+                options={{
+                  layout: 'tabs',
+                  defaultValues: {
+                    billingDetails: {
+                      name: '',
+                      email: '',
+                      phone: '',
+                    },
+                  },
+                }}
+              />
+            </div>
+
+            <button
+              type="submit"
+              disabled={!stripe || !elements || loading || !isReady || !paymentElementReady}
+              className="w-full rounded-lg px-6 py-3 text-sm font-semibold text-white shadow-lg transition-all hover:scale-[1.02] disabled:cursor-not-allowed disabled:opacity-50 disabled:hover:scale-100"
+              style={{
+                backgroundColor: primaryColor,
+                boxShadow: `0 10px 15px -3px ${primaryColor}40, 0 4px 6px -2px ${primaryColor}20`,
+              }}
+              onMouseEnter={(e) => {
+                if (!e.currentTarget.disabled) {
+                  e.currentTarget.style.boxShadow = `0 10px 15px -3px ${primaryColor}60, 0 4px 6px -2px ${primaryColor}40`;
                 }
               }}
-              options={{
-                layout: 'tabs',
-                defaultValues: {
-                  billingDetails: {
-                    name: '',
-                    email: '',
-                    phone: '',
-                  },
-                },
+              onMouseLeave={(e) => {
+                if (!e.currentTarget.disabled) {
+                  e.currentTarget.style.boxShadow = `0 10px 15px -3px ${primaryColor}40, 0 4px 6px -2px ${primaryColor}20`;
+                }
               }}
-            />
-          </div>
+            >
+              {loading ? (
+                <span className="flex items-center justify-center gap-2">
+                  <span className="h-4 w-4 animate-spin rounded-full border-2 border-white border-t-transparent"></span>
+                  Processing...
+                </span>
+              ) : (
+                "Pay with Card"
+              )}
+            </button>
+          </form>
         </>
       )}
-      
-      <button
-        type="submit"
-        disabled={!stripe || !elements || loading || !isReady || !paymentElementReady}
-        className="w-full rounded-lg px-6 py-3 text-sm font-semibold text-white shadow-lg transition-all hover:scale-[1.02] disabled:cursor-not-allowed disabled:opacity-50 disabled:hover:scale-100"
-        style={{
-          backgroundColor: primaryColor,
-          boxShadow: `0 10px 15px -3px ${primaryColor}40, 0 4px 6px -2px ${primaryColor}20`,
-        }}
-        onMouseEnter={(e) => {
-          if (!e.currentTarget.disabled) {
-            e.currentTarget.style.boxShadow = `0 10px 15px -3px ${primaryColor}60, 0 4px 6px -2px ${primaryColor}40`;
-          }
-        }}
-        onMouseLeave={(e) => {
-          if (!e.currentTarget.disabled) {
-            e.currentTarget.style.boxShadow = `0 10px 15px -3px ${primaryColor}40, 0 4px 6px -2px ${primaryColor}20`;
-          }
-        }}
-      >
-        {loading ? (
-          <span className="flex items-center justify-center gap-2">
-            <span className="h-4 w-4 animate-spin rounded-full border-2 border-white border-t-transparent"></span>
-            Processing...
-          </span>
-        ) : (
-          "Complete Payment"
-        )}
-      </button>
+
       {message && (
         <div className="rounded-lg border border-red-200 bg-red-50 px-4 py-3 text-sm text-red-700">
           {message}
         </div>
       )}
-    </form>
+    </div>
   );
 }
 

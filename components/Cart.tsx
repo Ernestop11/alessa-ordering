@@ -54,15 +54,40 @@ export default function Cart() {
   const [paymentIntentId, setPaymentIntentId] = useState<string | null>(null);
   const [paymentSessionId, setPaymentSessionId] = useState<string | null>(null);
   const [stripeAccount, setStripeAccount] = useState<string | undefined>(undefined);
-  const [checkoutStep, setCheckoutStep] = useState<"details" | "payment">("details");
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState<string | null>(null);
+  const [paymentReady, setPaymentReady] = useState(false);
   const [taxQuote, setTaxQuote] = useState<{ amount: number; rate: number; provider: string } | null>(null);
   const [taxQuoteLoading, setTaxQuoteLoading] = useState(false);
   const [taxQuoteError, setTaxQuoteError] = useState<string | null>(null);
   const [becomeMember, setBecomeMember] = useState(false);
   const [rewardDiscount, setRewardDiscount] = useState<{ type: 'percent' | 'amount'; value: number; name: string } | null>(null);
   const [rewardFreeShipping, setRewardFreeShipping] = useState(false);
+  const [restaurantIsOpen, setRestaurantIsOpen] = useState(true);
+  const [restaurantClosedMessage, setRestaurantClosedMessage] = useState("");
+
+  // Poll restaurant status every 10 seconds
+  useEffect(() => {
+    const checkStatus = async () => {
+      try {
+        const response = await fetch(`/api/restaurant-status?t=${Date.now()}`);
+        if (response.ok) {
+          const data = await response.json();
+          setRestaurantIsOpen(data.isOpen);
+          setRestaurantClosedMessage(data.message || "We're currently closed");
+        }
+      } catch (err) {
+        console.error('[Cart] Failed to check restaurant status:', err);
+      }
+    };
+
+    // Check immediately
+    checkStatus();
+
+    // Then poll every 10 seconds
+    const interval = setInterval(checkStatus, 10000);
+    return () => clearInterval(interval);
+  }, []);
 
   // Check if user came from "Join Rewards" button
   useEffect(() => {
@@ -345,7 +370,6 @@ export default function Cart() {
       tipAmount,
       platformFee,
       fulfillmentMethod,
-      deliveryPartner: fulfillmentMethod === "delivery" ? "doordash" : undefined,
       deliveryQuoteId: fulfillmentMethod === "delivery" && deliveryQuoteId ? deliveryQuoteId : undefined,
       deliveryPartner: fulfillmentMethod === "delivery" ? deliveryPartner || 'doordash' : undefined,
       customerName: customerName.trim() || undefined,
@@ -358,6 +382,7 @@ export default function Cart() {
   }, [
     deliveryAddress,
     deliveryQuoteId,
+    deliveryPartner,
     customerEmail,
     customerName,
     customerPhone,
@@ -462,57 +487,12 @@ export default function Cart() {
     }
   };
 
-  const handleCheckout = async () => {
-    if (!orderPayload) {
-      setError("Add items to your cart before checking out.");
-      return;
-    }
-    if (!isContactValid) {
-      setError("Please provide an email or phone number so we can send order updates.");
-      return;
-    }
-
-    setLoading(true);
-    setError(null);
-    try {
-      const response = await fetch("/api/payments/intent", {
-        method: "POST",
-        headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({
-          order: orderPayload,
-          currency: "usd",
-        }),
-      });
-
-      const data = await response.json();
-      if (!response.ok || !data.clientSecret) {
-        console.error('[Cart] Payment intent creation failed:', data);
-        throw new Error(data.error || "Failed to create Stripe payment intent.");
-      }
-
-      console.log('[Cart] Payment intent created successfully:', {
-        hasClientSecret: !!data.clientSecret,
-        paymentIntentId: data.paymentIntentId,
-      });
-
-      setClientSecret(data.clientSecret);
-      setPaymentIntentId(data.paymentIntentId ?? null);
-      setPaymentSessionId(data.paymentSessionId ?? null);
-      setStripeAccount(data.stripeAccount || undefined);
-      setCheckoutStep("payment");
-    } catch (err) {
-      setError(err instanceof Error ? err.message : "Failed to initiate checkout.");
-    } finally {
-      setLoading(false);
-    }
-  };
-
   const resetPaymentState = () => {
     setClientSecret(null);
     setPaymentIntentId(null);
     setPaymentSessionId(null);
     setStripeAccount(undefined);
-    setCheckoutStep("details");
+    setPaymentReady(false);
   };
 
   useEffect(() => {
@@ -520,6 +500,55 @@ export default function Cart() {
       resetPaymentState();
     }
   }, [items.length]);
+
+  // Auto-create payment intent when contact info is valid AND restaurant is open
+  useEffect(() => {
+    // Skip if restaurant is closed, already have client secret, loading, or no valid contact
+    if (!restaurantIsOpen || clientSecret || loading || !isContactValid || items.length === 0) {
+      return;
+    }
+
+    // Debounce to avoid creating multiple intents while typing
+    const timeoutId = setTimeout(async () => {
+      if (!orderPayload) return;
+
+      setLoading(true);
+      setError(null);
+      try {
+        const response = await fetch("/api/payments/intent", {
+          method: "POST",
+          headers: { "Content-Type": "application/json" },
+          body: JSON.stringify({
+            order: orderPayload,
+            currency: "usd",
+          }),
+        });
+
+        const data = await response.json();
+        if (!response.ok || !data.clientSecret) {
+          console.error('[Cart] Payment intent creation failed:', data);
+          throw new Error(data.error || "Failed to create Stripe payment intent.");
+        }
+
+        console.log('[Cart] Payment intent created successfully:', {
+          hasClientSecret: !!data.clientSecret,
+          paymentIntentId: data.paymentIntentId,
+        });
+
+        setClientSecret(data.clientSecret);
+        setPaymentIntentId(data.paymentIntentId ?? null);
+        setPaymentSessionId(data.paymentSessionId ?? null);
+        setStripeAccount(data.stripeAccount || undefined);
+        setPaymentReady(true);
+      } catch (err) {
+        setError(err instanceof Error ? err.message : "Failed to initiate checkout.");
+      } finally {
+        setLoading(false);
+      }
+    }, 800);
+
+    return () => clearTimeout(timeoutId);
+  }, [items.length, isContactValid, customerEmail, customerPhone, clientSecret, loading, orderPayload, restaurantIsOpen]);
 
   return (
     <div className="flex w-full max-w-lg flex-col gap-4 sm:gap-6 rounded-3xl border border-gray-100 bg-white p-4 sm:p-6 shadow-xl md:p-8">
@@ -539,45 +568,6 @@ export default function Cart() {
         </button>
       </header>
 
-      {/* Progress Indicator */}
-      {items.length > 0 && (
-        <div className="flex items-center gap-2">
-          <div 
-            className={`flex h-10 w-10 items-center justify-center rounded-full border-2 font-semibold transition ${
-              checkoutStep === "details"
-                ? "text-white"
-                : "border-green-500 bg-green-500 text-white"
-            }`}
-            style={checkoutStep === "details" ? {
-              borderColor: primaryColor,
-              backgroundColor: primaryColor,
-            } : {}}
-          >
-            {checkoutStep === "payment" ? "✓" : "1"}
-          </div>
-          <div 
-            className={`h-1 flex-1 transition ${
-              checkoutStep === "payment" ? "" : "bg-gray-200"
-            }`}
-            style={checkoutStep === "payment" ? {
-              backgroundColor: primaryColor,
-            } : {}}
-          ></div>
-          <div 
-            className={`flex h-10 w-10 items-center justify-center rounded-full border-2 font-semibold transition ${
-              checkoutStep === "payment"
-                ? "text-white"
-                : "border-gray-300 bg-white text-gray-400"
-            }`}
-            style={checkoutStep === "payment" ? {
-              borderColor: primaryColor,
-              backgroundColor: primaryColor,
-            } : {}}
-          >
-            2
-          </div>
-        </div>
-      )}
 
       {items.length === 0 ? (
         <div className="rounded-2xl border-2 border-dashed border-gray-200 bg-gray-50 p-12 text-center">
@@ -660,9 +650,8 @@ export default function Cart() {
             ))}
           </section>
 
-          {checkoutStep === "details" && (
-            <section className="space-y-6 rounded-2xl border border-gray-100 bg-gray-50 p-6">
-              <h3 className="text-lg font-bold text-gray-900">Order Details</h3>
+          <section className="space-y-6 rounded-2xl border border-gray-100 bg-gray-50 p-6">
+            <h3 className="text-lg font-bold text-gray-900">Order Details</h3>
               <div className="grid gap-4 sm:grid-cols-2">
                 <label className="text-sm font-semibold text-gray-700">
                   Name
@@ -865,7 +854,6 @@ export default function Cart() {
                 </div>
               )}
             </section>
-          )}
 
           <section className="space-y-3 rounded-2xl border-2 border-gray-200 bg-gradient-to-br from-gray-50 to-white p-6">
             <h3 className="text-lg font-bold text-gray-900 mb-4">Order Summary</h3>
@@ -905,12 +893,6 @@ export default function Cart() {
                 Earn {estimatedPoints} loyalty points with this order.
               </div>
             )}
-            {/* Hide debug info on mobile */}
-            {paymentSessionId && checkoutStep === "payment" && (
-              <p className="hidden sm:block text-xs text-gray-500">
-                Payment session ID: <span className="font-mono">{paymentSessionId}</span>
-              </p>
-            )}
           </section>
 
           {error && (
@@ -919,81 +901,69 @@ export default function Cart() {
             </div>
           )}
 
-          {checkoutStep === "payment" && clientSecret ? (
-            <div className="space-y-4">
-              <div className="flex items-center gap-3 pb-4 border-b border-gray-200">
-                <div 
-                  className="flex h-10 w-10 items-center justify-center rounded-full text-white text-lg"
-                  style={{
-                    backgroundColor: primaryColor,
-                  }}
-                >
-                  🔒
-                </div>
-                <div>
-                  <p className="text-base font-bold text-gray-900">
-                    Secure Payment
-                  </p>
-                  <p className="text-xs text-gray-500">
-                    Your payment information is encrypted and secure
-                  </p>
-                </div>
-              </div>
-              
-              {/* Payment Form - ALWAYS visible */}
-              <div className="relative">
-                <StripeCheckoutWrapper clientSecret={clientSecret} successPath="/order/success" totalAmount={totalAmount} stripeAccount={stripeAccount} />
-              </div>
-              
-              <button
-                onClick={resetPaymentState}
-                type="button"
-                className="w-full rounded-lg border-2 bg-white px-4 py-2.5 text-sm font-semibold text-gray-700 transition hover:bg-gray-50"
-                style={{
-                  borderColor: `${primaryColor}40`,
-                }}
-                onMouseEnter={(e) => {
-                  e.currentTarget.style.borderColor = primaryColor;
-                  e.currentTarget.style.backgroundColor = `${primaryColor}08`;
-                }}
-                onMouseLeave={(e) => {
-                  e.currentTarget.style.borderColor = `${primaryColor}40`;
-                  e.currentTarget.style.backgroundColor = 'white';
-                }}
+          {/* Payment Section - Always visible */}
+          <section className="space-y-4 rounded-2xl border-2 border-gray-200 bg-white p-6">
+            <div className="flex items-center gap-3 pb-4 border-b border-gray-200">
+              <div
+                className="flex h-10 w-10 items-center justify-center rounded-full text-white text-lg"
+                style={{ backgroundColor: restaurantIsOpen ? primaryColor : '#ef4444' }}
               >
-                ← Back to order details
-              </button>
+                {restaurantIsOpen ? '🔒' : '🚫'}
+              </div>
+              <div>
+                <p className="text-base font-bold text-gray-900">
+                  {restaurantIsOpen ? 'Payment' : 'Restaurant Closed'}
+                </p>
+                <p className="text-xs text-gray-500">
+                  {!restaurantIsOpen
+                    ? restaurantClosedMessage
+                    : clientSecret
+                    ? "Choose your payment method"
+                    : "Enter your email above to continue"}
+                </p>
+              </div>
             </div>
-          ) : (
-            <button
-              onClick={handleCheckout}
-              disabled={loading || items.length === 0 || !isContactValid}
-              className="w-full rounded-lg px-6 py-3 text-sm font-semibold text-white shadow-lg transition-all hover:scale-[1.02] disabled:cursor-not-allowed disabled:opacity-50 disabled:hover:scale-100"
-              style={{
-                backgroundColor: primaryColor,
-                boxShadow: `0 10px 15px -3px ${primaryColor}40, 0 4px 6px -2px ${primaryColor}20`,
-              }}
-              onMouseEnter={(e) => {
-                if (!e.currentTarget.disabled) {
-                  e.currentTarget.style.boxShadow = `0 10px 15px -3px ${primaryColor}60, 0 4px 6px -2px ${primaryColor}40`;
-                }
-              }}
-              onMouseLeave={(e) => {
-                if (!e.currentTarget.disabled) {
-                  e.currentTarget.style.boxShadow = `0 10px 15px -3px ${primaryColor}40, 0 4px 6px -2px ${primaryColor}20`;
-                }
-              }}
-            >
-              {loading ? (
-                <span className="flex items-center justify-center gap-2">
-                  <span className="h-4 w-4 animate-spin rounded-full border-2 border-white border-t-transparent"></span>
-                  Preparing secure payment…
+
+            {/* Show closed message when restaurant is not accepting orders */}
+            {!restaurantIsOpen && (
+              <div className="rounded-xl border-2 border-dashed border-red-300 bg-red-50 p-6 text-center">
+                <p className="text-sm font-medium text-red-700">
+                  {restaurantClosedMessage || "We're currently not accepting orders. Please check back later."}
+                </p>
+              </div>
+            )}
+
+            {restaurantIsOpen && loading && !clientSecret && (
+              <div className="flex items-center justify-center py-6">
+                <span className="flex items-center gap-2 text-sm text-gray-600">
+                  <span className="h-4 w-4 animate-spin rounded-full border-2 border-gray-400 border-t-transparent"></span>
+                  Preparing payment...
                 </span>
-              ) : (
-                `Proceed to Payment · ${formatCurrency(totalAmount)}`
-              )}
-            </button>
-          )}
+              </div>
+            )}
+
+            {restaurantIsOpen && !isContactValid && !loading && (
+              <div
+                className="rounded-xl border-2 border-dashed p-6 text-center"
+                style={{ borderColor: `${primaryColor}40`, backgroundColor: `${primaryColor}08` }}
+              >
+                <p className="text-sm font-medium text-gray-700">
+                  Enter your email or phone above to see payment options
+                </p>
+              </div>
+            )}
+
+            {restaurantIsOpen && clientSecret && (
+              <div className="relative">
+                <StripeCheckoutWrapper
+                  clientSecret={clientSecret}
+                  successPath="/order/success"
+                  totalAmount={totalAmount}
+                  stripeAccount={stripeAccount}
+                />
+              </div>
+            )}
+          </section>
         </>
       )}
     </div>
