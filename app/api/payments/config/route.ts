@@ -1,6 +1,9 @@
 import { NextResponse } from 'next/server';
 import { requireTenant } from '@/lib/tenant';
 
+// Force dynamic rendering (no caching)
+export const dynamic = 'force-dynamic';
+
 /**
  * GET /api/payments/config
  * Returns Stripe configuration for the current tenant
