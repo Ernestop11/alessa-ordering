@@ -162,22 +162,33 @@ export default function StripeCheckout({ clientSecret, successPath = "/order/suc
         </div>
       ) : (
         <>
+          {/* Apple Pay / Google Pay Button - Prominent placement */}
           {paymentRequest ? (
-            <div className="mb-4">
-              <PaymentRequestButtonElement
-                options={{
-                  paymentRequest,
-                  style: {
-                    paymentRequestButton: {
-                      type: "buy",
-                      theme: "dark",
-                      height: "44px",
+            <div className="mb-6">
+              <div className="mb-3">
+                <p className="text-sm font-semibold text-gray-700 mb-2 flex items-center gap-2">
+                  <span className="text-lg">⚡</span> Express Checkout
+                </p>
+                <PaymentRequestButtonElement
+                  options={{
+                    paymentRequest,
+                    style: {
+                      paymentRequestButton: {
+                        type: "buy",
+                        theme: "dark",
+                        height: "52px",
+                      },
                     },
-                  },
-                }}
-              />
-              <div className="text-center mt-2 text-xs text-gray-500">
-                Or enter card details below
+                  }}
+                />
+              </div>
+              <div className="relative my-5">
+                <div className="absolute inset-0 flex items-center">
+                  <div className="w-full border-t border-gray-200"></div>
+                </div>
+                <div className="relative flex justify-center text-sm">
+                  <span className="bg-white px-4 text-gray-500">or pay with card</span>
+                </div>
               </div>
             </div>
           ) : null}
