@@ -182,6 +182,8 @@ public class StarPrinterPlugin: CAPPlugin, CAPBridgedPlugin {
                 // Determine interface type from string
                 let interfaceType: InterfaceType
                 switch interfaceTypeStr {
+                case "bluetooth":
+                    interfaceType = .bluetooth
                 case "bluetoothLE":
                     interfaceType = .bluetoothLE
                 case "lan":
@@ -213,13 +215,9 @@ public class StarPrinterPlugin: CAPPlugin, CAPBridgedPlugin {
 
     @objc func disconnect(_ call: CAPPluginCall) {
         Task {
-            do {
-                try await currentPrinter?.close()
-                currentPrinter = nil
-                call.resolve(["disconnected": true])
-            } catch {
-                call.reject("Disconnect failed: \(error.localizedDescription)")
-            }
+            await currentPrinter?.close()
+            currentPrinter = nil
+            call.resolve(["disconnected": true])
         }
     }
 
@@ -238,8 +236,9 @@ public class StarPrinterPlugin: CAPPlugin, CAPBridgedPlugin {
         let customerName = call.getString("customerName") ?? ""
         let orderId = call.getString("orderId") ?? ""
         let total = call.getString("total") ?? ""
-        let items = call.getArray("items") as? [[String: Any]] ?? []
         let notes = call.getString("notes") ?? ""
+        // Note: items parameter available if needed for future use
+        _ = call.getArray("items") as? [[String: Any]] ?? []
 
         Task {
             do {

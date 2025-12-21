@@ -80,7 +80,11 @@
       "Bash(git -C /Users/ernestoponce/alessa-ordering push origin v1.1.0-lasreinas-verified)",
       "Bash(git log:*)",
       "Bash(npm remove:*)",
-      "Bash(TZ=\"America/Los_Angeles\" date:*)"
+      "Bash(TZ=\"America/Los_Angeles\" date:*)",
+      "Bash(npm outdated:*)",
+      "Bash(pod outdated:*)",
+      "Bash(pod deintegrate:*)",
+      "Bash(osascript:*)"
     ],
     "deny": [],
     "ask": []

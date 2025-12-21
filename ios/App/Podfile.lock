@@ -4,7 +4,7 @@ PODS:
   - CapacitorCommunityBluetoothLe (7.3.0):
     - Capacitor
   - CapacitorCordova (7.4.4)
-  - CapacitorSplashScreen (8.0.0):
+  - CapacitorSplashScreen (7.0.4):
     - Capacitor
 
 DEPENDENCIES:
@@ -27,7 +27,7 @@ SPEC CHECKSUMS:
   Capacitor: 358dd1c3fdd71d969547b17e159fd8a7736cb45f
   CapacitorCommunityBluetoothLe: 41f9dec8a4c16ab6b81e56402b6047fc19b4735d
   CapacitorCordova: bf648a636f3c153f652d312ae145fb508b6ffced
-  CapacitorSplashScreen: 422880d7117605c30699eb4b21644b62db42e86c
+  CapacitorSplashScreen: 000f7591d546907dda5cbb514bd6b6d9e6048cf8
 
 PODFILE CHECKSUM: c10a5e9429c1400d2898392ab9e6fb80dabe2653
 
