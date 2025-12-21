@@ -1,37 +1,30 @@
 /**
- * Bluetooth Serial Printer for Star TSP100III
+ * Bluetooth BLE Printer for Star TSP100III
  *
- * Uses capacitor-bluetooth-serial plugin for reliable printing
- * Hardcoded MAC address for Las Reinas TSP100-K0084
+ * Uses @capacitor-community/bluetooth-le plugin for iOS
+ * Star TSP100-K0084 (Las Reinas)
  *
  * Archive: MVP Bluetooth Printing Setup - Dec 2025
  */
 
 import { Capacitor } from '@capacitor/core';
 
-// Dynamically import to avoid SSR issues
-let BluetoothSerial: any = null;
+// Star TSP100III BLE service & characteristic UUIDs
+const STAR_SERVICE_UUID = '0000ff00-0000-1000-8000-00805f9b34fb';
+const STAR_WRITE_CHAR_UUID = '0000ff02-0000-1000-8000-00805f9b34fb';
 
 // Star TSP100-K0084 Bluetooth Info (from printer self-test)
 const STAR_PRINTER_CONFIG = {
   name: 'TSP100-K0084',
   iosName: 'TSP100',
-  macAddress: '00:11:62:2E:10:2A', // Format with colons for Capacitor
+  // MAC address format: colons for BLE plugin
+  macAddress: '00:11:62:2E:10:2A',
   serialNumber: '2550822111300084',
 };
 
-// ESC/POS Commands for Star TSP100III
-const ESC_POS = {
-  INIT: '\x1b\x40',           // Initialize printer
-  CUT: '\x1b\x64\x02\x1d\x56\x00', // Feed and cut
-  BOLD_ON: '\x1b\x45\x01',
-  BOLD_OFF: '\x1b\x45\x00',
-  CENTER: '\x1b\x61\x01',
-  LEFT: '\x1b\x61\x00',
-  DOUBLE_HEIGHT: '\x1b\x21\x10',
-  NORMAL: '\x1b\x21\x00',
-  LINE_FEED: '\x0a',
-};
+// Dynamically import BLE client to avoid SSR issues
+let BleClient: any = null;
+let numbersToDataView: any = null;
 
 export interface PrintResult {
   success: boolean;
@@ -61,99 +54,141 @@ export interface OrderForPrint {
 }
 
 /**
- * Check if Bluetooth Serial printing is available
+ * Check if BLE printing is available (iOS native only)
  */
-export function isBluetoothSerialAvailable(): boolean {
+export function isBluetoothPrintingAvailable(): boolean {
   return Capacitor.isNativePlatform() && Capacitor.getPlatform() === 'ios';
 }
 
 /**
- * Initialize BluetoothSerial plugin (lazy load)
+ * Initialize BLE client (lazy load)
  */
-async function getBluetoothSerial(): Promise<any> {
-  if (!BluetoothSerial) {
+async function getBleClient(): Promise<{ BleClient: any; numbersToDataView: any }> {
+  if (!BleClient) {
     try {
-      const module = await import('capacitor-bluetooth-serial');
-      BluetoothSerial = module.BluetoothSerial;
+      const module = await import('@capacitor-community/bluetooth-le');
+      BleClient = module.BleClient;
+      numbersToDataView = module.numbersToDataView;
     } catch (error) {
-      console.error('[BluetoothSerial] Failed to load plugin:', error);
-      throw new Error('Bluetooth Serial plugin not available');
+      console.error('[BLE] Failed to load plugin:', error);
+      throw new Error('Bluetooth LE plugin not available');
     }
   }
-  return BluetoothSerial;
+  return { BleClient, numbersToDataView };
 }
 
 /**
- * Print receipt to Star TSP100III via Bluetooth Serial
- * Uses hardcoded MAC address for reliability
+ * Convert string to Uint8Array for ESC/POS
+ */
+function stringToBytes(str: string): number[] {
+  const bytes: number[] = [];
+  for (let i = 0; i < str.length; i++) {
+    bytes.push(str.charCodeAt(i) & 0xFF);
+  }
+  return bytes;
+}
+
+/**
+ * Build ESC/POS command buffer
+ */
+function buildEscPosCommands(text: string): Uint8Array {
+  const commands: number[] = [
+    0x1B, 0x40,  // ESC @ - Initialize printer
+    ...stringToBytes(text),
+    0x0A, 0x0A, 0x0A,  // Line feeds
+    0x1D, 0x56, 0x00   // GS V 0 - Full cut
+  ];
+  return new Uint8Array(commands);
+}
+
+/**
+ * Print receipt to Star TSP100III via BLE
  */
 export async function printReceipt(order: OrderForPrint): Promise<PrintResult> {
-  if (!isBluetoothSerialAvailable()) {
+  if (!isBluetoothPrintingAvailable()) {
     return { success: false, error: 'Bluetooth printing only available on iOS native app' };
   }
 
   try {
-    const BT = await getBluetoothSerial();
+    const { BleClient, numbersToDataView } = await getBleClient();
 
-    console.log('[BluetoothSerial] Starting print job for order:', order.id);
+    console.log('[BLE] Starting print job for order:', order.id);
 
-    // 1. Request Bluetooth permission (iOS only needs once)
-    try {
-      await BT.requestEnable();
-    } catch (e) {
-      console.log('[BluetoothSerial] Bluetooth already enabled or permission granted');
-    }
+    // Initialize BLE
+    await BleClient.initialize();
+    console.log('[BLE] Initialized');
 
-    // 2. Connect directly using hardcoded MAC address (skip discovery)
-    console.log('[BluetoothSerial] Connecting to:', STAR_PRINTER_CONFIG.macAddress);
+    // Connect using hardcoded MAC address
+    const printerAddress = STAR_PRINTER_CONFIG.macAddress;
+    console.log('[BLE] Connecting to:', printerAddress);
 
     try {
-      await BT.connect({ address: STAR_PRINTER_CONFIG.macAddress });
+      await BleClient.connect(printerAddress);
+      console.log('[BLE] Connected');
     } catch (connectError: any) {
-      // Try with list if hardcoded fails
-      console.log('[BluetoothSerial] Direct connect failed, trying discovery...');
-      const devices = await BT.list();
-      const star = devices.find((d: any) =>
-        d.name?.includes('Star') ||
-        d.name?.includes('TSP') ||
-        d.name?.includes(STAR_PRINTER_CONFIG.name)
+      // If direct connect fails, try scanning
+      console.log('[BLE] Direct connect failed, scanning for printer...');
+
+      let foundDevice: any = null;
+
+      await BleClient.requestLEScan(
+        { services: [STAR_SERVICE_UUID] },
+        (result: any) => {
+          console.log('[BLE] Found device:', result.device.name);
+          if (result.device.name?.includes('TSP') || result.device.name?.includes('Star')) {
+            foundDevice = result.device;
+          }
+        }
       );
 
-      if (!star) {
+      // Wait for scan
+      await new Promise(resolve => setTimeout(resolve, 3000));
+      await BleClient.stopLEScan();
+
+      if (!foundDevice) {
         throw new Error('Star printer not found. Make sure it is paired in iPad Settings.');
       }
 
-      await BT.connect({ address: star.address });
+      await BleClient.connect(foundDevice.deviceId);
+      console.log('[BLE] Connected via scan to:', foundDevice.name);
     }
 
-    // 3. Add 500ms delay for iOS 18+ (per advice)
+    // Add 500ms delay for iOS 18+ stability
     await new Promise(resolve => setTimeout(resolve, 500));
 
-    // 4. Format and send receipt
-    const receiptText = formatReceiptForESCPOS(order);
-    const escposData = ESC_POS.INIT + receiptText + ESC_POS.CUT;
+    // Format receipt and convert to ESC/POS
+    const receiptText = formatReceiptText(order);
+    const escPosData = buildEscPosCommands(receiptText);
 
-    console.log('[BluetoothSerial] Sending print data...');
-    await BT.write({ data: escposData });
+    console.log('[BLE] Sending', escPosData.length, 'bytes...');
 
-    // 5. Disconnect after short delay
+    // Write to printer
+    await BleClient.write(
+      printerAddress,
+      STAR_SERVICE_UUID,
+      STAR_WRITE_CHAR_UUID,
+      numbersToDataView(Array.from(escPosData))
+    );
+
+    console.log('[BLE] Data sent successfully');
+
+    // Disconnect after delay
     setTimeout(async () => {
       try {
-        await BT.disconnect();
-        console.log('[BluetoothSerial] Disconnected');
+        await BleClient.disconnect(printerAddress);
+        console.log('[BLE] Disconnected');
       } catch (e) {
         // Ignore disconnect errors
       }
     }, 1000);
 
-    console.log('[BluetoothSerial] Print successful!');
     return {
       success: true,
       printerName: STAR_PRINTER_CONFIG.name
     };
 
   } catch (error: any) {
-    console.error('[BluetoothSerial] Print error:', error);
+    console.error('[BLE] Print error:', error);
     return {
       success: false,
       error: error.message || 'Unknown print error'
@@ -183,38 +218,35 @@ export async function testPrint(): Promise<PrintResult> {
 }
 
 /**
- * Check printer connection status
+ * Scan for available BLE printers
  */
-export async function checkPrinterStatus(): Promise<{ connected: boolean; name?: string; error?: string }> {
-  if (!isBluetoothSerialAvailable()) {
-    return { connected: false, error: 'Not on iOS native platform' };
-  }
-
-  try {
-    const BT = await getBluetoothSerial();
-    const isConnected = await BT.isConnected();
-
-    return {
-      connected: isConnected,
-      name: isConnected ? STAR_PRINTER_CONFIG.name : undefined
-    };
-  } catch (error: any) {
-    return { connected: false, error: error.message };
-  }
-}
-
-/**
- * List available Bluetooth devices
- */
-export async function listBluetoothDevices(): Promise<{ devices: any[]; error?: string }> {
-  if (!isBluetoothSerialAvailable()) {
+export async function scanForPrinters(): Promise<{ devices: any[]; error?: string }> {
+  if (!isBluetoothPrintingAvailable()) {
     return { devices: [], error: 'Not on iOS native platform' };
   }
 
   try {
-    const BT = await getBluetoothSerial();
-    await BT.requestEnable();
-    const devices = await BT.list();
+    const { BleClient } = await getBleClient();
+    await BleClient.initialize();
+
+    const devices: any[] = [];
+
+    await BleClient.requestLEScan(
+      { services: [STAR_SERVICE_UUID] },
+      (result: any) => {
+        console.log('[BLE] Found:', result.device.name, result.device.deviceId);
+        devices.push({
+          name: result.device.name,
+          address: result.device.deviceId,
+          rssi: result.rssi
+        });
+      }
+    );
+
+    // Scan for 5 seconds
+    await new Promise(resolve => setTimeout(resolve, 5000));
+    await BleClient.stopLEScan();
+
     return { devices };
   } catch (error: any) {
     return { devices: [], error: error.message };
@@ -222,27 +254,27 @@ export async function listBluetoothDevices(): Promise<{ devices: any[]; error?: 
 }
 
 /**
- * Format order for ESC/POS receipt
+ * Format order as plain text receipt
  */
-function formatReceiptForESCPOS(order: OrderForPrint): string {
+function formatReceiptText(order: OrderForPrint): string {
   const lines: string[] = [];
+  const LINE_WIDTH = 32;
+
+  const center = (text: string) => {
+    const padding = Math.max(0, Math.floor((LINE_WIDTH - text.length) / 2));
+    return ' '.repeat(padding) + text;
+  };
+
+  const divider = '='.repeat(LINE_WIDTH);
+  const thinDivider = '-'.repeat(LINE_WIDTH);
 
   // Header
-  lines.push(ESC_POS.CENTER);
-  lines.push(ESC_POS.BOLD_ON);
-  lines.push(ESC_POS.DOUBLE_HEIGHT);
-  lines.push('LAS REINAS');
-  lines.push(ESC_POS.NORMAL);
-  lines.push(ESC_POS.BOLD_OFF);
-  lines.push('Authentic Mexican Cuisine');
-  lines.push(ESC_POS.LINE_FEED);
-  lines.push(ESC_POS.LEFT);
-
-  lines.push('================================');
-  lines.push(ESC_POS.BOLD_ON);
-  lines.push(`ORDER #${order.id.slice(0, 8).toUpperCase()}`);
-  lines.push(ESC_POS.BOLD_OFF);
-  lines.push('================================');
+  lines.push(center('LAS REINAS'));
+  lines.push(center('Authentic Mexican Cuisine'));
+  lines.push('');
+  lines.push(divider);
+  lines.push(center(`ORDER #${order.id.slice(0, 8).toUpperCase()}`));
+  lines.push(divider);
   lines.push('');
 
   // Order info
@@ -261,7 +293,7 @@ function formatReceiptForESCPOS(order: OrderForPrint): string {
     lines.push(`Date: ${date.toLocaleDateString()}`);
   }
   lines.push('');
-  lines.push('--------------------------------');
+  lines.push(thinDivider);
   lines.push('');
 
   // Items
@@ -280,7 +312,7 @@ function formatReceiptForESCPOS(order: OrderForPrint): string {
   }
 
   lines.push('');
-  lines.push('--------------------------------');
+  lines.push(thinDivider);
 
   // Totals
   if (order.subtotalAmount !== undefined) {
@@ -294,34 +326,28 @@ function formatReceiptForESCPOS(order: OrderForPrint): string {
   }
 
   lines.push('');
-  lines.push(ESC_POS.BOLD_ON);
-  lines.push(ESC_POS.DOUBLE_HEIGHT);
   lines.push(`TOTAL:           $${order.totalAmount.toFixed(2)}`);
-  lines.push(ESC_POS.NORMAL);
-  lines.push(ESC_POS.BOLD_OFF);
   lines.push('');
 
   // Notes
   if (order.notes) {
-    lines.push('--------------------------------');
+    lines.push(thinDivider);
     lines.push('NOTES:');
     lines.push(order.notes);
     lines.push('');
   }
 
   // Footer
-  lines.push('================================');
-  lines.push(ESC_POS.CENTER);
-  lines.push('Thank you for your order!');
-  lines.push('Las Reinas - Colusa, CA');
-  lines.push(ESC_POS.LEFT);
-  lines.push('================================');
-  lines.push('');
-  lines.push('');
-  lines.push('');
+  lines.push(divider);
+  lines.push(center('Thank you for your order!'));
+  lines.push(center('Las Reinas - Colusa, CA'));
+  lines.push(divider);
 
-  return lines.join(ESC_POS.LINE_FEED);
+  return lines.join('\n');
 }
 
 // Export printer config for reference
 export const PRINTER_CONFIG = STAR_PRINTER_CONFIG;
+
+// Re-export for backwards compatibility
+export const isBluetoothSerialAvailable = isBluetoothPrintingAvailable;

@@ -13,6 +13,7 @@
 		<string>jp.star-m.starpro</string>
 		<string>com.starmicronics.ble</string>
 		<string>com.starmicronics.stario</string>
+		<string>com.starmicronics.ble.starprnt</string>
 	</array>
 	<key>UIBackgroundModes</key>
 	<array>
