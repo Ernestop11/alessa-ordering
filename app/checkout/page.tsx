@@ -10,6 +10,15 @@ import { loadStripe } from '@stripe/stripe-js';
 import { Elements, PaymentRequestButtonElement, useStripe } from '@stripe/react-stripe-js';
 import type { PaymentRequest, Stripe } from '@stripe/stripe-js';
 
+// Extract real menuItemId from cart item ID (strips timestamp suffix)
+// Cart uses format: "uuid-timestamp" for uniqueness with modifiers
+function extractMenuItemId(cartId: string): string {
+  // UUID is 36 chars (8-4-4-4-12), check if there's a suffix after
+  const uuidPattern = /^([0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12})/i;
+  const match = cartId.match(uuidPattern);
+  return match ? match[1] : cartId;
+}
+
 // Cache for stripe instances by account ID
 const stripePromiseCache: Record<string, Promise<Stripe | null>> = {};
 
@@ -208,6 +217,9 @@ export default function CheckoutPage() {
     fetchStripeAccount();
   }, []);
 
+  // Store the current payment intent ID for confirmation after payment succeeds
+  const [currentPaymentIntentId, setCurrentPaymentIntentId] = useState<string | null>(null);
+
   // Create payment intent for Apple Pay
   const createPaymentIntent = async (): Promise<{ clientSecret: string } | null> => {
     if (!customerInfo.name || !customerInfo.email || !customerInfo.phone) {
@@ -223,7 +235,7 @@ export default function CheckoutPage() {
     try {
       const order = {
         items: items.map((item) => ({
-          menuItemId: item.id,
+          menuItemId: extractMenuItemId(item.id),
           quantity: item.quantity,
           price: item.price,
         })),
@@ -248,6 +260,8 @@ export default function CheckoutPage() {
       }
 
       const data = await response.json();
+      // Store the payment intent ID for confirmation
+      setCurrentPaymentIntentId(data.paymentIntentId);
       return { clientSecret: data.clientSecret };
     } catch (err) {
       setError(err instanceof Error ? err.message : 'An error occurred');
@@ -255,7 +269,31 @@ export default function CheckoutPage() {
     }
   };
 
-  const handleApplePaySuccess = () => {
+  const handleApplePaySuccess = async () => {
+    // After payment succeeds, call the confirm endpoint to create the order
+    // This is a fallback in case the Stripe webhook doesn't fire
+    if (currentPaymentIntentId) {
+      try {
+        console.log('[ApplePay] Confirming order for payment:', currentPaymentIntentId);
+        const confirmRes = await fetch('/api/payments/confirm', {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({ paymentIntentId: currentPaymentIntentId }),
+        });
+
+        if (confirmRes.ok) {
+          const confirmData = await confirmRes.json();
+          console.log('[ApplePay] Order confirmed:', confirmData.orderId);
+        } else {
+          // Log but don't fail - webhook may still create the order
+          console.warn('[ApplePay] Order confirmation failed, webhook should handle it');
+        }
+      } catch (err) {
+        console.error('[ApplePay] Error confirming order:', err);
+        // Don't fail - the webhook should still create the order
+      }
+    }
+
     clearCart();
     router.push(`/order/success?tenant=${tenantSlug}`);
   };
@@ -278,7 +316,7 @@ export default function CheckoutPage() {
       // Build order payload for the payment intent API
       const order = {
         items: items.map((item) => ({
-          menuItemId: item.id,
+          menuItemId: extractMenuItemId(item.id),
           quantity: item.quantity,
           price: item.price,
         })),
