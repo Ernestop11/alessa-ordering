@@ -40,6 +40,7 @@ interface StripeCheckoutProps {
 export default function StripeCheckout({ clientSecret, successPath = "/order/success", totalAmount }: StripeCheckoutProps) {
   const stripe = useStripe();
   const elements = useElements();
+  const router = useRouter();
   const tenant = useTenantTheme();
   const [loading, setLoading] = useState(false);
   const [message, setMessage] = useState<string | null>(null);
@@ -94,13 +95,46 @@ export default function StripeCheckout({ clientSecret, successPath = "/order/suc
       if (confirmError) {
         console.error('[Stripe] Payment confirmation error:', confirmError);
         event.complete('fail');
+        setMessage(confirmError.message || 'Payment failed');
       } else {
         event.complete('success');
+
         if (paymentIntent?.status === 'requires_action') {
           // Handle 3D Secure
           const { error } = await stripe.confirmCardPayment(clientSecret);
           if (error) {
             console.error('[Stripe] 3DS error:', error);
+            setMessage(error.message || '3D Secure verification failed');
+            return;
+          }
+        }
+
+        // Payment succeeded - confirm order and redirect
+        if (paymentIntent?.status === 'succeeded' || paymentIntent?.status === 'requires_capture') {
+          console.log('[Stripe] Apple Pay payment succeeded, confirming order...');
+
+          try {
+            // Call the confirm endpoint to create the order
+            const confirmResponse = await fetch('/api/payments/confirm', {
+              method: 'POST',
+              headers: { 'Content-Type': 'application/json' },
+              body: JSON.stringify({ paymentIntentId: paymentIntent.id }),
+            });
+
+            if (!confirmResponse.ok) {
+              const errorData = await confirmResponse.json();
+              console.error('[Stripe] Order confirmation failed:', errorData);
+              // Still redirect - the order can be recovered from webhook
+            }
+
+            // Redirect to success page
+            const redirectUrl = `${successPath}?payment_intent=${paymentIntent.id}`;
+            console.log('[Stripe] Redirecting to:', redirectUrl);
+            router.push(redirectUrl);
+          } catch (err) {
+            console.error('[Stripe] Error confirming order:', err);
+            // Still redirect - webhook will handle order creation
+            router.push(`${successPath}?payment_intent=${paymentIntent.id}`);
           }
         }
       }
@@ -117,7 +151,7 @@ export default function StripeCheckout({ clientSecret, successPath = "/order/suc
         setPaymentRequest(null);
       }
     });
-  }, [stripe, totalAmount, tenant.name, clientSecret]);
+  }, [stripe, totalAmount, tenant.name, clientSecret, router, successPath]);
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
