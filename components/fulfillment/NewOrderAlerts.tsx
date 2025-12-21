@@ -563,14 +563,24 @@ export default function NewOrderAlerts({
     return colors[flashingColor % colors.length];
   };
 
-  // Render unlock button if audio is not unlocked
+  // Render unlock button - ALWAYS show on iOS/Safari until sound has played
   const renderUnlockButton = () => {
-    if (audioUnlocked) return null;
-    
+    // Always show unlock prompt on mobile/tablet Safari
+    const isSafari = typeof navigator !== 'undefined' &&
+      /Safari/.test(navigator.userAgent) &&
+      !/Chrome/.test(navigator.userAgent);
+    const isMobile = typeof navigator !== 'undefined' &&
+      /iPhone|iPad|iPod|Android/i.test(navigator.userAgent);
+
+    // Show if not unlocked, OR if on Safari/mobile and we haven't confirmed a sound played
+    const shouldShow = !audioUnlocked || (isSafari && isMobile);
+
+    if (!shouldShow) return null;
+
     return (
-      <div className="fixed bottom-4 left-4 z-50 bg-yellow-500 text-white px-4 py-3 rounded-lg shadow-lg max-w-sm">
-        <p className="text-sm font-medium mb-2">⚠️ Audio Locked</p>
-        <p className="text-xs mb-3">Tap to unlock alarm sounds</p>
+      <div className="fixed bottom-4 left-4 z-50 bg-red-600 text-white px-4 py-3 rounded-lg shadow-lg max-w-sm animate-pulse">
+        <p className="text-sm font-bold mb-2">🔔 TAP TO ENABLE ALARM SOUNDS</p>
+        <p className="text-xs mb-3">iOS requires a tap before sounds can play</p>
         <button
           onClick={async () => {
             try {
@@ -580,28 +590,32 @@ export default function NewOrderAlerts({
               if (audioContextRef.current.state === 'suspended') {
                 await audioContextRef.current.resume();
               }
-              // Play a test sound
+              // Play an AUDIBLE test sound so user knows it worked
               const osc = audioContextRef.current.createOscillator();
               const gain = audioContextRef.current.createGain();
-              gain.gain.setValueAtTime(0.001, audioContextRef.current.currentTime);
+              osc.type = 'square';
+              osc.frequency.setValueAtTime(800, audioContextRef.current.currentTime);
+              gain.gain.setValueAtTime(0.3, audioContextRef.current.currentTime);
+              gain.gain.exponentialRampToValueAtTime(0.01, audioContextRef.current.currentTime + 0.3);
               osc.connect(gain);
               gain.connect(audioContextRef.current.destination);
               osc.start();
-              osc.stop(audioContextRef.current.currentTime + 0.01);
+              osc.stop(audioContextRef.current.currentTime + 0.3);
+
               audioUnlockedRef.current = true;
               setAudioUnlocked(true);
-              console.log('[Alarm] Audio manually unlocked!');
-              
-              // Play a quick test sound to confirm
-              setTimeout(() => playAlertSound(), 100);
+              console.log('[Alarm] Audio manually unlocked with audible beep!');
+
+              // Also play the actual alert sound
+              setTimeout(() => playAlertSound(), 400);
             } catch (e) {
               console.error('[Alarm] Failed to unlock:', e);
               alert('Failed to unlock audio. Please check browser settings.');
             }
           }}
-          className="w-full bg-white text-yellow-600 px-3 py-2 rounded font-medium text-sm hover:bg-gray-100 transition-colors"
+          className="w-full bg-white text-red-600 px-4 py-3 rounded font-bold text-base hover:bg-gray-100 transition-colors"
         >
-          Unlock Audio
+          🔊 TAP HERE TO ENABLE SOUNDS
         </button>
       </div>
     );
