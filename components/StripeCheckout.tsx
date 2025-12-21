@@ -154,48 +154,17 @@ export default function StripeCheckout({ clientSecret, successPath = "/order/suc
     <form onSubmit={handleSubmit} className="space-y-4">
       {/* Show loading state while Stripe initializes */}
       {!stripe || !elements ? (
-        <div className="flex items-center justify-center py-12">
+        <div className="flex items-center justify-center py-8">
           <div className="text-center">
-            <div className="mx-auto h-8 w-8 animate-spin rounded-full border-4 border-gray-200 border-t-gray-600"></div>
-            <p className="mt-3 text-sm text-gray-600">Loading payment form...</p>
+            <div className="mx-auto h-6 w-6 animate-spin rounded-full border-2 border-gray-200 border-t-gray-600"></div>
+            <p className="mt-2 text-sm text-gray-600">Loading...</p>
           </div>
         </div>
       ) : (
         <>
-          {/* Apple Pay / Google Pay Button - Prominent placement */}
-          {paymentRequest ? (
-            <div className="mb-6">
-              <div className="mb-3">
-                <p className="text-sm font-semibold text-gray-700 mb-2 flex items-center gap-2">
-                  <span className="text-lg">⚡</span> Express Checkout
-                </p>
-                <PaymentRequestButtonElement
-                  options={{
-                    paymentRequest,
-                    style: {
-                      paymentRequestButton: {
-                        type: "buy",
-                        theme: "dark",
-                        height: "52px",
-                      },
-                    },
-                  }}
-                />
-              </div>
-              <div className="relative my-5">
-                <div className="absolute inset-0 flex items-center">
-                  <div className="w-full border-t border-gray-200"></div>
-                </div>
-                <div className="relative flex justify-center text-sm">
-                  <span className="bg-white px-4 text-gray-500">or pay with card</span>
-                </div>
-              </div>
-            </div>
-          ) : null}
-          
-          {/* ALWAYS render PaymentElement - match frontend UI styling */}
+          {/* Card Payment Form - Apple Pay is handled by checkout page */}
           <div
-            className="relative w-full bg-white rounded-lg border border-gray-200 p-3 sm:p-4 min-h-[280px] sm:min-h-[350px]"
+            className="relative w-full bg-white rounded-lg min-h-[250px]"
           >
             <PaymentElement 
               key={clientSecret}
