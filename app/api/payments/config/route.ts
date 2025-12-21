@@ -9,6 +9,12 @@ export async function GET() {
   try {
     const tenant = await requireTenant();
 
+    console.log('[payments/config] Tenant:', tenant.slug, {
+      hasIntegrations: !!tenant.integrations,
+      stripeAccountId: tenant.integrations?.stripeAccountId,
+      chargesEnabled: tenant.integrations?.stripeChargesEnabled,
+    });
+
     // Check if tenant has Stripe Connect configured
     const stripeAccount = tenant.integrations?.stripeAccountId;
     const chargesEnabled = tenant.integrations?.stripeChargesEnabled;
