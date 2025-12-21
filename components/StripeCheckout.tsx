@@ -85,22 +85,27 @@ export default function StripeCheckout({ clientSecret, successPath = "/order/suc
     pr.on('paymentmethod', async (event) => {
       console.log('[Stripe] PaymentMethod event received:', event.paymentMethod.type);
 
-      // Confirm the payment with the PaymentIntent
-      const { error: confirmError, paymentIntent } = await stripe.confirmCardPayment(
-        clientSecret,
-        { payment_method: event.paymentMethod.id },
-        { handleActions: false }
-      );
+      try {
+        // Confirm the payment with the PaymentIntent
+        const { error: confirmError, paymentIntent } = await stripe.confirmCardPayment(
+          clientSecret,
+          { payment_method: event.paymentMethod.id },
+          { handleActions: false }
+        );
 
-      if (confirmError) {
-        console.error('[Stripe] Payment confirmation error:', confirmError);
-        event.complete('fail');
-        setMessage(confirmError.message || 'Payment failed');
-      } else {
+        if (confirmError) {
+          console.error('[Stripe] Payment confirmation error:', confirmError);
+          event.complete('fail');
+          setMessage(confirmError.message || 'Payment failed');
+          return;
+        }
+
+        // Complete the Apple Pay sheet FIRST
         event.complete('success');
+        console.log('[Stripe] Apple Pay sheet closed, paymentIntent status:', paymentIntent?.status);
 
+        // Handle 3D Secure if needed
         if (paymentIntent?.status === 'requires_action') {
-          // Handle 3D Secure
           const { error } = await stripe.confirmCardPayment(clientSecret);
           if (error) {
             console.error('[Stripe] 3DS error:', error);
@@ -109,34 +114,60 @@ export default function StripeCheckout({ clientSecret, successPath = "/order/suc
           }
         }
 
-        // Payment succeeded - confirm order and redirect
-        if (paymentIntent?.status === 'succeeded' || paymentIntent?.status === 'requires_capture') {
-          console.log('[Stripe] Apple Pay payment succeeded, confirming order...');
+        // For Apple Pay, the payment is typically succeeded or requires_capture at this point
+        // But we should handle ALL success-ish statuses and create the order
+        const successStatuses = ['succeeded', 'requires_capture', 'processing'];
+        const piStatus = paymentIntent?.status || '';
 
-          try {
-            // Call the confirm endpoint to create the order
-            const confirmResponse = await fetch('/api/payments/confirm', {
-              method: 'POST',
-              headers: { 'Content-Type': 'application/json' },
-              body: JSON.stringify({ paymentIntentId: paymentIntent.id }),
-            });
+        console.log('[Stripe] Checking payment status:', piStatus, 'in successStatuses:', successStatuses.includes(piStatus));
 
-            if (!confirmResponse.ok) {
-              const errorData = await confirmResponse.json();
-              console.error('[Stripe] Order confirmation failed:', errorData);
-              // Still redirect - the order can be recovered from webhook
+        if (paymentIntent?.id && (successStatuses.includes(piStatus) || piStatus === '')) {
+          console.log('[Stripe] Apple Pay payment succeeded, calling confirm endpoint...');
+
+          // Use a synchronous redirect approach for Safari compatibility
+          // Safari may kill async operations after Apple Pay sheet closes
+          const confirmAndRedirect = async () => {
+            try {
+              const confirmResponse = await fetch('/api/payments/confirm', {
+                method: 'POST',
+                headers: { 'Content-Type': 'application/json' },
+                body: JSON.stringify({ paymentIntentId: paymentIntent.id }),
+              });
+
+              const result = await confirmResponse.json();
+              console.log('[Stripe] Confirm response:', result);
+
+              if (!confirmResponse.ok) {
+                console.error('[Stripe] Order confirmation failed:', result);
+              }
+            } catch (err) {
+              console.error('[Stripe] Error confirming order:', err);
             }
 
-            // Redirect to success page
+            // Always redirect - even if confirm fails, webhook will handle it
             const redirectUrl = `${successPath}?payment_intent=${paymentIntent.id}`;
             console.log('[Stripe] Redirecting to:', redirectUrl);
-            router.push(redirectUrl);
-          } catch (err) {
-            console.error('[Stripe] Error confirming order:', err);
-            // Still redirect - webhook will handle order creation
-            router.push(`${successPath}?payment_intent=${paymentIntent.id}`);
-          }
+
+            // Use window.location for more reliable redirect on Safari
+            window.location.href = redirectUrl;
+          };
+
+          // Execute immediately
+          confirmAndRedirect();
+        } else {
+          console.error('[Stripe] Unexpected payment status:', piStatus);
+          setMessage('Payment processing - please wait...');
+          // Still try to redirect after a moment
+          setTimeout(() => {
+            if (paymentIntent?.id) {
+              window.location.href = `${successPath}?payment_intent=${paymentIntent.id}`;
+            }
+          }, 2000);
         }
+      } catch (err) {
+        console.error('[Stripe] PaymentMethod handler error:', err);
+        event.complete('fail');
+        setMessage('Payment failed. Please try again.');
       }
     });
 
