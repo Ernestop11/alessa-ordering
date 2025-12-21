@@ -563,19 +563,10 @@ export default function NewOrderAlerts({
     return colors[flashingColor % colors.length];
   };
 
-  // Render unlock button - ALWAYS show on iOS/Safari until sound has played
+  // Render unlock button - show only when audio is NOT unlocked
   const renderUnlockButton = () => {
-    // Always show unlock prompt on mobile/tablet Safari
-    const isSafari = typeof navigator !== 'undefined' &&
-      /Safari/.test(navigator.userAgent) &&
-      !/Chrome/.test(navigator.userAgent);
-    const isMobile = typeof navigator !== 'undefined' &&
-      /iPhone|iPad|iPod|Android/i.test(navigator.userAgent);
-
-    // Show if not unlocked, OR if on Safari/mobile and we haven't confirmed a sound played
-    const shouldShow = !audioUnlocked || (isSafari && isMobile);
-
-    if (!shouldShow) return null;
+    // Only show if audio is not unlocked yet
+    if (audioUnlocked) return null;
 
     return (
       <div className="fixed bottom-4 left-4 z-50 bg-red-600 text-white px-4 py-3 rounded-lg shadow-lg max-w-sm animate-pulse">
