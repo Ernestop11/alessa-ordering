@@ -49,12 +49,15 @@ export async function POST(req: NextRequest) {
 
     const ext = path.extname(file.name) || '.png';
     const filename = `${Date.now()}-${randomUUID()}${ext}`;
-    const uploadsDir = path.join(process.cwd(), 'public', 'uploads');
+
+    // SECURITY: Store uploads in tenant-isolated directory
+    // Path: /public/tenant/{slug}/uploads/
+    const uploadsDir = path.join(process.cwd(), 'public', 'tenant', tenant.slug, 'uploads');
 
     await fs.mkdir(uploadsDir, { recursive: true });
     await fs.writeFile(path.join(uploadsDir, filename), buffer);
 
-    const url = `/uploads/${filename}`;
+    const url = `/tenant/${tenant.slug}/uploads/${filename}`;
 
     // Revalidate paths that might display uploaded images
     // Note: The actual tenant update happens when settings are saved,

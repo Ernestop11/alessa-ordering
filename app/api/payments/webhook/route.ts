@@ -52,7 +52,11 @@ export async function POST(req: Request) {
 
   if (event.type === 'payment_intent.succeeded') {
     const paymentIntent = event.data.object as Stripe.PaymentIntent;
-    console.log('✅ payment_intent.succeeded received', paymentIntent.id);
+    console.log('✅ payment_intent.succeeded received', {
+      id: paymentIntent.id,
+      amount: paymentIntent.amount,
+      metadata: paymentIntent.metadata,
+    });
 
     const orderId = paymentIntent.metadata?.orderId;
     if (orderId) {
@@ -70,26 +74,48 @@ export async function POST(req: Request) {
       } else {
         console.warn('⚠️ Unable to find order to mark as paid', { orderId, paymentIntentId: paymentIntent.id });
       }
-    } else {
-      console.warn('⚠️ payment_intent.succeeded missing orderId metadata', paymentIntent.id);
     }
 
-    const session = await prisma.$transaction(async (prisma) => {
-      const session = await prisma.paymentSession.findFirst({
+    // Find payment session by paymentIntentId
+    const session = await prisma.$transaction(async (tx) => {
+      const sess = await tx.paymentSession.findFirst({
         where: { paymentIntentId: paymentIntent.id }
       });
 
-      if (!session) return null;
+      if (!sess) {
+        console.warn('⚠️ No payment session found for payment intent', paymentIntent.id);
+        return null;
+      }
 
-      const tenant = await prisma.tenant.findUnique({
-        where: { id: session.tenantId },
+      const tenant = await tx.tenant.findUnique({
+        where: { id: sess.tenantId },
         include: { settings: true, integrations: true }
       });
 
-      return { ...session, tenant };
+      return { ...sess, tenant };
     });
 
-    if (session && session.status !== 'completed') {
+    if (!session) {
+      // No session found - payment intent might be from legacy flow or different integration
+      console.log('[webhook] No payment session for this payment intent, skipping order creation');
+      return NextResponse.json({ received: true });
+    }
+
+    // Check if order already exists (client-side confirmation won the race)
+    const existingOrder = await prisma.order.findFirst({
+      where: { paymentIntentId: paymentIntent.id },
+    });
+
+    if (existingOrder) {
+      console.log('[webhook] Order already exists, marking session complete', existingOrder.id);
+      await prisma.paymentSession.update({
+        where: { id: session.id },
+        data: { status: 'completed' },
+      });
+      return NextResponse.json({ received: true });
+    }
+
+    if (session.status !== 'completed') {
       if (!session.tenant) {
         console.error('[stripe] Tenant not found for payment session', session.tenantId);
         return NextResponse.json({ error: 'Tenant not found' }, { status: 404 });

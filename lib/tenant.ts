@@ -1,9 +1,9 @@
-import { headers } from 'next/headers';
+import { headers, cookies } from 'next/headers';
 import type { NextRequest } from 'next/server';
 import { z } from 'zod';
 import prisma from './prisma';
 
-const DEFAULT_TENANT_SLUG = process.env.DEFAULT_TENANT_SLUG || 'lapoblanita';
+// NOTE: We intentionally don't use a default tenant fallback to prevent cross-tenant pollution
 const ROOT_DOMAIN = process.env.ROOT_DOMAIN || 'alessacloud.com';
 
 const tenantSlugSchema = z
@@ -28,6 +28,21 @@ function safeHeaders() {
   }
 }
 
+function safeCookies() {
+  try {
+    return cookies();
+  } catch {
+    return null;
+  }
+}
+
+function getTenantFromCookie(): string | null {
+  const cookieStore = safeCookies();
+  if (!cookieStore) return null;
+  const tenantCookie = cookieStore.get('x-tenant-slug');
+  return tenantCookie?.value || null;
+}
+
 function normalizeHost(host?: string | null) {
   return host?.split(':')[0]?.trim().toLowerCase() ?? '';
 }
@@ -49,24 +64,27 @@ function extractPath(ctx: TenantResolutionOptions, headerList: Headers | null) {
 function deriveSubdomainSlug(hostname: string) {
   if (!hostname) return null;
 
+  // Root domain - no subdomain tenant
   if (hostname === ROOT_DOMAIN || hostname === `www.${ROOT_DOMAIN}`) {
-    return DEFAULT_TENANT_SLUG;
+    return null;
   }
 
+  // Subdomain of ROOT_DOMAIN (e.g., lasreinas.alessacloud.com)
   if (hostname.endsWith(`.${ROOT_DOMAIN}`)) {
     const subdomain = hostname.replace(`.${ROOT_DOMAIN}`, '');
     if (subdomain && subdomain !== 'www') {
       return subdomain.toLowerCase();
     }
-    return DEFAULT_TENANT_SLUG;
+    return null;
   }
 
+  // Local development with subdomain (e.g., lasreinas.localhost:3000)
   if (hostname.includes('localhost')) {
     const parts = hostname.split('.');
     if (parts.length > 1) {
       return parts[0].toLowerCase();
     }
-    return DEFAULT_TENANT_SLUG;
+    return null;
   }
 
   return null;
@@ -81,6 +99,7 @@ function assertValidSlug(candidate: string, source: string) {
 }
 
 export function getTenantSlugFromHeaders(): string {
+  // Priority 1: Check header from middleware
   const headerList = safeHeaders();
   if (headerList) {
     const slugHeader = headerList.get('x-tenant-slug');
@@ -88,20 +107,36 @@ export function getTenantSlugFromHeaders(): string {
       try {
         return assertValidSlug(slugHeader, 'header');
       } catch {
-        // Fall through to derived slug/default
+        // Fall through
       }
     }
+  }
+
+  // Priority 2: Check cookie from middleware
+  const cookieSlug = getTenantFromCookie();
+  if (cookieSlug) {
+    try {
+      return assertValidSlug(cookieSlug, 'cookie');
+    } catch {
+      // Fall through
+    }
+  }
+
+  // Priority 3: Try to derive from host subdomain
+  if (headerList) {
     const host = normalizeHost(headerList.get('host'));
     const derived = deriveSubdomainSlug(host);
     if (derived) {
       try {
         return assertValidSlug(derived, 'header-subdomain');
       } catch {
-        return DEFAULT_TENANT_SLUG;
+        // Fall through
       }
     }
   }
-  return DEFAULT_TENANT_SLUG;
+
+  // SECURITY: Throw error instead of returning default
+  throw new Error('Unable to determine tenant from headers or cookies');
 }
 
 export async function getTenantBySlug(slug: string) {
@@ -144,15 +179,6 @@ export async function resolveTenant(options: TenantResolutionOptions = {}) {
   const queryCandidate = extractQueryTenant(options, headerList);
   const path = extractPath(options, headerList);
 
-  // During build/static generation host can be missing; fall back to default tenant
-  if (!hostHeader && !queryCandidate) {
-    const fallback = await getTenantBySlug(DEFAULT_TENANT_SLUG);
-    if (fallback) {
-      console.warn('Tenant resolver missing host/query - using default tenant:', DEFAULT_TENANT_SLUG);
-      return fallback;
-    }
-  }
-
   // Skip tenant resolution for root domain - should show landing page
   if (hostHeader === ROOT_DOMAIN || hostHeader === `www.${ROOT_DOMAIN}`) {
     throw new Error(
@@ -160,7 +186,7 @@ export async function resolveTenant(options: TenantResolutionOptions = {}) {
     );
   }
 
-  // FIRST: Check x-tenant-slug header set by middleware (for custom domains)
+  // PRIORITY 1: Check x-tenant-slug header set by middleware (most reliable for custom domains)
   const headerSlug = headerList?.get('x-tenant-slug');
   if (headerSlug) {
     try {
@@ -170,19 +196,25 @@ export async function resolveTenant(options: TenantResolutionOptions = {}) {
         return tenantFromHeader;
       }
     } catch (err) {
-      // Fall through to other methods if header slug is invalid
       console.error('Invalid x-tenant-slug header:', err);
     }
   }
 
-  // Only try to use hostname as slug if it's a valid slug format (no dots)
-  if (hostHeader && /^[a-z0-9-]+$/i.test(hostHeader)) {
-    const tenantFromHost = await getTenantBySlug(hostHeader);
-    if (tenantFromHost) {
-      return tenantFromHost;
+  // PRIORITY 2: Check cookie set by middleware (fallback for RSC)
+  const cookieSlug = getTenantFromCookie();
+  if (cookieSlug) {
+    try {
+      const slug = assertValidSlug(cookieSlug, 'x-tenant-slug cookie');
+      const tenantFromCookie = await getTenantBySlug(slug);
+      if (tenantFromCookie) {
+        return tenantFromCookie;
+      }
+    } catch (err) {
+      console.error('Invalid x-tenant-slug cookie:', err);
     }
   }
 
+  // PRIORITY 3: Query param (?tenant=xxx)
   if (queryCandidate) {
     const slug = assertValidSlug(queryCandidate, 'query parameter "tenant"');
     const tenantFromQuery = await getTenantBySlug(slug);
@@ -191,15 +223,40 @@ export async function resolveTenant(options: TenantResolutionOptions = {}) {
     }
   }
 
+  // PRIORITY 4: Subdomain of ROOT_DOMAIN (lasreinas.alessacloud.com)
   const derivedSlug = deriveSubdomainSlug(hostHeader);
   if (derivedSlug) {
-    const slug = assertValidSlug(derivedSlug, 'subdomain/host');
-    const tenantFromSubdomain = await getTenantBySlug(slug);
-    if (tenantFromSubdomain) {
-      return tenantFromSubdomain;
+    try {
+      const slug = assertValidSlug(derivedSlug, 'subdomain/host');
+      const tenantFromSubdomain = await getTenantBySlug(slug);
+      if (tenantFromSubdomain) {
+        return tenantFromSubdomain;
+      }
+    } catch {
+      // Invalid subdomain format, continue
     }
   }
 
+  // PRIORITY 5: Try custom domain lookup directly from DB
+  if (hostHeader && hostHeader.includes('.')) {
+    const tenantFromCustomDomain = await prisma.tenant.findFirst({
+      where: {
+        OR: [
+          { customDomain: hostHeader },
+          { customDomain: hostHeader.replace(/^www\./, '') },
+        ],
+      },
+      include: {
+        settings: true,
+        integrations: true,
+      },
+    });
+    if (tenantFromCustomDomain) {
+      return tenantFromCustomDomain;
+    }
+  }
+
+  // SECURITY: NO DEFAULT FALLBACK - fail explicitly to prevent cross-tenant pollution
   throw new Error(
     `Tenant not found (host="${hostHeader || 'unknown'}", path="${path || 'unknown'}")`,
   );
