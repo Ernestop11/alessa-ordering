@@ -5,9 +5,9 @@ import { useRouter, useSearchParams } from 'next/navigation';
 import { useCart } from '@/lib/store/cart';
 import { useTenantTheme } from '@/components/TenantThemeProvider';
 import { StripeCheckoutWrapper } from '@/components/StripeCheckout';
-import { X, ChevronDown, ChevronUp } from 'lucide-react';
+import { X } from 'lucide-react';
 import { loadStripe } from '@stripe/stripe-js';
-import { Elements, PaymentRequestButtonElement } from '@stripe/react-stripe-js';
+import { Elements, PaymentRequestButtonElement, useStripe } from '@stripe/react-stripe-js';
 import type { PaymentRequest, Stripe } from '@stripe/stripe-js';
 
 // Cache for stripe instances by account ID
@@ -23,6 +23,143 @@ function getStripePromise(stripeAccount?: string): Promise<Stripe | null> {
     );
   }
   return stripePromiseCache[cacheKey];
+}
+
+// Apple Pay Button Component - uses Stripe's native PaymentRequestButtonElement
+interface ApplePayButtonProps {
+  totalAmount: number;
+  tenantName: string;
+  onPaymentStart: () => Promise<{ clientSecret: string } | null>;
+  onSuccess: () => void;
+  onError: (message: string) => void;
+  disabled?: boolean;
+}
+
+function ApplePayButton({ totalAmount, tenantName, onPaymentStart, onSuccess, onError, disabled }: ApplePayButtonProps) {
+  const stripe = useStripe();
+  const [paymentRequest, setPaymentRequest] = useState<PaymentRequest | null>(null);
+  const [canPay, setCanPay] = useState(false);
+  const [processing, setProcessing] = useState(false);
+
+  useEffect(() => {
+    if (!stripe || totalAmount <= 0) return;
+
+    const pr = stripe.paymentRequest({
+      country: 'US',
+      currency: 'usd',
+      total: {
+        label: tenantName || 'Order Total',
+        amount: Math.round(totalAmount * 100),
+      },
+      requestPayerName: true,
+      requestPayerEmail: true,
+      requestPayerPhone: true,
+    });
+
+    // Check if Apple Pay / Google Pay is available
+    pr.canMakePayment().then((result) => {
+      console.log('[ApplePay] canMakePayment:', result);
+      if (result) {
+        setPaymentRequest(pr);
+        setCanPay(true);
+      }
+    });
+
+    // Handle the payment
+    pr.on('paymentmethod', async (event) => {
+      console.log('[ApplePay] Payment method received:', event.paymentMethod.id);
+      setProcessing(true);
+
+      try {
+        // Get payment intent from parent
+        const intentData = await onPaymentStart();
+        if (!intentData) {
+          event.complete('fail');
+          setProcessing(false);
+          return;
+        }
+
+        // Confirm the payment
+        const { error, paymentIntent } = await stripe.confirmCardPayment(
+          intentData.clientSecret,
+          { payment_method: event.paymentMethod.id },
+          { handleActions: false }
+        );
+
+        if (error) {
+          console.error('[ApplePay] Payment error:', error);
+          event.complete('fail');
+          onError(error.message || 'Payment failed');
+          setProcessing(false);
+          return;
+        }
+
+        event.complete('success');
+
+        // Handle 3D Secure if needed
+        if (paymentIntent?.status === 'requires_action') {
+          const { error: actionError } = await stripe.confirmCardPayment(intentData.clientSecret);
+          if (actionError) {
+            onError(actionError.message || 'Payment verification failed');
+            setProcessing(false);
+            return;
+          }
+        }
+
+        onSuccess();
+      } catch (err) {
+        event.complete('fail');
+        onError(err instanceof Error ? err.message : 'Payment failed');
+        setProcessing(false);
+      }
+    });
+
+    return () => {
+      // Cleanup
+    };
+  }, [stripe, totalAmount, tenantName]);
+
+  // Update amount when it changes
+  useEffect(() => {
+    if (paymentRequest && totalAmount > 0) {
+      paymentRequest.update({
+        total: {
+          label: tenantName || 'Order Total',
+          amount: Math.round(totalAmount * 100),
+        },
+      });
+    }
+  }, [paymentRequest, totalAmount, tenantName]);
+
+  if (!canPay || !paymentRequest) {
+    return null;
+  }
+
+  if (processing) {
+    return (
+      <div className="w-full rounded-xl bg-black py-4 flex items-center justify-center gap-2" style={{ minHeight: '56px' }}>
+        <div className="h-5 w-5 animate-spin rounded-full border-2 border-white/20 border-t-white"></div>
+        <span className="text-white font-semibold">Processing...</span>
+      </div>
+    );
+  }
+
+  return (
+    <div className={disabled ? 'opacity-50 pointer-events-none' : ''}>
+      <PaymentRequestButtonElement
+        options={{
+          paymentRequest,
+          style: {
+            paymentRequestButton: {
+              type: 'buy',
+              theme: 'dark',
+              height: '56px',
+            },
+          },
+        }}
+      />
+    </div>
+  );
 }
 
 export default function CheckoutPage() {
@@ -44,96 +181,46 @@ export default function CheckoutPage() {
   const [stripeAccount, setStripeAccount] = useState<string | undefined>(undefined);
   const [error, setError] = useState<string | null>(null);
   const [showCardPayment, setShowCardPayment] = useState(false);
+  const [stripeReady, setStripeReady] = useState(false);
 
-  // Apple Pay state
-  const [applePayReady, setApplePayReady] = useState(false);
-  const [applePayLoading, setApplePayLoading] = useState(true);
-  const [paymentRequest, setPaymentRequest] = useState<PaymentRequest | null>(null);
-  const [stripeInstance, setStripeInstance] = useState<Stripe | null>(null);
+  // Get Stripe promise for the connected account
+  const stripePromise = useMemo(() => {
+    if (stripeAccount) {
+      return getStripePromise(stripeAccount);
+    }
+    return null;
+  }, [stripeAccount]);
 
-  // Fetch Stripe account and initialize Apple Pay on mount
+  // Fetch Stripe account on mount
   useEffect(() => {
-    async function initializeApplePay() {
+    async function fetchStripeAccount() {
       try {
-        // First fetch the Stripe account ID for this tenant
         const configRes = await fetch('/api/payments/config');
         const configData = await configRes.json();
-        const accountId = configData.stripeAccount;
-        setStripeAccount(accountId);
-
-        // Load Stripe with the connected account
-        const stripe = await getStripePromise(accountId);
-        if (!stripe) {
-          setApplePayLoading(false);
-          return;
+        if (configData.stripeAccount) {
+          setStripeAccount(configData.stripeAccount);
+          setStripeReady(true);
         }
-        setStripeInstance(stripe);
-
-        // Create payment request for Apple Pay
-        const pr = stripe.paymentRequest({
-          country: 'US',
-          currency: 'usd',
-          total: {
-            label: tenant.name || 'Order Total',
-            amount: Math.max(50, Math.round(total() * 100)),
-          },
-          requestPayerName: true,
-          requestPayerEmail: true,
-          requestPayerPhone: true,
-        });
-
-        // Check if Apple Pay is available
-        const result = await pr.canMakePayment();
-        console.log('[Checkout] canMakePayment result:', result);
-
-        if (result) {
-          setPaymentRequest(pr);
-          setApplePayReady(true);
-        }
-        setApplePayLoading(false);
       } catch (err) {
-        console.error('[Checkout] Apple Pay init error:', err);
-        setApplePayLoading(false);
+        console.error('[Checkout] Failed to fetch Stripe config:', err);
       }
     }
+    fetchStripeAccount();
+  }, []);
 
-    if (items.length > 0) {
-      initializeApplePay();
-    }
-  }, [items.length, tenant.name]);
-
-  // Update payment request amount when total changes
-  useEffect(() => {
-    if (paymentRequest) {
-      paymentRequest.update({
-        total: {
-          label: tenant.name || 'Order Total',
-          amount: Math.max(50, Math.round(total() * 100)),
-        },
-      });
-    }
-  }, [total, paymentRequest, tenant.name]);
-
-  // Handle Apple Pay payment
-  const handleApplePay = async () => {
-    if (!paymentRequest || !stripeInstance) return;
-
-    // Validate customer info
+  // Create payment intent for Apple Pay
+  const createPaymentIntent = async (): Promise<{ clientSecret: string } | null> => {
     if (!customerInfo.name || !customerInfo.email || !customerInfo.phone) {
       setError('Please fill in your contact information first');
-      return;
+      return null;
     }
 
     if (orderType === 'delivery' && !customerInfo.address) {
       setError('Please enter a delivery address');
-      return;
+      return null;
     }
 
-    setLoading(true);
-    setError(null);
-
     try {
-      // Create payment intent first
       const order = {
         items: items.map((item) => ({
           menuItemId: item.id,
@@ -161,47 +248,16 @@ export default function CheckoutPage() {
       }
 
       const data = await response.json();
-      const secret = data.clientSecret;
-
-      // Set up the payment method handler
-      paymentRequest.on('paymentmethod', async (event) => {
-        console.log('[Apple Pay] Payment method received:', event.paymentMethod.type);
-
-        const { error: confirmError, paymentIntent } = await stripeInstance.confirmCardPayment(
-          secret,
-          { payment_method: event.paymentMethod.id },
-          { handleActions: false }
-        );
-
-        if (confirmError) {
-          console.error('[Apple Pay] Confirmation error:', confirmError);
-          event.complete('fail');
-          setError(confirmError.message || 'Payment failed');
-          setLoading(false);
-        } else {
-          event.complete('success');
-
-          if (paymentIntent?.status === 'requires_action') {
-            const { error } = await stripeInstance.confirmCardPayment(secret);
-            if (error) {
-              setError(error.message || 'Payment failed');
-              setLoading(false);
-              return;
-            }
-          }
-
-          // Success - redirect to success page
-          clearCart();
-          router.push(`/order/success?tenant=${tenantSlug}`);
-        }
-      });
-
-      // This triggers the Apple Pay sheet
-      paymentRequest.show();
+      return { clientSecret: data.clientSecret };
     } catch (err) {
       setError(err instanceof Error ? err.message : 'An error occurred');
-      setLoading(false);
+      return null;
     }
+  };
+
+  const handleApplePaySuccess = () => {
+    clearCart();
+    router.push(`/order/success?tenant=${tenantSlug}`);
   };
 
   const handleCreatePaymentIntent = async () => {
@@ -406,47 +462,38 @@ export default function CheckoutPage() {
             )}
 
             {/* Payment Buttons - Fixed at bottom on mobile */}
-            <div className="fixed bottom-0 left-0 right-0 bg-gradient-to-t from-[#050A1C] via-[#050A1C] to-transparent p-4 lg:static lg:p-0 lg:bg-transparent">
-              <div className="space-y-3">
-                {/* Apple Pay Button - Primary */}
-                {applePayLoading ? (
+            <div className="fixed bottom-0 left-0 right-0 bg-gradient-to-t from-[#050A1C] via-[#050A1C] to-transparent p-4 lg:static lg:p-0 lg:bg-transparent z-50">
+              <div className="space-y-3 max-w-lg mx-auto lg:max-w-none">
+                {/* Native Apple Pay Button - Uses Stripe's official button */}
+                {stripeReady && stripePromise && (
+                  <Elements stripe={stripePromise}>
+                    <ApplePayButton
+                      totalAmount={total()}
+                      tenantName={tenant.name || 'Las Reinas'}
+                      onPaymentStart={createPaymentIntent}
+                      onSuccess={handleApplePaySuccess}
+                      onError={(msg) => setError(msg)}
+                      disabled={loading}
+                    />
+                  </Elements>
+                )}
+
+                {/* Loading state while Stripe initializes */}
+                {!stripeReady && (
                   <div className="flex items-center justify-center py-4">
                     <div className="h-5 w-5 animate-spin rounded-full border-2 border-white/20 border-t-white"></div>
                     <span className="ml-2 text-sm text-white/60">Loading payment options...</span>
                   </div>
-                ) : applePayReady && paymentRequest ? (
-                  <button
-                    onClick={handleApplePay}
-                    disabled={loading}
-                    className="w-full rounded-xl bg-black py-4 text-white font-semibold flex items-center justify-center gap-2 transition hover:bg-gray-900 disabled:opacity-50 border border-white/20"
-                    style={{ minHeight: '56px' }}
-                  >
-                    {loading ? (
-                      <>
-                        <div className="h-5 w-5 animate-spin rounded-full border-2 border-white/20 border-t-white"></div>
-                        <span>Processing...</span>
-                      </>
-                    ) : (
-                      <>
-                        <svg className="h-5 w-5" viewBox="0 0 24 24" fill="currentColor">
-                          <path d="M17.0425 9.63579C16.9906 9.62088 15.9199 9.18952 15.9199 7.89941C15.9199 6.79492 16.7544 6.27002 16.8135 6.22949C16.2671 5.4668 15.4185 5.37061 15.1279 5.35571C14.3574 5.27441 13.6533 5.77197 13.2588 5.77197C12.8643 5.77197 12.2754 5.37061 11.6377 5.38306C10.7888 5.39795 10.0014 5.83906 9.55713 6.56494C8.62891 8.04688 9.31396 10.2563 10.2051 11.4404C10.6484 12.0254 11.1694 12.6758 11.8428 12.6484C12.481 12.6211 12.7319 12.2422 13.4883 12.2422C14.2446 12.2422 14.4707 12.6484 15.1484 12.6362C15.8486 12.6235 16.2993 12.0505 16.7319 11.4604C17.2383 10.7891 17.4561 10.1367 17.4702 10.1025C17.4565 10.0889 17.0938 9.65063 17.0425 9.63579ZM15.2754 4.49341C15.6431 4.05225 15.8906 3.45361 15.8271 2.84912C15.2949 2.87158 14.6426 3.20654 14.249 3.64795C13.8975 4.04102 13.5967 4.66455 13.6733 5.24854C14.2705 5.29883 14.8906 4.93457 15.2754 4.49341Z"/>
-                          <path d="M19.0537 20.8994H4.94629V3.10059H19.0537V20.8994Z" fill="none" stroke="currentColor" strokeWidth="0"/>
-                          <text x="4" y="19" fill="currentColor" fontSize="6" fontWeight="bold" fontFamily="system-ui">Pay</text>
-                        </svg>
-                        <span>Pay with Apple Pay</span>
-                      </>
-                    )}
-                  </button>
-                ) : null}
+                )}
 
-                {/* Divider */}
-                {applePayReady && !showCardPayment && (
+                {/* Divider - only show if not in card payment mode */}
+                {!showCardPayment && stripeReady && (
                   <div className="relative my-2">
                     <div className="absolute inset-0 flex items-center">
                       <div className="w-full border-t border-white/10"></div>
                     </div>
                     <div className="relative flex justify-center text-xs">
-                      <span className="bg-[#050A1C] px-3 text-white/50">or</span>
+                      <span className="bg-[#050A1C] px-3 text-white/50">or pay with card</span>
                     </div>
                   </div>
                 )}
@@ -455,7 +502,7 @@ export default function CheckoutPage() {
                 {!showCardPayment ? (
                   <button
                     onClick={handleCreatePaymentIntent}
-                    disabled={loading}
+                    disabled={loading || !stripeReady}
                     className="w-full rounded-xl px-6 py-4 text-base font-bold text-white transition hover:scale-[1.02] disabled:opacity-50 disabled:hover:scale-100"
                     style={{
                       background: `linear-gradient(135deg, ${tenant.primaryColor} 0%, ${tenant.secondaryColor} 50%, ${tenant.primaryColor} 100%)`,
