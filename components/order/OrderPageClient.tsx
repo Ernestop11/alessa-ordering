@@ -2052,6 +2052,7 @@ export default function OrderPageClient({
                       fill
                       className="object-cover"
                       sizes="(max-width: 768px) 100vw, 450px"
+                      unoptimized={carouselItems[0].displayImage.startsWith('/tenant/')}
                     />
                   ) : (
                     <div className="flex items-center justify-center h-full text-8xl">🍽️</div>
@@ -2576,6 +2577,7 @@ export default function OrderPageClient({
                       width={64}
                       height={64}
                       className="h-16 w-16 rounded-full object-contain transition-transform duration-300 group-hover:scale-110"
+                      unoptimized={tenant.logoUrl.startsWith('/tenant/')}
                     />
                   ) : (
                     <div className="flex h-16 w-16 items-center justify-center rounded-full bg-gradient-to-br from-red-600 to-amber-500 text-3xl">🍽️</div>
@@ -4049,6 +4051,7 @@ export default function OrderPageClient({
                   fill
                   className="object-cover"
                   sizes="(max-width: 768px) 100vw, 672px"
+                  unoptimized={cateringGallery[cateringGalleryIndex]?.startsWith('/tenant/')}
                 />
                 <div className="absolute inset-0 bg-gradient-to-t from-black/80 via-black/20 to-transparent" />
                 <div className="absolute bottom-4 left-4 right-4">
@@ -4700,7 +4703,7 @@ export default function OrderPageClient({
                 {/* Guest View (if not logged in) */}
                 {!customerData && (
                   <div className="relative overflow-hidden rounded-3xl border-2 border-amber-500/30 bg-gradient-to-br from-amber-400/20 to-yellow-400/20 p-6">
-                    <Image src={membershipImage} alt="Membership" fill className="object-cover opacity-20" sizes="400px" />
+                    <Image src={membershipImage} alt="Membership" fill className="object-cover opacity-20" sizes="400px" unoptimized={membershipImage?.startsWith('/tenant/')} />
                     <div className="relative space-y-4">
                       <div className="flex items-center justify-between">
                         <div>

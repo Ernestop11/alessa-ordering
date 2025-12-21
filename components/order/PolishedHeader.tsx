@@ -100,6 +100,7 @@ export default function PolishedHeader({
                     width={48}
                     height={48}
                     className="h-12 w-12 rounded-xl object-cover"
+                    unoptimized={tenant.logoUrl.startsWith('/tenant/')}
                   />
                 ) : (
                   <div className="flex h-12 w-12 items-center justify-center rounded-xl bg-gradient-to-br from-red-600 to-amber-500 text-2xl">
