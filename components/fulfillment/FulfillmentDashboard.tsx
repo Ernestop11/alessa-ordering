@@ -249,10 +249,12 @@ export default function FulfillmentDashboard({ initialOrders, feedUrl, scope }: 
     loadTenantDetails();
   }, [tenantInfo]);
 
-  // Auto-print hook for client-side printing (Bluetooth and Network)
-  // Network printers use a relay API since browsers can't open raw TCP sockets
+  // Auto-print hook for client-side printing (Bluetooth, Network, and PassPRNT)
+  // - Bluetooth: direct printing via Capacitor plugins
+  // - Network: relay API (works if VPS can reach printer)
+  // - PassPRNT: Star Micronics URL scheme (launches PassPRNT app on iPad)
   useAutoPrint({
-    enabled: autoPrintEnabled && (printerConfig?.type === 'bluetooth' || printerConfig?.type === 'network'),
+    enabled: autoPrintEnabled && (printerConfig?.type === 'bluetooth' || printerConfig?.type === 'network' || printerConfig?.type === 'passprnt'),
     printerConfig: printerConfig as PrinterConfig | null,
     newOrder: lastCreatedOrder,
     tenant: tenantDetails || tenantInfo || {

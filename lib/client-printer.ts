@@ -12,7 +12,7 @@ import { formatReceiptForPrinter, sendToBluetoothPrinter, stringToBytes } from '
 import type { SerializedOrder } from './order-serializer';
 
 export interface PrinterConfig {
-  type: 'bluetooth' | 'network' | 'usb' | 'none';
+  type: 'bluetooth' | 'network' | 'usb' | 'passprnt' | 'none';
   name: string;
   deviceId?: string; // Bluetooth device ID/address
   ipAddress?: string; // Network printer IP
@@ -303,37 +303,78 @@ async function printWithBluetoothLE(
 }
 
 /**
- * Print via PassPRNT app (Method 4 - Star Micronics)
+ * Print via PassPRNT app (Star Micronics iOS/Android)
+ * Uses the official Star PassPRNT URL scheme
+ * Docs: https://www.star-m.jp/products/s_print/sdk/passprnt/manual/ios/en/data_specifications.html
  */
 async function printViaPassPRNT(
   receiptData: string,
-  config: PrinterConfig
+  config: PrinterConfig,
+  orderId?: string
 ): Promise<{ success: boolean; error?: string }> {
   try {
-    // Encode receipt data
-    const encodedData = encodeURIComponent(receiptData);
-    
-    // PassPRNT URL scheme
-    // Format: passprnt://print?data=<encoded_data>&printer=<printer_name>
-    const passprntUrl = `passprnt://print?data=${encodedData}&printer=${encodeURIComponent(config.name || 'Default')}`;
-    
+    // Convert plain text receipt to HTML for PassPRNT
+    // PassPRNT accepts HTML, PDF, or URL - HTML is most flexible
+    const htmlReceipt = `
+<!DOCTYPE html>
+<html>
+<head>
+  <meta charset="UTF-8">
+  <style>
+    body { font-family: monospace; font-size: 12px; margin: 0; padding: 10px; }
+    .center { text-align: center; }
+    .bold { font-weight: bold; }
+    .large { font-size: 16px; }
+    hr { border: 1px dashed #000; margin: 8px 0; }
+    .item { display: flex; justify-content: space-between; }
+  </style>
+</head>
+<body>
+<pre>${receiptData.replace(/</g, '&lt;').replace(/>/g, '&gt;')}</pre>
+</body>
+</html>`;
+
+    // Build PassPRNT URL scheme
+    // Format: starpassprnt://v1/print/nopreview?html=...&back=...&size=...&cut=...
+    let passprntUrl = 'starpassprnt://v1/print/nopreview?';
+
+    // Add HTML content (URL encoded)
+    passprntUrl += 'html=' + encodeURIComponent(htmlReceipt);
+
+    // Set paper width (576 dots = 80mm, 384 dots = 58mm)
+    const paperWidth = config.profile?.includes('58mm') ? '384' : '576';
+    passprntUrl += '&size=' + paperWidth;
+
+    // Set cut type (partial cut for easier tearing)
+    passprntUrl += '&cut=partial';
+
+    // Set callback URL to return to the app
+    const currentUrl = typeof window !== 'undefined' ? window.location.href : '';
+    if (currentUrl) {
+      passprntUrl += '&back=' + encodeURIComponent(currentUrl);
+    }
+
+    console.log(`[PassPRNT] Launching with ${orderId ? `order ${orderId}` : 'receipt'}...`);
+
     // Try to open PassPRNT
-    const opened = window.open(passprntUrl, '_blank');
-    
-    if (!opened) {
-      // Fallback: try window.location
+    // On iOS, this will switch to the PassPRNT app
+    if (typeof window !== 'undefined') {
+      // Use location.href for more reliable app launch on iOS
       window.location.href = passprntUrl;
     }
-    
+
     // Give it a moment to launch
-    await new Promise(resolve => setTimeout(resolve, 500));
-    
-    console.log('[Print] ✅ PassPRNT launched');
+    await new Promise(resolve => setTimeout(resolve, 800));
+
+    console.log('[PassPRNT] ✅ App launched successfully');
     return { success: true };
   } catch (error) {
     const errorMsg = error instanceof Error ? error.message : 'PassPRNT failed';
-    console.warn('[Print] PassPRNT failed:', errorMsg);
-    return { success: false, error: errorMsg };
+    console.warn('[PassPRNT] Failed:', errorMsg);
+    return {
+      success: false,
+      error: `PassPRNT failed: ${errorMsg}. Make sure PassPRNT app is installed from the App Store.`
+    };
   }
 }
 
@@ -481,6 +522,14 @@ export async function printOrderClientSide(
   tenant: TenantInfo,
   config: PrinterConfig
 ): Promise<{ success: boolean; error?: string }> {
+  // Handle PassPRNT (Star Micronics via URL scheme)
+  // This is the recommended method for Star printers on iPad
+  if (config.type === 'passprnt') {
+    console.log('[Print] Using PassPRNT (Star Micronics) for printing');
+    const receiptData = generateReceiptData(order, tenant, config);
+    return printViaPassPRNT(receiptData, config, order.id);
+  }
+
   // Handle network printers (WiFi thermal printers)
   if (config.type === 'network') {
     const host = config.ipAddress || config.host;

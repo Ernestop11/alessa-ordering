@@ -83,8 +83,14 @@ export function useAutoPrint({ enabled, printerConfig, newOrder, tenant }: UseAu
       console.log(`[Auto-Print] Network printer configured: ${host}:${printerConfig.port || 9100}`);
     }
 
+    // Handle PassPRNT (Star Micronics via URL scheme - works on iPad PWA)
+    if (printerConfig.type === 'passprnt') {
+      console.log('[Auto-Print] PassPRNT configured - will launch Star PassPRNT app');
+      // PassPRNT works via URL scheme, always available on iOS
+    }
+
     // Skip unsupported printer types
-    if (printerConfig.type !== 'bluetooth' && printerConfig.type !== 'network') {
+    if (printerConfig.type !== 'bluetooth' && printerConfig.type !== 'network' && printerConfig.type !== 'passprnt') {
       console.log('[Auto-Print] Unsupported printer type:', printerConfig.type);
       return;
     }
