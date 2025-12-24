@@ -3,6 +3,8 @@
 import { useEffect, useMemo, useRef, useState } from 'react';
 import Link from 'next/link';
 import FulfillmentBoard from './FulfillmentBoard';
+import TicketCarousel from './TicketCarousel';
+import StoreStatusHeader from './StoreStatusHeader';
 import NewOrderAlerts, { type AlertSettings } from './NewOrderAlerts';
 import { useOrderFeed } from './useOrderFeed';
 import type { FulfillmentOrder } from './types';
@@ -165,6 +167,7 @@ export default function FulfillmentDashboard({ initialOrders, feedUrl, scope }: 
   const [kioskMode, setKioskMode] = useState(false);
   const [wakeLock, setWakeLock] = useState<any>(null);
   const [kitchenMode, setKitchenMode] = useState(false); // Large UI for kitchen display
+  const [useCarouselView, setUseCarouselView] = useState(true); // New ticket carousel view
   const [refundOrder, setRefundOrder] = useState<FulfillmentOrder | null>(null); // Order being refunded
   const isNativeApp = useIsNativeApp(); // Detect if running in native Capacitor app
   const [alertSettings, setAlertSettings] = useState<AlertSettings>({
@@ -936,18 +939,67 @@ export default function FulfillmentDashboard({ initialOrders, feedUrl, scope }: 
 
       {activeTab === 'orders' ? (
         <>
-          <FulfillmentBoard
-            orders={orders}
-            scope={scope}
-            onAccept={handleAccept}
-            onMarkReady={handleMarkReady}
-            onComplete={handleComplete}
-            onPrint={handlePrint}
-            onCancel={handleCancel}
-            onRefund={handleRefund}
-            tabletMode={tabletMode}
-            kitchenMode={kitchenMode}
+          {/* Store Status Header */}
+          <StoreStatusHeader
+            onEditHours={() => {
+              // Navigate to settings or open a modal for store hours
+              window.location.href = '/admin/settings?tab=hours';
+            }}
           />
+
+          {/* View Toggle */}
+          <div className="flex items-center justify-between bg-white rounded-xl px-4 py-2 border border-gray-200">
+            <span className="text-sm text-gray-600">View:</span>
+            <div className="flex gap-2">
+              <button
+                onClick={() => setUseCarouselView(true)}
+                className={`px-3 py-1.5 text-sm font-medium rounded-lg transition-colors ${
+                  useCarouselView
+                    ? 'bg-blue-600 text-white'
+                    : 'bg-gray-100 text-gray-600 hover:bg-gray-200'
+                }`}
+              >
+                Ticket Carousel
+              </button>
+              <button
+                onClick={() => setUseCarouselView(false)}
+                className={`px-3 py-1.5 text-sm font-medium rounded-lg transition-colors ${
+                  !useCarouselView
+                    ? 'bg-blue-600 text-white'
+                    : 'bg-gray-100 text-gray-600 hover:bg-gray-200'
+                }`}
+              >
+                Classic Board
+              </button>
+            </div>
+          </div>
+
+          {/* Order Display */}
+          {useCarouselView ? (
+            <TicketCarousel
+              orders={orders}
+              onAccept={handleAccept}
+              onMarkReady={handleMarkReady}
+              onComplete={handleComplete}
+              onPrint={handlePrint}
+              onCancel={handleCancel}
+              onRefund={handleRefund}
+              lastCreatedOrderId={lastCreatedOrder?.id}
+            />
+          ) : (
+            <FulfillmentBoard
+              orders={orders}
+              scope={scope}
+              onAccept={handleAccept}
+              onMarkReady={handleMarkReady}
+              onComplete={handleComplete}
+              onPrint={handlePrint}
+              onCancel={handleCancel}
+              onRefund={handleRefund}
+              tabletMode={tabletMode}
+              kitchenMode={kitchenMode}
+            />
+          )}
           <footer className="rounded-2xl border border-dashed border-gray-300 bg-gray-50 px-4 py-3 text-xs text-gray-500">
             Showing {orders.length} orders · {newOrders.length} waiting acceptance.
           </footer>

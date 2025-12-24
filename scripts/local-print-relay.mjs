@@ -79,14 +79,49 @@ function sendToPrinter(data) {
 }
 
 /**
- * Test printer connection
+ * Test printer connection with a nicely formatted test receipt
  */
 async function testPrinterConnection() {
   console.log('🔍 Testing printer connection...');
   try {
-    // Send a simple test: initialize printer + line feed
-    const testData = '\x1b\x40\n*** PRINT RELAY TEST ***\n\n\n\x1d\x56\x00'; // ESC @ (init), text, cut
-    await sendToPrinter(testData);
+    const ESC = '\x1b';
+    const GS = '\x1d';
+
+    // Build a proper test receipt
+    const testLines = [
+      `${ESC}@`, // Reset
+      `${GS}(K\x02\x00\x31\x09`, // Max density
+      `${ESC}E\x01`, // Bold ON
+      `${ESC}G\x01`, // Double-strike ON
+      `${ESC}a\x01`, // Center
+      '',
+      `${GS}!\x11`, // Double width+height
+      '*** LAS REINAS ***',
+      `${GS}!\x00`,
+      '',
+      '================================',
+      '',
+      `${GS}!\x01`, // Double height
+      'PRINT RELAY TEST',
+      `${GS}!\x00`,
+      '',
+      'Connection successful!',
+      '',
+      `Time: ${new Date().toLocaleTimeString()}`,
+      `Date: ${new Date().toLocaleDateString()}`,
+      '',
+      '================================',
+      '',
+      'Ready to receive orders.',
+      '',
+      '',
+      '',
+      `${ESC}E\x00`, // Bold OFF
+      `${ESC}G\x00`, // Double-strike OFF
+      `${GS}V\x01`, // Partial cut
+    ];
+
+    await sendToPrinter(testLines.join('\n'));
     console.log('✅ Printer connection test successful!');
     return true;
   } catch (error) {
@@ -187,7 +222,8 @@ async function pollForOrders() {
 let lastError = null;
 
 /**
- * Format a simple ESC/POS receipt
+ * Format an ESC/POS receipt with BOLD, DARK text for thermal printers
+ * Uses emphasized mode and double-strike for maximum darkness
  */
 function formatSimpleReceipt(order) {
   const ESC = '\x1b';
@@ -195,84 +231,202 @@ function formatSimpleReceipt(order) {
   const lines = [];
 
   // Initialize printer
-  lines.push(`${ESC}@`); // Reset
+  lines.push(`${ESC}@`); // Reset printer
+
+  // Set print density to maximum (darker print)
+  // GS ( K - Adjust print density
+  lines.push(`${GS}(K\x02\x00\x31\x09`); // Max density
+
+  // Enable emphasized mode (bold) for entire receipt
+  lines.push(`${ESC}E\x01`); // Emphasized ON
+  lines.push(`${ESC}G\x01`); // Double-strike ON (darker)
 
   // Center alignment for header
-  lines.push(`${ESC}a1`); // Center
+  lines.push(`${ESC}a\x01`); // Center align
 
-  // Store name (double width/height)
-  lines.push(`${ESC}!0`); // Normal
-  lines.push(`${GS}!11`); // Double width + height
-  lines.push('LAS REINAS');
-  lines.push(`${GS}!00`); // Normal size
+  // ═══════════════════════════════════════
+  // RESTAURANT HEADER - Large and Bold
+  // ═══════════════════════════════════════
+  lines.push(`${GS}!\x11`); // Double width + height
+  lines.push('');
+  lines.push('*** LAS REINAS ***');
+  lines.push(`${GS}!\x00`); // Normal size
+  lines.push('Authentic Mexican Cuisine');
+  lines.push('Colusa, CA');
   lines.push('');
 
-  // Order ID
-  lines.push(`Order #${order.id.slice(-6).toUpperCase()}`);
-  lines.push(new Date(order.createdAt).toLocaleString());
+  // ═══════════════════════════════════════
+  // ORDER NUMBER - VERY LARGE
+  // ═══════════════════════════════════════
+  lines.push(`${GS}!\x11`); // Double width + height
+  lines.push(`ORDER #${order.id.slice(-6).toUpperCase()}`);
+  lines.push(`${GS}!\x00`); // Normal size
   lines.push('');
 
-  // Divider
-  lines.push('================================');
-
-  // Left alignment for items
-  lines.push(`${ESC}a0`);
-
-  // Items
-  if (order.items && order.items.length > 0) {
-    for (const item of order.items) {
-      const name = item.menuItemName || 'Menu Item';
-      const qty = item.quantity || 1;
-      const price = `$${(Number(item.price || 0) * qty).toFixed(2)}`;
-      lines.push(`${qty} x ${name}`);
-      lines.push(`    ${price}`);
-    }
+  // Fulfillment type badge
+  const fulfillment = (order.fulfillmentMethod || 'pickup').toUpperCase();
+  if (fulfillment === 'DELIVERY') {
+    lines.push(`${GS}!\x11`); // Large
+    lines.push('** DELIVERY **');
+    lines.push(`${GS}!\x00`);
+  } else if (fulfillment === 'DINE_IN' || fulfillment === 'DINEIN') {
+    lines.push(`${GS}!\x11`); // Large
+    lines.push('** DINE-IN **');
+    lines.push(`${GS}!\x00`);
+  } else {
+    lines.push(`${GS}!\x01`); // Double height
+    lines.push('[ PICKUP ]');
+    lines.push(`${GS}!\x00`);
   }
-
-  lines.push('================================');
-
-  // Totals
-  if (order.subtotalAmount) {
-    lines.push(`Subtotal: $${Number(order.subtotalAmount).toFixed(2)}`);
-  }
-  if (order.taxAmount) {
-    lines.push(`Tax: $${Number(order.taxAmount).toFixed(2)}`);
-  }
-  lines.push(`${ESC}!8`); // Bold
-  lines.push(`TOTAL: $${Number(order.totalAmount || 0).toFixed(2)}`);
-  lines.push(`${ESC}!0`); // Normal
-
   lines.push('');
-  lines.push('================================');
 
-  // Customer info
+  // Date/Time
+  const orderDate = new Date(order.createdAt);
+  const timeStr = orderDate.toLocaleTimeString('en-US', {
+    hour: 'numeric',
+    minute: '2-digit',
+    hour12: true
+  });
+  const dateStr = orderDate.toLocaleDateString('en-US', {
+    month: 'short',
+    day: 'numeric',
+    year: 'numeric'
+  });
+  lines.push(`${dateStr} at ${timeStr}`);
+  lines.push('');
+
+  // ═══════════════════════════════════════
+  // CUSTOMER INFO
+  // ═══════════════════════════════════════
+  lines.push('================================');
+  lines.push(`${ESC}a\x00`); // Left align
+
   if (order.customerName) {
+    lines.push(`${GS}!\x01`); // Double height for name
     lines.push(`Customer: ${order.customerName}`);
+    lines.push(`${GS}!\x00`);
   }
   if (order.customerPhone) {
     lines.push(`Phone: ${order.customerPhone}`);
   }
-  if (order.fulfillmentMethod) {
-    lines.push(`Fulfillment: ${order.fulfillmentMethod.toUpperCase()}`);
-  }
-
-  // Notes
-  if (order.notes) {
+  if (order.deliveryAddress) {
     lines.push('');
-    lines.push('Notes:');
-    lines.push(order.notes);
+    lines.push('Delivery Address:');
+    lines.push(order.deliveryAddress);
+  }
+  lines.push('');
+
+  // ═══════════════════════════════════════
+  // ORDER ITEMS - Bold and Clear
+  // ═══════════════════════════════════════
+  lines.push('================================');
+  lines.push(`${ESC}a\x01`); // Center
+  lines.push(`${GS}!\x01`); // Double height
+  lines.push('ORDER ITEMS');
+  lines.push(`${GS}!\x00`);
+  lines.push('================================');
+  lines.push(`${ESC}a\x00`); // Left align
+  lines.push('');
+
+  // Items with clear formatting
+  if (order.items && order.items.length > 0) {
+    for (const item of order.items) {
+      const name = item.menuItemName || item.name || 'Menu Item';
+      const qty = item.quantity || 1;
+      const unitPrice = Number(item.price || 0);
+      const lineTotal = (unitPrice * qty).toFixed(2);
+
+      // Quantity and name - BOLD and larger
+      lines.push(`${GS}!\x01`); // Double height
+      lines.push(`${qty}x ${name}`);
+      lines.push(`${GS}!\x00`); // Normal
+
+      // Price on same line, right side
+      lines.push(`     $${lineTotal}`);
+
+      // Item modifiers/notes if any
+      if (item.notes) {
+        lines.push(`   -> ${item.notes}`);
+      }
+      if (item.modifiers && item.modifiers.length > 0) {
+        for (const mod of item.modifiers) {
+          lines.push(`   + ${mod.name || mod}`);
+        }
+      }
+      lines.push('');
+    }
   }
 
-  // Footer
+  // ═══════════════════════════════════════
+  // TOTALS - Large and Clear
+  // ═══════════════════════════════════════
+  lines.push('================================');
+
+  // Subtotal
+  if (order.subtotalAmount) {
+    lines.push(`Subtotal:          $${Number(order.subtotalAmount).toFixed(2)}`);
+  }
+
+  // Tax
+  if (order.taxAmount && Number(order.taxAmount) > 0) {
+    lines.push(`Tax:               $${Number(order.taxAmount).toFixed(2)}`);
+  }
+
+  // Tip
+  if (order.tipAmount && Number(order.tipAmount) > 0) {
+    lines.push(`Tip:               $${Number(order.tipAmount).toFixed(2)}`);
+  }
+
+  // Delivery fee
+  if (order.deliveryFee && Number(order.deliveryFee) > 0) {
+    lines.push(`Delivery:          $${Number(order.deliveryFee).toFixed(2)}`);
+  }
+
+  lines.push('--------------------------------');
+
+  // TOTAL - Very large and bold
+  lines.push(`${GS}!\x11`); // Double width + height
+  const total = Number(order.totalAmount || 0).toFixed(2);
+  lines.push(`TOTAL: $${total}`);
+  lines.push(`${GS}!\x00`);
   lines.push('');
-  lines.push(`${ESC}a1`); // Center
-  lines.push('Thank you for your order!');
+
+  // ═══════════════════════════════════════
+  // SPECIAL NOTES
+  // ═══════════════════════════════════════
+  if (order.notes) {
+    lines.push('================================');
+    lines.push(`${GS}!\x01`); // Double height
+    lines.push('** SPECIAL NOTES **');
+    lines.push(`${GS}!\x00`);
+    lines.push('');
+    lines.push(order.notes);
+    lines.push('');
+  }
+
+  // ═══════════════════════════════════════
+  // FOOTER
+  // ═══════════════════════════════════════
+  lines.push('================================');
+  lines.push(`${ESC}a\x01`); // Center
+  lines.push('');
+  lines.push('Thank you for choosing');
+  lines.push(`${GS}!\x01`); // Double height
+  lines.push('LAS REINAS!');
+  lines.push(`${GS}!\x00`);
+  lines.push('');
+  lines.push('--------------------------------');
+  lines.push(`Printed: ${new Date().toLocaleTimeString()}`);
   lines.push('');
   lines.push('');
   lines.push('');
 
-  // Cut paper
-  lines.push(`${GS}V0`); // Full cut
+  // Disable emphasized mode
+  lines.push(`${ESC}E\x00`); // Emphasized OFF
+  lines.push(`${ESC}G\x00`); // Double-strike OFF
+
+  // Cut paper (partial cut for easier tearing)
+  lines.push(`${GS}V\x01`); // Partial cut
 
   return lines.join('\n');
 }

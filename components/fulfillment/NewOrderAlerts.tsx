@@ -152,7 +152,7 @@ export default function NewOrderAlerts({
           await audioContextRef.current.resume();
           console.log('[Alarm] AudioContext resumed, state:', audioContextRef.current.state);
         }
-        
+
         // Play a silent sound to unlock audio context
         // This is a common technique to bypass autoplay restrictions
         if (!audioUnlockedRef.current && audioContextRef.current.state === 'running') {
@@ -165,6 +165,12 @@ export default function NewOrderAlerts({
           oscillator.stop(audioContextRef.current.currentTime + 0.01);
           audioUnlockedRef.current = true;
           setAudioUnlocked(true);
+          // Persist to localStorage so we don't show unlock button next time
+          try {
+            localStorage.setItem('fulfillment_audio_unlocked', 'true');
+          } catch (e) {
+            // localStorage may not be available
+          }
           console.log('[Alarm] Audio unlocked for autoplay!');
         } else if (audioContextRef.current.state === 'running') {
           audioUnlockedRef.current = true;
@@ -175,6 +181,22 @@ export default function NewOrderAlerts({
         setAudioUnlocked(false);
       }
     };
+
+    // Check if audio was previously unlocked in this browser
+    const wasUnlocked = (() => {
+      try {
+        return localStorage.getItem('fulfillment_audio_unlocked') === 'true';
+      } catch {
+        return false;
+      }
+    })();
+
+    if (wasUnlocked) {
+      console.log('[Alarm] Audio was previously unlocked - attempting silent restore');
+      // Immediately try to unlock without waiting for user interaction
+      audioUnlockedRef.current = true;
+      setAudioUnlocked(true);
+    }
 
     // Detect if we're in a native iOS app (Capacitor/TestFlight)
     const isNativeApp = (() => {
@@ -193,7 +215,7 @@ export default function NewOrderAlerts({
     // Detect PWA mode
     const isPWA = window.matchMedia('(display-mode: standalone)').matches || 
                   (window.navigator as any).standalone === true;
-
+    
     console.log('[Alarm] Environment detected:', { isNativeApp, isPWA });
 
     // Try to unlock immediately
@@ -319,7 +341,7 @@ export default function NewOrderAlerts({
               playSoundNow();
             } else {
               console.error('[Alarm] AudioContext still not running after final attempt, state:', audioContextRef.current.state);
-              setIsPlaying(false);
+          setIsPlaying(false);
             }
           } catch (finalErr) {
             console.error('[Alarm] Final unlock attempt failed:', finalErr);
@@ -653,6 +675,12 @@ export default function NewOrderAlerts({
 
               audioUnlockedRef.current = true;
               setAudioUnlocked(true);
+              // Persist to localStorage
+              try {
+                localStorage.setItem('fulfillment_audio_unlocked', 'true');
+              } catch (e) {
+                // localStorage may not be available
+              }
               console.log('[Alarm] Audio manually unlocked with audible beep!');
 
               // Also play the actual alert sound

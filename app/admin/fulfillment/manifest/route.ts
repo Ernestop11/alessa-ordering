@@ -11,7 +11,7 @@ export async function GET() {
       name: `${tenant.name} - Kitchen Dashboard`,
       short_name: 'Kitchen',
       description: `Fulfillment dashboard for ${tenant.name}`,
-      start_url: `/admin/fulfillment?tenant=${tenant.slug}`,
+      start_url: '/admin/fulfillment',
       scope: '/', // Root scope allows API calls to /api/*
       display: 'standalone',
       orientation: 'landscape-primary',
