@@ -391,43 +391,19 @@ ${htmlContent}
     }
 
     console.log(`[PassPRNT] Launching with ${orderId ? `order ${orderId}` : 'receipt'}...`);
+    console.log(`[PassPRNT] URL length: ${passprntUrl.length} chars`);
 
-    // Launch PassPRNT using a hidden iframe to stay in PWA
-    // This prevents the PWA from closing/redirecting
-    if (typeof window !== 'undefined' && typeof document !== 'undefined') {
-      // Remove any existing PassPRNT iframe
-      const existingIframe = document.getElementById('passprnt-launcher');
-      if (existingIframe) {
-        existingIframe.remove();
-      }
-
-      // Create hidden iframe to launch the URL scheme
-      const iframe = document.createElement('iframe');
-      iframe.id = 'passprnt-launcher';
-      iframe.style.display = 'none';
-      iframe.style.width = '0';
-      iframe.style.height = '0';
-      iframe.style.border = 'none';
-      iframe.style.position = 'absolute';
-      iframe.style.top = '-9999px';
-      document.body.appendChild(iframe);
-
-      // Set the src to trigger PassPRNT
-      iframe.src = passprntUrl;
-
-      // Clean up iframe after a delay
-      setTimeout(() => {
-        const iframeToRemove = document.getElementById('passprnt-launcher');
-        if (iframeToRemove) {
-          iframeToRemove.remove();
-        }
-      }, 3000);
+    // Launch PassPRNT - iOS requires direct user gesture or window.location
+    if (typeof window !== 'undefined') {
+      // Method: Use window.location.href which is most reliable for URL schemes on iOS
+      // The 'back' parameter should bring user back to the PWA after printing
+      window.location.href = passprntUrl;
     }
 
     // Give it a moment to launch
-    await new Promise(resolve => setTimeout(resolve, 1000));
+    await new Promise(resolve => setTimeout(resolve, 1500));
 
-    console.log('[PassPRNT] ✅ App launched successfully');
+    console.log('[PassPRNT] ✅ App launch triggered');
     return { success: true };
   } catch (error) {
     const errorMsg = error instanceof Error ? error.message : 'PassPRNT failed';
