@@ -313,24 +313,60 @@ async function printViaPassPRNT(
   orderId?: string
 ): Promise<{ success: boolean; error?: string }> {
   try {
-    // Convert plain text receipt to HTML for PassPRNT
-    // PassPRNT accepts HTML, PDF, or URL - HTML is most flexible
-    const htmlReceipt = `
-<!DOCTYPE html>
+    // Parse the plain text receipt and convert to well-formatted HTML
+    // The receiptData contains ESC/POS formatted text, we need to make it readable
+    const lines = receiptData.split('\n');
+    let htmlContent = '';
+
+    for (const line of lines) {
+      // Skip ESC/POS control characters (they start with \x1b or \x1d)
+      const cleanLine = line.replace(/[\x00-\x1f]/g, '').trim();
+      if (!cleanLine) {
+        htmlContent += '<br>';
+        continue;
+      }
+
+      // Detect headers (centered, usually restaurant name or order #)
+      if (cleanLine.includes('===') || cleanLine.includes('---')) {
+        htmlContent += '<hr style="border:1px dashed #000;margin:8px 0;">';
+      } else if (cleanLine.match(/^[A-Z\s]+$/) && cleanLine.length < 30) {
+        // All caps short text = header
+        htmlContent += `<div style="text-align:center;font-weight:bold;font-size:24px;margin:8px 0;">${cleanLine}</div>`;
+      } else if (cleanLine.startsWith('Order #') || cleanLine.startsWith('ORDER #')) {
+        htmlContent += `<div style="text-align:center;font-weight:bold;font-size:20px;margin:8px 0;">${cleanLine}</div>`;
+      } else if (cleanLine.startsWith('TOTAL') || cleanLine.startsWith('Total')) {
+        htmlContent += `<div style="font-weight:bold;font-size:20px;margin:8px 0;">${cleanLine}</div>`;
+      } else if (cleanLine.match(/^\d+\s*x\s/i)) {
+        // Item line (starts with quantity like "2 x ")
+        htmlContent += `<div style="font-size:18px;margin:4px 0;">${cleanLine}</div>`;
+      } else if (cleanLine.match(/^\$[\d.]+/) || cleanLine.match(/[\d.]+$/)) {
+        // Price line
+        htmlContent += `<div style="font-size:16px;margin:2px 0;">${cleanLine}</div>`;
+      } else {
+        htmlContent += `<div style="font-size:16px;margin:2px 0;">${cleanLine}</div>`;
+      }
+    }
+
+    // Build a clean HTML receipt optimized for thermal printing
+    const htmlReceipt = `<!DOCTYPE html>
 <html>
 <head>
   <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
   <style>
-    body { font-family: monospace; font-size: 12px; margin: 0; padding: 10px; }
-    .center { text-align: center; }
-    .bold { font-weight: bold; }
-    .large { font-size: 16px; }
-    hr { border: 1px dashed #000; margin: 8px 0; }
-    .item { display: flex; justify-content: space-between; }
+    * { margin: 0; padding: 0; box-sizing: border-box; }
+    body {
+      font-family: 'Courier New', monospace;
+      font-size: 16px;
+      line-height: 1.4;
+      padding: 10px;
+      max-width: 100%;
+    }
+    hr { border: 1px dashed #000; margin: 10px 0; }
   </style>
 </head>
 <body>
-<pre>${receiptData.replace(/</g, '&lt;').replace(/>/g, '&gt;')}</pre>
+${htmlContent}
 </body>
 </html>`;
 
@@ -348,7 +384,7 @@ async function printViaPassPRNT(
     // Set cut type (partial cut for easier tearing)
     passprntUrl += '&cut=partial';
 
-    // Set callback URL to return to the app
+    // Set callback URL to return to the app after printing
     const currentUrl = typeof window !== 'undefined' ? window.location.href : '';
     if (currentUrl) {
       passprntUrl += '&back=' + encodeURIComponent(currentUrl);
@@ -356,15 +392,40 @@ async function printViaPassPRNT(
 
     console.log(`[PassPRNT] Launching with ${orderId ? `order ${orderId}` : 'receipt'}...`);
 
-    // Try to open PassPRNT
-    // On iOS, this will switch to the PassPRNT app
-    if (typeof window !== 'undefined') {
-      // Use location.href for more reliable app launch on iOS
-      window.location.href = passprntUrl;
+    // Launch PassPRNT using a hidden iframe to stay in PWA
+    // This prevents the PWA from closing/redirecting
+    if (typeof window !== 'undefined' && typeof document !== 'undefined') {
+      // Remove any existing PassPRNT iframe
+      const existingIframe = document.getElementById('passprnt-launcher');
+      if (existingIframe) {
+        existingIframe.remove();
+      }
+
+      // Create hidden iframe to launch the URL scheme
+      const iframe = document.createElement('iframe');
+      iframe.id = 'passprnt-launcher';
+      iframe.style.display = 'none';
+      iframe.style.width = '0';
+      iframe.style.height = '0';
+      iframe.style.border = 'none';
+      iframe.style.position = 'absolute';
+      iframe.style.top = '-9999px';
+      document.body.appendChild(iframe);
+
+      // Set the src to trigger PassPRNT
+      iframe.src = passprntUrl;
+
+      // Clean up iframe after a delay
+      setTimeout(() => {
+        const iframeToRemove = document.getElementById('passprnt-launcher');
+        if (iframeToRemove) {
+          iframeToRemove.remove();
+        }
+      }, 3000);
     }
 
     // Give it a moment to launch
-    await new Promise(resolve => setTimeout(resolve, 800));
+    await new Promise(resolve => setTimeout(resolve, 1000));
 
     console.log('[PassPRNT] ✅ App launched successfully');
     return { success: true };
