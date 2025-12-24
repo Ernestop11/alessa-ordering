@@ -138,7 +138,7 @@ export default function NewOrderAlerts({
   const lastModalOrderIdRef = useRef<string | null>(null);
   const suppressedOrderIdsRef = useRef<Set<string>>(new Set()); // Track suppressed order IDs
 
-  // Initialize audio context and unlock it aggressively - ESPECIALLY for PWA
+  // Initialize audio context and unlock it aggressively - ESPECIALLY for iOS native apps and PWA
   useEffect(() => {
     const unlockAudio = async () => {
       try {
@@ -176,19 +176,37 @@ export default function NewOrderAlerts({
       }
     };
 
+    // Detect if we're in a native iOS app (Capacitor/TestFlight)
+    const isNativeApp = (() => {
+      if (typeof window === 'undefined') return false;
+      try {
+        const { Capacitor } = require('@capacitor/core');
+        return Capacitor.isNativePlatform();
+      } catch {
+        // Check for other native app indicators
+        return !!(window as any).webkit?.messageHandlers || 
+               !!(window as any).ReactNativeWebView ||
+               window.navigator.userAgent.includes('Alessa Ordering');
+      }
+    })();
+
+    // Detect PWA mode
+    const isPWA = window.matchMedia('(display-mode: standalone)').matches || 
+                  (window.navigator as any).standalone === true;
+
+    console.log('[Alarm] Environment detected:', { isNativeApp, isPWA });
+
     // Try to unlock immediately
     unlockAudio();
 
-    // ALSO unlock immediately if we're in PWA mode (standalone display)
-    const isPWA = window.matchMedia('(display-mode: standalone)').matches || 
-                  (window.navigator as any).standalone === true;
-    
-    if (isPWA) {
-      console.log('[Alarm] PWA detected - aggressively unlocking audio');
-      // Multiple unlock attempts for PWA
-      setTimeout(unlockAudio, 100);
-      setTimeout(unlockAudio, 500);
-      setTimeout(unlockAudio, 1000);
+    // Aggressively unlock for native apps and PWA
+    if (isNativeApp || isPWA) {
+      console.log('[Alarm] Native app or PWA detected - aggressively unlocking audio');
+      // Multiple unlock attempts with increasing delays
+      const delays = [50, 100, 200, 500, 1000, 2000];
+      delays.forEach(delay => {
+        setTimeout(unlockAudio, delay);
+      });
     }
 
     // Also unlock on ANY user interaction
@@ -197,15 +215,30 @@ export default function NewOrderAlerts({
     };
 
     // Listen to multiple interaction types
-    const events = ['click', 'touchstart', 'keydown', 'mousedown', 'pointerdown', 'touchend'];
+    const events = ['click', 'touchstart', 'keydown', 'mousedown', 'pointerdown', 'touchend', 'touchmove', 'scroll'];
     events.forEach(event => {
       window.addEventListener(event, handleInteraction, { once: false, passive: true });
     });
+
+    // Also try to unlock when page becomes visible (important for iOS)
+    const handleVisibilityChange = () => {
+      if (document.visibilityState === 'visible') {
+        unlockAudio();
+      }
+    };
+    document.addEventListener('visibilitychange', handleVisibilityChange);
+
+    // Unlock on page focus (iOS Safari specific)
+    window.addEventListener('focus', unlockAudio);
+    window.addEventListener('pageshow', unlockAudio);
 
     return () => {
       events.forEach(event => {
         window.removeEventListener(event, handleInteraction);
       });
+      document.removeEventListener('visibilitychange', handleVisibilityChange);
+      window.removeEventListener('focus', unlockAudio);
+      window.removeEventListener('pageshow', unlockAudio);
     };
   }, []);
 
@@ -265,8 +298,33 @@ export default function NewOrderAlerts({
         if (audioContextRef.current.state === 'running') {
           playSoundNow();
         } else {
-          console.error('[Alarm] AudioContext not running, state:', audioContextRef.current.state);
-          setIsPlaying(false);
+          // If still suspended, try one more time with a user gesture simulation
+          console.warn('[Alarm] AudioContext still suspended, attempting final unlock...');
+          try {
+            // Create a temporary button to trigger user interaction
+            const tempButton = document.createElement('button');
+            tempButton.style.position = 'fixed';
+            tempButton.style.top = '-9999px';
+            tempButton.style.opacity = '0';
+            tempButton.style.pointerEvents = 'none';
+            document.body.appendChild(tempButton);
+            
+            // Try to resume again
+            await audioContextRef.current.resume();
+            
+            // Remove temp button
+            document.body.removeChild(tempButton);
+            
+            if (audioContextRef.current.state === 'running') {
+              playSoundNow();
+            } else {
+              console.error('[Alarm] AudioContext still not running after final attempt, state:', audioContextRef.current.state);
+              setIsPlaying(false);
+            }
+          } catch (finalErr) {
+            console.error('[Alarm] Final unlock attempt failed:', finalErr);
+            setIsPlaying(false);
+          }
         }
       } catch (err) {
         console.error('[Alarm] Failed to ensure audio ready:', err);

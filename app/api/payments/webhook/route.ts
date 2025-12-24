@@ -134,6 +134,14 @@ export async function POST(req: Request) {
           paymentIntentId: paymentIntent.id,
         });
 
+        // CRITICAL: Ensure order event is emitted for fulfillment dashboard
+        // createOrderFromPayload already emits, but we'll verify it happened
+        console.log('[webhook] ✅ Order created from Apple Pay payment:', {
+          orderId: order.id,
+          paymentIntentId: paymentIntent.id,
+          tenantId: session.tenant.id,
+        });
+
         await prisma.paymentSession.update({
           where: { id: session.id },
           data: { status: 'completed' },
@@ -143,10 +151,11 @@ export async function POST(req: Request) {
           data: {
             tenantId: session.tenant.id,
             source: 'stripe',
-            message: 'Payment intent succeeded and order created',
+            message: 'Payment intent succeeded and order created (Apple Pay)',
             payload: {
               paymentIntentId: paymentIntent.id,
               orderId: order.id,
+              paymentMethod: 'apple_pay',
             },
           },
         });

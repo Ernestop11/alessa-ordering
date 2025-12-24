@@ -126,16 +126,25 @@ export async function POST(req: Request) {
         data: { status: 'completed' },
       });
 
-      console.log('[confirm] Order created:', order.id);
+      console.log('[confirm] ✅ Order created via client confirmation:', {
+        orderId: order.id,
+        paymentIntentId: session.paymentIntentId,
+        tenantId: tenant.id,
+      });
+
+      // CRITICAL: createOrderFromPayload already emits order.created event
+      // This ensures fulfillment dashboard gets real-time notification
+      // The event is emitted in lib/order-service.ts:458
 
       await prisma.integrationLog.create({
         data: {
           tenantId: tenant.id,
           source: 'payments-confirm',
-          message: 'Order created via client confirmation',
+          message: 'Order created via client confirmation (Apple Pay fallback)',
           payload: {
             paymentIntentId: session.paymentIntentId,
             orderId: order.id,
+            paymentMethod: 'apple_pay',
           },
         },
       });

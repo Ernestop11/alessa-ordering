@@ -1,14 +1,13 @@
 /**
  * Auto-Print Hook
  * Automatically prints new orders when they arrive
- * Uses Star Printer SDK for Capacitor native apps (Star TSP100III, etc.)
+ * Uses multi-method printing system with fallbacks
  */
 
 'use client';
 
 import { useEffect, useRef } from 'react';
 import { printOrderClientSide, isBluetoothPrintingAvailable, disconnectStarPrinter, type PrinterConfig } from '@/lib/client-printer';
-import { isStarPrinterAvailable } from '@/lib/star-printer';
 import type { FulfillmentOrder } from './useOrderFeed';
 
 interface UseAutoPrintOptions {
@@ -31,14 +30,12 @@ export function useAutoPrint({ enabled, printerConfig, newOrder, tenant }: UseAu
   const printedOrderIds = useRef<Set<string>>(new Set());
   const isPrinting = useRef(false);
 
-  // Cleanup Star Printer connection on unmount
+  // Cleanup printer connections on unmount
   useEffect(() => {
     return () => {
-      if (isStarPrinterAvailable()) {
-        disconnectStarPrinter().catch(() => {
-          // Ignore cleanup errors
-        });
-      }
+      disconnectStarPrinter().catch(() => {
+        // Ignore cleanup errors
+      });
     };
   }, []);
 
@@ -65,41 +62,68 @@ export function useAutoPrint({ enabled, printerConfig, newOrder, tenant }: UseAu
       return;
     }
 
-    // Check if Bluetooth/Star Printer is available
-    const canPrint = isStarPrinterAvailable() || isBluetoothPrintingAvailable();
-    if (!canPrint) {
-      console.warn('[Auto-Print] Bluetooth/Star printing not available');
+    // Check if Bluetooth printing is available
+    if (!isBluetoothPrintingAvailable()) {
+      console.warn('[Auto-Print] Bluetooth printing not available');
       return;
     }
 
-    // Print the order
-    const printOrder = async () => {
+    // Print the order with retry logic
+    const printOrder = async (retryCount = 0) => {
       isPrinting.current = true;
       printedOrderIds.current.add(newOrder.id);
 
       try {
-        console.log('[Auto-Print] Printing order:', newOrder.id,
-          isStarPrinterAvailable() ? '(Star Printer)' : '(Web Bluetooth)');
+        console.log(`[Auto-Print] Printing order: ${newOrder.id}${retryCount > 0 ? ` - Retry ${retryCount}` : ''}`);
 
         const result = await printOrderClientSide(newOrder, tenant, printerConfig);
 
         if (result.success) {
-          console.log('[Auto-Print] Order printed successfully:', newOrder.id);
+          console.log('[Auto-Print] ✅ Order printed successfully:', newOrder.id);
         } else {
-          console.error('[Auto-Print] Failed to print order:', result.error);
-          // Remove from printed set so it can be retried
-          printedOrderIds.current.delete(newOrder.id);
+          console.error('[Auto-Print] ❌ Failed to print order:', result.error);
+          
+          // Retry logic: retry up to 2 times with exponential backoff
+          if (retryCount < 2) {
+            const delay = Math.pow(2, retryCount) * 1000; // 1s, 2s
+            console.log(`[Auto-Print] Retrying in ${delay}ms...`);
+            setTimeout(() => {
+              printedOrderIds.current.delete(newOrder.id);
+              isPrinting.current = false;
+              printOrder(retryCount + 1);
+            }, delay);
+            return; // Don't mark as failed yet
+          } else {
+            // Final failure - remove from printed set so it can be manually printed
+            console.error('[Auto-Print] Max retries reached, giving up');
+            printedOrderIds.current.delete(newOrder.id);
+          }
         }
       } catch (error) {
-        console.error('[Auto-Print] Error printing order:', error);
-        printedOrderIds.current.delete(newOrder.id);
+        console.error('[Auto-Print] Exception printing order:', error);
+        
+        // Retry on exception too
+        if (retryCount < 2) {
+          const delay = Math.pow(2, retryCount) * 1000;
+          console.log(`[Auto-Print] Retrying after exception in ${delay}ms...`);
+          setTimeout(() => {
+            printedOrderIds.current.delete(newOrder.id);
+            isPrinting.current = false;
+            printOrder(retryCount + 1);
+          }, delay);
+          return;
+        } else {
+          printedOrderIds.current.delete(newOrder.id);
+        }
       } finally {
-        isPrinting.current = false;
+        if (retryCount === 0 || retryCount >= 2) {
+          isPrinting.current = false;
+        }
       }
     };
 
-    // Small delay to ensure order is fully loaded
-    const timeoutId = setTimeout(printOrder, 500);
+    // Small delay to ensure order is fully loaded and printer is ready
+    const timeoutId = setTimeout(() => printOrder(0), 500);
 
     return () => {
       clearTimeout(timeoutId);
@@ -111,6 +135,8 @@ export function useAutoPrint({ enabled, printerConfig, newOrder, tenant }: UseAu
     clearPrinted: () => printedOrderIds.current.clear(),
   };
 }
+
+
 
 
 

@@ -1,16 +1,15 @@
 /**
  * Client-Side Printer Utility
- * Handles Bluetooth printing using Star Printer SDK on iOS/Android tablets
- * Falls back to Web Bluetooth API for desktop browsers (limited support)
+ * Multi-method printing system with fallbacks:
+ * 1. StarPrinter plugin (if available)
+ * 2. BluetoothPrinter plugin (External Accessory)
+ * 3. Bluetooth LE plugin
+ * 4. PassPRNT app (Star Micronics)
+ * 5. Web Bluetooth (desktop browsers)
  */
 
 import { formatReceiptForPrinter, sendToBluetoothPrinter, stringToBytes } from './printer-service';
 import type { SerializedOrder } from './order-serializer';
-import StarPrinter, { isStarPrinterAvailable, formatOrderForStarPrinter } from './star-printer';
-
-// Track if we have an active Star Printer connection
-let starPrinterConnected = false;
-let connectedPrinterId: string | null = null;
 
 export interface PrinterConfig {
   type: 'bluetooth' | 'network' | 'usb' | 'none';
@@ -61,6 +60,34 @@ export function isBluetoothPrintingAvailable(): boolean {
 }
 
 /**
+ * Check if StarPrinter plugin is available
+ */
+export async function isStarPrinterAvailable(): Promise<boolean> {
+  if (!isCapacitorNative()) return false;
+  try {
+    const { Plugins } = await import('@capacitor/core');
+    const StarPrinter = (Plugins as any).StarPrinter;
+    return !!StarPrinter;
+  } catch {
+    return false;
+  }
+}
+
+/**
+ * Check if BluetoothPrinter plugin is available
+ */
+export async function isBluetoothPrinterPluginAvailable(): Promise<boolean> {
+  if (!isCapacitorNative()) return false;
+  try {
+    const { Plugins } = await import('@capacitor/core');
+    const BluetoothPrinter = (Plugins as any).BluetoothPrinter;
+    return !!BluetoothPrinter;
+  } catch {
+    return false;
+  }
+}
+
+/**
  * Format order for printing
  */
 function formatOrderForPrint(order: SerializedOrder, tenant: TenantInfo) {
@@ -75,7 +102,7 @@ function formatOrderForPrint(order: SerializedOrder, tenant: TenantInfo) {
       quantity: item.quantity || 1,
       unitPrice: Number(item.price || 0),
       totalPrice: Number(item.price || 0) * (item.quantity || 1),
-      notes: undefined, // Order items don't have notes in serialized format
+      notes: undefined,
     })),
     subtotal: Number(order.subtotalAmount || 0),
     taxAmount: Number(order.taxAmount || 0),
@@ -97,7 +124,238 @@ function formatOrderForPrint(order: SerializedOrder, tenant: TenantInfo) {
 }
 
 /**
- * Print order using client-side Bluetooth (Star Printer SDK for Capacitor native apps)
+ * Generate receipt data for printing
+ */
+function generateReceiptData(order: SerializedOrder, tenant: TenantInfo, config: PrinterConfig): string {
+  const orderForPrint = formatOrderForPrint(order, tenant);
+  const tenantForPrint = {
+    name: tenant.name,
+    addressLine1: tenant.addressLine1,
+    addressLine2: tenant.addressLine2,
+    city: tenant.city,
+    state: tenant.state,
+    postalCode: tenant.postalCode,
+    contactPhone: tenant.contactPhone,
+  };
+
+  return formatReceiptForPrinter(
+    orderForPrint,
+    tenantForPrint,
+    config.model || 'ESC/POS'
+  );
+}
+
+/**
+ * Print using StarPrinter plugin (Method 1)
+ */
+async function printWithStarPrinterPlugin(
+  receiptData: string,
+  config: PrinterConfig
+): Promise<{ success: boolean; error?: string }> {
+  try {
+    const { Plugins } = await import('@capacitor/core');
+    const StarPrinter = (Plugins as any).StarPrinter;
+    
+    if (!StarPrinter) {
+      throw new Error('StarPrinter plugin not available');
+    }
+
+    // Extract identifier (remove BT: prefix if present)
+    let identifier = config.deviceId!;
+    if (identifier.startsWith('BT:')) {
+      identifier = identifier.substring(3);
+      console.log('[StarPrinter] Removed BT: prefix, using identifier:', identifier);
+    }
+
+    // Determine interface type - TSP100III uses Bluetooth Classic (MFi)
+    const interfaceType = 'bluetooth'; // Bluetooth Classic for MFi printers
+
+    console.log('[StarPrinter] Connecting to:', identifier, 'via', interfaceType);
+    
+    // Connect with interface type
+    await StarPrinter.connect({ 
+      identifier: identifier,
+      interfaceType: interfaceType
+    });
+    
+    console.log('[StarPrinter] Connected successfully, printing...');
+    
+    // Print - Note: TSP100III may need image rendering, but try text first
+    await StarPrinter.printRawText({ text: receiptData, cut: true });
+    
+    // Disconnect
+    await StarPrinter.disconnect();
+    
+    console.log('[Print] ✅ StarPrinter plugin success');
+    return { success: true };
+  } catch (error) {
+    const errorMsg = error instanceof Error ? error.message : 'StarPrinter failed';
+    console.warn('[Print] StarPrinter plugin failed:', errorMsg);
+    
+    // If it's a TSP100III image printing error, provide helpful message
+    if (errorMsg.includes('image') || errorMsg.includes('TSP100III')) {
+      return { 
+        success: false, 
+        error: 'TSP100III requires image-based printing. Text printing not supported. This needs to be implemented.' 
+      };
+    }
+    
+    return { success: false, error: errorMsg };
+  }
+}
+
+/**
+ * Print using BluetoothPrinter plugin (Method 2 - External Accessory)
+ */
+async function printWithBluetoothPrinterPlugin(
+  receiptData: string,
+  config: PrinterConfig
+): Promise<{ success: boolean; error?: string }> {
+  try {
+    const { Plugins } = await import('@capacitor/core');
+    const BluetoothPrinter = (Plugins as any).BluetoothPrinter;
+    
+    if (!BluetoothPrinter) {
+      throw new Error('BluetoothPrinter plugin not available');
+    }
+
+    // Connect
+    const connectResult = await BluetoothPrinter.connect({ identifier: config.deviceId! });
+    
+    if (!connectResult.connected) {
+      throw new Error('Failed to connect to printer');
+    }
+    
+    // Print
+    const printResult = await BluetoothPrinter.print({ text: receiptData });
+    
+    if (!printResult.success) {
+      throw new Error('Print failed');
+    }
+    
+    // Disconnect
+    await BluetoothPrinter.disconnect();
+    
+    console.log('[Print] ✅ BluetoothPrinter plugin success');
+    return { success: true };
+  } catch (error) {
+    const errorMsg = error instanceof Error ? error.message : 'BluetoothPrinter failed';
+    console.warn('[Print] BluetoothPrinter plugin failed:', errorMsg);
+    return { success: false, error: errorMsg };
+  }
+}
+
+/**
+ * Print using Bluetooth LE plugin (Method 3)
+ */
+async function printWithBluetoothLE(
+  receiptData: string,
+  config: PrinterConfig
+): Promise<{ success: boolean; error?: string }> {
+  try {
+    const { BleClient, numbersToDataView } = require('@capacitor-community/bluetooth-le');
+    
+    await BleClient.initialize();
+    await BleClient.connect(config.deviceId!, () => {
+      console.log('[Bluetooth LE] Device disconnected');
+    });
+    
+    const services = await BleClient.getServices(config.deviceId!);
+    const sppServiceUuid = '00001101-0000-1000-8000-00805f9b34fb';
+    const sppService = services.find(
+      (s: any) => s.uuid.toLowerCase() === sppServiceUuid.toLowerCase()
+    ) || services[0];
+    
+    if (!sppService) {
+      throw new Error('No services found');
+    }
+    
+    const characteristics = sppService.characteristics || [];
+    const writeChar = characteristics.find(
+      (c: any) => c.properties?.write || c.properties?.writeWithoutResponse
+    );
+    
+    if (!writeChar) {
+      throw new Error('Write characteristic not found');
+    }
+    
+    const encoder = new TextEncoder();
+    const bytes = encoder.encode(receiptData);
+    const chunkSize = 20;
+    
+    for (let i = 0; i < bytes.length; i += chunkSize) {
+      const chunk = Array.from(bytes.slice(i, i + chunkSize));
+      const dataView = numbersToDataView(chunk);
+      await BleClient.write(config.deviceId!, sppService.uuid, writeChar.uuid, dataView);
+    }
+    
+    await BleClient.disconnect(config.deviceId!);
+    
+    console.log('[Print] ✅ Bluetooth LE success');
+    return { success: true };
+  } catch (error) {
+    const errorMsg = error instanceof Error ? error.message : 'Bluetooth LE failed';
+    console.warn('[Print] Bluetooth LE failed:', errorMsg);
+    return { success: false, error: errorMsg };
+  }
+}
+
+/**
+ * Print via PassPRNT app (Method 4 - Star Micronics)
+ */
+async function printViaPassPRNT(
+  receiptData: string,
+  config: PrinterConfig
+): Promise<{ success: boolean; error?: string }> {
+  try {
+    // Encode receipt data
+    const encodedData = encodeURIComponent(receiptData);
+    
+    // PassPRNT URL scheme
+    // Format: passprnt://print?data=<encoded_data>&printer=<printer_name>
+    const passprntUrl = `passprnt://print?data=${encodedData}&printer=${encodeURIComponent(config.name || 'Default')}`;
+    
+    // Try to open PassPRNT
+    const opened = window.open(passprntUrl, '_blank');
+    
+    if (!opened) {
+      // Fallback: try window.location
+      window.location.href = passprntUrl;
+    }
+    
+    // Give it a moment to launch
+    await new Promise(resolve => setTimeout(resolve, 500));
+    
+    console.log('[Print] ✅ PassPRNT launched');
+    return { success: true };
+  } catch (error) {
+    const errorMsg = error instanceof Error ? error.message : 'PassPRNT failed';
+    console.warn('[Print] PassPRNT failed:', errorMsg);
+    return { success: false, error: errorMsg };
+  }
+}
+
+/**
+ * Print using Web Bluetooth (Method 5 - Desktop browsers)
+ */
+async function printWithWebBluetooth(
+  receiptData: string,
+  config: PrinterConfig
+): Promise<{ success: boolean; error?: string }> {
+  try {
+    await sendToBluetoothPrinter(config.deviceId!, receiptData);
+    console.log('[Print] ✅ Web Bluetooth success');
+    return { success: true };
+  } catch (error) {
+    const errorMsg = error instanceof Error ? error.message : 'Web Bluetooth failed';
+    console.warn('[Print] Web Bluetooth failed:', errorMsg);
+    return { success: false, error: errorMsg };
+  }
+}
+
+/**
+ * Print order using multi-method fallback system
+ * Tries methods in order until one succeeds
  */
 export async function printOrderClientSide(
   order: SerializedOrder,
@@ -115,205 +373,165 @@ export async function printOrderClientSide(
     };
   }
 
-  try {
-    // Use Star Printer SDK for native apps (Star TSP100III and other Star printers)
-    if (isStarPrinterAvailable()) {
-      return await printWithStarPrinter(order, tenant, config);
-    }
+  // Generate receipt data once
+  const receiptData = generateReceiptData(order, tenant, config);
+  
+  const methods: Array<{ name: string; fn: () => Promise<{ success: boolean; error?: string }> }> = [];
 
-    // Fallback to Web Bluetooth for non-native environments
-    const orderForPrint = formatOrderForPrint(order, tenant);
-    const tenantForPrint = {
-      name: tenant.name,
-      addressLine1: tenant.addressLine1,
-      addressLine2: tenant.addressLine2,
-      city: tenant.city,
-      state: tenant.state,
-      postalCode: tenant.postalCode,
-      contactPhone: tenant.contactPhone,
-    };
+  // Method 1: StarPrinter plugin (if available)
+  if (await isStarPrinterAvailable()) {
+    methods.push({
+      name: 'StarPrinter plugin',
+      fn: () => printWithStarPrinterPlugin(receiptData, config),
+    });
+  }
 
-    // Generate ESC/POS receipt
-    const receiptData = formatReceiptForPrinter(
-      orderForPrint,
-      tenantForPrint,
-      config.model || 'ESC/POS'
-    );
+  // Method 2: BluetoothPrinter plugin (External Accessory)
+  if (await isBluetoothPrinterPluginAvailable()) {
+    methods.push({
+      name: 'BluetoothPrinter plugin',
+      fn: () => printWithBluetoothPrinterPlugin(receiptData, config),
+    });
+  }
 
-    // Send to Bluetooth printer via Web Bluetooth
-    await sendToBluetoothPrinter(config.deviceId, receiptData);
+  // Method 3: Bluetooth LE (always try if native)
+  if (isCapacitorNative()) {
+    methods.push({
+      name: 'Bluetooth LE',
+      fn: () => printWithBluetoothLE(receiptData, config),
+    });
+  }
 
-    return { success: true };
-  } catch (error) {
-    console.error('[Client Printer] Error printing order:', error);
+  // Method 4: PassPRNT app (iOS only, Star Micronics)
+  if (isCapacitorNative()) {
+    methods.push({
+      name: 'PassPRNT app',
+      fn: () => printViaPassPRNT(receiptData, config),
+    });
+  }
+
+  // Method 5: Web Bluetooth (desktop browsers)
+  if (isWebBluetoothAvailable()) {
+    methods.push({
+      name: 'Web Bluetooth',
+      fn: () => printWithWebBluetooth(receiptData, config),
+    });
+  }
+
+  if (methods.length === 0) {
     return {
       success: false,
-      error: error instanceof Error ? error.message : 'Failed to print order',
+      error: 'No printing methods available. Please ensure you are using the native app or a supported browser.',
     };
   }
+
+  // Try each method in order
+  const errors: string[] = [];
+  for (const method of methods) {
+    console.log(`[Print] Trying ${method.name}...`);
+    const result = await method.fn();
+    
+    if (result.success) {
+      console.log(`[Print] ✅ Success with ${method.name}`);
+      return { success: true };
+    }
+    
+    errors.push(`${method.name}: ${result.error || 'Unknown error'}`);
+    console.warn(`[Print] ❌ ${method.name} failed:`, result.error);
+  }
+
+  // All methods failed
+  return {
+    success: false,
+    error: `All printing methods failed:\n${errors.join('\n')}\n\nPlease check:\n1. Printer is powered on\n2. Printer is paired in iPad Settings > Bluetooth\n3. PassPRNT app is installed (for Star printers)`,
+  };
 }
 
 /**
- * Print using Star Printer SDK (for Star TSP100III and other Star printers)
+ * Disconnect from any active printer connections
  */
-async function printWithStarPrinter(
-  order: SerializedOrder,
-  tenant: TenantInfo,
-  config: PrinterConfig
-): Promise<{ success: boolean; error?: string }> {
-  try {
-    // Connect to printer if not already connected
-    if (!starPrinterConnected || connectedPrinterId !== config.deviceId) {
-      console.log('[Star Printer] Connecting to printer:', config.deviceId);
-
-      // Disconnect from any existing connection
-      if (starPrinterConnected) {
+export async function disconnectStarPrinter(): Promise<void> {
+  // Try to disconnect from all possible plugins
+  if (isCapacitorNative()) {
+    try {
+      const { Plugins } = await import('@capacitor/core');
+      
+      // Disconnect StarPrinter
+      const StarPrinter = (Plugins as any).StarPrinter;
+      if (StarPrinter) {
         try {
           await StarPrinter.disconnect();
         } catch (e) {
-          // Ignore disconnect errors
+          // Ignore
         }
       }
-
-      await StarPrinter.connect({ identifier: config.deviceId! });
-      starPrinterConnected = true;
-      connectedPrinterId = config.deviceId!;
-      console.log('[Star Printer] Connected successfully');
-    }
-
-    // Format the receipt content
-    const receiptText = formatOrderForStarPrinter({
-      id: order.id,
-      customerName: order.customerName || order.customer?.name,
-      customerPhone: order.customerPhone || order.customer?.phone,
-      items: order.items.map((item) => ({
-        menuItemName: item.menuItemName,
-        name: item.menuItemName,
-        quantity: item.quantity || 1,
-        price: Number(item.price || 0),
-        notes: undefined,
-        itemType: item.itemType,
-      })),
-      totalAmount: Number(order.totalAmount || 0),
-      subtotalAmount: Number(order.subtotalAmount || 0),
-      taxAmount: Number(order.taxAmount || 0),
-      tipAmount: Number(order.tipAmount || 0),
-      notes: order.notes || undefined,
-      fulfillmentMethod: order.fulfillmentMethod,
-      createdAt: order.createdAt,
-    });
-
-    console.log('[Star Printer] Printing order:', order.id);
-
-    // Print using the Star printer
-    await StarPrinter.printRawText({ text: receiptText, cut: true });
-
-    console.log('[Star Printer] Print successful');
-    return { success: true };
-  } catch (error) {
-    console.error('[Star Printer] Error:', error);
-
-    // Reset connection state on error
-    starPrinterConnected = false;
-    connectedPrinterId = null;
-
-    return {
-      success: false,
-      error: error instanceof Error ? error.message : 'Failed to print with Star Printer',
-    };
-  }
-}
-
-/**
- * Disconnect from Star Printer (call when leaving fulfillment page)
- */
-export async function disconnectStarPrinter(): Promise<void> {
-  if (starPrinterConnected) {
-    try {
-      await StarPrinter.disconnect();
+      
+      // Disconnect BluetoothPrinter
+      const BluetoothPrinter = (Plugins as any).BluetoothPrinter;
+      if (BluetoothPrinter) {
+        try {
+          await BluetoothPrinter.disconnect();
+        } catch (e) {
+          // Ignore
+        }
+      }
     } catch (e) {
-      // Ignore errors
+      // Ignore
     }
-    starPrinterConnected = false;
-    connectedPrinterId = null;
   }
 }
 
 /**
- * Print order using Web Bluetooth API (desktop browsers)
+ * Test plugin availability (for debugging)
  */
-export async function printOrderWebBluetooth(
-  order: SerializedOrder,
-  tenant: TenantInfo,
-  config: PrinterConfig
-): Promise<{ success: boolean; error?: string }> {
-  if (!isWebBluetoothAvailable()) {
-    return { success: false, error: 'Web Bluetooth is not supported' };
+export async function testPluginAvailability(): Promise<void> {
+  if (!isCapacitorNative()) {
+    console.log('[Plugin Test] Not in native app');
+    return;
   }
 
+  console.log('[Plugin Test] Testing plugin availability...');
+  
   try {
-    const orderForPrint = formatOrderForPrint(order, tenant);
-    const tenantForPrint = {
-      name: tenant.name,
-      addressLine1: tenant.addressLine1,
-      addressLine2: tenant.addressLine2,
-      city: tenant.city,
-      state: tenant.state,
-      postalCode: tenant.postalCode,
-      contactPhone: tenant.contactPhone,
-    };
-
-    const receiptData = formatReceiptForPrinter(
-      orderForPrint,
-      tenantForPrint,
-      config.model || 'ESC/POS'
-    );
-
-    // Use Web Bluetooth API
-    const navigatorBluetooth = (navigator as any).bluetooth;
-    const device = await navigatorBluetooth.requestDevice({
-      filters: [{ services: ['00001101-0000-1000-8000-00805f9b34fb'] }], // SPP service
-    });
-
-    if (!device.gatt) {
-      throw new Error('GATT not available');
+    const { Plugins } = await import('@capacitor/core');
+    
+    // Test StarPrinter
+    const StarPrinter = (Plugins as any).StarPrinter;
+    if (StarPrinter) {
+      console.log('✅ StarPrinter plugin available');
+      try {
+        const result = await StarPrinter.listConnectedAccessories();
+        console.log('Connected accessories:', result);
+      } catch (e) {
+        console.log('StarPrinter.listConnectedAccessories error:', e);
+      }
+    } else {
+      console.log('❌ StarPrinter plugin not available');
     }
-
-    const server = await device.gatt.connect();
-    const service = await server.getPrimaryService('00001101-0000-1000-8000-00805f9b34fb');
-    const characteristic = await service.getCharacteristic('00002a3d-0000-1000-8000-00805f9b34fb');
-
-    const bytes = stringToBytes(receiptData);
-
-    // Write in chunks (BLE has 20-byte limit)
-    const chunkSize = 20;
-    for (let i = 0; i < bytes.length; i += chunkSize) {
-      await characteristic.writeValue(bytes.slice(i, i + chunkSize));
+    
+    // Test BluetoothPrinter
+    const BluetoothPrinter = (Plugins as any).BluetoothPrinter;
+    if (BluetoothPrinter) {
+      console.log('✅ BluetoothPrinter plugin available');
+      try {
+        const result = await BluetoothPrinter.listPairedPrinters();
+        console.log('Paired printers:', result);
+      } catch (e) {
+        console.log('BluetoothPrinter.listPairedPrinters error:', e);
+      }
+    } else {
+      console.log('❌ BluetoothPrinter plugin not available');
     }
-
-    await device.gatt.disconnect();
-
-    return { success: true };
-  } catch (error) {
-    console.error('[Web Bluetooth] Error printing order:', error);
-    return {
-      success: false,
-      error: error instanceof Error ? error.message : 'Failed to print order',
-    };
+    
+    // Test Bluetooth LE
+    try {
+      const { BleClient } = require('@capacitor-community/bluetooth-le');
+      await BleClient.initialize();
+      console.log('✅ Bluetooth LE plugin available');
+    } catch (e) {
+      console.log('❌ Bluetooth LE plugin not available:', e);
+    }
+  } catch (e) {
+    console.error('[Plugin Test] Error:', e);
   }
 }
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-

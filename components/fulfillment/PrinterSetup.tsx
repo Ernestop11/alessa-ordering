@@ -1,8 +1,7 @@
 "use client";
 
 import { useState, useEffect } from 'react';
-import StarPrinter, { isStarPrinterAvailable, formatOrderForStarPrinter } from '@/lib/star-printer';
-import type { StarPrinterDevice } from '@/lib/star-printer';
+import { isCapacitorNative } from '@/lib/client-printer';
 
 export type PrinterType = 'bluetooth' | 'network' | 'usb' | 'none';
 
@@ -60,23 +59,35 @@ export default function PrinterSetup({ currentConfig, onSave, onTest }: Props) {
   // Check if Bluetooth is available (Capacitor or Web Bluetooth)
   const [bluetoothAvailable, setBluetoothAvailable] = useState(false);
   const [isNativeApp, setIsNativeApp] = useState(false);
+  const [scanListener, setScanListener] = useState<any>(null);
 
   useEffect(() => {
     if (typeof window !== 'undefined') {
-      // Check if running in Capacitor with Star Printer support
-      const native = isStarPrinterAvailable();
-      console.log('[PrinterSetup] isStarPrinterAvailable:', native);
+      // Check if running in Capacitor native app
+      const native = isCapacitorNative();
+      console.log('[PrinterSetup] isCapacitorNative:', native);
       console.log('[PrinterSetup] window.Capacitor:', (window as any).Capacitor);
       setIsNativeApp(native);
-      setBluetoothAvailable(native); // Star printer only works in native app
+      setBluetoothAvailable(native); // Bluetooth LE works in native app
     }
-  }, []);
+
+    // Cleanup scan listener on unmount
+    return () => {
+      if (scanListener) {
+        try {
+          scanListener.remove?.();
+        } catch (e) {
+          console.warn('[PrinterSetup] Error removing scan listener:', e);
+        }
+      }
+    };
+  }, [scanListener]);
 
   const scanBluetoothPrinters = async () => {
     console.log('[PrinterSetup] scanBluetoothPrinters called, isNativeApp:', isNativeApp);
 
     if (!isNativeApp) {
-      setError('Star Printer requires the native iOS app. Please use the installed app on your iPad.');
+      setError('Bluetooth printing requires the native iOS/Android app. Please use the installed app on your iPad.');
       return;
     }
 
@@ -85,62 +96,200 @@ export default function PrinterSetup({ currentConfig, onSave, onTest }: Props) {
     setAvailableDevices([]);
 
     try {
-      // Use Star Printer plugin for Bluetooth Classic discovery
-      console.log('[PrinterSetup] Starting Star Printer discovery...');
-
-      // Listen for printer found events
-      console.log('[PrinterSetup] Adding printerFound listener...');
-      const listener = await StarPrinter.addListener('printerFound', (event) => {
-        console.log('[PrinterSetup] Found printer event:', event);
-        setAvailableDevices((prev) => {
-          if (prev.find((d) => d.identifier === event.identifier)) {
-            return prev;
+      // FIRST: Try StarPrinter plugin to check already-paired devices (for MFi Bluetooth Classic like TSP100III)
+      const { Plugins } = require('@capacitor/core');
+      const StarPrinter = Plugins.StarPrinter as any;
+      
+      if (StarPrinter) {
+        console.log('[PrinterSetup] ✅ StarPrinter plugin available, checking for already-paired devices...');
+        
+        try {
+          // Method 1: Check EAAccessoryManager for already-connected accessories
+          // This is what the Star utility app uses - it finds already-paired printers
+          const listResult = await StarPrinter.listConnectedAccessories();
+          console.log('[PrinterSetup] listConnectedAccessories result:', listResult);
+          
+          if (listResult?.accessories && listResult.accessories.length > 0) {
+            console.log('[PrinterSetup] Found', listResult.accessories.length, 'accessory/ies via EAAccessoryManager');
+            
+            // Filter for Star printers and map to our format
+            const starPrinters = listResult.accessories
+              .filter((acc: any) => {
+                const isStar = acc.isStarPrinter || 
+                             acc.protocols?.some((p: string) => p.includes('star')) ||
+                             acc.protocols?.includes('jp.star-m.starpro');
+                if (isStar) {
+                  console.log('[PrinterSetup] ✅ Found Star printer:', acc.name, acc.model);
+                }
+                return isStar;
+              })
+              .map((acc: any) => ({
+                deviceId: acc.identifier || `BT:${acc.serial}`,
+                identifier: acc.identifier || `BT:${acc.serial}`,
+                name: acc.name || 'Star Printer',
+                model: acc.model || acc.modelNumber || 'Unknown',
+                manufacturer: acc.manufacturer || 'Star Micronics',
+                isConnected: acc.isConnected || false,
+                serial: acc.serial || acc.serialNumber,
+                source: 'StarPrinter-EAAccessory',
+              }));
+            
+            if (starPrinters.length > 0) {
+              console.log('[PrinterSetup] ✅ Found', starPrinters.length, 'Star printer(s) already paired!');
+              setAvailableDevices(starPrinters);
+              setScanning(false);
+              if (starPrinters.length === 1) {
+                // Auto-select single printer
+                const printer = starPrinters[0];
+                setPrinterType('bluetooth');
+                setPrinterName(printer.name);
+                setDeviceId(printer.deviceId);
+                setModel('ESC/POS');
+                setSuccess(`✅ Found printer: ${printer.name} (${printer.model})`);
+              } else {
+                setSuccess(`✅ Found ${starPrinters.length} Star printer(s) already paired. Select one from the list.`);
+              }
+              return; // Success - exit early
+            } else {
+              console.log('[PrinterSetup] No Star printers found in already-paired accessories');
+            }
           }
-          return [...prev, { ...event, deviceId: event.identifier, name: `Star Printer (${event.identifier.slice(-8)})` }];
-        });
-      });
-
-      // Start discovery
-      console.log('[PrinterSetup] Calling StarPrinter.discoverPrinters()...');
-      const result = await StarPrinter.discoverPrinters();
-      console.log('[PrinterSetup] Discovery result:', JSON.stringify(result));
-
-      // Clean up listener
-      listener.remove();
-
-      setScanning(false);
-
-      if (result.printers && result.printers.length > 0) {
-        const printers = result.printers.map((p: StarPrinterDevice) => ({
-          deviceId: p.identifier,
-          identifier: p.identifier,
-          name: p.model ? `Star ${p.model}` : `Star Printer (${p.identifier.slice(-8)})`,
-          model: p.model,
-        }));
-        setAvailableDevices(printers);
-        console.log('[PrinterSetup] Mapped printers:', printers);
-
-        // Auto-select first printer
-        if (printers.length === 1) {
-          setPrinterType('bluetooth');
-          setPrinterName(printers[0].name);
-          setDeviceId(printers[0].identifier);
-          setModel('Star TSP100');
-          setSuccess(`Found printer: ${printers[0].name}`);
-        } else {
-          setSuccess(`Found ${printers.length} printer(s). Select one from the list.`);
+          
+          // Method 2: If no already-connected, try StarIO10 discovery
+          console.log('[PrinterSetup] Trying StarIO10 discovery...');
+          const discoverResult = await StarPrinter.discoverPrinters();
+          console.log('[PrinterSetup] discoverPrinters result:', discoverResult);
+          
+          if (discoverResult?.printers && discoverResult.printers.length > 0) {
+            const discoveredPrinters = discoverResult.printers.map((p: any) => ({
+              deviceId: p.identifier,
+              identifier: p.identifier,
+              name: p.name || 'Star Printer',
+              model: p.model || 'Unknown',
+              interfaceType: p.interfaceType || 'bluetooth',
+              source: 'StarPrinter-StarIO10',
+            }));
+            
+            console.log('[PrinterSetup] ✅ Found', discoveredPrinters.length, 'printer(s) via StarIO10');
+            setAvailableDevices(discoveredPrinters);
+            setScanning(false);
+            if (discoveredPrinters.length === 1) {
+              const printer = discoveredPrinters[0];
+              setPrinterType('bluetooth');
+              setPrinterName(printer.name);
+              setDeviceId(printer.deviceId);
+              setModel('ESC/POS');
+              setSuccess(`✅ Found printer: ${printer.name}`);
+            } else {
+              setSuccess(`✅ Found ${discoveredPrinters.length} printer(s). Select one from the list.`);
+            }
+            return; // Success - exit early
+          }
+          
+          console.log('[PrinterSetup] StarPrinter plugin found no printers, falling back to Bluetooth LE...');
+        } catch (starError: any) {
+          console.warn('[PrinterSetup] StarPrinter plugin error (will try Bluetooth LE):', starError);
+          // Continue to Bluetooth LE fallback
         }
       } else {
-        console.log('[PrinterSetup] No printers found in result');
-        setError('No Star printers found. Make sure your printer is powered on and paired in iPad Settings > Bluetooth.');
+        console.log('[PrinterSetup] StarPrinter plugin not available, using Bluetooth LE only');
       }
+      
+      // FALLBACK: Use Bluetooth LE plugin for BLE printers (not MFi Classic)
+      console.log('[PrinterSetup] Using Bluetooth LE scanning as fallback...');
+      const { BleClient } = require('@capacitor-community/bluetooth-le');
+      
+      console.log('[PrinterSetup] Initializing Bluetooth LE...');
+      await BleClient.initialize();
+      console.log('[PrinterSetup] Bluetooth LE initialized');
+
+      console.log('[PrinterSetup] Starting Bluetooth LE scan...');
+      
+      const printerServices = [
+        '00001101-0000-1000-8000-00805f9b34fb', // Serial Port Profile (SPP)
+        'e7810a71-73ae-499d-8c15-faa9aef0c3f2', // Brother printers
+      ];
+
+      const foundDevices = new Map<string, any>();
+
+      await BleClient.requestLEScan(
+        {
+          services: printerServices,
+          allowDuplicates: false,
+        },
+        (result: any) => {
+          console.log('[PrinterSetup] Found BLE device:', result);
+          
+          const deviceId = result.device?.deviceId || result.deviceId;
+          if (!deviceId) return;
+
+          if (foundDevices.has(deviceId)) return;
+
+          const deviceName = result.name || result.localName || result.device?.name || `Printer (${deviceId.slice(-8)})`;
+          
+          foundDevices.set(deviceId, {
+            deviceId,
+            identifier: deviceId,
+            name: deviceName,
+            rssi: result.rssi,
+            services: result.serviceUuids || [],
+            source: 'Bluetooth-LE',
+          });
+
+          setAvailableDevices(Array.from(foundDevices.values()));
+        }
+      );
+
+      // Stop scanning after 15 seconds
+      const scanTimeout = setTimeout(async () => {
+        try {
+          await BleClient.stopLEScan();
+          console.log('[PrinterSetup] BLE scan stopped');
+
+          setScanning(false);
+
+          const devices = Array.from(foundDevices.values());
+          if (devices.length === 0) {
+            setError('No Bluetooth printers found.\n\nFor Star TSP100III:\n1. Make sure printer is powered on\n2. Make sure it\'s already paired in iPad Settings > Bluetooth\n3. The Star utility app should be able to print (to verify pairing)\n\nIf Star utility works but this doesn\'t, the StarPrinter plugin may need to be checked.');
+          } else if (devices.length === 1) {
+            const printer = devices[0];
+            setPrinterType('bluetooth');
+            setPrinterName(printer.name);
+            setDeviceId(printer.deviceId);
+            setModel('ESC/POS');
+            setSuccess(`Found printer: ${printer.name}`);
+          } else {
+            setSuccess(`Found ${devices.length} printer(s). Select one from the list.`);
+          }
+        } catch (stopError) {
+          console.error('[PrinterSetup] Error stopping scan:', stopError);
+          setScanning(false);
+        }
+      }, 15000);
+
+      return () => {
+        clearTimeout(scanTimeout);
+      };
+
     } catch (err) {
-      console.error('[PrinterSetup] Discovery error:', err);
+      console.error('[PrinterSetup] Bluetooth scan error:', err);
       setScanning(false);
+      
+      try {
+        const { BleClient } = require('@capacitor-community/bluetooth-le');
+        await BleClient.stopLEScan();
+      } catch (stopErr) {
+        // Ignore stop errors
+      }
+      
       if (err instanceof Error) {
-        setError(`Discovery error: ${err.message}`);
+        if (err.message.includes('permission') || err.message.includes('Permission')) {
+          setError('Bluetooth permission denied. Please:\n1. Go to iPad Settings > Privacy & Security > Bluetooth\n2. Enable Bluetooth for "Alessa Ordering" app\n3. Try scanning again');
+        } else {
+          setError(`Bluetooth scan failed: ${err.message}\n\nFor Star TSP100III: Make sure it's already paired in iPad Settings > Bluetooth first (the Star utility app should be able to print to verify).`);
+        }
       } else {
-        setError('Failed to discover printers. Make sure Bluetooth is enabled.');
+        setError('Failed to scan for Bluetooth printers. Make sure Bluetooth is enabled and permissions are granted.');
       }
     }
   };

@@ -348,6 +348,7 @@ export default function FulfillmentDashboard({ initialOrders, feedUrl, scope }: 
 
   // Auto-print when new orders arrive (for non-Bluetooth printers)
   // Bluetooth printers are handled by useAutoPrint hook above
+  // Network printers are handled server-side when orders are created
   useEffect(() => {
     if (!lastCreatedOrder) return;
     if (lastNotifiedIdRef.current === lastCreatedOrder.id) return;
@@ -358,9 +359,18 @@ export default function FulfillmentDashboard({ initialOrders, feedUrl, scope }: 
       return;
     }
 
+    // Skip if network printer - these are handled server-side via autoPrintOrder()
+    // Server-side auto-print happens when orders are created in lib/order-service.ts
+    if (printerConfig.type === 'network') {
+      console.log('[Auto-Print] Network printer detected - auto-print happens server-side when order is created');
+      lastNotifiedIdRef.current = lastCreatedOrder.id;
+      return;
+    }
+
     lastNotifiedIdRef.current = lastCreatedOrder.id;
 
-    // Trigger auto-print in background (don't wait for it)
+    // Only trigger client-side print for other printer types (fallback)
+    // Network printers should already be printed server-side
     handlePrint(lastCreatedOrder).catch((err) => {
       console.error('[Auto-Print] Failed to print order:', err);
     });

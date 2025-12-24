@@ -12,7 +12,7 @@ module.exports = {
       max_memory_restart: '1G',
       env: {
         NODE_ENV: 'production',
-        PORT: 4000  // DEDICATED PORT - No conflicts
+        PORT: 3001  // DEDICATED PORT - No conflicts
       },
       error_file: '/var/log/pm2/alessa-ordering-error.log',
       out_file: '/var/log/pm2/alessa-ordering-out.log',

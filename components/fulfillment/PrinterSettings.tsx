@@ -3,7 +3,7 @@
 import { useState, useEffect } from 'react';
 import PrinterSetup, { type PrinterConfig } from './PrinterSetup';
 import { formatReceiptForPrinter } from '@/lib/printer-service';
-import StarPrinter, { isStarPrinterAvailable, formatOrderForStarPrinter } from '@/lib/star-printer';
+import { printOrderClientSide, isCapacitorNative } from '@/lib/client-printer';
 
 interface Props {
   tenantId?: string;
@@ -183,63 +183,92 @@ export default function PrinterSettings({ tenantId, onBack }: Props) {
 
   const handleTestPrint = async (config: PrinterConfig) => {
     try {
-      // For Star printers in native app, use Star Printer SDK directly
-      if (config.type === 'bluetooth' && config.deviceId && isStarPrinterAvailable()) {
-        console.log('[PrinterSettings] Using Star Printer SDK for test print');
+      setError(null);
+      
+      // For Bluetooth printers, use the multi-method client-side printing
+      if (config.type === 'bluetooth' && config.deviceId) {
+        if (!isCapacitorNative()) {
+          throw new Error('Bluetooth printing requires the native iOS/Android app. Please use the installed app on your iPad.');
+        }
 
-        // Connect to printer
-        await StarPrinter.connect({ identifier: config.deviceId });
-
-        // Format test receipt
-        const testReceipt = formatOrderForStarPrinter({
+        // Create test order
+        const testOrder = {
           id: 'TEST-' + Date.now().toString().slice(-8),
           customerName: 'Test Customer',
+          customerPhone: '(555) 123-4567',
+          fulfillmentMethod: 'pickup' as const,
+          status: 'pending' as const,
           items: [
-            { name: 'Test Item 1', menuItemName: 'Test Item 1', quantity: 2, price: 9.99 },
-            { name: 'Test Item 2', menuItemName: 'Test Item 2', quantity: 1, price: 15.50 },
+            {
+              menuItemName: 'Test Item 1',
+              quantity: 2,
+              price: 9.99,
+              itemType: 'food' as const,
+            },
+            {
+              menuItemName: 'Test Item 2',
+              quantity: 1,
+              price: 15.50,
+              itemType: 'food' as const,
+            },
           ],
-          totalAmount: 35.48,
-          subtotalAmount: 32.48,
+          subtotalAmount: 35.48,
           taxAmount: 3.00,
-          fulfillmentMethod: 'pickup',
+          totalAmount: 38.48,
+          notes: 'This is a test print',
           createdAt: new Date().toISOString(),
+          customer: null,
+          deliveryAddress: null,
+        };
+
+        // Get tenant info
+        const tenantRes = await fetch('/api/admin/tenant-settings');
+        const tenantData = tenantRes.ok ? await tenantRes.json() : {};
+        
+        const tenant = {
+          id: tenantData.id || 'test',
+          name: tenantData.name || 'Test Restaurant',
+          addressLine1: tenantData.addressLine1 || null,
+          addressLine2: tenantData.addressLine2 || null,
+          city: tenantData.city || null,
+          state: tenantData.state || null,
+          postalCode: tenantData.postalCode || null,
+          contactPhone: tenantData.contactPhone || null,
+        };
+
+        // Use multi-method printing system
+        const result = await printOrderClientSide(testOrder as any, tenant, config);
+
+        if (result.success) {
+          setSuccess('Test print sent successfully!');
+          setTimeout(() => setSuccess(null), 3000);
+        } else {
+          throw new Error(result.error || 'Test print failed');
+        }
+        return;
+      }
+
+      // For network printers, use server-side printing
+      if (config.type === 'network' && config.ipAddress) {
+        const response = await fetch('/api/admin/fulfillment/printer/test', {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({ config }),
         });
 
-        // Print test receipt
-        await StarPrinter.printRawText({ text: testReceipt, cut: true });
+        if (!response.ok) {
+          const error = await response.json();
+          throw new Error(error.error || 'Failed to generate test print');
+        }
 
-        setSuccess('Test print sent successfully via Star Printer');
+        setSuccess('Test print sent successfully');
         setTimeout(() => setSuccess(null), 3000);
         return;
       }
 
-      // Fallback: Get test receipt data from server for Web Bluetooth/Network
-      const response = await fetch('/api/admin/fulfillment/printer/test', {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ config }),
-      });
-
-      if (!response.ok) {
-        const error = await response.json();
-        throw new Error(error.error || 'Failed to generate test print');
-      }
-
-      const data = await response.json();
-      const receiptData = data.receiptData;
-
-      // Send to printer based on type
-      if (config.type === 'bluetooth' && config.deviceId) {
-        await sendToBluetoothPrinter(config.deviceId, receiptData);
-      } else if (config.type === 'network' && config.ipAddress) {
-        await sendToNetworkPrinter(config.ipAddress || '192.168.1.100', config.port || 9100, receiptData);
-      } else {
-        throw new Error('Invalid printer configuration for test print');
-      }
-
-      setSuccess('Test print sent successfully');
-      setTimeout(() => setSuccess(null), 3000);
+      throw new Error('Invalid printer configuration for test print');
     } catch (err: any) {
+      setError(err.message || 'Test print failed');
       throw err;
     }
   };
