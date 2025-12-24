@@ -184,7 +184,63 @@ export default function PrinterSettings({ tenantId, onBack }: Props) {
   const handleTestPrint = async (config: PrinterConfig) => {
     try {
       setError(null);
-      
+
+      // For PassPRNT, use URL scheme printing (works in Safari/PWA)
+      if (config.type === 'passprnt') {
+        const testOrder = {
+          id: 'TEST-' + Date.now().toString().slice(-8),
+          customerName: 'Test Customer',
+          customerPhone: '(555) 123-4567',
+          fulfillmentMethod: 'pickup' as const,
+          status: 'pending' as const,
+          items: [
+            {
+              menuItemName: 'Test Item 1',
+              quantity: 2,
+              price: 9.99,
+              itemType: 'food' as const,
+            },
+            {
+              menuItemName: 'Test Item 2',
+              quantity: 1,
+              price: 15.50,
+              itemType: 'food' as const,
+            },
+          ],
+          subtotalAmount: 35.48,
+          taxAmount: 3.00,
+          totalAmount: 38.48,
+          notes: 'This is a test print via PassPRNT',
+          createdAt: new Date().toISOString(),
+          customer: null,
+          deliveryAddress: null,
+        };
+
+        const tenantRes = await fetch('/api/admin/tenant-settings');
+        const tenantData = tenantRes.ok ? await tenantRes.json() : {};
+
+        const tenant = {
+          id: tenantData.id || 'test',
+          name: tenantData.name || 'Test Restaurant',
+          addressLine1: tenantData.addressLine1 || null,
+          addressLine2: tenantData.addressLine2 || null,
+          city: tenantData.city || null,
+          state: tenantData.state || null,
+          postalCode: tenantData.postalCode || null,
+          contactPhone: tenantData.contactPhone || null,
+        };
+
+        const result = await printOrderClientSide(testOrder as any, tenant, config as any);
+
+        if (result.success) {
+          setSuccess('Test print sent via PassPRNT! The Star PassPRNT app should open.');
+          setTimeout(() => setSuccess(null), 5000);
+        } else {
+          throw new Error(result.error || 'PassPRNT test print failed');
+        }
+        return;
+      }
+
       // For Bluetooth printers, use the multi-method client-side printing
       if (config.type === 'bluetooth' && config.deviceId) {
         if (!isCapacitorNative()) {
@@ -241,7 +297,7 @@ export default function PrinterSettings({ tenantId, onBack }: Props) {
 
         if (result.success) {
           setSuccess('Test print sent successfully!');
-          setTimeout(() => setSuccess(null), 3000);
+        setTimeout(() => setSuccess(null), 3000);
         } else {
           throw new Error(result.error || 'Test print failed');
         }
@@ -250,23 +306,23 @@ export default function PrinterSettings({ tenantId, onBack }: Props) {
 
       // For network printers, use server-side printing
       if (config.type === 'network' && config.ipAddress) {
-        const response = await fetch('/api/admin/fulfillment/printer/test', {
-          method: 'POST',
-          headers: { 'Content-Type': 'application/json' },
-          body: JSON.stringify({ config }),
-        });
+      const response = await fetch('/api/admin/fulfillment/printer/test', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ config }),
+      });
 
-        if (!response.ok) {
-          const error = await response.json();
-          throw new Error(error.error || 'Failed to generate test print');
-        }
+      if (!response.ok) {
+        const error = await response.json();
+        throw new Error(error.error || 'Failed to generate test print');
+      }
 
         setSuccess('Test print sent successfully');
         setTimeout(() => setSuccess(null), 3000);
         return;
       }
 
-      throw new Error('Invalid printer configuration for test print');
+        throw new Error('Invalid printer configuration for test print');
     } catch (err: any) {
       setError(err.message || 'Test print failed');
       throw err;

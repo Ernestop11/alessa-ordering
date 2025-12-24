@@ -3,7 +3,7 @@
 import { useState, useEffect } from 'react';
 import { isCapacitorNative } from '@/lib/client-printer';
 
-export type PrinterType = 'bluetooth' | 'network' | 'usb' | 'none';
+export type PrinterType = 'bluetooth' | 'network' | 'usb' | 'passprnt' | 'none';
 
 export interface PrinterConfig {
   type: PrinterType;
@@ -316,8 +316,8 @@ export default function PrinterSetup({ currentConfig, onSave, onTest }: Props) {
 
     const config: PrinterConfig = {
       type: printerType,
-      name: printerName || 'Unnamed Printer',
-      model,
+      name: printerName || (printerType === 'passprnt' ? 'Star PassPRNT' : 'Unnamed Printer'),
+      model: printerType === 'passprnt' ? 'Star TSP100III' : model,
     };
 
     if (printerType === 'bluetooth') {
@@ -325,6 +325,9 @@ export default function PrinterSetup({ currentConfig, onSave, onTest }: Props) {
     } else if (printerType === 'network') {
       config.ipAddress = ipAddress;
       config.port = port;
+    } else if (printerType === 'passprnt') {
+      // PassPRNT doesn't need deviceId or IP - uses URL scheme
+      config.model = 'Star TSP100III';
     }
 
     setSaving(true);
@@ -344,8 +347,8 @@ export default function PrinterSetup({ currentConfig, onSave, onTest }: Props) {
 
     const config: PrinterConfig = {
       type: printerType,
-      name: printerName || 'Test Printer',
-      model,
+      name: printerName || (printerType === 'passprnt' ? 'Star PassPRNT' : 'Test Printer'),
+      model: printerType === 'passprnt' ? 'Star TSP100III' : model,
     };
 
     if (printerType === 'bluetooth') {
@@ -353,6 +356,8 @@ export default function PrinterSetup({ currentConfig, onSave, onTest }: Props) {
     } else if (printerType === 'network') {
       config.ipAddress = ipAddress;
       config.port = port;
+    } else if (printerType === 'passprnt') {
+      config.model = 'Star TSP100III';
     }
 
     setTesting(true);
@@ -394,7 +399,8 @@ export default function PrinterSetup({ currentConfig, onSave, onTest }: Props) {
             className="w-full border border-gray-300 rounded px-3 py-2 focus:outline-none focus:ring-2 focus:ring-blue-500"
           >
             <option value="none">No Printer (Disabled)</option>
-            <option value="bluetooth">Bluetooth Printer</option>
+            <option value="passprnt">Star PassPRNT (Recommended for iPad)</option>
+            <option value="bluetooth">Bluetooth Printer (Native App Only)</option>
             <option value="network">Network Printer (IP/Port)</option>
             <option value="usb">USB Printer (Manual)</option>
           </select>
@@ -475,6 +481,56 @@ export default function PrinterSetup({ currentConfig, onSave, onTest }: Props) {
                 <li>Brother QL series (QL-820NWB, QL-1110NWB, QL-700, QL-800)</li>
                 <li>Star Micronics (TSP143III, TSP654II, TSP100)</li>
                 <li>Any ESC/POS compatible Bluetooth printer</li>
+              </ul>
+            </div>
+          </div>
+        )}
+
+        {/* PassPRNT Configuration */}
+        {printerType === 'passprnt' && (
+          <div className="space-y-3 border-t pt-4">
+            <div className="p-3 bg-green-50 border border-green-200 rounded text-sm text-green-800">
+              <p className="font-medium mb-2">✅ Star PassPRNT - Best for iPad</p>
+              <p className="mb-2">
+                PassPRNT uses the official Star Micronics app to print receipts.
+                Works in Safari, PWA, or any browser on iPad.
+              </p>
+            </div>
+
+            <div>
+              <label className="block text-sm font-medium text-gray-700 mb-2">
+                Printer Name (for display)
+              </label>
+              <input
+                type="text"
+                value={printerName}
+                onChange={(e) => setPrinterName(e.target.value)}
+                placeholder="Star TSP100III"
+                className="w-full border border-gray-300 rounded px-3 py-2 focus:outline-none focus:ring-2 focus:ring-blue-500"
+              />
+            </div>
+
+            <div className="text-sm text-gray-600 bg-blue-50 p-3 rounded">
+              <p className="font-medium mb-2">📋 Setup Instructions:</p>
+              <ol className="list-decimal list-inside space-y-2">
+                <li>Download <strong>Star PassPRNT</strong> from the App Store</li>
+                <li>Pair your Star printer with iPad in <strong>Settings → Bluetooth</strong></li>
+                <li>Open PassPRNT app and select your printer</li>
+                <li>Save this configuration and test print</li>
+              </ol>
+              <p className="mt-3 text-xs text-gray-500">
+                When you print, the PassPRNT app will open briefly to send the receipt,
+                then return you to this app.
+              </p>
+            </div>
+
+            <div className="text-xs text-gray-500">
+              <p className="font-medium mb-1">Supported Printers:</p>
+              <ul className="list-disc list-inside space-y-1">
+                <li>Star TSP100III (Bluetooth)</li>
+                <li>Star TSP143III</li>
+                <li>Star TSP654II</li>
+                <li>Any Star printer compatible with PassPRNT</li>
               </ul>
             </div>
           </div>
