@@ -71,15 +71,16 @@ export async function GET(request: NextRequest) {
   }
 
   // Get orders for this tenant (only recent pending/confirmed orders)
+  // Note: statuses can be lowercase or uppercase depending on how they were created
   const orders = await prisma.order.findMany({
     where: {
       tenantId: tenant.id,
       status: {
-        in: ['PENDING', 'CONFIRMED', 'PREPARING'],
+        in: ['PENDING', 'CONFIRMED', 'PREPARING', 'pending', 'confirmed', 'preparing', 'new', 'NEW'],
       },
       createdAt: {
-        // Only get orders from the last 24 hours
-        gte: new Date(Date.now() - 24 * 60 * 60 * 1000),
+        // Only get orders from the last 7 days
+        gte: new Date(Date.now() - 7 * 24 * 60 * 60 * 1000),
       },
     },
     include: {
