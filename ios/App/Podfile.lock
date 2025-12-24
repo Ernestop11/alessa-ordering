@@ -1,9 +1,9 @@
 PODS:
-  - Capacitor (7.4.4):
+  - Capacitor (8.0.0):
     - CapacitorCordova
   - CapacitorCommunityBluetoothLe (7.3.0):
     - Capacitor
-  - CapacitorCordova (7.4.4)
+  - CapacitorCordova (8.0.0)
   - CapacitorSplashScreen (7.0.4):
     - Capacitor
 
@@ -24,11 +24,11 @@ EXTERNAL SOURCES:
     :path: "../../node_modules/@capacitor/splash-screen"
 
 SPEC CHECKSUMS:
-  Capacitor: 358dd1c3fdd71d969547b17e159fd8a7736cb45f
+  Capacitor: 341ff7cf652ec695d1a8ebf604db448ac7b6d635
   CapacitorCommunityBluetoothLe: 41f9dec8a4c16ab6b81e56402b6047fc19b4735d
-  CapacitorCordova: bf648a636f3c153f652d312ae145fb508b6ffced
+  CapacitorCordova: 5dc3912d25ef770a3fe0f431bb65c9fbfa2e92f9
   CapacitorSplashScreen: 000f7591d546907dda5cbb514bd6b6d9e6048cf8
 
-PODFILE CHECKSUM: c3db5735fe2205fd4ecc2e58572acaca6f98f5e5
+PODFILE CHECKSUM: 1bd95746e7b4b40530d107517c421cc517ec9501
 
 COCOAPODS: 1.16.2

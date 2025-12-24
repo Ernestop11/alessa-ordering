@@ -249,9 +249,10 @@ export default function FulfillmentDashboard({ initialOrders, feedUrl, scope }: 
     loadTenantDetails();
   }, [tenantInfo]);
 
-  // Auto-print hook for client-side Bluetooth printing
+  // Auto-print hook for client-side printing (Bluetooth and Network)
+  // Network printers use a relay API since browsers can't open raw TCP sockets
   useAutoPrint({
-    enabled: autoPrintEnabled && printerConfig?.type === 'bluetooth',
+    enabled: autoPrintEnabled && (printerConfig?.type === 'bluetooth' || printerConfig?.type === 'network'),
     printerConfig: printerConfig as PrinterConfig | null,
     newOrder: lastCreatedOrder,
     tenant: tenantDetails || tenantInfo || {
@@ -346,9 +347,9 @@ export default function FulfillmentDashboard({ initialOrders, feedUrl, scope }: 
     loadPrinterConfig();
   }, []);
 
-  // Auto-print when new orders arrive (for non-Bluetooth printers)
+  // Auto-print when new orders arrive (for non-Bluetooth and non-Network printers)
   // Bluetooth printers are handled by useAutoPrint hook above
-  // Network printers are handled server-side when orders are created
+  // Network printers are also handled by useAutoPrint hook above (via relay API)
   useEffect(() => {
     if (!lastCreatedOrder) return;
     if (lastNotifiedIdRef.current === lastCreatedOrder.id) return;
@@ -359,18 +360,15 @@ export default function FulfillmentDashboard({ initialOrders, feedUrl, scope }: 
       return;
     }
 
-    // Skip if network printer - these are handled server-side via autoPrintOrder()
-    // Server-side auto-print happens when orders are created in lib/order-service.ts
+    // Skip if network printer - handled by useAutoPrint hook client-side
     if (printerConfig.type === 'network') {
-      console.log('[Auto-Print] Network printer detected - auto-print happens server-side when order is created');
-      lastNotifiedIdRef.current = lastCreatedOrder.id;
+      console.log('[Auto-Print] Network printer - handled by useAutoPrint hook');
       return;
     }
 
     lastNotifiedIdRef.current = lastCreatedOrder.id;
 
-    // Only trigger client-side print for other printer types (fallback)
-    // Network printers should already be printed server-side
+    // Only trigger manual print fallback for other printer types
     handlePrint(lastCreatedOrder).catch((err) => {
       console.error('[Auto-Print] Failed to print order:', err);
     });

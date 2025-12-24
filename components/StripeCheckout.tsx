@@ -124,14 +124,20 @@ export default function StripeCheckout({ clientSecret, successPath = "/order/suc
         if (paymentIntent?.id && (successStatuses.includes(piStatus) || piStatus === '')) {
           console.log('[Stripe] Apple Pay payment succeeded, calling confirm endpoint...');
 
-          // Use a synchronous redirect approach for Safari compatibility
-          // Safari may kill async operations after Apple Pay sheet closes
-          const confirmAndRedirect = async () => {
+          // CRITICAL: For Apple Pay, we MUST create the order immediately
+          // Safari may kill async operations after Apple Pay sheet closes, so we need to:
+          // 1. Call confirm endpoint immediately (don't wait)
+          // 2. Use sendBeacon for reliability if fetch might be killed
+          // 3. Also ensure webhook will handle it as fallback
+          
+          const confirmOrder = async () => {
             try {
+              // Use fetch with keepalive for better reliability
               const confirmResponse = await fetch('/api/payments/confirm', {
                 method: 'POST',
                 headers: { 'Content-Type': 'application/json' },
                 body: JSON.stringify({ paymentIntentId: paymentIntent.id }),
+                keepalive: true, // Keep request alive even if page unloads
               });
 
               const result = await confirmResponse.json();
@@ -139,21 +145,45 @@ export default function StripeCheckout({ clientSecret, successPath = "/order/suc
 
               if (!confirmResponse.ok) {
                 console.error('[Stripe] Order confirmation failed:', result);
+                // Log to server for debugging
+                try {
+                  navigator.sendBeacon('/api/payments/confirm-error', JSON.stringify({
+                    paymentIntentId: paymentIntent.id,
+                    error: result.error || 'Unknown error',
+                    timestamp: new Date().toISOString(),
+                  }));
+                } catch (beaconErr) {
+                  console.error('[Stripe] Failed to send error beacon:', beaconErr);
+                }
+              } else {
+                console.log('[Stripe] ✅ Order confirmed successfully:', result.orderId);
               }
             } catch (err) {
               console.error('[Stripe] Error confirming order:', err);
+              // Fallback: try sendBeacon as last resort
+              try {
+                const blob = new Blob([JSON.stringify({ paymentIntentId: paymentIntent.id })], {
+                  type: 'application/json',
+                });
+                navigator.sendBeacon('/api/payments/confirm', blob);
+                console.log('[Stripe] Sent confirm via sendBeacon as fallback');
+              } catch (beaconErr) {
+                console.error('[Stripe] sendBeacon also failed:', beaconErr);
+              }
             }
-
-            // Always redirect - even if confirm fails, webhook will handle it
-            const redirectUrl = `${successPath}?payment_intent=${paymentIntent.id}`;
-            console.log('[Stripe] Redirecting to:', redirectUrl);
-
-            // Use window.location for more reliable redirect on Safari
-            window.location.href = redirectUrl;
           };
 
-          // Execute immediately
-          confirmAndRedirect();
+          // Execute immediately - don't await, let it run in background
+          confirmOrder();
+
+          // Also set a timeout to ensure redirect happens even if confirm is slow
+          const redirectUrl = `${successPath}?payment_intent=${paymentIntent.id}`;
+          console.log('[Stripe] Will redirect to:', redirectUrl);
+
+          // Redirect after a short delay to allow confirm to start
+          setTimeout(() => {
+            window.location.href = redirectUrl;
+          }, 500);
         } else {
           console.error('[Stripe] Unexpected payment status:', piStatus);
           setMessage('Payment processing - please wait...');

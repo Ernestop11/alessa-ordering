@@ -8,19 +8,25 @@
 
 /* Begin PBXBuildFile section */
 		2FAD9763203C412B000D30F8 /* config.xml in Resources */ = {isa = PBXBuildFile; fileRef = 2FAD9762203C412B000D30F8 /* config.xml */; };
+		4946A7592EF9F77C006AB7D6 /* BluetoothPrinterPlugin.m in Sources */ = {isa = PBXBuildFile; fileRef = 4946A7572EF9F77B006AB7D6 /* BluetoothPrinterPlugin.m */; };
+		4946A75A2EF9F77C006AB7D6 /* BluetoothPrinterPlugin.swift in Sources */ = {isa = PBXBuildFile; fileRef = 4946A7582EF9F77B006AB7D6 /* BluetoothPrinterPlugin.swift */; };
 		50379B232058CBB4000EE86E /* capacitor.config.json in Resources */ = {isa = PBXBuildFile; fileRef = 50379B222058CBB4000EE86E /* capacitor.config.json */; };
 		504EC3081FED79650016851F /* AppDelegate.swift in Sources */ = {isa = PBXBuildFile; fileRef = 504EC3071FED79650016851F /* AppDelegate.swift */; };
 		504EC30D1FED79650016851F /* Main.storyboard in Resources */ = {isa = PBXBuildFile; fileRef = 504EC30B1FED79650016851F /* Main.storyboard */; };
 		504EC30F1FED79650016851F /* Assets.xcassets in Resources */ = {isa = PBXBuildFile; fileRef = 504EC30E1FED79650016851F /* Assets.xcassets */; };
 		504EC3121FED79650016851F /* LaunchScreen.storyboard in Resources */ = {isa = PBXBuildFile; fileRef = 504EC3101FED79650016851F /* LaunchScreen.storyboard */; };
 		50B271D11FEDC1A000F3C39B /* public in Resources */ = {isa = PBXBuildFile; fileRef = 50B271D01FEDC1A000F3C39B /* public */; };
-		AB382DBB481D7AF923E786DD /* Pods_App.framework in Frameworks */ = {isa = PBXBuildFile; fileRef = 702EA82BAFC6FAC7F660219A /* Pods_App.framework */; };
+		E03836B29C4F67794B07FA68 /* Pods_App.framework in Frameworks */ = {isa = PBXBuildFile; fileRef = E6D18108691DF1BAEE345AC2 /* Pods_App.framework */; };
 		STAR001A2B3C4D5E6F7G8H9I /* StarPrinterPlugin.swift in Sources */ = {isa = PBXBuildFile; fileRef = STAR001A2B3C4D5E6F7G8H9J /* StarPrinterPlugin.swift */; };
 		STAR002A2B3C4D5E6F7G8H9I /* StarIO10 in Frameworks */ = {isa = PBXBuildFile; productRef = STAR002A2B3C4D5E6F7G8H9J /* StarIO10 */; };
 /* End PBXBuildFile section */
 
 /* Begin PBXFileReference section */
+		2AA1AE0021FFF17B8D1003FD /* Pods-App.debug.xcconfig */ = {isa = PBXFileReference; includeInIndex = 1; lastKnownFileType = text.xcconfig; name = "Pods-App.debug.xcconfig"; path = "Target Support Files/Pods-App/Pods-App.debug.xcconfig"; sourceTree = "<group>"; };
 		2FAD9762203C412B000D30F8 /* config.xml */ = {isa = PBXFileReference; lastKnownFileType = text.xml; path = config.xml; sourceTree = "<group>"; };
+		4946A7572EF9F77B006AB7D6 /* BluetoothPrinterPlugin.m */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.c.objc; path = BluetoothPrinterPlugin.m; sourceTree = "<group>"; };
+		4946A7582EF9F77B006AB7D6 /* BluetoothPrinterPlugin.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = BluetoothPrinterPlugin.swift; sourceTree = "<group>"; };
+		4946A75B2EF9F798006AB7D6 /* App-Bridging-Header.h */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.c.h; path = "App-Bridging-Header.h"; sourceTree = "<group>"; };
 		49AF709B2EF0F97B00A1DE65 /* App.entitlements */ = {isa = PBXFileReference; lastKnownFileType = text.plist.entitlements; path = App.entitlements; sourceTree = "<group>"; };
 		50379B222058CBB4000EE86E /* capacitor.config.json */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = text.json; path = capacitor.config.json; sourceTree = "<group>"; };
 		504EC3041FED79650016851F /* AlessaOrdering.app */ = {isa = PBXFileReference; explicitFileType = wrapper.application; includeInIndex = 0; path = AlessaOrdering.app; sourceTree = BUILT_PRODUCTS_DIR; };
@@ -30,9 +36,8 @@
 		504EC3111FED79650016851F /* Base */ = {isa = PBXFileReference; lastKnownFileType = file.storyboard; name = Base; path = Base.lproj/LaunchScreen.storyboard; sourceTree = "<group>"; };
 		504EC3131FED79650016851F /* Info.plist */ = {isa = PBXFileReference; lastKnownFileType = text.plist.xml; path = Info.plist; sourceTree = "<group>"; };
 		50B271D01FEDC1A000F3C39B /* public */ = {isa = PBXFileReference; lastKnownFileType = folder; path = public; sourceTree = "<group>"; };
-		702EA82BAFC6FAC7F660219A /* Pods_App.framework */ = {isa = PBXFileReference; explicitFileType = wrapper.framework; includeInIndex = 0; path = Pods_App.framework; sourceTree = BUILT_PRODUCTS_DIR; };
-		7431509537768C3E08A6DC63 /* Pods-App.release.xcconfig */ = {isa = PBXFileReference; includeInIndex = 1; lastKnownFileType = text.xcconfig; name = "Pods-App.release.xcconfig"; path = "Target Support Files/Pods-App/Pods-App.release.xcconfig"; sourceTree = "<group>"; };
-		99E693EC0F2DD92F978D1F44 /* Pods-App.debug.xcconfig */ = {isa = PBXFileReference; includeInIndex = 1; lastKnownFileType = text.xcconfig; name = "Pods-App.debug.xcconfig"; path = "Target Support Files/Pods-App/Pods-App.debug.xcconfig"; sourceTree = "<group>"; };
+		9E0BB876CFCA117581239A52 /* Pods-App.release.xcconfig */ = {isa = PBXFileReference; includeInIndex = 1; lastKnownFileType = text.xcconfig; name = "Pods-App.release.xcconfig"; path = "Target Support Files/Pods-App/Pods-App.release.xcconfig"; sourceTree = "<group>"; };
+		E6D18108691DF1BAEE345AC2 /* Pods_App.framework */ = {isa = PBXFileReference; explicitFileType = wrapper.framework; includeInIndex = 0; path = Pods_App.framework; sourceTree = BUILT_PRODUCTS_DIR; };
 		STAR001A2B3C4D5E6F7G8H9J /* StarPrinterPlugin.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = StarPrinterPlugin.swift; sourceTree = "<group>"; };
 		STAR003A2B3C4D5E6F7G8H9J /* StarPrinterPlugin.m */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.c.objc; path = StarPrinterPlugin.m; sourceTree = "<group>"; };
 /* End PBXFileReference section */
@@ -43,20 +48,31 @@
 			buildActionMask = 2147483647;
 			files = (
 				STAR002A2B3C4D5E6F7G8H9I /* StarIO10 in Frameworks */,
-				AB382DBB481D7AF923E786DD /* Pods_App.framework in Frameworks */,
+				E03836B29C4F67794B07FA68 /* Pods_App.framework in Frameworks */,
 			);
 			runOnlyForDeploymentPostprocessing = 0;
 		};
 /* End PBXFrameworksBuildPhase section */
 
 /* Begin PBXGroup section */
+		3E3F68C54D6471CB0915E242 /* Frameworks */ = {
+			isa = PBXGroup;
+			children = (
+				E6D18108691DF1BAEE345AC2 /* Pods_App.framework */,
+			);
+			name = Frameworks;
+			sourceTree = "<group>";
+		};
 		504EC2FB1FED79650016851F = {
 			isa = PBXGroup;
 			children = (
+				4946A7572EF9F77B006AB7D6 /* BluetoothPrinterPlugin.m */,
+				4946A7582EF9F77B006AB7D6 /* BluetoothPrinterPlugin.swift */,
 				504EC3061FED79650016851F /* App */,
 				504EC3051FED79650016851F /* Products */,
 				E2205F9AE97D28F9FF961DE2 /* Pods */,
-				C59FCBB817EAD43AF1AE7344 /* Frameworks */,
+				4946A75B2EF9F798006AB7D6 /* App-Bridging-Header.h */,
+				3E3F68C54D6471CB0915E242 /* Frameworks */,
 			);
 			sourceTree = "<group>";
 		};
@@ -86,21 +102,12 @@
 			path = App;
 			sourceTree = "<group>";
 		};
-		C59FCBB817EAD43AF1AE7344 /* Frameworks */ = {
-			isa = PBXGroup;
-			children = (
-				702EA82BAFC6FAC7F660219A /* Pods_App.framework */,
-			);
-			name = Frameworks;
-			sourceTree = "<group>";
-		};
 		E2205F9AE97D28F9FF961DE2 /* Pods */ = {
 			isa = PBXGroup;
 			children = (
-				99E693EC0F2DD92F978D1F44 /* Pods-App.debug.xcconfig */,
-				7431509537768C3E08A6DC63 /* Pods-App.release.xcconfig */,
+				2AA1AE0021FFF17B8D1003FD /* Pods-App.debug.xcconfig */,
+				9E0BB876CFCA117581239A52 /* Pods-App.release.xcconfig */,
 			);
-			name = Pods;
 			path = Pods;
 			sourceTree = "<group>";
 		};
@@ -111,11 +118,11 @@
 			isa = PBXNativeTarget;
 			buildConfigurationList = 504EC3161FED79650016851F /* Build configuration list for PBXNativeTarget "App" */;
 			buildPhases = (
-				B270A2A731BD8B39CE60FE8F /* [CP] Check Pods Manifest.lock */,
+				EC3891E92571FC3159AF7184 /* [CP] Check Pods Manifest.lock */,
 				504EC3001FED79650016851F /* Sources */,
 				504EC3011FED79650016851F /* Frameworks */,
 				504EC3021FED79650016851F /* Resources */,
-				81E2A1626D0016CB0296ABFD /* [CP] Embed Pods Frameworks */,
+				1AF1635E122955F019C4A0A5 /* [CP] Copy Pods Resources */,
 			);
 			buildRules = (
 			);
@@ -141,7 +148,7 @@
 				TargetAttributes = {
 					504EC3031FED79650016851F = {
 						CreatedOnToolsVersion = 9.2;
-						LastSwiftMigration = 1100;
+						LastSwiftMigration = 2620;
 						ProvisioningStyle = Automatic;
 					};
 				};
@@ -184,22 +191,22 @@
 /* End PBXResourcesBuildPhase section */
 
 /* Begin PBXShellScriptBuildPhase section */
-		81E2A1626D0016CB0296ABFD /* [CP] Embed Pods Frameworks */ = {
+		1AF1635E122955F019C4A0A5 /* [CP] Copy Pods Resources */ = {
 			isa = PBXShellScriptBuildPhase;
 			buildActionMask = 2147483647;
 			files = (
 			);
 			inputPaths = (
 			);
-			name = "[CP] Embed Pods Frameworks";
+			name = "[CP] Copy Pods Resources";
 			outputPaths = (
 			);
 			runOnlyForDeploymentPostprocessing = 0;
 			shellPath = /bin/sh;
-			shellScript = "\"${PODS_ROOT}/Target Support Files/Pods-App/Pods-App-frameworks.sh\"\n";
+			shellScript = "\"${PODS_ROOT}/Target Support Files/Pods-App/Pods-App-resources.sh\"\n";
 			showEnvVarsInLog = 0;
 		};
-		B270A2A731BD8B39CE60FE8F /* [CP] Check Pods Manifest.lock */ = {
+		EC3891E92571FC3159AF7184 /* [CP] Check Pods Manifest.lock */ = {
 			isa = PBXShellScriptBuildPhase;
 			buildActionMask = 2147483647;
 			files = (
@@ -228,6 +235,8 @@
 			isa = PBXSourcesBuildPhase;
 			buildActionMask = 2147483647;
 			files = (
+				4946A7592EF9F77C006AB7D6 /* BluetoothPrinterPlugin.m in Sources */,
+				4946A75A2EF9F77C006AB7D6 /* BluetoothPrinterPlugin.swift in Sources */,
 				504EC3081FED79650016851F /* AppDelegate.swift in Sources */,
 				STAR001A2B3C4D5E6F7G8H9I /* StarPrinterPlugin.swift in Sources */,
 			);
@@ -377,12 +386,16 @@
 		};
 		504EC3171FED79650016851F /* Debug */ = {
 			isa = XCBuildConfiguration;
-			baseConfigurationReference = 99E693EC0F2DD92F978D1F44 /* Pods-App.debug.xcconfig */;
+			baseConfigurationReference = 2AA1AE0021FFF17B8D1003FD /* Pods-App.debug.xcconfig */;
 			buildSettings = {
 				ASSETCATALOG_COMPILER_APPICON_NAME = AppIcon;
+				CLANG_ENABLE_MODULES = YES;
+				CLANG_WARN_QUOTED_INCLUDE_IN_FRAMEWORK_HEADER = NO;
+				CLANG_WARN_QUOTED_INCLUDE_IN_FRAMEWORK_HEADER_ERROR = NO;
 				CODE_SIGN_ENTITLEMENTS = App/App.entitlements;
 				CODE_SIGN_STYLE = Automatic;
 				CURRENT_PROJECT_VERSION = 5;
+				GCC_TREAT_WARNINGS_AS_ERRORS = NO;
 				INFOPLIST_FILE = App/Info.plist;
 				IPHONEOS_DEPLOYMENT_TARGET = 15.0;
 				LD_RUNPATH_SEARCH_PATHS = (
@@ -394,6 +407,8 @@
 				PRODUCT_BUNDLE_IDENTIFIER = com.alessa.ordering;
 				PRODUCT_NAME = AlessaOrdering;
 				SWIFT_ACTIVE_COMPILATION_CONDITIONS = DEBUG;
+				SWIFT_OBJC_BRIDGING_HEADER = "App-Bridging-Header.h";
+				SWIFT_OPTIMIZATION_LEVEL = "-Onone";
 				SWIFT_VERSION = 5.0;
 				TARGETED_DEVICE_FAMILY = "1,2";
 			};
@@ -401,12 +416,16 @@
 		};
 		504EC3181FED79650016851F /* Release */ = {
 			isa = XCBuildConfiguration;
-			baseConfigurationReference = 7431509537768C3E08A6DC63 /* Pods-App.release.xcconfig */;
+			baseConfigurationReference = 9E0BB876CFCA117581239A52 /* Pods-App.release.xcconfig */;
 			buildSettings = {
 				ASSETCATALOG_COMPILER_APPICON_NAME = AppIcon;
+				CLANG_ENABLE_MODULES = YES;
+				CLANG_WARN_QUOTED_INCLUDE_IN_FRAMEWORK_HEADER = NO;
+				CLANG_WARN_QUOTED_INCLUDE_IN_FRAMEWORK_HEADER_ERROR = NO;
 				CODE_SIGN_ENTITLEMENTS = App/App.entitlements;
 				CODE_SIGN_STYLE = Automatic;
 				CURRENT_PROJECT_VERSION = 5;
+				GCC_TREAT_WARNINGS_AS_ERRORS = NO;
 				INFOPLIST_FILE = App/Info.plist;
 				IPHONEOS_DEPLOYMENT_TARGET = 15.0;
 				LD_RUNPATH_SEARCH_PATHS = (
@@ -417,6 +436,7 @@
 				PRODUCT_BUNDLE_IDENTIFIER = com.alessa.ordering;
 				PRODUCT_NAME = AlessaOrdering;
 				SWIFT_ACTIVE_COMPILATION_CONDITIONS = "";
+				SWIFT_OBJC_BRIDGING_HEADER = "App-Bridging-Header.h";
 				SWIFT_VERSION = 5.0;
 				TARGETED_DEVICE_FAMILY = "1,2";
 			};

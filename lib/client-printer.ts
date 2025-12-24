@@ -16,8 +16,10 @@ export interface PrinterConfig {
   name: string;
   deviceId?: string; // Bluetooth device ID/address
   ipAddress?: string; // Network printer IP
+  host?: string; // Alias for ipAddress
   port?: number; // Network printer port
   model?: string; // Printer model (ESC/POS, Brother QL, etc.)
+  profile?: string; // Printer profile (escpos-80mm, escpos-58mm, etc.)
 }
 
 export interface TenantInfo {
@@ -354,6 +356,123 @@ async function printWithWebBluetooth(
 }
 
 /**
+ * Try to print via HTTP to the printer directly (some printers support this)
+ * This works if the browser is on the same network as the printer
+ */
+async function tryHttpPrinting(
+  receiptData: string,
+  host: string,
+  httpPort: number = 80
+): Promise<{ success: boolean; error?: string }> {
+  try {
+    // Some ESC/POS printers accept raw POST to their HTTP port
+    const response = await fetch(`http://${host}:${httpPort}/print`, {
+      method: 'POST',
+      headers: {
+        'Content-Type': 'application/octet-stream',
+      },
+      body: receiptData,
+      mode: 'no-cors', // Needed for cross-origin requests to local printers
+    });
+
+    // With no-cors mode, we can't read the response, so we assume success if no exception
+    console.log('[Print] HTTP print request sent (no-cors mode)');
+    return { success: true };
+  } catch (error) {
+    const errorMsg = error instanceof Error ? error.message : 'HTTP print failed';
+    return { success: false, error: errorMsg };
+  }
+}
+
+/**
+ * Print to network printer via server relay API
+ * NOTE: This only works if the VPS can reach the printer.
+ * For local network printers not accessible from VPS, this will fail gracefully.
+ */
+async function printToNetworkPrinterViaRelay(
+  receiptData: string,
+  config: PrinterConfig,
+  orderId: string
+): Promise<{ success: boolean; error?: string }> {
+  const host = config.ipAddress || config.host;
+  const port = config.port || 9100;
+
+  if (!host) {
+    return { success: false, error: 'Network printer host not configured' };
+  }
+
+  // Check if this looks like a local network IP
+  const isLocalNetwork = host.startsWith('192.168.') ||
+    host.startsWith('10.') ||
+    host.startsWith('172.16.') ||
+    host.startsWith('172.17.') ||
+    host.startsWith('172.18.') ||
+    host.startsWith('172.19.') ||
+    host.startsWith('172.20.') ||
+    host.startsWith('172.21.') ||
+    host.startsWith('172.22.') ||
+    host.startsWith('172.23.') ||
+    host.startsWith('172.24.') ||
+    host.startsWith('172.25.') ||
+    host.startsWith('172.26.') ||
+    host.startsWith('172.27.') ||
+    host.startsWith('172.28.') ||
+    host.startsWith('172.29.') ||
+    host.startsWith('172.30.') ||
+    host.startsWith('172.31.');
+
+  if (isLocalNetwork) {
+    console.log(`[Print] Local network printer detected (${host})`);
+
+    // First, try direct HTTP printing from browser (works if printer supports HTTP)
+    console.log('[Print] Attempting direct HTTP print to printer...');
+    const httpResult = await tryHttpPrinting(receiptData, host, 80);
+    if (httpResult.success) {
+      console.log('[Print] ✅ Direct HTTP print succeeded');
+      return { success: true };
+    }
+    console.log('[Print] Direct HTTP print failed, trying relay API...');
+  }
+
+  try {
+    console.log(`[Print] Sending to network printer ${host}:${port} via relay API`);
+
+    // Call server API endpoint to relay print job to network printer
+    const response = await fetch('/api/fulfillment/print-network', {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({
+        host,
+        port,
+        data: receiptData,
+        orderId,
+      }),
+    });
+
+    const result = await response.json();
+
+    if (result.success) {
+      console.log('[Print] ✅ Network printer relay success');
+      return { success: true };
+    } else {
+      // Check for "unreachable" hint - this means VPS can't reach local printer
+      if (result.hint?.includes('local network')) {
+        console.log('[Print] VPS cannot reach local printer - this is expected for local network printers');
+        return {
+          success: false,
+          error: `Printer at ${host} is on a local network not accessible from the server. Manual print required, or use a local print relay service.`,
+        };
+      }
+      return { success: false, error: result.error || 'Unknown error' };
+    }
+  } catch (error) {
+    const errorMsg = error instanceof Error ? error.message : 'Network print failed';
+    console.warn('[Print] Network printer relay failed:', errorMsg);
+    return { success: false, error: errorMsg };
+  }
+}
+
+/**
  * Print order using multi-method fallback system
  * Tries methods in order until one succeeds
  */
@@ -362,6 +481,21 @@ export async function printOrderClientSide(
   tenant: TenantInfo,
   config: PrinterConfig
 ): Promise<{ success: boolean; error?: string }> {
+  // Handle network printers (WiFi thermal printers)
+  if (config.type === 'network') {
+    const host = config.ipAddress || config.host;
+    if (!host) {
+      return { success: false, error: 'Network printer host not configured' };
+    }
+
+    // Generate receipt data
+    const receiptData = generateReceiptData(order, tenant, config);
+
+    // Use the relay API for network printing
+    return printToNetworkPrinterViaRelay(receiptData, config, order.id);
+  }
+
+  // Handle Bluetooth printers
   if (config.type !== 'bluetooth' || !config.deviceId) {
     return { success: false, error: 'Bluetooth printer not configured' };
   }
@@ -375,7 +509,7 @@ export async function printOrderClientSide(
 
   // Generate receipt data once
   const receiptData = generateReceiptData(order, tenant, config);
-  
+
   const methods: Array<{ name: string; fn: () => Promise<{ success: boolean; error?: string }> }> = [];
 
   // Method 1: StarPrinter plugin (if available)
@@ -430,12 +564,12 @@ export async function printOrderClientSide(
   for (const method of methods) {
     console.log(`[Print] Trying ${method.name}...`);
     const result = await method.fn();
-    
+
     if (result.success) {
       console.log(`[Print] ✅ Success with ${method.name}`);
       return { success: true };
     }
-    
+
     errors.push(`${method.name}: ${result.error || 'Unknown error'}`);
     console.warn(`[Print] ❌ ${method.name} failed:`, result.error);
   }
@@ -445,6 +579,14 @@ export async function printOrderClientSide(
     success: false,
     error: `All printing methods failed:\n${errors.join('\n')}\n\nPlease check:\n1. Printer is powered on\n2. Printer is paired in iPad Settings > Bluetooth\n3. PassPRNT app is installed (for Star printers)`,
   };
+}
+
+/**
+ * Check if network printing is available (for client-side network printers)
+ */
+export function isNetworkPrintingAvailable(): boolean {
+  // Network printing via relay API is always available when online
+  return typeof window !== 'undefined' && navigator.onLine;
 }
 
 /**

@@ -11,8 +11,19 @@ class AppDelegate: UIResponder, UIApplicationDelegate {
         // Prevent screen from sleeping for kiosk mode
         UIApplication.shared.isIdleTimerDisabled = true
 
-        // Note: StarPrinterPlugin is auto-registered via CAP_PLUGIN macro in StarPrinterPlugin.m
-        print("[AppDelegate] App launched - StarPrinterPlugin should be auto-registered via CAP_PLUGIN macro")
+        // Explicitly ensure plugins are registered
+        print("[AppDelegate] App launched - Registering plugins...")
+        
+        // Force plugin class loading to ensure registration
+        // This helps ensure CAP_PLUGIN macro works correctly
+        _ = StarPrinterPlugin.self
+        print("[AppDelegate] StarPrinterPlugin class loaded")
+        
+        // Force BluetoothPrinterPlugin class loading to ensure registration
+        _ = BluetoothPrinterPlugin.self
+        print("[AppDelegate] BluetoothPrinterPlugin class loaded")
+        
+        print("[AppDelegate] All plugins loaded and registered")
 
         return true
     }

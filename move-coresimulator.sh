@@ -40,3 +40,5 @@ echo "   Destination: $CORESIMULATOR_DEST"
 
 
 
+
+

@@ -7,7 +7,7 @@
 'use client';
 
 import { useEffect, useRef } from 'react';
-import { printOrderClientSide, isBluetoothPrintingAvailable, disconnectStarPrinter, type PrinterConfig } from '@/lib/client-printer';
+import { printOrderClientSide, isBluetoothPrintingAvailable, isNetworkPrintingAvailable, disconnectStarPrinter, type PrinterConfig } from '@/lib/client-printer';
 import type { FulfillmentOrder } from './useOrderFeed';
 
 interface UseAutoPrintOptions {
@@ -44,7 +44,7 @@ export function useAutoPrint({ enabled, printerConfig, newOrder, tenant }: UseAu
     if (!enabled) return;
 
     // Skip if no printer configured
-    if (!printerConfig || printerConfig.type === 'none' || !printerConfig.deviceId) {
+    if (!printerConfig || printerConfig.type === 'none') {
       return;
     }
 
@@ -57,14 +57,35 @@ export function useAutoPrint({ enabled, printerConfig, newOrder, tenant }: UseAu
     // Skip if currently printing
     if (isPrinting.current) return;
 
-    // Only print Bluetooth printers (client-side)
-    if (printerConfig.type !== 'bluetooth') {
-      return;
+    // Handle Bluetooth printers
+    if (printerConfig.type === 'bluetooth') {
+      if (!printerConfig.deviceId) {
+        console.warn('[Auto-Print] Bluetooth printer deviceId not configured');
+        return;
+      }
+      if (!isBluetoothPrintingAvailable()) {
+        console.warn('[Auto-Print] Bluetooth printing not available');
+        return;
+      }
     }
 
-    // Check if Bluetooth printing is available
-    if (!isBluetoothPrintingAvailable()) {
-      console.warn('[Auto-Print] Bluetooth printing not available');
+    // Handle Network printers (WiFi thermal printers)
+    if (printerConfig.type === 'network') {
+      const host = (printerConfig as any).ipAddress || (printerConfig as any).host;
+      if (!host) {
+        console.warn('[Auto-Print] Network printer host not configured');
+        return;
+      }
+      if (!isNetworkPrintingAvailable()) {
+        console.warn('[Auto-Print] Network printing not available (offline)');
+        return;
+      }
+      console.log(`[Auto-Print] Network printer configured: ${host}:${printerConfig.port || 9100}`);
+    }
+
+    // Skip unsupported printer types
+    if (printerConfig.type !== 'bluetooth' && printerConfig.type !== 'network') {
+      console.log('[Auto-Print] Unsupported printer type:', printerConfig.type);
       return;
     }
 
