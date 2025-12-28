@@ -63,6 +63,21 @@ export function CartDrawer({ open, onClose }: CartDrawerProps) {
                 className="flex gap-3 rounded-2xl border border-white/10 bg-white/5 p-3 transition-all hover:border-[#DC2626]/30 cursor-pointer"
                 onClick={() => setEditingItem(item)}
               >
+                {/* Item Image - with error handling */}
+                {item.image && (
+                  <div className="relative h-16 w-16 flex-shrink-0 overflow-hidden rounded-xl border border-white/10 bg-white/5">
+                    <img
+                      src={item.image}
+                      alt={item.name}
+                      className="w-full h-full object-cover"
+                      onError={(e) => {
+                        // Hide broken image container
+                        const target = e.target as HTMLImageElement;
+                        target.parentElement!.style.display = 'none';
+                      }}
+                    />
+                  </div>
+                )}
                 {/* Item Details */}
                 <div className="flex-1 min-w-0 flex flex-col justify-between">
                   <div>

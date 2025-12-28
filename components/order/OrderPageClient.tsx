@@ -2577,8 +2577,11 @@ export default function OrderPageClient({
       <div className="relative z-10">
       {/* Warm Header - Sticky with safe area support for iPhone notch/Dynamic Island */}
       <header
-        className={`fixed top-0 left-0 right-0 z-40 bg-[#8B2323] shadow-lg transition-all duration-300`}
-        style={{ paddingTop: 'env(safe-area-inset-top, 0px)' }}
+        className={`fixed top-0 left-0 right-0 z-40 shadow-lg transition-all duration-300`}
+        style={{
+          paddingTop: 'env(safe-area-inset-top, 0px)',
+          background: 'linear-gradient(to bottom, #5C1515 0%, #7A1E1E 30%, #8B2323 60%, #9A2828 100%)'
+        }}
       >
         <div className="mx-auto max-w-7xl px-4">
           {/* Top Row - Logo & Actions */}

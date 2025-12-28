@@ -84,7 +84,15 @@
       "Bash(npm outdated:*)",
       "Bash(pod outdated:*)",
       "Bash(pod deintegrate:*)",
-      "Bash(osascript:*)"
+      "Bash(osascript:*)",
+      "Bash(du:*)",
+      "Bash(# Find all video files in common locations echo \"\"Finding video files...\"\" find ~/Downloads ~/Desktop ~/Documents ~/Movies -type f \\\\\\( -iname \"\"*.mp4\"\" -o -iname \"\"*.mov\"\" -o -iname \"\"*.avi\"\" -o -iname \"\"*.mkv\"\" -o -iname \"\"*.m4v\"\" -o -iname \"\"*.wmv\"\" -o -iname \"\"*.webm\"\" \\\\\\))",
+      "Bash(# Create personal videos folder and move all videos echo \"\"Creating folder and moving videos...\"\" mkdir -p \"\"/Volumes/AlessaCloud/Personal/Videos\"\" # Move all videos from Downloads find ~/Downloads -type f \\\\\\( -iname \"\"*.mp4\"\" -o -iname \"\"*.mov\"\" -o -iname \"\"*.avi\"\" -o -iname \"\"*.mkv\"\" -o -iname \"\"*.m4v\"\" -o -iname \"\"*.wmv\"\" -o -iname \"\"*.webm\"\" \\\\\\) -exec mv {} \"\"/Volumes/AlessaCloud/Personal/Videos/\"\" \\\\; # Move all videos from Desktop find ~/Desktop -type f \\\\\\( -iname \"\"*.mp4\"\" -o -iname \"\"*.mov\"\" -o -iname \"\"*.avi\"\" -o -iname \"\"*.mkv\"\" -o -iname \"\"*.m4v\"\" -o -iname \"\"*.wmv\"\" -o -iname \"\"*.webm\"\" \\\\\\) -exec mv {} \"\"/Volumes/AlessaCloud/Personal/Videos/\"\" \\\\; # Move all videos from Documents find ~/Documents -type f \\\\\\( -iname \"\"*.mp4\"\" -o -iname \"\"*.mov\"\" -o -iname \"\"*.avi\"\" -o -iname \"\"*.mkv\"\" -o -iname \"\"*.m4v\"\" -o -iname \"\"*.wmv\"\" -o -iname \"\"*.webm\"\" \\\\\\) -exec mv {} \"\"/Volumes/AlessaCloud/Personal/Videos/\"\" \\\\; # Move all videos from Movies find ~/Movies -type f \\\\\\( -iname \"\"*.mp4\"\" -o -iname \"\"*.mov\"\" -o -iname \"\"*.avi\"\" -o -iname \"\"*.mkv\"\" -o -iname \"\"*.m4v\"\" -o -iname \"\"*.wmv\"\" -o -iname \"\"*.webm\"\" \\\\\\) -exec mv {} \"\"/Volumes/AlessaCloud/Personal/Videos/\"\" \\\\; echo \"\"\"\" echo \"\"✅ Videos moved to /Volumes/AlessaCloud/Personal/Videos/\"\" echo \"\"\"\" echo \"\"Videos in folder:\"\" ls -lh \"\"/Volumes/AlessaCloud/Personal/Videos/\"\")",
+      "Bash(__NEW_LINE__ echo \"\")",
+      "Bash(# Check current count echo \"\"Videos transferred so far:\"\" ls \"\"/Volumes/AlessaCloud/Personal/Videos/\"\")",
+      "Bash(# Check what print relay scripts exist locally echo \"\"=== Print Relay on External Drive ===\"\" ls -la /Volumes/AlessaCloud/scripts/print-relay/ || echo \"\"Not found\"\" echo \"\"\"\" echo \"\"=== Print Relay in Project ===\"\" ls -la /Users/ernestoponce/alessa-ordering/scripts/local-print-relay.mjs || echo \"\"Not found\"\" echo \"\"\"\" echo \"\"=== Checking for any running print processes ===\"\" ps aux)",
+      "Bash(# Test creating a payment intent curl -s -X POST \"\"https://lasreinascolusa.com/api/orders/create-payment-intent\"\" \\\\ -H \"\"Content-Type: application/json\"\" \\\\ -H \"\"Cookie: \"\" \\\\ -d ''{ \"\"items\"\": [{\"\"menuItemId\"\": \"\"test\"\", \"\"quantity\"\": 1, \"\"price\"\": 10.00, \"\"name\"\": \"\"Test Item\"\"}], \"\"fulfillmentMethod\"\": \"\"pickup\"\", \"\"customerName\"\": \"\"Test Customer\"\", \"\"customerPhone\"\": \"\"555-1234\"\", \"\"customerEmail\"\": \"\"test@example.com\"\", \"\"subtotal\"\": 10.00, \"\"tax\"\": 0.83, \"\"total\"\": 10.83 }'' | python3 -m json.tool)",
+      "Bash(nc:*)"
     ],
     "deny": [],
     "ask": []
