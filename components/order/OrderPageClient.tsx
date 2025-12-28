@@ -2647,8 +2647,7 @@ export default function OrderPageClient({
                 className="relative flex-shrink-0 group md:hidden"
                 aria-label="Open menu"
               >
-                <div className={`absolute bg-gradient-to-r from-amber-400 via-red-500 to-amber-400 rounded-full opacity-75 group-hover:opacity-100 blur-sm animate-pulse transition-all duration-300 ${isScrolled ? '-inset-0.5' : '-inset-1'}`} />
-                <div className={`relative rounded-full bg-white shadow-xl ring-2 ring-white/50 transition-all duration-300 ${isScrolled ? 'p-0.5' : 'p-1'}`}>
+                <div className={`relative rounded-full bg-white shadow-lg ring-2 ring-white/30 transition-all duration-300 ${isScrolled ? 'p-0.5' : 'p-1'}`}>
                   {tenant.logoUrl ? (
                     <Image
                       src={tenant.logoUrl}

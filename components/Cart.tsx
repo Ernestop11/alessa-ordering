@@ -650,90 +650,6 @@ export default function Cart() {
             ))}
           </section>
 
-          {/* Upsell Bundles Section */}
-          {tenant.upsellBundles && tenant.upsellBundles.length > 0 && (
-            <section className="space-y-3 rounded-xl sm:rounded-2xl border-2 border-dashed p-4" style={{ borderColor: `${primaryColor}40`, backgroundColor: `${primaryColor}05` }}>
-              <div className="flex items-center gap-2">
-                <span className="text-xl">🔥</span>
-                <h3 className="text-sm sm:text-base font-bold text-gray-900">Don&apos;t Forget!</h3>
-              </div>
-              <div className="space-y-2">
-                {tenant.upsellBundles
-                  .filter(bundle => !bundle.surfaces || bundle.surfaces.includes('cart') || bundle.surfaces.includes('checkout'))
-                  .slice(0, 3)
-                  .map((bundle) => {
-                    const isInCart = items.some(item => item.name === bundle.name && item.isUpsell);
-                    return (
-                      <div
-                        key={bundle.id}
-                        className={`flex items-center gap-3 rounded-xl border p-3 transition-all ${
-                          isInCart
-                            ? 'border-green-300 bg-green-50'
-                            : 'border-gray-200 bg-white hover:border-gray-300 hover:shadow-sm'
-                        }`}
-                      >
-                        {bundle.image && (
-                          <div className="relative h-12 w-12 flex-shrink-0 overflow-hidden rounded-lg bg-gray-100">
-                            <img
-                              src={bundle.image}
-                              alt={bundle.name}
-                              className="w-full h-full object-cover"
-                              onError={(e) => {
-                                const target = e.target as HTMLImageElement;
-                                target.parentElement!.style.display = 'none';
-                              }}
-                            />
-                          </div>
-                        )}
-                        <div className="flex-1 min-w-0">
-                          <div className="flex items-center gap-2">
-                            <p className="text-sm font-bold text-gray-900 truncate">{bundle.name}</p>
-                            {bundle.tag && (
-                              <span
-                                className="flex-shrink-0 px-1.5 py-0.5 text-[10px] font-bold rounded-full text-white"
-                                style={{ backgroundColor: primaryColor }}
-                              >
-                                {bundle.tag}
-                              </span>
-                            )}
-                          </div>
-                          <p className="text-xs text-gray-600 truncate">{bundle.description}</p>
-                        </div>
-                        <div className="flex items-center gap-2 flex-shrink-0">
-                          <span className="text-sm font-bold" style={{ color: primaryColor }}>
-                            +${bundle.price.toFixed(2)}
-                          </span>
-                          {isInCart ? (
-                            <span className="px-2 py-1 text-xs font-bold text-green-700 bg-green-100 rounded-lg">
-                              ✓ Added
-                            </span>
-                          ) : (
-                            <button
-                              onClick={() => {
-                                addToCart({
-                                  id: `upsell-${bundle.id}-${Date.now()}`,
-                                  name: bundle.name,
-                                  price: bundle.price,
-                                  quantity: 1,
-                                  image: bundle.image,
-                                  description: bundle.description,
-                                  isUpsell: true,
-                                });
-                              }}
-                              className="px-3 py-1.5 text-xs font-bold text-white rounded-lg transition-all hover:scale-105 active:scale-95"
-                              style={{ backgroundColor: primaryColor }}
-                            >
-                              {bundle.cta || 'Add'}
-                            </button>
-                          )}
-                        </div>
-                      </div>
-                    );
-                  })}
-              </div>
-            </section>
-          )}
-
           <section className="space-y-4 sm:space-y-6 rounded-xl sm:rounded-2xl border border-gray-100 bg-gray-50 p-4 sm:p-6">
             <h3 className="text-base sm:text-lg font-bold text-gray-900">Order Details</h3>
               <div className="grid gap-3 sm:gap-4 sm:grid-cols-2">
@@ -908,7 +824,7 @@ export default function Cart() {
 
               {/* Membership Toggle */}
               {membershipProgram && (
-                <div 
+                <div
                   className="rounded-xl border-2 border-dashed p-4"
                   style={{
                     borderColor: `${primaryColor}40`,
@@ -935,6 +851,98 @@ export default function Cart() {
                       </p>
                     </div>
                   </label>
+                </div>
+              )}
+
+              {/* Upsell Bundles Section - styled like cart items */}
+              {tenant.upsellBundles && tenant.upsellBundles.length > 0 && (
+                <div className="space-y-3">
+                  <div className="flex items-center gap-2">
+                    <span className="text-lg">🔥</span>
+                    <h4 className="text-sm font-bold text-gray-900">Complete Your Order</h4>
+                  </div>
+                  {tenant.upsellBundles
+                    .filter(bundle => !bundle.surfaces || bundle.surfaces.includes('cart') || bundle.surfaces.includes('checkout'))
+                    .slice(0, 3)
+                    .map((bundle) => {
+                      const isInCart = items.some(item => item.name === bundle.name && item.isUpsell);
+                      return (
+                        <article
+                          key={bundle.id}
+                          className={`group flex gap-3 sm:gap-4 rounded-xl sm:rounded-2xl border p-3 sm:p-4 shadow-sm transition-all ${
+                            isInCart
+                              ? 'border-green-300 bg-green-50'
+                              : 'border-gray-200 bg-white hover:border-gray-300 hover:shadow-md'
+                          }`}
+                        >
+                          <div className="relative h-16 w-16 sm:h-20 sm:w-20 flex-shrink-0 overflow-hidden rounded-lg sm:rounded-xl bg-gray-100 shadow-sm">
+                            {bundle.image ? (
+                              <img
+                                src={bundle.image}
+                                alt={bundle.name}
+                                className="w-full h-full object-cover transition-transform group-hover:scale-110"
+                                onError={(e) => {
+                                  const target = e.target as HTMLImageElement;
+                                  target.parentElement!.style.display = 'none';
+                                }}
+                              />
+                            ) : (
+                              <div className="flex h-full w-full items-center justify-center text-lg font-bold text-gray-400">
+                                {bundle.name.charAt(0)}
+                              </div>
+                            )}
+                          </div>
+                          <div className="flex flex-1 flex-col gap-1 min-w-0">
+                            <div className="flex items-start justify-between gap-2">
+                              <div className="flex-1 min-w-0">
+                                <div className="flex items-center gap-2">
+                                  <p className="text-sm sm:text-base font-bold text-gray-900 truncate">{bundle.name}</p>
+                                  {bundle.tag && (
+                                    <span
+                                      className="flex-shrink-0 px-1.5 py-0.5 text-[10px] font-bold rounded-full text-white"
+                                      style={{ backgroundColor: primaryColor }}
+                                    >
+                                      {bundle.tag}
+                                    </span>
+                                  )}
+                                </div>
+                                {bundle.description && (
+                                  <p className="mt-0.5 text-xs text-gray-600 line-clamp-2">{bundle.description}</p>
+                                )}
+                              </div>
+                            </div>
+                            <div className="mt-auto flex items-center justify-between gap-2">
+                              <span className="text-sm sm:text-lg font-bold text-gray-900">
+                                ${bundle.price.toFixed(2)}
+                              </span>
+                              {isInCart ? (
+                                <span className="px-3 py-1.5 text-xs font-bold text-green-700 bg-green-100 rounded-lg">
+                                  ✓ Added
+                                </span>
+                              ) : (
+                                <button
+                                  onClick={() => {
+                                    addToCart({
+                                      id: `upsell-${bundle.id}-${Date.now()}`,
+                                      name: bundle.name,
+                                      price: bundle.price,
+                                      quantity: 1,
+                                      image: bundle.image,
+                                      description: bundle.description,
+                                      isUpsell: true,
+                                    });
+                                  }}
+                                  className="px-4 py-2 text-xs sm:text-sm font-bold text-white rounded-lg transition-all hover:scale-105 active:scale-95"
+                                  style={{ backgroundColor: primaryColor }}
+                                >
+                                  {bundle.cta || '+ Add to Order'}
+                                </button>
+                              )}
+                            </div>
+                          </div>
+                        </article>
+                      );
+                    })}
                 </div>
               )}
             </section>

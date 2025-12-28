@@ -287,20 +287,16 @@ export default function MobileNavDrawer({
             }}
           >
             <div className="flex items-center gap-3">
-              <div className="relative">
-                {/* Glowing ring effect like header logo */}
-                <div className="absolute -inset-0.5 bg-gradient-to-r from-amber-400 via-red-500 to-amber-400 rounded-full opacity-75 blur-sm animate-pulse" />
-                <div className="relative w-12 h-12 rounded-full bg-white p-1 shadow-xl ring-2 ring-white/50 flex items-center justify-center">
-                  {tenant.logoUrl ? (
-                    <img
-                      src={tenant.logoUrl}
-                      alt={tenant.name}
-                      className="w-10 h-10 rounded-full object-cover"
-                    />
-                  ) : (
-                    <span className="text-2xl">🍽️</span>
-                  )}
-                </div>
+              <div className="w-12 h-12 rounded-full bg-white p-1 shadow-lg ring-2 ring-white/30 flex items-center justify-center">
+                {tenant.logoUrl ? (
+                  <img
+                    src={tenant.logoUrl}
+                    alt={tenant.name}
+                    className="w-10 h-10 rounded-full object-cover"
+                  />
+                ) : (
+                  <span className="text-2xl">🍽️</span>
+                )}
               </div>
               <div>
                 <h2 className="font-bold text-white text-lg">{tenant.name}</h2>
