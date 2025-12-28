@@ -1994,11 +1994,16 @@ export default function OrderPageClient({
     if (!featuredItem) return null;
 
     const handleFeaturedClick = () => {
+      console.log('[Featured] Clicked, featuredItem:', featuredItem);
       if (featuredItem.id) {
         // Find and open the item
         const item = menuItems.find(i => i.id === featuredItem.id);
+        console.log('[Featured] Found item:', item);
         if (item) {
           setSelectedMenuItem(item);
+        } else {
+          // If we can't find the exact item, show notification
+          showNotification(`${featuredItem.name} - tap items below to order`);
         }
       } else {
         // Scroll to menu
@@ -2006,7 +2011,7 @@ export default function OrderPageClient({
         if (firstSection) {
           const element = document.getElementById(`section-${firstSection.id}`);
           if (element) {
-            const offset = 100;
+            const offset = 180;
             const elementPosition = element.getBoundingClientRect().top + window.scrollY;
             window.scrollTo({ top: elementPosition - offset, behavior: isSafariBrowser ? 'auto' : 'smooth' });
           }
@@ -2015,15 +2020,16 @@ export default function OrderPageClient({
     };
 
     return (
-      <section key="mobile-featured" className="md:hidden relative mb-4">
+      <section key="mobile-featured" className="md:hidden relative mt-2 mb-6 mx-4">
         {/* Clickable container - using native button for best touch support */}
         <button
           type="button"
           onClick={handleFeaturedClick}
-          className="relative w-full text-left block focus:outline-none active:opacity-95"
+          className="relative w-full text-left block focus:outline-none active:scale-[0.98] transition-transform touch-manipulation rounded-2xl overflow-hidden shadow-xl"
+          style={{ zIndex: 1 }}
         >
           {/* Featured Image - 16:9 aspect ratio */}
-          <div className="relative aspect-[16/9] w-full overflow-hidden">
+          <div className="relative aspect-[16/9] w-full overflow-hidden rounded-2xl">
             {featuredItem.displayImage ? (
               <Image
                 src={featuredItem.displayImage}
@@ -2038,15 +2044,15 @@ export default function OrderPageClient({
               <div className="flex items-center justify-center h-full bg-[#2a2a2a] text-6xl">🍽️</div>
             )}
             {/* Gradient overlay */}
-            <div className="absolute inset-0 bg-gradient-to-t from-black/90 via-black/30 to-transparent" />
+            <div className="absolute inset-0 bg-gradient-to-t from-black/90 via-black/30 to-transparent pointer-events-none" />
 
             {/* HOT badge */}
-            <div className="absolute top-3 right-3 px-2.5 py-1 rounded-full bg-gradient-to-r from-[#FF4444] to-[#FF6B00] text-white text-[10px] font-black shadow-lg flex items-center gap-1">
+            <div className="absolute top-3 right-3 px-2.5 py-1 rounded-full bg-gradient-to-r from-[#FF4444] to-[#FF6B00] text-white text-[10px] font-black shadow-lg flex items-center gap-1 pointer-events-none">
               🔥 HOT
             </div>
 
             {/* Content overlay at bottom */}
-            <div className="absolute bottom-0 left-0 right-0 p-4">
+            <div className="absolute bottom-0 left-0 right-0 p-4 pointer-events-none">
               <div className="flex items-end justify-between gap-3">
                 <div className="flex-1 min-w-0">
                   <h3 className="text-xl font-black text-white mb-0.5 drop-shadow-lg uppercase tracking-wide">
@@ -3005,7 +3011,7 @@ export default function OrderPageClient({
       <div className="h-[52px] sm:hidden" />
 
       {/* Position-based sections BEFORE menu (hero, quickInfo, featuredCarousel, and early banners) */}
-      <div className="relative z-0">
+      <div className="relative">
         {renderSectionsBeforeMenu()}
       </div>
 
