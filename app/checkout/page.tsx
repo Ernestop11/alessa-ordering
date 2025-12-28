@@ -4,7 +4,7 @@ import { useState, useEffect, useMemo } from 'react';
 import { useRouter, useSearchParams } from 'next/navigation';
 import { useCart } from '@/lib/store/cart';
 import { useTenantTheme } from '@/components/TenantThemeProvider';
-import { ArrowLeft } from 'lucide-react';
+import { ArrowLeft, CreditCard, Trash2, Check } from 'lucide-react';
 import { loadStripe } from '@stripe/stripe-js';
 import {
   Elements,
@@ -37,6 +37,25 @@ function getStripePromise(stripeAccount?: string): Promise<Stripe | null> {
   return stripePromiseCache[cacheKey];
 }
 
+// Saved Payment Method interface
+interface SavedPaymentMethod {
+  id: string;
+  brand: string;
+  last4: string;
+  expMonth?: number;
+  expYear?: number;
+  isDefault?: boolean;
+}
+
+// Brand icons
+const brandIcons: Record<string, string> = {
+  visa: '💳',
+  mastercard: '💳',
+  amex: '💳',
+  discover: '💳',
+  unknown: '💳',
+};
+
 // Combined Payment Form Component
 interface PaymentFormProps {
   totalAmount: number;
@@ -47,6 +66,9 @@ interface PaymentFormProps {
   onSuccess: (paymentIntentId: string) => void;
   onError: (message: string) => void;
   primaryColor: string;
+  savedCards: SavedPaymentMethod[];
+  onRefreshCards: () => void;
+  isLoggedIn: boolean;
 }
 
 function PaymentForm({
@@ -58,6 +80,9 @@ function PaymentForm({
   onSuccess,
   onError,
   primaryColor,
+  savedCards,
+  onRefreshCards,
+  isLoggedIn,
 }: PaymentFormProps) {
   const stripe = useStripe();
   const elements = useElements();
@@ -66,13 +91,16 @@ function PaymentForm({
   const [processing, setProcessing] = useState(false);
   const [clientSecret, setClientSecret] = useState<string | null>(null);
   const [paymentIntentId, setPaymentIntentId] = useState<string | null>(null);
+  const [selectedCard, setSelectedCard] = useState<string | null>(null);
+  const [saveCard, setSaveCard] = useState(true); // Default to save card for logged in users
+  const [showNewCard, setShowNewCard] = useState(savedCards.length === 0);
 
   // Check if form is valid
   const isFormValid = customerInfo.name && customerInfo.email && customerInfo.phone &&
     (orderType === 'pickup' || customerInfo.address);
 
   // Create payment intent
-  const createPaymentIntent = async () => {
+  const createPaymentIntent = async (paymentMethodId?: string) => {
     const order = {
       items: items.map((item) => ({
         menuItemId: extractMenuItemId(item.id),
@@ -91,7 +119,11 @@ function PaymentForm({
     const response = await fetch('/api/payments/intent', {
       method: 'POST',
       headers: { 'Content-Type': 'application/json' },
-      body: JSON.stringify({ order }),
+      body: JSON.stringify({
+        order,
+        saveCard: isLoggedIn && saveCard && !paymentMethodId,
+        paymentMethodId, // For one-click pay with saved card
+      }),
     });
 
     if (!response.ok) {
@@ -103,6 +135,77 @@ function PaymentForm({
     setPaymentIntentId(data.paymentIntentId);
     setClientSecret(data.clientSecret);
     return data;
+  };
+
+  // Handle saved card payment
+  const handleSavedCardPayment = async (cardId: string) => {
+    if (!isFormValid) {
+      onError('Please fill in all required fields');
+      return;
+    }
+
+    setProcessing(true);
+    setSelectedCard(cardId);
+
+    try {
+      const data = await createPaymentIntent(cardId);
+
+      // If payment succeeded immediately (off_session)
+      if (data.success && data.status === 'succeeded') {
+        onSuccess(data.paymentIntentId);
+        return;
+      }
+
+      // If requires authentication (3D Secure)
+      if (data.requiresAction && stripe && data.clientSecret) {
+        const { error, paymentIntent } = await stripe.confirmCardPayment(data.clientSecret);
+        if (error) {
+          onError(error.message || 'Payment authentication failed');
+          setProcessing(false);
+          return;
+        }
+        if (paymentIntent?.status === 'succeeded') {
+          onSuccess(data.paymentIntentId);
+        } else {
+          onError('Payment was not successful');
+          setProcessing(false);
+        }
+        return;
+      }
+
+      // Otherwise proceed with client-side confirmation
+      if (stripe && data.clientSecret) {
+        const { error, paymentIntent } = await stripe.confirmCardPayment(data.clientSecret);
+        if (error) {
+          onError(error.message || 'Payment failed');
+          setProcessing(false);
+          return;
+        }
+        if (paymentIntent?.status === 'succeeded') {
+          onSuccess(data.paymentIntentId);
+        }
+      }
+    } catch (err) {
+      onError(err instanceof Error ? err.message : 'Payment failed');
+      setProcessing(false);
+    }
+  };
+
+  // Delete saved card
+  const handleDeleteCard = async (cardId: string) => {
+    try {
+      const res = await fetch('/api/customers/payment-methods', {
+        method: 'DELETE',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ paymentMethodId: cardId }),
+      });
+
+      if (res.ok) {
+        onRefreshCards();
+      }
+    } catch (err) {
+      console.error('Failed to delete card:', err);
+    }
   };
 
   // Setup Apple Pay
@@ -252,74 +355,178 @@ function PaymentForm({
 
   return (
     <div className="space-y-4">
-      {/* Apple Pay Button - shown first and prominently */}
-      {canPayWithApplePay && paymentRequest && (
-        <div className={!isFormValid ? 'opacity-50 pointer-events-none' : ''}>
-          <PaymentRequestButtonElement
-            options={{
-              paymentRequest,
-              style: {
-                paymentRequestButton: {
-                  type: 'buy',
-                  theme: 'dark',
-                  height: '52px',
-                },
-              },
+      {/* Saved Cards Section */}
+      {savedCards.length > 0 && !showNewCard && (
+        <div className="space-y-3">
+          <div className="flex items-center justify-between">
+            <h3 className="text-sm font-medium text-white/80">Saved Cards</h3>
+            <button
+              onClick={() => setShowNewCard(true)}
+              className="text-xs text-[#FBBF24] hover:underline"
+            >
+              + Use new card
+            </button>
+          </div>
+          <div className="space-y-2">
+            {savedCards.map((card) => (
+              <div
+                key={card.id}
+                className={`relative flex items-center gap-3 rounded-xl border p-3 cursor-pointer transition-all ${
+                  selectedCard === card.id
+                    ? 'border-[#DC2626] bg-[#DC2626]/10'
+                    : 'border-white/10 bg-white/5 hover:border-white/20'
+                }`}
+                onClick={() => !processing && handleSavedCardPayment(card.id)}
+              >
+                <div className="flex-shrink-0 w-10 h-6 rounded bg-gradient-to-br from-gray-600 to-gray-800 flex items-center justify-center text-xs font-bold text-white uppercase">
+                  {card.brand.slice(0, 4)}
+                </div>
+                <div className="flex-1">
+                  <p className="text-sm font-medium text-white">
+                    •••• {card.last4}
+                  </p>
+                  {card.expMonth && card.expYear && (
+                    <p className="text-xs text-white/50">
+                      Expires {card.expMonth}/{card.expYear.toString().slice(-2)}
+                    </p>
+                  )}
+                </div>
+                <button
+                  onClick={(e) => {
+                    e.stopPropagation();
+                    handleDeleteCard(card.id);
+                  }}
+                  className="p-1.5 rounded-full hover:bg-red-500/20 text-white/40 hover:text-red-400 transition"
+                >
+                  <Trash2 className="w-4 h-4" />
+                </button>
+                {selectedCard === card.id && (
+                  <div className="absolute right-12 top-1/2 -translate-y-1/2">
+                    <div className="h-4 w-4 animate-spin rounded-full border-2 border-white/30 border-t-white"></div>
+                  </div>
+                )}
+              </div>
+            ))}
+          </div>
+
+          {/* Pay with saved card button */}
+          <button
+            onClick={() => selectedCard && handleSavedCardPayment(selectedCard)}
+            disabled={!isFormValid || processing || !selectedCard}
+            className="w-full rounded-xl py-4 text-base font-bold text-white transition-all active:scale-[0.98] disabled:opacity-50"
+            style={{
+              background: `linear-gradient(135deg, ${primaryColor} 0%, ${primaryColor}dd 100%)`,
+              boxShadow: `0 4px 12px ${primaryColor}40`,
             }}
-          />
-          {!isFormValid && (
-            <p className="text-xs text-center text-white/50 mt-2">
-              Fill in your info above to enable Apple Pay
-            </p>
+          >
+            <span className="flex items-center justify-center gap-2">
+              <CreditCard className="w-5 h-5" />
+              Pay ${totalAmount.toFixed(2)} with Saved Card
+            </span>
+          </button>
+        </div>
+      )}
+
+      {/* New Card / Apple Pay Section */}
+      {(savedCards.length === 0 || showNewCard) && (
+        <>
+          {/* Back to saved cards */}
+          {savedCards.length > 0 && showNewCard && (
+            <button
+              onClick={() => setShowNewCard(false)}
+              className="text-sm text-[#FBBF24] hover:underline mb-2"
+            >
+              ← Back to saved cards
+            </button>
           )}
-        </div>
-      )}
 
-      {/* Divider */}
-      {canPayWithApplePay && (
-        <div className="relative">
-          <div className="absolute inset-0 flex items-center">
-            <div className="w-full border-t border-white/10"></div>
-          </div>
-          <div className="relative flex justify-center text-xs">
-            <span className="bg-[#0A1628] px-3 text-white/40">or pay with card</span>
-          </div>
-        </div>
-      )}
+          {/* Apple Pay Button - shown first and prominently */}
+          {canPayWithApplePay && paymentRequest && (
+            <div className={!isFormValid ? 'opacity-50 pointer-events-none' : ''}>
+              <PaymentRequestButtonElement
+                options={{
+                  paymentRequest,
+                  style: {
+                    paymentRequestButton: {
+                      type: 'buy',
+                      theme: 'dark',
+                      height: '52px',
+                    },
+                  },
+                }}
+              />
+              {!isFormValid && (
+                <p className="text-xs text-center text-white/50 mt-2">
+                  Fill in your info above to enable Apple Pay
+                </p>
+              )}
+            </div>
+          )}
 
-      {/* Card Input */}
-      <div className="rounded-xl border border-white/10 bg-white/5 p-4">
-        <CardElement
-          options={{
-            style: {
-              base: {
-                fontSize: '16px',
-                color: '#ffffff',
-                fontFamily: 'system-ui, -apple-system, sans-serif',
-                '::placeholder': {
-                  color: 'rgba(255, 255, 255, 0.4)',
+          {/* Divider */}
+          {canPayWithApplePay && (
+            <div className="relative">
+              <div className="absolute inset-0 flex items-center">
+                <div className="w-full border-t border-white/10"></div>
+              </div>
+              <div className="relative flex justify-center text-xs">
+                <span className="bg-[#0A1628] px-3 text-white/40">or pay with card</span>
+              </div>
+            </div>
+          )}
+
+          {/* Card Input */}
+          <div className="rounded-xl border border-white/10 bg-white/5 p-4">
+            <CardElement
+              options={{
+                style: {
+                  base: {
+                    fontSize: '16px',
+                    color: '#ffffff',
+                    fontFamily: 'system-ui, -apple-system, sans-serif',
+                    '::placeholder': {
+                      color: 'rgba(255, 255, 255, 0.4)',
+                    },
+                  },
+                  invalid: {
+                    color: '#ef4444',
+                  },
                 },
-              },
-              invalid: {
-                color: '#ef4444',
-              },
-            },
-          }}
-        />
-      </div>
+              }}
+            />
+          </div>
 
-      {/* Pay Button */}
-      <button
-        onClick={handleCardPayment}
-        disabled={!isFormValid || processing}
-        className="w-full rounded-xl py-4 text-base font-bold text-white transition-all active:scale-[0.98] disabled:opacity-50"
-        style={{
-          background: `linear-gradient(135deg, ${primaryColor} 0%, ${primaryColor}dd 100%)`,
-          boxShadow: `0 4px 12px ${primaryColor}40`,
-        }}
-      >
-        Pay ${totalAmount.toFixed(2)}
-      </button>
+          {/* Save Card Checkbox - only for logged in users */}
+          {isLoggedIn && (
+            <label className="flex items-center gap-3 cursor-pointer">
+              <div
+                className={`w-5 h-5 rounded border flex items-center justify-center transition-all ${
+                  saveCard
+                    ? 'bg-[#DC2626] border-[#DC2626]'
+                    : 'border-white/30 bg-transparent'
+                }`}
+                onClick={() => setSaveCard(!saveCard)}
+              >
+                {saveCard && <Check className="w-3 h-3 text-white" />}
+              </div>
+              <span className="text-sm text-white/70">Save card for faster checkout next time</span>
+            </label>
+          )}
+
+          {/* Pay Button */}
+          <button
+            onClick={handleCardPayment}
+            disabled={!isFormValid || processing}
+            className="w-full rounded-xl py-4 text-base font-bold text-white transition-all active:scale-[0.98] disabled:opacity-50"
+            style={{
+              background: `linear-gradient(135deg, ${primaryColor} 0%, ${primaryColor}dd 100%)`,
+              boxShadow: `0 4px 12px ${primaryColor}40`,
+            }}
+          >
+            Pay ${totalAmount.toFixed(2)}
+          </button>
+        </>
+      )}
     </div>
   );
 }
@@ -341,6 +548,8 @@ export default function CheckoutPage() {
   const [stripeAccount, setStripeAccount] = useState<string | null>(null);
   const [stripeReady, setStripeReady] = useState(false);
   const [error, setError] = useState<string | null>(null);
+  const [savedCards, setSavedCards] = useState<SavedPaymentMethod[]>([]);
+  const [isLoggedIn, setIsLoggedIn] = useState(false);
 
   const stripePromise = useMemo(() => {
     if (stripeAccount) {
@@ -350,21 +559,42 @@ export default function CheckoutPage() {
     return getStripePromise();
   }, [stripeAccount]);
 
-  // Fetch Stripe config
+  // Fetch Stripe config and saved cards
   useEffect(() => {
-    async function fetchStripeConfig() {
+    async function fetchData() {
       try {
-        const res = await fetch('/api/payments/config');
-        const data = await res.json();
-        setStripeAccount(data.stripeAccount);
+        // Fetch Stripe config
+        const configRes = await fetch('/api/payments/config');
+        const configData = await configRes.json();
+        setStripeAccount(configData.stripeAccount);
+
+        // Fetch saved payment methods
+        const cardsRes = await fetch('/api/customers/payment-methods');
+        const cardsData = await cardsRes.json();
+        if (cardsData.paymentMethods && cardsData.paymentMethods.length > 0) {
+          setSavedCards(cardsData.paymentMethods);
+          setIsLoggedIn(true);
+        }
+
         setStripeReady(true);
       } catch (err) {
-        console.error('[Checkout] Failed to fetch Stripe config:', err);
+        console.error('[Checkout] Failed to fetch data:', err);
         setStripeReady(true); // Still allow checkout with platform account
       }
     }
-    fetchStripeConfig();
+    fetchData();
   }, []);
+
+  // Refresh saved cards
+  const refreshCards = async () => {
+    try {
+      const res = await fetch('/api/customers/payment-methods');
+      const data = await res.json();
+      setSavedCards(data.paymentMethods || []);
+    } catch (err) {
+      console.error('Failed to refresh cards:', err);
+    }
+  };
 
   const handlePaymentSuccess = async (paymentIntentId: string) => {
     // Confirm order creation
@@ -412,6 +642,11 @@ export default function CheckoutPage() {
             <ArrowLeft className="w-5 h-5" />
           </button>
           <h1 className="text-lg font-semibold">Checkout</h1>
+          {isLoggedIn && savedCards.length > 0 && (
+            <span className="ml-auto text-xs bg-[#FBBF24]/20 text-[#FBBF24] px-2 py-0.5 rounded-full">
+              {savedCards.length} card{savedCards.length > 1 ? 's' : ''} saved
+            </span>
+          )}
         </div>
       </header>
 
@@ -522,6 +757,9 @@ export default function CheckoutPage() {
                 onSuccess={handlePaymentSuccess}
                 onError={(msg) => setError(msg)}
                 primaryColor={tenant.primaryColor || '#DC2626'}
+                savedCards={savedCards}
+                onRefreshCards={refreshCards}
+                isLoggedIn={isLoggedIn}
               />
             </Elements>
           ) : (

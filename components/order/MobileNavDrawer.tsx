@@ -1,12 +1,19 @@
 "use client";
 
 import { useEffect, useState } from 'react';
+import { useRouter, useSearchParams } from 'next/navigation';
 import { useTenantTheme } from '../TenantThemeProvider';
 import { useCart } from '../../lib/store/cart';
 
 interface MenuSection {
   id: string;
   name: string;
+}
+
+interface SavedPaymentMethod {
+  id: string;
+  brand: string;
+  last4: string;
 }
 
 interface OrderItem {
@@ -43,7 +50,13 @@ interface MobileNavDrawerProps {
   onLoginClick?: () => void;
   onCheckoutClick?: () => void;
   cateringEnabled: boolean;
-  customerData: { name?: string; loyaltyPoints?: number; orders?: PastOrder[] } | null;
+  customerData: {
+    name?: string;
+    loyaltyPoints?: number;
+    orders?: PastOrder[];
+    email?: string;
+    phone?: string;
+  } | null;
   isAccessibilityOpen: boolean;
   menuSections?: MenuSection[];
 }
@@ -64,21 +77,44 @@ export default function MobileNavDrawer({
   menuSections = [],
 }: MobileNavDrawerProps) {
   const tenant = useTenantTheme();
+  const router = useRouter();
+  const searchParams = useSearchParams();
+  const tenantSlug = searchParams.get('tenant') || tenant.slug;
   const [mounted, setMounted] = useState(false);
   const [reorderingOrderId, setReorderingOrderId] = useState<string | null>(null);
-  const { addToCart, items: cartItems } = useCart();
+  const [savedCards, setSavedCards] = useState<SavedPaymentMethod[]>([]);
+  const [oneClickPayingOrderId, setOneClickPayingOrderId] = useState<string | null>(null);
+  const [paymentError, setPaymentError] = useState<string | null>(null);
+  const { addToCart, items: cartItems, clearCart } = useCart();
 
   useEffect(() => {
     if (isOpen) {
       setMounted(true);
       document.body.style.overflow = 'hidden';
+      // Fetch saved payment methods when drawer opens
+      if (customerData) {
+        fetchSavedCards();
+      }
     } else {
       document.body.style.overflow = '';
     }
     return () => {
       document.body.style.overflow = '';
     };
-  }, [isOpen]);
+  }, [isOpen, customerData]);
+
+  // Fetch saved payment methods
+  const fetchSavedCards = async () => {
+    try {
+      const res = await fetch('/api/customers/payment-methods');
+      const data = await res.json();
+      if (data.paymentMethods) {
+        setSavedCards(data.paymentMethods);
+      }
+    } catch (err) {
+      console.error('Failed to fetch saved cards:', err);
+    }
+  };
 
   // Quick reorder function - adds all items from a past order to cart
   const handleQuickReorder = async (order: PastOrder) => {
@@ -106,6 +142,103 @@ export default function MobileNavDrawer({
     onClose();
     if (onCheckoutClick) {
       setTimeout(() => onCheckoutClick(), 300);
+    }
+  };
+
+  // One-click pay with saved card
+  const handleOneClickPay = async (order: PastOrder, cardId: string) => {
+    if (!customerData?.name || !customerData?.email || !customerData?.phone) {
+      setPaymentError('Missing customer information');
+      return;
+    }
+
+    setOneClickPayingOrderId(order.id);
+    setPaymentError(null);
+
+    try {
+      // Extract menuItemId properly (remove timestamp suffix if present)
+      const extractMenuItemId = (id: string) => {
+        const uuidPattern = /^([0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12})/i;
+        const match = id.match(uuidPattern);
+        return match ? match[1] : id;
+      };
+
+      // Build items from past order
+      const items = order.items
+        .filter(item => item.menuItem && item.menuItem.available)
+        .map(item => ({
+          menuItemId: extractMenuItemId(item.menuItem!.id),
+          quantity: item.quantity,
+          price: item.menuItem!.price,
+        }));
+
+      const orderData = {
+        items,
+        subtotalAmount: order.totalAmount,
+        totalAmount: order.totalAmount,
+        customerName: customerData.name,
+        customerEmail: customerData.email,
+        customerPhone: customerData.phone,
+        fulfillmentMethod: order.fulfillmentMethod || 'pickup',
+      };
+
+      // Create payment intent with saved card
+      const response = await fetch('/api/payments/intent', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({
+          order: orderData,
+          paymentMethodId: cardId,
+        }),
+      });
+
+      const data = await response.json();
+
+      if (!response.ok) {
+        throw new Error(data.error || 'Payment failed');
+      }
+
+      // Payment succeeded
+      if (data.success && data.status === 'succeeded') {
+        // Confirm order creation
+        await fetch('/api/payments/confirm', {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({ paymentIntentId: data.paymentIntentId }),
+        });
+
+        clearCart();
+        onClose();
+        router.push(`/order/success${tenantSlug ? `?tenant=${tenantSlug}` : ''}`);
+        return;
+      }
+
+      // If requires 3D Secure, fall back to regular checkout
+      if (data.requiresAction || data.clientSecret) {
+        // Add items to cart and go to checkout
+        for (const item of order.items) {
+          if (item.menuItem && item.menuItem.available) {
+            addToCart({
+              id: `${item.menuItem.id}-${Date.now()}-${Math.random()}`,
+              name: item.menuItem.name,
+              price: item.menuItem.price,
+              quantity: item.quantity,
+              image: item.menuItem.image,
+              description: item.menuItem.description,
+            });
+          }
+        }
+        onClose();
+        router.push(`/checkout${tenantSlug ? `?tenant=${tenantSlug}` : ''}`);
+        return;
+      }
+
+      throw new Error('Unexpected payment response');
+    } catch (err) {
+      console.error('One-click payment error:', err);
+      setPaymentError(err instanceof Error ? err.message : 'Payment failed');
+    } finally {
+      setOneClickPayingOrderId(null);
     }
   };
 
@@ -229,7 +362,25 @@ export default function MobileNavDrawer({
           {/* Quick Reorder Section - For logged in users with past orders */}
           {customerData && customerData.orders && customerData.orders.length > 0 && (
             <div className="p-4 border-b border-white/10">
-              <p className="text-xs uppercase tracking-[0.3em] text-[#FBBF24]/60 mb-3">⚡ Quick Reorder</p>
+              <div className="flex items-center justify-between mb-3">
+                <p className="text-xs uppercase tracking-[0.3em] text-[#FBBF24]/60">⚡ Quick Reorder</p>
+                {savedCards.length > 0 && (
+                  <span className="text-xs text-white/40 flex items-center gap-1">
+                    <span className="w-4 h-2.5 rounded bg-gradient-to-br from-gray-500 to-gray-700 text-[6px] font-bold text-white flex items-center justify-center">
+                      {savedCards[0].brand.slice(0, 2).toUpperCase()}
+                    </span>
+                    ••{savedCards[0].last4}
+                  </span>
+                )}
+              </div>
+
+              {/* Payment Error */}
+              {paymentError && (
+                <div className="mb-3 rounded-lg border border-red-500/20 bg-red-500/10 px-3 py-2 text-xs text-red-400">
+                  {paymentError}
+                </div>
+              )}
+
               <div className="space-y-2">
                 {customerData.orders.slice(0, 3).map((order) => (
                   <div
@@ -245,20 +396,60 @@ export default function MobileNavDrawer({
                         </p>
                         <p className="text-xs text-[#FBBF24]">${order.totalAmount.toFixed(2)}</p>
                       </div>
-                      <button
-                        onClick={() => handleQuickReorder(order)}
-                        disabled={reorderingOrderId === order.id}
-                        className="flex-shrink-0 px-3 py-1.5 rounded-lg bg-[#DC2626] text-white text-xs font-bold hover:bg-[#B91C1C] transition-all disabled:opacity-50"
-                      >
-                        {reorderingOrderId === order.id ? (
-                          <span className="flex items-center gap-1">
-                            <span className="w-3 h-3 border-2 border-white/30 border-t-white rounded-full animate-spin" />
-                            Adding...
-                          </span>
-                        ) : (
-                          '🔄 Reorder'
-                        )}
-                      </button>
+                    </div>
+
+                    {/* Action buttons */}
+                    <div className="flex gap-2">
+                      {/* One-click pay with saved card */}
+                      {savedCards.length > 0 && customerData.email && customerData.phone ? (
+                        <button
+                          onClick={() => handleOneClickPay(order, savedCards[0].id)}
+                          disabled={oneClickPayingOrderId === order.id || reorderingOrderId === order.id}
+                          className="flex-1 px-3 py-2 rounded-lg text-white text-xs font-bold transition-all disabled:opacity-50"
+                          style={{
+                            background: `linear-gradient(135deg, #DC2626 0%, #FBBF24 50%, #DC2626 100%)`,
+                            boxShadow: `0 4px 12px rgba(220, 38, 38, 0.3)`,
+                          }}
+                        >
+                          {oneClickPayingOrderId === order.id ? (
+                            <span className="flex items-center justify-center gap-1">
+                              <span className="w-3 h-3 border-2 border-white/30 border-t-white rounded-full animate-spin" />
+                              Paying...
+                            </span>
+                          ) : (
+                            <span className="flex items-center justify-center gap-1.5">
+                              <span>💳</span>
+                              Pay ${order.totalAmount.toFixed(2)} ••{savedCards[0].last4}
+                            </span>
+                          )}
+                        </button>
+                      ) : (
+                        <button
+                          onClick={() => handleQuickReorder(order)}
+                          disabled={reorderingOrderId === order.id}
+                          className="flex-1 px-3 py-2 rounded-lg bg-[#DC2626] text-white text-xs font-bold hover:bg-[#B91C1C] transition-all disabled:opacity-50"
+                        >
+                          {reorderingOrderId === order.id ? (
+                            <span className="flex items-center justify-center gap-1">
+                              <span className="w-3 h-3 border-2 border-white/30 border-t-white rounded-full animate-spin" />
+                              Adding...
+                            </span>
+                          ) : (
+                            '🔄 Reorder'
+                          )}
+                        </button>
+                      )}
+
+                      {/* Edit cart button - always show if saved card exists */}
+                      {savedCards.length > 0 && (
+                        <button
+                          onClick={() => handleQuickReorder(order)}
+                          disabled={reorderingOrderId === order.id}
+                          className="px-3 py-2 rounded-lg bg-white/10 border border-white/20 text-white/80 text-xs font-medium hover:bg-white/20 transition-all disabled:opacity-50"
+                        >
+                          {reorderingOrderId === order.id ? '...' : 'Edit'}
+                        </button>
+                      )}
                     </div>
                   </div>
                 ))}

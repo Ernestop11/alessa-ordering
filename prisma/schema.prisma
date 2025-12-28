@@ -615,6 +615,7 @@ model Customer {
   loyaltyPoints            Int               @default(0)
   membershipTier           String?
   accessibilityPreferences Json?
+  stripeCustomerId         String?           // Stripe Customer ID for saved payment methods
   createdAt                DateTime          @default(now())
   updatedAt                DateTime          @updatedAt
   tenant                   Tenant            @relation(fields: [tenantId], references: [id], onDelete: Cascade)
@@ -623,6 +624,7 @@ model Customer {
 
   @@index([tenantId, email])
   @@index([tenantId, phone])
+  @@index([stripeCustomerId])
 }
 
 model IntegrationLog {
