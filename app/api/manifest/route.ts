@@ -41,6 +41,18 @@ export async function GET() {
 
     const staticTheme = tenant ? getStaticTenantTheme(tenant.slug) : getStaticTenantTheme();
 
+    // DEBUG: Return debug info in response (REMOVE AFTER DEBUGGING)
+    if (!tenant) {
+      return NextResponse.json({
+        debug: true,
+        headerSlug,
+        cookieSlug,
+        tenantSlug,
+        allCookies: cookieStore.getAll().map(c => c.name),
+        headerKeys: Array.from(headersList.keys()),
+      }, { status: 200 });
+    }
+
     // Determine tenant name for PWA
     const tenantName = tenant?.name || 'Alessa Cloud';
     const shortName = tenant?.name
