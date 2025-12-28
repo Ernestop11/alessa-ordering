@@ -17,16 +17,25 @@ export async function GET() {
     const headersList = headers();
     const cookieStore = cookies();
 
-    const tenantSlug =
-      headersList.get('x-tenant-slug') ||
-      cookieStore.get('x-tenant-slug')?.value;
+    const headerSlug = headersList.get('x-tenant-slug');
+    const cookieSlug = cookieStore.get('x-tenant-slug')?.value;
+    const tenantSlug = headerSlug || cookieSlug;
+
+    // Debug logging - REMOVE after debugging
+    console.log('[manifest] DEBUG:', {
+      headerSlug,
+      cookieSlug,
+      tenantSlug,
+      allCookies: cookieStore.getAll().map(c => c.name).join(','),
+    });
 
     let tenant = null;
     if (tenantSlug) {
       try {
         tenant = await getTenantBySlug(tenantSlug);
-      } catch {
-        // Tenant lookup failed
+        console.log('[manifest] Tenant found:', tenant?.slug, tenant?.name);
+      } catch (err) {
+        console.error('[manifest] Tenant lookup error:', err);
       }
     }
 
