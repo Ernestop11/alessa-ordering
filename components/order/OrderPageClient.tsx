@@ -1988,13 +1988,88 @@ export default function OrderPageClient({
       .sort((a, b) => a.position - b.position);
   }, [frontendUISections]);
 
-  // Render Hero Section
+  // Render Mobile Featured Item (replaces hero on mobile)
+  const renderMobileFeaturedItem = () => {
+    const featuredItem = carouselItems[0];
+    if (!featuredItem) return null;
+
+    return (
+      <section key="mobile-featured" className="md:hidden relative overflow-hidden bg-gradient-to-b from-[#5C1515] to-[#8B0000]">
+        <div className="relative">
+          {/* Featured Image */}
+          <div className="relative aspect-[4/3] w-full">
+            {featuredItem.displayImage ? (
+              <Image
+                src={featuredItem.displayImage}
+                alt={featuredItem.name || 'Featured dish'}
+                fill
+                className="object-cover"
+                sizes="100vw"
+                unoptimized={featuredItem.displayImage?.startsWith('/tenant/')}
+              />
+            ) : (
+              <div className="flex items-center justify-center h-full bg-[#2a2a2a] text-6xl">🍽️</div>
+            )}
+            {/* Gradient overlay */}
+            <div className="absolute inset-0 bg-gradient-to-t from-black/80 via-black/30 to-transparent" />
+
+            {/* HOT badge */}
+            <div className="absolute top-4 right-4 px-3 py-1.5 rounded-full bg-gradient-to-r from-[#FF4444] to-[#FF6B00] text-white text-xs font-black shadow-lg flex items-center gap-1">
+              🔥 HOT
+            </div>
+          </div>
+
+          {/* Content overlay at bottom */}
+          <div className="absolute bottom-0 left-0 right-0 p-4 pb-6">
+            <div className="flex items-end justify-between gap-4">
+              <div className="flex-1">
+                <h3 className="text-xl font-black text-white mb-1 drop-shadow-lg">
+                  {featuredItem.name || 'Featured Special'}
+                </h3>
+                <p className="text-white/80 text-sm line-clamp-1">
+                  {featuredItem.description || 'Authentic Mexican flavors'}
+                </p>
+              </div>
+              <button
+                onClick={() => {
+                  if (featuredItem.id) {
+                    // Find and open the item
+                    const item = menuItems.find(i => i.id === featuredItem.id);
+                    if (item) {
+                      setSelectedMenuItem(item);
+                    }
+                  } else {
+                    // Scroll to menu
+                    const firstSection = navSections[0];
+                    if (firstSection) {
+                      const element = document.getElementById(`section-${firstSection.id}`);
+                      if (element) {
+                        const offset = 100;
+                        const elementPosition = element.getBoundingClientRect().top + window.scrollY;
+                        window.scrollTo({ top: elementPosition - offset, behavior: isSafariBrowser ? 'auto' : 'smooth' });
+                      }
+                    }
+                  }
+                }}
+                className="flex-shrink-0 flex flex-col items-center gap-1 px-5 py-3 rounded-xl bg-gradient-to-r from-[#FFD700] to-[#FFA500] text-[#8B0000] font-black shadow-xl"
+              >
+                <span className="text-lg">From ${featuredItem.price?.toFixed(2) || '14.00'}</span>
+                <span className="text-xs uppercase tracking-wide">Order Now</span>
+              </button>
+            </div>
+          </div>
+        </div>
+      </section>
+    );
+  };
+
+  // Render Hero Section (Desktop only)
   const renderHeroSection = () => {
     const heroConfig = frontendUISections.find(s => s.type === 'hero');
     if (heroConfig && !heroConfig.enabled) return null;
 
     return (
-      <section key="hero-section" className="relative overflow-hidden min-h-[500px] md:min-h-[600px]">
+      <section key="hero-section" className="relative overflow-hidden hidden md:block min-h-[500px] md:min-h-[600px]">
         {/* Rich Holiday Red Background */}
         <div className="absolute inset-0 bg-gradient-to-br from-[#8B0000] via-[#B22222] to-[#6B0F0F]" />
 
@@ -2058,15 +2133,24 @@ export default function OrderPageClient({
               </div>
             </div>
             <div className="relative flex items-center justify-center">
-              <div className="relative w-full max-w-md mx-auto">
-                <div className="absolute inset-0 rounded-full bg-gradient-to-br from-[#FFD700]/60 to-[#FF6B6B]/40 blur-[80px] scale-125 animate-pulse" style={{ animationDuration: '2s' }} />
-                <div className="relative aspect-square rounded-[40px] overflow-hidden border-4 border-[#FFD700]/50 shadow-[0_0_60px_rgba(255,215,0,0.3)] bg-[#2a2a2a]">
+              <button
+                onClick={() => {
+                  const featuredItem = carouselItems[0];
+                  if (featuredItem?.id) {
+                    const item = menuItems.find(i => i.id === featuredItem.id);
+                    if (item) setSelectedMenuItem(item);
+                  }
+                }}
+                className="relative w-full max-w-md mx-auto cursor-pointer group"
+              >
+                <div className="absolute inset-0 rounded-full bg-gradient-to-br from-[#FFD700]/60 to-[#FF6B6B]/40 blur-[80px] scale-125 animate-pulse group-hover:from-[#FFD700]/80 group-hover:to-[#FF6B6B]/60 transition-all" style={{ animationDuration: '2s' }} />
+                <div className="relative aspect-square rounded-[40px] overflow-hidden border-4 border-[#FFD700]/50 shadow-[0_0_60px_rgba(255,215,0,0.3)] bg-[#2a2a2a] group-hover:border-[#FFD700]/80 group-hover:shadow-[0_0_80px_rgba(255,215,0,0.5)] transition-all">
                   {carouselItems[0]?.displayImage ? (
                     <Image
                       src={carouselItems[0].displayImage}
                       alt="Featured dish"
                       fill
-                      className="object-cover"
+                      className="object-cover group-hover:scale-105 transition-transform duration-300"
                       sizes="(max-width: 768px) 100vw, 450px"
                       unoptimized={carouselItems[0].displayImage.startsWith('/tenant/')}
                     />
@@ -2077,13 +2161,17 @@ export default function OrderPageClient({
                   <div className="absolute top-4 right-4 px-4 py-2 rounded-full bg-gradient-to-r from-[#FF4444] to-[#FF6B00] text-white text-sm font-black shadow-lg animate-pulse flex items-center gap-1.5">
                     🔥 HOT
                   </div>
+                  {/* Tap to Order overlay */}
+                  <div className="absolute bottom-4 left-1/2 -translate-x-1/2 px-4 py-2 rounded-full bg-black/60 backdrop-blur-sm text-white text-sm font-bold opacity-0 group-hover:opacity-100 transition-opacity">
+                    Tap to Order
+                  </div>
                 </div>
                 {carouselItems[0]?.price && (
-                  <div className="absolute -bottom-6 left-1/2 -translate-x-1/2 px-8 py-3 rounded-2xl bg-gradient-to-r from-[#FFD700] to-[#FFA500] text-[#8B0000] font-black text-xl shadow-2xl shadow-[#FFD700]/40">
+                  <div className="absolute -bottom-6 left-1/2 -translate-x-1/2 px-8 py-3 rounded-2xl bg-gradient-to-r from-[#FFD700] to-[#FFA500] text-[#8B0000] font-black text-xl shadow-2xl shadow-[#FFD700]/40 group-hover:scale-105 transition-transform">
                     From ${carouselItems[0].price.toFixed(2)}
                   </div>
                 )}
-              </div>
+              </button>
             </div>
           </div>
         </div>
@@ -2471,6 +2559,10 @@ export default function OrderPageClient({
 
     for (const section of sectionsBeforeMenu) {
       if (section.type === 'hero') {
+        // Mobile: Show featured item instead of full hero
+        const mobileEl = renderMobileFeaturedItem();
+        if (mobileEl) elements.push(mobileEl);
+        // Desktop: Show full hero
         const heroEl = renderHeroSection();
         if (heroEl) elements.push(heroEl);
       } else if (section.type === 'quickInfo') {
@@ -2495,6 +2587,10 @@ export default function OrderPageClient({
 
     for (const section of sectionsAfterMenu) {
       if (section.type === 'hero') {
+        // Mobile: Show featured item instead of full hero
+        const mobileEl = renderMobileFeaturedItem();
+        if (mobileEl) elements.push(mobileEl);
+        // Desktop: Show full hero
         const heroEl = renderHeroSection();
         if (heroEl) elements.push(heroEl);
       } else if (section.type === 'quickInfo') {
@@ -2518,6 +2614,10 @@ export default function OrderPageClient({
 
     for (const section of sortedSections) {
       if (section.type === 'hero') {
+        // Mobile: Show featured item instead of full hero
+        const mobileEl = renderMobileFeaturedItem();
+        if (mobileEl) renderedSections.push(mobileEl);
+        // Desktop: Show full hero
         const heroEl = renderHeroSection();
         if (heroEl) renderedSections.push(heroEl);
       } else if (section.type === 'quickInfo') {
@@ -2638,12 +2738,12 @@ export default function OrderPageClient({
               </nav>
             </div>
 
-            {/* Center-Left - Tenant Name + Tagline (Mobile Only) */}
-            <div className="md:hidden flex flex-col justify-center ml-1">
-              <span className={`font-bold text-white leading-tight transition-all duration-300 ${isScrolled ? 'text-sm' : 'text-base'}`}>
+            {/* Center - Tenant Name + Tagline (Mobile Only) */}
+            <div className="md:hidden flex-1 flex flex-col items-center justify-center">
+              <span className={`font-bold text-white leading-tight transition-all duration-300 text-center ${isScrolled ? 'text-sm' : 'text-base'}`}>
                 Las Reinas
               </span>
-              <span className={`text-[#FBBF24] font-medium leading-tight transition-all duration-300 ${isScrolled ? 'text-[10px]' : 'text-xs'}`}>
+              <span className={`text-[#FBBF24] font-medium leading-tight transition-all duration-300 text-center ${isScrolled ? 'text-[10px]' : 'text-xs'}`}>
                 Taqueria y Carniceria
               </span>
             </div>
