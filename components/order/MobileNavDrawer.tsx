@@ -87,6 +87,11 @@ export default function MobileNavDrawer({
   const [paymentError, setPaymentError] = useState<string | null>(null);
   const { addToCart, items: cartItems, clearCart } = useCart();
 
+  // PWA Install state
+  const [deferredPrompt, setDeferredPrompt] = useState<any>(null);
+  const [isInstalled, setIsInstalled] = useState(false);
+  const [isIOS, setIsIOS] = useState(false);
+
   useEffect(() => {
     if (isOpen) {
       setMounted(true);
@@ -102,6 +107,55 @@ export default function MobileNavDrawer({
       document.body.style.overflow = '';
     };
   }, [isOpen, customerData]);
+
+  // PWA Install prompt handling
+  useEffect(() => {
+    // Check if already installed
+    if (window.matchMedia('(display-mode: standalone)').matches) {
+      setIsInstalled(true);
+      return;
+    }
+
+    // Check for iOS
+    const isIOSDevice = /iPad|iPhone|iPod/.test(navigator.userAgent) && !(window as any).MSStream;
+    setIsIOS(isIOSDevice);
+
+    // Listen for beforeinstallprompt event (Chrome, Edge, etc.)
+    const handleBeforeInstallPrompt = (e: Event) => {
+      e.preventDefault();
+      setDeferredPrompt(e);
+    };
+
+    window.addEventListener('beforeinstallprompt', handleBeforeInstallPrompt);
+
+    // Listen for app installed event
+    window.addEventListener('appinstalled', () => {
+      setIsInstalled(true);
+      setDeferredPrompt(null);
+    });
+
+    return () => {
+      window.removeEventListener('beforeinstallprompt', handleBeforeInstallPrompt);
+    };
+  }, []);
+
+  // Handle PWA install button click
+  const handleInstallClick = async () => {
+    if (isIOS) {
+      // Show iOS instructions
+      alert('To install this app:\n\n1. Tap the Share button (📤) at the bottom of Safari\n2. Scroll down and tap "Add to Home Screen"\n3. Tap "Add" in the top right');
+      return;
+    }
+
+    if (deferredPrompt) {
+      deferredPrompt.prompt();
+      const { outcome } = await deferredPrompt.userChoice;
+      if (outcome === 'accepted') {
+        setIsInstalled(true);
+      }
+      setDeferredPrompt(null);
+    }
+  };
 
   // Fetch saved payment methods
   const fetchSavedCards = async () => {
@@ -566,6 +620,22 @@ export default function MobileNavDrawer({
               >
                 <span className="text-lg">🚪</span>
                 <span className="font-medium">Sign Out</span>
+              </button>
+            </div>
+          )}
+
+          {/* PWA Install Button */}
+          {!isInstalled && (deferredPrompt || isIOS) && (
+            <div className="p-4 border-t border-white/10">
+              <button
+                onClick={handleInstallClick}
+                className="w-full flex items-center justify-center gap-3 py-3 px-4 rounded-xl border-2 border-dashed border-[#FBBF24]/50 bg-[#FBBF24]/10 text-[#FBBF24] hover:bg-[#FBBF24]/20 transition-all"
+              >
+                <span className="text-xl">📲</span>
+                <div className="text-left">
+                  <p className="font-bold text-sm">Add to Home Screen</p>
+                  <p className="text-xs text-[#FBBF24]/70">Quick access to {tenant.name}</p>
+                </div>
               </button>
             </div>
           )}

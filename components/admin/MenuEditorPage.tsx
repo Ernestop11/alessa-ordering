@@ -88,7 +88,7 @@ interface FrontendUISection {
 
 export default function MenuEditorPage() {
   const router = useRouter();
-  const [activeTab, setActiveTab] = useState<'menu' | 'catering' | 'grocery' | 'panaderia' | 'frontend'>('menu');
+  const [activeTab, setActiveTab] = useState<'menu' | 'catering' | 'grocery' | 'panaderia' | 'frontend' | 'cartUpsells'>('menu');
   const [grocerySubTab, setGrocerySubTab] = useState<'items' | 'bundles' | 'weekend'>('items');
   const [sections, setSections] = useState<MenuSection[]>([]);
   const [items, setItems] = useState<MenuItem[]>([]);
@@ -121,6 +121,22 @@ export default function MenuEditorPage() {
   // Add-ons state
   const [enabledAddOns, setEnabledAddOns] = useState<string[]>([]);
   const [availableAddOns, setAvailableAddOns] = useState<any[]>([]);
+
+  // Cart Upsells state
+  interface CartUpsell {
+    id: string;
+    name: string;
+    description?: string;
+    price: number;
+    image?: string;
+    tag?: string;
+    cta?: string;
+    surfaces?: string[];
+    menuItemId?: string;
+  }
+  const [cartUpsells, setCartUpsells] = useState<CartUpsell[]>([]);
+  const [editingCartUpsell, setEditingCartUpsell] = useState<CartUpsell | null>(null);
+  const [savingCartUpsell, setSavingCartUpsell] = useState(false);
 
   const fetchSections = async () => {
     try {
@@ -893,6 +909,64 @@ export default function MenuEditorPage() {
     }
   };
 
+  // Fetch cart upsells
+  const fetchCartUpsells = async () => {
+    try {
+      const res = await fetch('/api/admin/upsell-bundles', { cache: 'no-store' });
+      if (!res.ok) throw new Error('Failed to fetch cart upsells');
+      const data = await res.json();
+      setCartUpsells(data.upsellBundles || []);
+    } catch (err) {
+      console.error('Failed to fetch cart upsells', err);
+      setCartUpsells([]);
+    }
+  };
+
+  // Save cart upsell
+  const handleSaveCartUpsell = async (upsell: CartUpsell) => {
+    setSavingCartUpsell(true);
+    try {
+      if (upsell.id.startsWith('new-')) {
+        // Create new
+        const res = await fetch('/api/admin/upsell-bundles', {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify(upsell),
+        });
+        if (!res.ok) throw new Error('Failed to create upsell');
+      } else {
+        // Update existing - update the whole array
+        const updatedUpsells = cartUpsells.map((u) => (u.id === upsell.id ? upsell : u));
+        const res = await fetch('/api/admin/upsell-bundles', {
+          method: 'PUT',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({ upsellBundles: updatedUpsells }),
+        });
+        if (!res.ok) throw new Error('Failed to update upsell');
+      }
+      await fetchCartUpsells();
+      setEditingCartUpsell(null);
+    } catch (err) {
+      console.error('Failed to save cart upsell', err);
+      alert('Failed to save cart upsell');
+    } finally {
+      setSavingCartUpsell(false);
+    }
+  };
+
+  // Delete cart upsell
+  const handleDeleteCartUpsell = async (upsellId: string) => {
+    if (!confirm('Are you sure you want to delete this upsell item?')) return;
+    try {
+      const res = await fetch(`/api/admin/upsell-bundles?id=${upsellId}`, { method: 'DELETE' });
+      if (!res.ok) throw new Error('Failed to delete upsell');
+      await fetchCartUpsells();
+    } catch (err) {
+      console.error('Failed to delete cart upsell', err);
+      alert('Failed to delete cart upsell');
+    }
+  };
+
   // Fetch add-ons (same pattern as Accept Orders)
   const fetchAddOns = async () => {
     try {
@@ -1184,6 +1258,16 @@ export default function MenuEditorPage() {
                     📺 Switch Menu Pro
                   </button>
                 )}
+                <button
+                  onClick={() => { setActiveTab('cartUpsells'); fetchCartUpsells(); }}
+                  className={`whitespace-nowrap py-4 px-1 border-b-2 font-medium text-sm ${
+                    activeTab === 'cartUpsells'
+                      ? 'border-orange-500 text-orange-600'
+                      : 'border-transparent text-gray-500 hover:text-gray-700 hover:border-gray-300'
+                  }`}
+                >
+                  🛒 Cart Upsells
+                </button>
                 <button
                   onClick={() => setActiveTab('frontend')}
                   className={`whitespace-nowrap py-4 px-1 border-b-2 font-medium text-sm ${
@@ -2370,6 +2454,181 @@ export default function MenuEditorPage() {
                   </a>
                 </div>
               </div>
+            </div>
+          ) : activeTab === 'cartUpsells' ? (
+            <div className="space-y-6">
+              {/* Header */}
+              <div className="flex items-center justify-between">
+                <div>
+                  <h2 className="text-lg font-semibold text-gray-900">Cart Upsells</h2>
+                  <p className="text-sm text-gray-500">
+                    Add items to show as upsells in the cart and checkout
+                  </p>
+                </div>
+                <button
+                  onClick={() => setEditingCartUpsell({
+                    id: `new-${Date.now()}`,
+                    name: '',
+                    description: '',
+                    price: 0,
+                    image: '',
+                    tag: '',
+                    cta: '+ Add',
+                    surfaces: ['cart', 'checkout'],
+                  })}
+                  className="flex items-center gap-2 px-4 py-2 bg-orange-600 text-white rounded-lg hover:bg-orange-700"
+                >
+                  <Plus className="h-4 w-4" />
+                  Add Upsell Item
+                </button>
+              </div>
+
+              {/* Upsell Items Grid */}
+              <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
+                {cartUpsells.length === 0 ? (
+                  <div className="col-span-full text-center py-12 bg-white rounded-lg border-2 border-dashed border-gray-300">
+                    <div className="text-4xl mb-3">🛒</div>
+                    <p className="text-gray-600 font-medium">No cart upsells yet</p>
+                    <p className="text-sm text-gray-500 mt-1">Add drinks, sides, or popular items to boost sales</p>
+                  </div>
+                ) : (
+                  cartUpsells.map((upsell) => (
+                    <div
+                      key={upsell.id}
+                      className="bg-white rounded-lg border border-gray-200 overflow-hidden hover:shadow-md transition-shadow"
+                    >
+                      {upsell.image && (
+                        <div className="h-32 bg-gray-100">
+                          <img src={upsell.image} alt={upsell.name} className="w-full h-full object-cover" />
+                        </div>
+                      )}
+                      <div className="p-4">
+                        <div className="flex items-start justify-between mb-2">
+                          <div>
+                            <h3 className="font-semibold text-gray-900">{upsell.name}</h3>
+                            {upsell.tag && (
+                              <span className="inline-block px-2 py-0.5 text-xs font-medium bg-orange-100 text-orange-700 rounded-full mt-1">
+                                {upsell.tag}
+                              </span>
+                            )}
+                          </div>
+                          <span className="font-bold text-gray-900">${upsell.price.toFixed(2)}</span>
+                        </div>
+                        {upsell.description && (
+                          <p className="text-sm text-gray-600 mb-3 line-clamp-2">{upsell.description}</p>
+                        )}
+                        <div className="flex gap-2">
+                          <button
+                            onClick={() => setEditingCartUpsell(upsell)}
+                            className="flex-1 px-3 py-1.5 text-sm font-medium text-blue-600 bg-blue-50 rounded-lg hover:bg-blue-100"
+                          >
+                            Edit
+                          </button>
+                          <button
+                            onClick={() => handleDeleteCartUpsell(upsell.id)}
+                            className="px-3 py-1.5 text-sm font-medium text-red-600 bg-red-50 rounded-lg hover:bg-red-100"
+                          >
+                            <Trash2 className="h-4 w-4" />
+                          </button>
+                        </div>
+                      </div>
+                    </div>
+                  ))
+                )}
+              </div>
+
+              {/* Edit Modal */}
+              {editingCartUpsell && (
+                <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/50">
+                  <div className="bg-white rounded-xl shadow-xl max-w-lg w-full mx-4 max-h-[90vh] overflow-y-auto">
+                    <div className="p-6 border-b border-gray-200">
+                      <h3 className="text-lg font-semibold">
+                        {editingCartUpsell.id.startsWith('new-') ? 'Add Upsell Item' : 'Edit Upsell Item'}
+                      </h3>
+                    </div>
+                    <div className="p-6 space-y-4">
+                      <div>
+                        <label className="block text-sm font-medium text-gray-700 mb-1">Name *</label>
+                        <input
+                          type="text"
+                          value={editingCartUpsell.name}
+                          onChange={(e) => setEditingCartUpsell({ ...editingCartUpsell, name: e.target.value })}
+                          className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-orange-500 focus:border-orange-500"
+                          placeholder="e.g., Mexican Coca Cola"
+                        />
+                      </div>
+                      <div>
+                        <label className="block text-sm font-medium text-gray-700 mb-1">Description</label>
+                        <textarea
+                          value={editingCartUpsell.description || ''}
+                          onChange={(e) => setEditingCartUpsell({ ...editingCartUpsell, description: e.target.value })}
+                          className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-orange-500 focus:border-orange-500"
+                          rows={2}
+                          placeholder="Brief description of the item"
+                        />
+                      </div>
+                      <div className="grid grid-cols-2 gap-4">
+                        <div>
+                          <label className="block text-sm font-medium text-gray-700 mb-1">Price *</label>
+                          <input
+                            type="number"
+                            step="0.01"
+                            min="0"
+                            value={editingCartUpsell.price}
+                            onChange={(e) => setEditingCartUpsell({ ...editingCartUpsell, price: parseFloat(e.target.value) || 0 })}
+                            className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-orange-500 focus:border-orange-500"
+                          />
+                        </div>
+                        <div>
+                          <label className="block text-sm font-medium text-gray-700 mb-1">Tag (optional)</label>
+                          <input
+                            type="text"
+                            value={editingCartUpsell.tag || ''}
+                            onChange={(e) => setEditingCartUpsell({ ...editingCartUpsell, tag: e.target.value })}
+                            className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-orange-500 focus:border-orange-500"
+                            placeholder="e.g., Popular, Best Seller"
+                          />
+                        </div>
+                      </div>
+                      <div>
+                        <label className="block text-sm font-medium text-gray-700 mb-1">Image URL</label>
+                        <input
+                          type="text"
+                          value={editingCartUpsell.image || ''}
+                          onChange={(e) => setEditingCartUpsell({ ...editingCartUpsell, image: e.target.value })}
+                          className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-orange-500 focus:border-orange-500"
+                          placeholder="/tenant/lasreinas/images/menu-items/..."
+                        />
+                      </div>
+                      <div>
+                        <label className="block text-sm font-medium text-gray-700 mb-1">Button Text</label>
+                        <input
+                          type="text"
+                          value={editingCartUpsell.cta || '+ Add'}
+                          onChange={(e) => setEditingCartUpsell({ ...editingCartUpsell, cta: e.target.value })}
+                          className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-orange-500 focus:border-orange-500"
+                          placeholder="+ Add"
+                        />
+                      </div>
+                    </div>
+                    <div className="p-6 border-t border-gray-200 flex justify-end gap-3">
+                      <button
+                        onClick={() => setEditingCartUpsell(null)}
+                        className="px-4 py-2 text-gray-700 bg-gray-100 rounded-lg hover:bg-gray-200"
+                      >
+                        Cancel
+                      </button>
+                      <button
+                        onClick={() => handleSaveCartUpsell(editingCartUpsell)}
+                        disabled={savingCartUpsell || !editingCartUpsell.name || editingCartUpsell.price <= 0}
+                        className="px-4 py-2 bg-orange-600 text-white rounded-lg hover:bg-orange-700 disabled:opacity-50"
+                      >
+                        {savingCartUpsell ? 'Saving...' : 'Save'}
+                      </button>
+                    </div>
+                  </div>
+                </div>
+              )}
             </div>
           ) : activeTab === 'frontend' ? (
             <div className="space-y-6">
