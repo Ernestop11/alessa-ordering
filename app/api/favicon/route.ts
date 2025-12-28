@@ -1,7 +1,11 @@
 import { NextResponse } from 'next/server';
-import { headers, cookies } from 'next/headers';
+import { headers } from 'next/headers';
+import { resolveTenant } from '@/lib/tenant';
 import fs from 'fs/promises';
 import path from 'path';
+
+// Force dynamic rendering
+export const dynamic = 'force-dynamic';
 
 /**
  * Dynamic favicon based on tenant
@@ -11,13 +15,12 @@ import path from 'path';
  */
 export async function GET() {
   try {
-    // Try header first, then cookie (middleware sets both)
     const headersList = headers();
-    const cookieStore = cookies();
+    const host = headersList.get('host') || '';
 
-    const tenantSlug =
-      headersList.get('x-tenant-slug') ||
-      cookieStore.get('x-tenant-slug')?.value;
+    // Resolve tenant from host directly
+    const tenant = await resolveTenant({ host });
+    const tenantSlug = tenant?.slug;
 
     if (tenantSlug) {
       // Try tenant-specific favicon

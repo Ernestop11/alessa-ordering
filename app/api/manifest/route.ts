@@ -1,7 +1,10 @@
 import { NextResponse } from 'next/server';
-import { headers, cookies } from 'next/headers';
-import { getTenantBySlug } from '@/lib/tenant';
+import { headers } from 'next/headers';
+import { resolveTenant } from '@/lib/tenant';
 import { getStaticTenantTheme } from '@/lib/tenant-theme-map';
+
+// Force dynamic rendering - no caching
+export const dynamic = 'force-dynamic';
 
 /**
  * Dynamic manifest.json for tenant-specific PWA branding
@@ -13,45 +16,12 @@ import { getStaticTenantTheme } from '@/lib/tenant-theme-map';
  */
 export async function GET() {
   try {
-    // Try header first, then cookie (middleware sets both)
     const headersList = headers();
-    const cookieStore = cookies();
+    const host = headersList.get('host') || '';
 
-    const headerSlug = headersList.get('x-tenant-slug');
-    const cookieSlug = cookieStore.get('x-tenant-slug')?.value;
-    const tenantSlug = headerSlug || cookieSlug;
-
-    // Debug logging - REMOVE after debugging
-    console.log('[manifest] DEBUG:', {
-      headerSlug,
-      cookieSlug,
-      tenantSlug,
-      allCookies: cookieStore.getAll().map(c => c.name).join(','),
-    });
-
-    let tenant = null;
-    if (tenantSlug) {
-      try {
-        tenant = await getTenantBySlug(tenantSlug);
-        console.log('[manifest] Tenant found:', tenant?.slug, tenant?.name);
-      } catch (err) {
-        console.error('[manifest] Tenant lookup error:', err);
-      }
-    }
-
+    // Resolve tenant from host directly (same as middleware does)
+    const tenant = await resolveTenant({ host });
     const staticTheme = tenant ? getStaticTenantTheme(tenant.slug) : getStaticTenantTheme();
-
-    // DEBUG: Return debug info in response (REMOVE AFTER DEBUGGING)
-    if (!tenant) {
-      return NextResponse.json({
-        debug: true,
-        headerSlug,
-        cookieSlug,
-        tenantSlug,
-        allCookies: cookieStore.getAll().map(c => c.name),
-        headerKeys: Array.from(headersList.keys()),
-      }, { status: 200 });
-    }
 
     // Determine tenant name for PWA
     const tenantName = tenant?.name || 'Alessa Cloud';
