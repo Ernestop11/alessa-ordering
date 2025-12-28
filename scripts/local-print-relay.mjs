@@ -29,6 +29,8 @@ const PRINTER_HOST = process.env.PRINTER_HOST || '10.10.100.254';
 const PRINTER_PORT = parseInt(process.env.PRINTER_PORT || '9100');
 const VPS_URL = process.env.VPS_URL || 'https://lasreinascolusa.com';
 const POLL_INTERVAL = parseInt(process.env.POLL_INTERVAL || '5000'); // 5 seconds
+const PRINT_RELAY_API_KEY = process.env.PRINT_RELAY_API_KEY || '';
+const TENANT_SLUG = process.env.TENANT_SLUG || 'lasreinas';
 
 // Track printed orders to avoid duplicates
 const printedOrders = new Set();
@@ -39,6 +41,7 @@ console.log('===================================');
 console.log(`Printer: ${PRINTER_HOST}:${PRINTER_PORT}`);
 console.log(`VPS: ${VPS_URL}`);
 console.log(`Poll interval: ${POLL_INTERVAL}ms`);
+console.log(`Queue API: ${PRINT_RELAY_API_KEY ? 'Enabled' : 'Disabled (set PRINT_RELAY_API_KEY)'}`);
 console.log('');
 
 /**
@@ -431,6 +434,115 @@ function formatSimpleReceipt(order) {
   return lines.join('\n');
 }
 
+/**
+ * Fetch orders from print queue (for manual print button)
+ */
+function fetchPrintQueue() {
+  if (!PRINT_RELAY_API_KEY) {
+    return Promise.resolve({ orders: [] });
+  }
+
+  return new Promise((resolve, reject) => {
+    const url = new URL(`${VPS_URL}/api/print-relay/queue?key=${PRINT_RELAY_API_KEY}&tenant=${TENANT_SLUG}`);
+    const client = url.protocol === 'https:' ? https : http;
+
+    const options = {
+      hostname: url.hostname,
+      port: url.port || (url.protocol === 'https:' ? 443 : 80),
+      path: url.pathname + url.search,
+      method: 'GET',
+      headers: {
+        'Accept': 'application/json',
+        'User-Agent': 'LocalPrintRelay/1.0',
+      },
+    };
+
+    const req = client.request(options, (res) => {
+      let data = '';
+      res.on('data', chunk => data += chunk);
+      res.on('end', () => {
+        if (res.statusCode === 200) {
+          try {
+            resolve(JSON.parse(data));
+          } catch (e) {
+            reject(new Error('Invalid JSON response'));
+          }
+        } else {
+          resolve({ orders: [] }); // Silently fail
+        }
+      });
+    });
+
+    req.on('error', () => resolve({ orders: [] }));
+    req.setTimeout(5000, () => {
+      req.destroy();
+      resolve({ orders: [] });
+    });
+    req.end();
+  });
+}
+
+/**
+ * Remove order from print queue after printing
+ */
+function removeFromQueue(orderId) {
+  if (!PRINT_RELAY_API_KEY) return Promise.resolve();
+
+  return new Promise((resolve) => {
+    const url = new URL(`${VPS_URL}/api/print-relay/queue?key=${PRINT_RELAY_API_KEY}`);
+    const client = url.protocol === 'https:' ? https : http;
+
+    const body = JSON.stringify({ orderId });
+
+    const options = {
+      hostname: url.hostname,
+      port: url.port || (url.protocol === 'https:' ? 443 : 80),
+      path: url.pathname + url.search,
+      method: 'DELETE',
+      headers: {
+        'Content-Type': 'application/json',
+        'Content-Length': Buffer.byteLength(body),
+      },
+    };
+
+    const req = client.request(options, (res) => {
+      let data = '';
+      res.on('data', chunk => data += chunk);
+      res.on('end', () => resolve());
+    });
+
+    req.on('error', () => resolve());
+    req.write(body);
+    req.end();
+  });
+}
+
+/**
+ * Poll the print queue for manual print requests
+ */
+async function pollPrintQueue() {
+  try {
+    const response = await fetchPrintQueue();
+    const orders = response.orders || [];
+
+    for (const order of orders) {
+      console.log(`\n🖨️  Print queue: ${order.id.slice(-6).toUpperCase()}`);
+      console.log(`   Customer: ${order.customerName || order.customer?.name || 'Guest'}`);
+
+      try {
+        const receipt = formatSimpleReceipt(order);
+        await sendToPrinter(receipt);
+        await removeFromQueue(order.id);
+        console.log(`   ✅ Printed from queue`);
+      } catch (printError) {
+        console.error(`   ❌ Print failed: ${printError.message}`);
+      }
+    }
+  } catch (error) {
+    // Silent fail for queue errors
+  }
+}
+
 // Main
 async function main() {
   console.log('🔍 Testing printer connection...');
@@ -451,13 +563,18 @@ async function main() {
   // Start polling for orders
   console.log('📡 Starting order polling...');
   console.log(`   Checking ${VPS_URL} every ${POLL_INTERVAL / 1000}s`);
+  if (PRINT_RELAY_API_KEY) {
+    console.log('   Print queue polling enabled (manual print button)');
+  }
   console.log('   Press Ctrl+C to stop\n');
 
   // Initial poll
   await pollForOrders();
+  await pollPrintQueue();
 
-  // Start polling loop
+  // Start polling loops
   setInterval(pollForOrders, POLL_INTERVAL);
+  setInterval(pollPrintQueue, 2000); // Check queue every 2 seconds for fast response
 
   // Keep the process alive
   process.on('SIGINT', () => {

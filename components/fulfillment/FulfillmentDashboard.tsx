@@ -530,14 +530,15 @@ export default function FulfillmentDashboard({ initialOrders, feedUrl, scope }: 
         const result = await printOrderClientSide(order, tenantDetails, printerConfig as PrinterConfig);
         if (result.success) {
           console.log('[Print] Order printed successfully via Bluetooth');
+          setNotificationBanner(`Order ${order.id.slice(-6).toUpperCase()} sent to printer`);
           return;
         } else {
-          console.warn('[Print] Client-side print failed, falling back to server:', result.error);
+          console.warn('[Print] Client-side print failed, falling back to queue:', result.error);
         }
       }
 
-      // Try server-side auto-dispatch
-      const response = await fetch('/api/fulfillment/print', {
+      // Add to print queue for local print relay to pick up
+      const response = await fetch('/api/print-relay/queue', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({ orderId: order.id }),
@@ -546,7 +547,24 @@ export default function FulfillmentDashboard({ initialOrders, feedUrl, scope }: 
       if (response.ok) {
         const result = await response.json();
         if (result.success) {
-          console.log('[Print] Order sent to printer:', result.jobId);
+          console.log('[Print] Order added to print queue:', order.id.slice(-6));
+          setNotificationBanner(`Order ${order.id.slice(-6).toUpperCase()} sent to printer`);
+          return;
+        }
+      }
+
+      // If queue fails, try the old direct print endpoint
+      const directResponse = await fetch('/api/fulfillment/print', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ orderId: order.id }),
+      });
+
+      if (directResponse.ok) {
+        const result = await directResponse.json();
+        if (result.success) {
+          console.log('[Print] Order sent to printer directly:', result.jobId);
+          setNotificationBanner(`Order ${order.id.slice(-6).toUpperCase()} sent to printer`);
           return;
         }
       }
@@ -589,6 +607,7 @@ export default function FulfillmentDashboard({ initialOrders, feedUrl, scope }: 
       printable.document.close();
     } catch (err) {
       console.error('[Print] Failed to print order:', err);
+      setError('Failed to print order. Please try again.');
     }
   };
 
