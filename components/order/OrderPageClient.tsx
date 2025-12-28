@@ -2641,8 +2641,12 @@ export default function OrderPageClient({
 
             {/* Right Side - Logo (Mobile) & Location & Cart */}
             <div className="flex items-center gap-3">
-              {/* Logo - Mobile Only (right side) */}
-              <div className="relative flex-shrink-0 group md:hidden">
+              {/* Logo - Mobile Only (right side) - Tappable to open menu */}
+              <button
+                onClick={() => setShowMobileNav(true)}
+                className="relative flex-shrink-0 group md:hidden"
+                aria-label="Open menu"
+              >
                 <div className={`absolute bg-gradient-to-r from-amber-400 via-red-500 to-amber-400 rounded-full opacity-75 group-hover:opacity-100 blur-sm animate-pulse transition-all duration-300 ${isScrolled ? '-inset-0.5' : '-inset-1'}`} />
                 <div className={`relative rounded-full bg-white shadow-xl ring-2 ring-white/50 transition-all duration-300 ${isScrolled ? 'p-0.5' : 'p-1'}`}>
                   {tenant.logoUrl ? (
@@ -2658,7 +2662,7 @@ export default function OrderPageClient({
                     <div className={`flex items-center justify-center rounded-full bg-gradient-to-br from-red-600 to-amber-500 transition-all duration-300 ${isScrolled ? 'h-8 w-8 text-lg' : 'h-10 w-10 text-xl'}`}>🍽️</div>
                   )}
                 </div>
-              </div>
+              </button>
 
               {/* Location Selector */}
               <div className="hidden sm:flex items-center gap-2 rounded-lg bg-[#6B1C1C] px-3 py-2">
@@ -5317,6 +5321,11 @@ export default function OrderPageClient({
         onAccessibilityClick={() => setAccessibilityOpen((prev) => !prev)}
         onReorderClick={customerData?.orders && customerData.orders.length > 0 ? () => setShowReorderModal(true) : undefined}
         onLoginClick={() => setShowJoinModal(true)}
+        onCheckoutClick={() => {
+          // Trigger cart launcher
+          const cartButton = document.querySelector('[data-cart-launcher]') as HTMLElement;
+          cartButton?.click();
+        }}
         onSignOut={customerData ? async () => {
           try {
             await fetch('/api/rewards/logout', { method: 'POST' });
