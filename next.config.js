@@ -34,6 +34,10 @@ if (tenantAssetBase) {
 
 /** @type {import('next').NextConfig} */
 const nextConfig = {
+  // Generate unique build ID for cache busting
+  generateBuildId: async () => {
+    return `build-${Date.now()}`;
+  },
   eslint: {
     // Ignore ESLint errors during builds to allow server to start
     ignoreDuringBuilds: true,
@@ -54,6 +58,35 @@ const nextConfig = {
   // Allow serving uploaded images from /public/uploads/
   async headers() {
     return [
+      // Global no-cache for HTML pages (not static assets)
+      {
+        source: '/:path*',
+        has: [
+          {
+            type: 'header',
+            key: 'accept',
+            value: '(.*text/html.*)',
+          },
+        ],
+        headers: [
+          {
+            key: 'Cache-Control',
+            value: 'no-store, no-cache, must-revalidate, proxy-revalidate, max-age=0',
+          },
+          {
+            key: 'Pragma',
+            value: 'no-cache',
+          },
+          {
+            key: 'Expires',
+            value: '0',
+          },
+          {
+            key: 'Surrogate-Control',
+            value: 'no-store',
+          },
+        ],
+      },
       {
         source: '/uploads/:path*',
         headers: [
