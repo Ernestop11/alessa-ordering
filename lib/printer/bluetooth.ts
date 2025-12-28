@@ -70,36 +70,66 @@ export async function printToBluetooth(
  */
 export function formatOrderForThermalPrinter(order: {
   id: string;
-  items: Array<{ name: string; quantity: number; price: number }>;
+  items: Array<{ name: string; quantity: number; price: number; note?: string }>;
   totalAmount: number;
   customerName?: string;
   notes?: string;
+  fulfillmentMethod?: string;
+  customerPhone?: string;
 }): string {
   let content = '\x1B\x40'; // Initialize printer
   content += '\x1B\x61\x01'; // Center align
-  content += 'ORDER #' + order.id.slice(0, 8) + '\n';
+  content += '\x1B\x21\x30'; // Double width + double height for emphasis
+  content += 'LAS REINAS\n';
+  content += '\x1B\x21\x00'; // Normal font
+  content += '================================\n';
+  content += '\x1B\x21\x10'; // Double width
+  content += `ORDER #${order.id.slice(-6).toUpperCase()}\n`;
+  content += '\x1B\x21\x00'; // Normal font
+  content += `${new Date().toLocaleString()}\n`;
+  content += '================================\n';
   content += '\x1B\x61\x00'; // Left align
-  content += '-------------------\n';
 
+  // Fulfillment type
+  if (order.fulfillmentMethod) {
+    content += '\x1B\x21\x10'; // Double width
+    content += `** ${order.fulfillmentMethod.toUpperCase()} **\n`;
+    content += '\x1B\x21\x00'; // Normal font
+  }
+
+  // Customer info
   if (order.customerName) {
     content += `Customer: ${order.customerName}\n`;
   }
+  if (order.customerPhone) {
+    content += `Phone: ${order.customerPhone}\n`;
+  }
 
+  content += '--------------------------------\n';
   content += '\n';
+
+  // Items with better formatting
   order.items.forEach((item) => {
     content += `${item.quantity}x ${item.name}\n`;
-    content += `  $${(item.price * item.quantity).toFixed(2)}\n`;
+    content += `     $${(item.price * item.quantity).toFixed(2)}\n`;
+    if (item.note) {
+      content += `   >> ${item.note}\n`;
+    }
   });
 
   content += '\n';
-  content += '-------------------\n';
+  content += '================================\n';
+  content += '\x1B\x21\x10'; // Double width
   content += `TOTAL: $${order.totalAmount.toFixed(2)}\n`;
+  content += '\x1B\x21\x00'; // Normal font
 
   if (order.notes) {
-    content += `\nNotes: ${order.notes}\n`;
+    content += '\n';
+    content += '--------------------------------\n';
+    content += `NOTES: ${order.notes}\n`;
   }
 
-  content += '\n\n';
+  content += '\n\n\n';
   content += '\x1D\x56\x00'; // Cut paper
 
   return content;

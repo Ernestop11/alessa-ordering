@@ -71,9 +71,58 @@ export async function autoDispatchOrder(
       }
 
       case 'network': {
-        // TODO: Implement network printer dispatch
-        console.log('[Auto Dispatch] Network printer not implemented');
-        return { success: false, error: 'Network printer not implemented' };
+        const net = await import('net');
+        const config = printerConfig.config as { ipAddress?: string; port?: number };
+
+        if (!config.ipAddress) {
+          return { success: false, error: 'Network printer IP not configured' };
+        }
+
+        const formattedContent = formatOrderForThermalPrinter({
+          id: order.id,
+          items: order.items.map((item) => ({
+            name: item.menuItemName || 'Item',
+            quantity: item.quantity,
+            price: item.price,
+            note: item.note || undefined,
+          })),
+          totalAmount: order.totalAmount,
+          customerName: order.customerName || undefined,
+          notes: order.notes || undefined,
+          fulfillmentMethod: order.fulfillmentMethod || undefined,
+          customerPhone: order.customerPhone || undefined,
+        });
+
+        const port = config.port || 9100;
+        console.log(`[Auto Dispatch] Sending to network printer ${config.ipAddress}:${port}`);
+
+        return new Promise((resolve) => {
+          const socket = new net.Socket();
+          const timeout = setTimeout(() => {
+            socket.destroy();
+            resolve({ success: false, error: 'Connection timeout' });
+          }, 10000);
+
+          socket.connect(port, config.ipAddress!, () => {
+            clearTimeout(timeout);
+            // Send ESC/POS data
+            socket.write(formattedContent, () => {
+              socket.end();
+              console.log('[Auto Dispatch] Order sent to network printer');
+              resolve({
+                success: true,
+                printerId: `${config.ipAddress}:${port}`,
+                jobId: `net_${Date.now()}`,
+              });
+            });
+          });
+
+          socket.on('error', (err) => {
+            clearTimeout(timeout);
+            console.error('[Auto Dispatch] Network printer error:', err.message);
+            resolve({ success: false, error: err.message });
+          });
+        });
       }
 
       case 'cloud': {
