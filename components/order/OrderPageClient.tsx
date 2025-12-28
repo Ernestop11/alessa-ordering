@@ -2027,56 +2027,66 @@ export default function OrderPageClient({
     };
 
     return (
-      <section key="mobile-featured" className="md:hidden relative mt-4 mb-6 mx-4">
-        {/* Clickable container - using native button for best touch support */}
-        <button
-          type="button"
-          onClick={handleFeaturedClick}
-          className="relative w-full text-left block focus:outline-none active:scale-[0.98] transition-transform touch-manipulation rounded-2xl overflow-hidden shadow-xl"
-          style={{ zIndex: 1 }}
-        >
-          {/* Featured Image - 16:9 aspect ratio */}
-          <div className="relative aspect-[16/9] w-full overflow-hidden rounded-2xl">
-            {featuredItem.displayImage ? (
-              <Image
-                src={featuredItem.displayImage}
-                alt={featuredItem.name || 'Featured dish'}
-                fill
-                className="object-cover"
-                sizes="100vw"
-                priority
-                unoptimized={featuredItem.displayImage?.startsWith('/tenant/')}
-              />
-            ) : (
-              <div className="flex items-center justify-center h-full bg-[#2a2a2a] text-6xl">🍽️</div>
-            )}
-            {/* Gradient overlay */}
-            <div className="absolute inset-0 bg-gradient-to-t from-black/90 via-black/30 to-transparent pointer-events-none" />
+      <section key="mobile-featured" className="md:hidden relative mt-6 mb-6 mx-4">
+        {/* Styled card container matching Chef Recommends aesthetic */}
+        <div className="rounded-2xl border border-white/10 bg-white/5 p-3 shadow-lg shadow-black/20">
+          {/* Header */}
+          <div className="mb-3 flex items-center gap-2">
+            <span className="text-amber-400 text-lg">⭐</span>
+            <h3 className="text-base font-semibold text-white">Today&apos;s Special</h3>
+          </div>
 
-            {/* HOT badge */}
-            <div className="absolute top-3 right-3 px-2.5 py-1 rounded-full bg-gradient-to-r from-[#FF4444] to-[#FF6B00] text-white text-[10px] font-black shadow-lg flex items-center gap-1 pointer-events-none">
-              🔥 HOT
-            </div>
+          {/* Clickable card */}
+          <button
+            type="button"
+            onClick={handleFeaturedClick}
+            className="relative w-full text-left block focus:outline-none active:scale-[0.98] transition-all touch-manipulation rounded-xl overflow-hidden border border-white/10 bg-gradient-to-br from-white/10 to-white/5"
+          >
+            {/* Featured Image - taller for better visibility */}
+            <div className="relative h-44 w-full overflow-hidden bg-gradient-to-br from-gray-800 to-gray-900">
+              {featuredItem.displayImage ? (
+                <Image
+                  src={featuredItem.displayImage}
+                  alt={featuredItem.name || 'Featured dish'}
+                  fill
+                  className="object-cover"
+                  sizes="100vw"
+                  priority
+                  unoptimized={featuredItem.displayImage?.startsWith('/tenant/')}
+                />
+              ) : (
+                <div className="flex items-center justify-center h-full text-5xl">🍽️</div>
+              )}
+              {/* Gradient overlay */}
+              <div className="absolute inset-0 bg-gradient-to-t from-black/80 via-black/20 to-transparent pointer-events-none" />
 
-            {/* Content overlay at bottom */}
-            <div className="absolute bottom-0 left-0 right-0 p-4 pointer-events-none">
-              <div className="flex items-end justify-between gap-3">
-                <div className="flex-1 min-w-0">
-                  <h3 className="text-xl font-black text-white mb-0.5 drop-shadow-lg uppercase tracking-wide">
-                    {featuredItem.name || 'Featured Special'}
-                  </h3>
-                  <p className="text-white/70 text-sm line-clamp-1">
-                    {featuredItem.description || 'Authentic Mexican flavors'}
-                  </p>
-                </div>
-                <div className="flex-shrink-0 flex flex-col items-center gap-0.5 px-5 py-2.5 rounded-xl bg-gradient-to-r from-[#FFD700] to-[#FFA500] text-[#8B0000] font-black shadow-xl">
-                  <span className="text-lg">From ${featuredItem.price?.toFixed(2) || '14.00'}</span>
-                  <span className="text-[10px] uppercase tracking-wide">Tap to Order</span>
-                </div>
+              {/* HOT badge */}
+              <div className="absolute top-2 right-2 px-2 py-0.5 rounded-full bg-gradient-to-r from-rose-500 via-amber-500 to-yellow-400 text-black text-[10px] font-bold shadow-lg flex items-center gap-1 pointer-events-none">
+                🔥 HOT
+              </div>
+
+              {/* Price badge */}
+              <div className="absolute bottom-2 left-2 px-2.5 py-1 rounded-lg bg-amber-500 text-black text-sm font-bold shadow-lg pointer-events-none">
+                ${featuredItem.price?.toFixed(2) || '14.00'}
               </div>
             </div>
-          </div>
-        </button>
+
+            {/* Content section */}
+            <div className="p-3">
+              <h4 className="text-base font-bold text-white line-clamp-1">
+                {featuredItem.name || 'Featured Special'}
+              </h4>
+              <p className="text-xs text-white/60 line-clamp-2 mt-0.5">
+                {featuredItem.description || 'Authentic Mexican flavors'}
+              </p>
+
+              {/* CTA Button */}
+              <div className="mt-3 w-full rounded-lg bg-gradient-to-r from-rose-500 via-amber-500 to-yellow-400 px-4 py-2.5 text-center text-sm font-bold text-black shadow-lg shadow-amber-500/20">
+                Tap to Order
+              </div>
+            </div>
+          </button>
+        </div>
       </section>
     );
   };
@@ -2707,7 +2717,7 @@ export default function OrderPageClient({
         {/* Closed status indicator - integrated into nav bar */}
         {!restaurantIsOpen && (
           <div className="px-4 pt-2 pb-1 flex items-center justify-center">
-            <span className="text-red-300 font-semibold text-xs">🚫 {restaurantClosedMessage || 'Currently closed'}</span>
+            <span className="text-red-300 font-semibold text-xs">{restaurantClosedMessage || 'Currently closed'}</span>
           </div>
         )}
         <div className={`flex gap-2 overflow-x-auto px-4 scrollbar-hide ${restaurantIsOpen ? 'py-2.5' : 'pb-2.5 pt-1'}`}>
@@ -3016,7 +3026,7 @@ export default function OrderPageClient({
       />
 
       {/* Spacer for fixed category nav on mobile - taller when closed to account for status message */}
-      <div className={`sm:hidden ${restaurantIsOpen ? 'h-[52px]' : 'h-[80px]'}`} />
+      <div className={`sm:hidden ${restaurantIsOpen ? 'h-[52px]' : 'h-[88px]'}`} />
 
       {/* Position-based sections BEFORE menu (hero, quickInfo, featuredCarousel, and early banners) */}
       <div className="relative z-20">

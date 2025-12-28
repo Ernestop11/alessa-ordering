@@ -78,6 +78,16 @@ function timeToMinutes(time: string): number {
 }
 
 /**
+ * Convert 24-hour time string (HH:mm) to 12-hour AM/PM format
+ */
+function formatTimeAMPM(time: string): string {
+  const [hours, minutes] = time.split(':').map(Number);
+  const period = hours >= 12 ? 'PM' : 'AM';
+  const hour12 = hours % 12 || 12; // Convert 0 to 12 for midnight, 13-23 to 1-11
+  return minutes === 0 ? `${hour12} ${period}` : `${hour12}:${minutes.toString().padStart(2, '0')} ${period}`;
+}
+
+/**
  * Check if a date falls within winter mode date range
  */
 function isInWinterMode(date: Date, winterStartDate?: string, winterEndDate?: string): boolean {
@@ -195,7 +205,7 @@ function getNextOpenTime(
       const nextDayHours = activeHours[nextDayName];
       
       if (nextDayHours && !nextDayHours.closed) {
-        return `${nextDayName} at ${nextDayHours.open}`;
+        return `${nextDayName} at ${formatTimeAMPM(nextDayHours.open)}`;
       }
     }
     return undefined;
@@ -212,9 +222,9 @@ function getNextOpenTime(
       nextDate.setDate(nextDate.getDate() + i);
       const nextDayName = getDayName(nextDate);
       const nextDayHours = activeHours[nextDayName];
-      
+
       if (nextDayHours && !nextDayHours.closed) {
-        return `${nextDayName} at ${nextDayHours.open}`;
+        return `${nextDayName} at ${formatTimeAMPM(nextDayHours.open)}`;
       }
     }
   }
@@ -273,8 +283,8 @@ export function validateOperatingHours(
         return {
           isOpen: false,
           reason: 'isOpen_flag',
-          message: `Kitchen opens at ${todayHours.open} today.`,
-          nextOpenTime: `today at ${todayHours.open}`,
+          message: `Kitchen opens at ${formatTimeAMPM(todayHours.open)} today.`,
+          nextOpenTime: `today at ${formatTimeAMPM(todayHours.open)}`,
         };
       }
 
@@ -283,7 +293,7 @@ export function validateOperatingHours(
         return {
           isOpen: false,
           reason: 'isOpen_flag',
-          message: `Kitchen is temporarily closed. Normal hours: ${todayHours.open} - ${todayHours.close}.`,
+          message: `Kitchen is temporarily closed. Normal hours: ${formatTimeAMPM(todayHours.open)} - ${formatTimeAMPM(todayHours.close)}.`,
           nextOpenTime: undefined,
         };
       }
@@ -354,7 +364,7 @@ export function validateOperatingHours(
     return {
       isOpen: false,
       reason: 'outside_hours',
-      message: `We are currently closed. Our hours today are ${dayHours.open} - ${dayHours.close}.${nextOpen ? ` We'll be open ${nextOpen}.` : ''}`,
+      message: `We are currently closed. Our hours today are ${formatTimeAMPM(dayHours.open)} - ${formatTimeAMPM(dayHours.close)}.${nextOpen ? ` We'll be open ${nextOpen}.` : ''}`,
       nextOpenTime: nextOpen,
     };
   }
