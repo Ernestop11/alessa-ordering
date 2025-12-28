@@ -947,7 +947,13 @@ export default function FulfillmentDashboard({ initialOrders, feedUrl, scope }: 
         <p className="rounded-xl bg-amber-50 px-4 py-3 text-sm text-amber-700">{notificationError}</p>
       )}
       {notificationBanner && (
-        <p className="rounded-xl bg-blue-50 px-4 py-3 text-sm font-medium text-blue-700">{notificationBanner}</p>
+        <div className="flex items-center gap-3 rounded-xl bg-emerald-100 border-2 border-emerald-400 px-4 py-3 text-emerald-800 shadow-lg animate-pulse">
+          <svg className="h-6 w-6 flex-shrink-0" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+            <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M17 17h2a2 2 0 002-2v-4a2 2 0 00-2-2H5a2 2 0 00-2 2v4a2 2 0 002 2h2m2 4h6a2 2 0 002-2v-4a2 2 0 00-2-2H9a2 2 0 00-2 2v4a2 2 0 002 2zm8-12V5a2 2 0 00-2-2H9a2 2 0 00-2 2v4h10z" />
+          </svg>
+          <span className="text-base font-bold">{notificationBanner}</span>
+          <span className="text-2xl">✓</span>
+        </div>
       )}
 
       {busyOrderId && (
