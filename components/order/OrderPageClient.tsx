@@ -2844,17 +2844,17 @@ export default function OrderPageClient({
           </div>
         </div>
 
-        {/* Floating Cart Button (FAB) - Mobile Only */}
+        {/* Floating Cart Button (FAB) - Mobile Only - Golden/Amber theme */}
         <button
           onClick={() => {
             const cartButton = document.querySelector('[data-cart-launcher]') as HTMLElement;
             cartButton?.click();
           }}
-          className="fixed bottom-6 right-4 z-50 sm:hidden flex items-center justify-center w-16 h-16 rounded-full bg-gradient-to-br from-[#C41E3A] to-[#8B2323] shadow-xl shadow-[#C41E3A]/40 border-2 border-white/20 transition-all active:scale-95 hover:shadow-2xl hover:shadow-[#C41E3A]/50"
+          className="fixed bottom-6 right-4 z-50 sm:hidden flex items-center justify-center w-16 h-16 rounded-full bg-gradient-to-br from-amber-400 via-yellow-500 to-amber-600 shadow-xl shadow-amber-500/50 border-2 border-white/30 transition-all active:scale-95 hover:shadow-2xl hover:shadow-amber-400/60"
         >
           <span className="text-2xl">🛒</span>
           {cartItemCount > 0 && (
-            <span className="absolute -top-1 -right-1 flex h-7 w-7 items-center justify-center rounded-full bg-amber-400 text-sm font-black text-black shadow-lg ring-2 ring-white">
+            <span className="absolute -top-1 -right-1 flex h-7 w-7 items-center justify-center rounded-full bg-[#C41E3A] text-sm font-black text-white shadow-lg ring-2 ring-white">
               {cartItemCount > 9 ? '9+' : cartItemCount}
             </span>
           )}

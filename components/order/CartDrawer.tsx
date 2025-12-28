@@ -52,46 +52,71 @@ export function CartDrawer({ open, onClose }: CartDrawerProps) {
               Your cart is empty. Tap any + button to add Las Reinas favorites.
             </div>
           )}
-          <div className="space-y-4">
+          <div className="space-y-3">
             {items.map((item) => (
               <div
                 key={item.id}
-                className="rounded-2xl border border-white/10 bg-white/5 p-4 transition-all hover:border-[#DC2626]/30 hover:shadow-[0_0_15px_rgba(220,38,38,0.15)] cursor-pointer"
+                className="flex gap-3 rounded-2xl border border-white/10 bg-white/5 p-3 transition-all hover:border-[#DC2626]/30 cursor-pointer"
                 onClick={() => setEditingItem(item)}
               >
-                <div className="flex items-center justify-between gap-3">
-                  <div className="flex-1 min-w-0">
-                    <p className="text-base font-semibold truncate">{item.name}</p>
-                    {item.description && <p className="text-xs text-white/60 line-clamp-1">{item.description}</p>}
+                {/* Item Image */}
+                <div className="w-20 h-20 flex-shrink-0 rounded-xl overflow-hidden bg-white/10">
+                  {item.image ? (
+                    <img
+                      src={item.image}
+                      alt={item.name}
+                      className="w-full h-full object-cover"
+                      onError={(e) => {
+                        const target = e.target as HTMLImageElement;
+                        target.style.display = 'none';
+                      }}
+                    />
+                  ) : (
+                    <div className="w-full h-full flex items-center justify-center text-2xl">
+                      🍽️
+                    </div>
+                  )}
+                </div>
+
+                {/* Item Details */}
+                <div className="flex-1 min-w-0 flex flex-col justify-between">
+                  <div>
+                    <p className="text-sm font-semibold text-white truncate">{item.name}</p>
                     {item.note && (
-                      <p className="text-xs text-[#FBBF24]/70 mt-1 italic truncate">Note: {item.note}</p>
+                      <p className="text-xs text-[#FBBF24]/70 mt-0.5 italic truncate">Note: {item.note}</p>
                     )}
                   </div>
-                  <button
-                    onClick={(e) => { e.stopPropagation(); setEditingItem(item); }}
-                    className="p-2 rounded-full bg-white/10 text-white/60 hover:bg-white/20 hover:text-white transition-colors"
-                  >
-                    <Pencil className="w-4 h-4" />
-                  </button>
-                </div>
-                <div className="mt-3 flex items-center gap-3">
-                  <button
-                    onClick={(e) => { e.stopPropagation(); updateQuantity(item.id, item.quantity - 1); }}
-                    className="w-9 h-9 rounded-full border border-white/10 flex items-center justify-center text-lg font-semibold hover:border-[#DC2626]/60 hover:bg-[#DC2626]/10 transition-colors"
-                  >
-                    -
-                  </button>
-                  <span className="text-base font-bold w-6 text-center">{item.quantity}</span>
-                  <button
-                    onClick={(e) => { e.stopPropagation(); updateQuantity(item.id, item.quantity + 1); }}
-                    className="w-9 h-9 rounded-full border border-white/10 flex items-center justify-center text-lg font-semibold hover:border-[#DC2626]/60 hover:bg-[#DC2626]/10 transition-colors"
-                  >
-                    +
-                  </button>
-                  <div className="ml-auto text-lg font-black text-[#FBBF24]">
-                    ${(item.price * item.quantity).toFixed(2)}
+
+                  {/* Bottom row: Qty controls + Price */}
+                  <div className="flex items-center justify-between mt-2">
+                    <div className="flex items-center gap-2">
+                      <button
+                        onClick={(e) => { e.stopPropagation(); updateQuantity(item.id, item.quantity - 1); }}
+                        className="w-8 h-8 rounded-full bg-white/10 border border-white/20 flex items-center justify-center text-white text-lg font-bold hover:bg-[#DC2626]/30 hover:border-[#DC2626]/50 transition-colors"
+                      >
+                        −
+                      </button>
+                      <span className="w-6 text-center text-base font-bold text-white">{item.quantity}</span>
+                      <button
+                        onClick={(e) => { e.stopPropagation(); updateQuantity(item.id, item.quantity + 1); }}
+                        className="w-8 h-8 rounded-full bg-white/10 border border-white/20 flex items-center justify-center text-white text-lg font-bold hover:bg-[#DC2626]/30 hover:border-[#DC2626]/50 transition-colors"
+                      >
+                        +
+                      </button>
+                    </div>
+                    <span className="text-base font-black text-[#FBBF24]">
+                      ${(item.price * item.quantity).toFixed(2)}
+                    </span>
                   </div>
                 </div>
+
+                {/* Edit button */}
+                <button
+                  onClick={(e) => { e.stopPropagation(); setEditingItem(item); }}
+                  className="self-start p-1.5 rounded-full bg-white/10 text-white/60 hover:bg-white/20 hover:text-white transition-colors"
+                >
+                  <Pencil className="w-3.5 h-3.5" />
+                </button>
               </div>
             ))}
           </div>

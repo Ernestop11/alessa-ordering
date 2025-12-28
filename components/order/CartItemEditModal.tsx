@@ -58,25 +58,33 @@ export default function CartItemEditModal({
         onClick={(e) => e.stopPropagation()}
       >
         {/* Header with image */}
-        <div className="relative h-40 bg-gradient-to-b from-[#C41E3A]/30 to-transparent">
-          {item.image && (
+        <div className="relative h-48 bg-gradient-to-b from-[#C41E3A]/20 to-[#1a1a1a]">
+          {item.image ? (
             <img
               src={item.image}
               alt={item.name}
-              className="absolute inset-0 w-full h-full object-cover opacity-40"
+              className="absolute inset-0 w-full h-full object-cover"
+              onError={(e) => {
+                const target = e.target as HTMLImageElement;
+                target.style.display = 'none';
+              }}
             />
+          ) : (
+            <div className="absolute inset-0 flex items-center justify-center text-6xl opacity-30">
+              🍽️
+            </div>
           )}
-          <div className="absolute inset-0 bg-gradient-to-t from-[#1a1a1a] via-transparent to-transparent" />
+          <div className="absolute inset-0 bg-gradient-to-t from-[#1a1a1a] via-[#1a1a1a]/60 to-transparent" />
           <button
             onClick={onClose}
-            className="absolute top-4 right-4 p-2 rounded-full bg-black/40 backdrop-blur-sm border border-white/20 text-white hover:bg-black/60 transition-colors"
+            className="absolute top-4 right-4 p-2 rounded-full bg-black/50 backdrop-blur-sm border border-white/20 text-white hover:bg-black/70 transition-colors z-10"
           >
             <X className="w-5 h-5" />
           </button>
-          <div className="absolute bottom-4 left-4 right-4">
-            <h2 className="text-xl font-bold text-white">{item.name}</h2>
+          <div className="absolute bottom-4 left-4 right-4 z-10">
+            <h2 className="text-xl font-bold text-white drop-shadow-lg">{item.name}</h2>
             {item.description && (
-              <p className="text-sm text-white/60 mt-1 line-clamp-2">{item.description}</p>
+              <p className="text-sm text-white/70 mt-1 line-clamp-2 drop-shadow">{item.description}</p>
             )}
           </div>
         </div>
