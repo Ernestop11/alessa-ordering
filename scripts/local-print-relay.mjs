@@ -517,6 +517,9 @@ function removeFromQueue(orderId) {
   });
 }
 
+// Track orders currently being printed to prevent duplicates
+const printingInProgress = new Set();
+
 /**
  * Poll the print queue for manual print requests
  */
@@ -526,6 +529,14 @@ async function pollPrintQueue() {
     const orders = response.orders || [];
 
     for (const order of orders) {
+      // Skip if already printing this order
+      if (printingInProgress.has(order.id)) {
+        continue;
+      }
+
+      // Mark as in progress BEFORE printing
+      printingInProgress.add(order.id);
+
       console.log(`\n🖨️  Print queue: ${order.id.slice(-6).toUpperCase()}`);
       console.log(`   Customer: ${order.customerName || order.customer?.name || 'Guest'}`);
 
@@ -536,6 +547,9 @@ async function pollPrintQueue() {
         console.log(`   ✅ Printed from queue`);
       } catch (printError) {
         console.error(`   ❌ Print failed: ${printError.message}`);
+      } finally {
+        // Remove from in-progress after a delay to be safe
+        setTimeout(() => printingInProgress.delete(order.id), 5000);
       }
     }
   } catch (error) {
