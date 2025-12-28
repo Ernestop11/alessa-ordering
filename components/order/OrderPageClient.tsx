@@ -2015,17 +2015,15 @@ export default function OrderPageClient({
     };
 
     return (
-      <section key="mobile-featured" className="md:hidden relative overflow-hidden mb-6">
-        {/* Make the entire section clickable with cursor pointer */}
-        <div
+      <section key="mobile-featured" className="md:hidden relative mb-4">
+        {/* Clickable container - using native button for best touch support */}
+        <button
+          type="button"
           onClick={handleFeaturedClick}
-          className="relative w-full cursor-pointer active:opacity-90 transition-opacity"
-          role="button"
-          tabIndex={0}
-          onKeyDown={(e) => e.key === 'Enter' && handleFeaturedClick()}
+          className="relative w-full text-left block focus:outline-none active:opacity-95"
         >
-          {/* Featured Image - 16:9 aspect ratio for better proportions */}
-          <div className="relative aspect-[16/9] w-full">
+          {/* Featured Image - 16:9 aspect ratio */}
+          <div className="relative aspect-[16/9] w-full overflow-hidden">
             {featuredItem.displayImage ? (
               <Image
                 src={featuredItem.displayImage}
@@ -2039,16 +2037,16 @@ export default function OrderPageClient({
             ) : (
               <div className="flex items-center justify-center h-full bg-[#2a2a2a] text-6xl">🍽️</div>
             )}
-            {/* Gradient overlay - pointer-events-none to not block clicks */}
-            <div className="absolute inset-0 bg-gradient-to-t from-black/90 via-black/30 to-transparent pointer-events-none" />
+            {/* Gradient overlay */}
+            <div className="absolute inset-0 bg-gradient-to-t from-black/90 via-black/30 to-transparent" />
 
             {/* HOT badge */}
-            <div className="absolute top-3 right-3 px-2.5 py-1 rounded-full bg-gradient-to-r from-[#FF4444] to-[#FF6B00] text-white text-[10px] font-black shadow-lg flex items-center gap-1 pointer-events-none">
+            <div className="absolute top-3 right-3 px-2.5 py-1 rounded-full bg-gradient-to-r from-[#FF4444] to-[#FF6B00] text-white text-[10px] font-black shadow-lg flex items-center gap-1">
               🔥 HOT
             </div>
 
             {/* Content overlay at bottom */}
-            <div className="absolute bottom-0 left-0 right-0 p-4 pointer-events-none">
+            <div className="absolute bottom-0 left-0 right-0 p-4">
               <div className="flex items-end justify-between gap-3">
                 <div className="flex-1 min-w-0">
                   <h3 className="text-xl font-black text-white mb-0.5 drop-shadow-lg uppercase tracking-wide">
@@ -2065,7 +2063,7 @@ export default function OrderPageClient({
               </div>
             </div>
           </div>
-        </div>
+        </button>
       </section>
     );
   };
@@ -2187,25 +2185,25 @@ export default function OrderPageClient({
     );
   };
 
-  // Render Quick Info Bar
+  // Render Quick Info Bar (Desktop only - mobile shows this info in header)
   const renderQuickInfoBar = () => {
     const quickInfoConfig = frontendUISections.find(s => s.type === 'quickInfo');
     if (quickInfoConfig && !quickInfoConfig.enabled) return null;
 
     return (
-      <div key="quick-info-bar" className="bg-[#2a2a2a] py-4 border-y border-white/5">
+      <div key="quick-info-bar" className="hidden sm:block bg-[#2a2a2a] py-4 border-y border-white/5">
         <div className="mx-auto max-w-7xl px-4">
           <div className="flex flex-wrap justify-center gap-8 text-center">
             <div className="px-4">
               <p className="text-2xl font-bold text-white">{personality.totalItems}</p>
               <p className="text-xs text-white/40 uppercase tracking-wide">Items</p>
             </div>
-            <div className="h-10 w-px bg-white/10 hidden sm:block" />
+            <div className="h-10 w-px bg-white/10" />
             <div className="px-4">
               <p className="text-2xl font-bold text-white">{hoursDisplay || hoursSummary || 'Open'}</p>
               <p className="text-xs text-white/40 uppercase tracking-wide">Hours</p>
             </div>
-            <div className="h-10 w-px bg-white/10 hidden sm:block" />
+            <div className="h-10 w-px bg-white/10" />
             <div className="px-4">
               <p className="text-2xl font-bold text-white">{locationDisplay || locationSummary || 'Local'}</p>
               <p className="text-xs text-white/40 uppercase tracking-wide">Location</p>
@@ -2961,9 +2959,9 @@ export default function OrderPageClient({
         }}
       />
 
-      {/* Mobile Section Navigation - Sticky below header (z-30 to stay below header's z-50) */}
+      {/* Mobile Section Navigation - Fixed below header */}
       <div
-        className="sticky z-30 sm:hidden bg-[#0d0d0d] border-b border-white/10"
+        className="fixed left-0 right-0 z-30 sm:hidden bg-[#0d0d0d] border-b border-white/10 shadow-lg"
         style={{ top: isScrolled ? 'calc(env(safe-area-inset-top, 0px) + 56px)' : 'calc(env(safe-area-inset-top, 0px) + 72px)' }}
       >
         <div className="flex gap-2 overflow-x-auto px-4 py-3 scrollbar-hide">
@@ -2986,8 +2984,13 @@ export default function OrderPageClient({
         </div>
       </div>
 
+      {/* Spacer for fixed category nav on mobile */}
+      <div className="h-[52px] sm:hidden" />
+
       {/* Position-based sections BEFORE menu (hero, quickInfo, featuredCarousel, and early banners) */}
-      {renderSectionsBeforeMenu()}
+      <div className="relative z-0">
+        {renderSectionsBeforeMenu()}
+      </div>
 
       <main id="menu" className="mx-auto max-w-7xl space-y-6 sm:space-y-10 px-4 py-4 sm:py-8">
         {notification && (
