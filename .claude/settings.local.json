@@ -92,7 +92,8 @@
       "Bash(# Check current count echo \"\"Videos transferred so far:\"\" ls \"\"/Volumes/AlessaCloud/Personal/Videos/\"\")",
       "Bash(# Check what print relay scripts exist locally echo \"\"=== Print Relay on External Drive ===\"\" ls -la /Volumes/AlessaCloud/scripts/print-relay/ || echo \"\"Not found\"\" echo \"\"\"\" echo \"\"=== Print Relay in Project ===\"\" ls -la /Users/ernestoponce/alessa-ordering/scripts/local-print-relay.mjs || echo \"\"Not found\"\" echo \"\"\"\" echo \"\"=== Checking for any running print processes ===\"\" ps aux)",
       "Bash(# Test creating a payment intent curl -s -X POST \"\"https://lasreinascolusa.com/api/orders/create-payment-intent\"\" \\\\ -H \"\"Content-Type: application/json\"\" \\\\ -H \"\"Cookie: \"\" \\\\ -d ''{ \"\"items\"\": [{\"\"menuItemId\"\": \"\"test\"\", \"\"quantity\"\": 1, \"\"price\"\": 10.00, \"\"name\"\": \"\"Test Item\"\"}], \"\"fulfillmentMethod\"\": \"\"pickup\"\", \"\"customerName\"\": \"\"Test Customer\"\", \"\"customerPhone\"\": \"\"555-1234\"\", \"\"customerEmail\"\": \"\"test@example.com\"\", \"\"subtotal\"\": 10.00, \"\"tax\"\": 0.83, \"\"total\"\": 10.83 }'' | python3 -m json.tool)",
-      "Bash(nc:*)"
+      "Bash(nc:*)",
+      "Bash(sips:*)"
     ],
     "deny": [],
     "ask": []

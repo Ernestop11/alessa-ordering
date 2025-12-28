@@ -35,7 +35,7 @@ const TENANT_THEME_MAP: Record<string, StaticTenantTheme> = {
     assets: {
       hero: '/tenant/lasreinas/images/hero-quesabirria-action.jpg',
       membership: '/tenant/lasreinas/images/membership.jpg',
-      logo: '/tenant/lasreinas/images/logo-white.png',
+      logo: '/tenant/lasreinas/logo.png', // Main logo (blue bull with text)
     },
   },
   villacorona: {

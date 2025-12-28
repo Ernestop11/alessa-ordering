@@ -2585,7 +2585,7 @@ export default function OrderPageClient({
       >
         <div className="mx-auto max-w-7xl px-4">
           {/* Top Row - Logo & Actions */}
-          <div className={`flex items-center justify-between transition-all duration-300 ${isScrolled ? 'py-1.5' : 'py-2'}`}>
+          <div className={`relative flex items-center justify-between transition-all duration-300 ${isScrolled ? 'py-1.5' : 'py-2'}`}>
             {/* Left Side - Hamburger Menu (Mobile) / Logo + Nav (Desktop) */}
             <div className="flex items-center gap-3">
               {/* Hamburger Menu - Mobile Only */}
@@ -2601,19 +2601,18 @@ export default function OrderPageClient({
 
               {/* Logo - Desktop Only (left side) */}
               <div className="relative flex-shrink-0 group hidden md:block">
-                <div className={`absolute bg-gradient-to-r from-amber-400 via-red-500 to-amber-400 rounded-full opacity-75 group-hover:opacity-100 blur-sm animate-pulse transition-all duration-300 ${isScrolled ? '-inset-0.5' : '-inset-1'}`} />
-                <div className={`relative rounded-full bg-white shadow-xl ring-2 ring-white/50 transition-all duration-300 ${isScrolled ? 'p-0.5' : 'p-1.5'}`}>
+                <div className={`relative rounded-full bg-white shadow-xl ring-2 ring-white/50 transition-all duration-300 ${isScrolled ? 'p-0.5' : 'p-1'}`}>
                   {tenant.logoUrl ? (
                     <Image
                       src={tenant.logoUrl}
                       alt={`${tenant.name} logo`}
                       width={64}
                       height={64}
-                      className={`rounded-full object-contain transition-all duration-300 group-hover:scale-110 ${isScrolled ? 'h-8 w-8' : 'h-12 w-12'}`}
+                      className={`rounded-full object-contain transition-all duration-300 ${isScrolled ? 'h-8 w-8' : 'h-10 w-10'}`}
                       unoptimized={tenant.logoUrl.startsWith('/tenant/')}
                     />
                   ) : (
-                    <div className={`flex items-center justify-center rounded-full bg-gradient-to-br from-red-600 to-amber-500 transition-all duration-300 ${isScrolled ? 'h-8 w-8 text-lg' : 'h-12 w-12 text-2xl'}`}>🍽️</div>
+                    <div className={`flex items-center justify-center rounded-full bg-gradient-to-br from-red-600 to-amber-500 transition-all duration-300 ${isScrolled ? 'h-8 w-8 text-lg' : 'h-10 w-10 text-xl'}`}>🍽️</div>
                   )}
                 </div>
               </div>
@@ -2639,30 +2638,33 @@ export default function OrderPageClient({
               </nav>
             </div>
 
-            {/* Right Side - Logo (Mobile) & Location & Cart */}
-            <div className="flex items-center gap-3">
-              {/* Logo - Mobile Only (right side) - Tappable to open menu */}
-              <button
-                onClick={() => setShowMobileNav(true)}
-                className="relative flex-shrink-0 group md:hidden"
-                aria-label="Open menu"
-              >
-                <div className={`relative rounded-full bg-white shadow-lg ring-2 ring-white/30 transition-all duration-300 ${isScrolled ? 'p-0.5' : 'p-1'}`}>
-                  {tenant.logoUrl ? (
-                    <Image
-                      src={tenant.logoUrl}
-                      alt={`${tenant.name} logo`}
-                      width={48}
-                      height={48}
-                      className={`rounded-full object-contain transition-all duration-300 ${isScrolled ? 'h-8 w-8' : 'h-10 w-10'}`}
-                      unoptimized={tenant.logoUrl.startsWith('/tenant/')}
-                    />
-                  ) : (
-                    <div className={`flex items-center justify-center rounded-full bg-gradient-to-br from-red-600 to-amber-500 transition-all duration-300 ${isScrolled ? 'h-8 w-8 text-lg' : 'h-10 w-10 text-xl'}`}>🍽️</div>
-                  )}
-                </div>
-              </button>
+            {/* Center - Logo + Tenant Name (Mobile Only) */}
+            <button
+              onClick={() => setShowMobileNav(true)}
+              className="md:hidden flex items-center gap-2 absolute left-1/2 -translate-x-1/2"
+              aria-label="Open menu"
+            >
+              <div className={`rounded-full bg-white shadow-md p-0.5 transition-all duration-300 ${isScrolled ? 'w-7 h-7' : 'w-8 h-8'}`}>
+                {tenant.logoUrl ? (
+                  <Image
+                    src={tenant.logoUrl}
+                    alt={`${tenant.name} logo`}
+                    width={32}
+                    height={32}
+                    className="w-full h-full rounded-full object-contain"
+                    unoptimized={tenant.logoUrl.startsWith('/tenant/')}
+                  />
+                ) : (
+                  <div className="w-full h-full flex items-center justify-center rounded-full bg-gradient-to-br from-red-600 to-amber-500 text-sm">🍽️</div>
+                )}
+              </div>
+              <span className={`font-bold text-white transition-all duration-300 ${isScrolled ? 'text-sm' : 'text-base'}`}>
+                {tenant.name.length > 14 ? tenant.name.substring(0, 12) + '...' : tenant.name}
+              </span>
+            </button>
 
+            {/* Right Side - Location & Cart */}
+            <div className="flex items-center gap-3">
               {/* Location Selector */}
               <div className="hidden sm:flex items-center gap-2 rounded-lg bg-[#6B1C1C] px-3 py-2">
                 <span className="text-xs text-white/60">Pickup at</span>

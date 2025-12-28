@@ -51,10 +51,10 @@ export async function generateMetadata(): Promise<Metadata> {
     // Determine icon paths based on tenant
     const hasCustomIcons = slug === 'lasreinas';
     const iconPath = hasCustomIcons
-      ? `/tenant/${slug}/images/logo.png`
+      ? `/tenant/${slug}/icons/icon-192.png`
       : '/icons/alessa-cloud-icon-192.png';
     const icon512Path = hasCustomIcons
-      ? `/tenant/${slug}/images/logo.png`
+      ? `/tenant/${slug}/icons/icon-512.png`
       : '/icons/alessa-cloud-icon-512.png';
 
     return {

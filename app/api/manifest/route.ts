@@ -40,14 +40,20 @@ export async function GET() {
     const icons = hasCustomIcons
       ? [
           {
-            src: `/tenant/${iconSlug}/images/logo.png`,
+            src: `/tenant/${iconSlug}/icons/icon-192.png`,
+            sizes: '192x192',
+            type: 'image/png',
+            purpose: 'any',
+          },
+          {
+            src: `/tenant/${iconSlug}/icons/icon-512.png`,
             sizes: '512x512',
             type: 'image/png',
             purpose: 'any',
           },
           {
-            src: `/tenant/${iconSlug}/images/logo.png`,
-            sizes: '192x192',
+            src: `/tenant/${iconSlug}/logo.png`,
+            sizes: '500x500',
             type: 'image/png',
             purpose: 'maskable',
           },
