@@ -43,19 +43,19 @@ export async function GET() {
     const backgroundColor = tenant?.secondaryColor || staticTheme.secondaryColor;
 
     // Determine icon paths - check for tenant-specific icons
-    const tenantSlug = tenant?.slug || 'default';
+    const iconSlug = tenant?.slug || 'default';
     const hasCustomIcons = tenant?.slug === 'lasreinas'; // Can expand this check
 
     const icons = hasCustomIcons
       ? [
           {
-            src: `/tenant/${tenantSlug}/images/logo.png`,
+            src: `/tenant/${iconSlug}/images/logo.png`,
             sizes: '512x512',
             type: 'image/png',
             purpose: 'any',
           },
           {
-            src: `/tenant/${tenantSlug}/images/logo.png`,
+            src: `/tenant/${iconSlug}/images/logo.png`,
             sizes: '192x192',
             type: 'image/png',
             purpose: 'maskable',
