@@ -91,6 +91,8 @@ export default function MobileNavDrawer({
   const [deferredPrompt, setDeferredPrompt] = useState<any>(null);
   const [isInstalled, setIsInstalled] = useState(false);
   const [isIOS, setIsIOS] = useState(false);
+  const [showInstallModal, setShowInstallModal] = useState(false);
+  const [installStep, setInstallStep] = useState<'intro' | 'confirm' | 'ios-instructions' | 'success'>('intro');
 
   useEffect(() => {
     if (isOpen) {
@@ -139,19 +141,31 @@ export default function MobileNavDrawer({
     };
   }, []);
 
-  // Handle PWA install button click
-  const handleInstallClick = async () => {
+  // Handle PWA install button click - show modal
+  const handleInstallClick = () => {
+    setInstallStep('intro');
+    setShowInstallModal(true);
+  };
+
+  // Handle actual install after user confirms
+  const handleConfirmInstall = async () => {
     if (isIOS) {
-      // Show iOS instructions
-      alert('To install this app:\n\n1. Tap the Share button (📤) at the bottom of Safari\n2. Scroll down and tap "Add to Home Screen"\n3. Tap "Add" in the top right');
+      setInstallStep('ios-instructions');
       return;
     }
 
     if (deferredPrompt) {
+      setInstallStep('confirm');
       deferredPrompt.prompt();
       const { outcome } = await deferredPrompt.userChoice;
       if (outcome === 'accepted') {
+        setInstallStep('success');
         setIsInstalled(true);
+        setTimeout(() => {
+          setShowInstallModal(false);
+        }, 2000);
+      } else {
+        setShowInstallModal(false);
       }
       setDeferredPrompt(null);
     }
@@ -624,17 +638,35 @@ export default function MobileNavDrawer({
             </div>
           )}
 
-          {/* PWA Install Button */}
+          {/* PWA Install Button - App Store Style */}
           {!isInstalled && (deferredPrompt || isIOS) && (
             <div className="p-4 border-t border-white/10">
               <button
                 onClick={handleInstallClick}
-                className="w-full flex items-center justify-center gap-3 py-3 px-4 rounded-xl border-2 border-dashed border-[#FBBF24]/50 bg-[#FBBF24]/10 text-[#FBBF24] hover:bg-[#FBBF24]/20 transition-all"
+                className="w-full flex items-center gap-4 py-3 px-4 rounded-2xl bg-gradient-to-r from-[#1a1a2e] to-[#16213e] border border-white/10 hover:border-white/20 transition-all group"
               >
-                <span className="text-xl">📲</span>
-                <div className="text-left">
-                  <p className="font-bold text-sm">Add to Home Screen</p>
-                  <p className="text-xs text-[#FBBF24]/70">Quick access to {tenant.name}</p>
+                {/* App Icon */}
+                <div className="w-14 h-14 rounded-xl bg-white shadow-lg overflow-hidden flex-shrink-0">
+                  {tenant.logoUrl ? (
+                    <img src={tenant.logoUrl} alt={tenant.name} className="w-full h-full object-cover" />
+                  ) : (
+                    <div className="w-full h-full flex items-center justify-center bg-gradient-to-br from-red-600 to-amber-500 text-2xl">🍽️</div>
+                  )}
+                </div>
+                {/* App Info */}
+                <div className="flex-1 text-left">
+                  <p className="font-bold text-white text-sm">{tenant.name}</p>
+                  <p className="text-xs text-gray-400">Order food & earn rewards</p>
+                  <div className="flex items-center gap-1 mt-1">
+                    <span className="text-[#FBBF24] text-xs">★★★★★</span>
+                    <span className="text-gray-500 text-[10px]">FREE</span>
+                  </div>
+                </div>
+                {/* GET Button */}
+                <div className="flex-shrink-0">
+                  <span className="px-5 py-2 rounded-full bg-[#007AFF] text-white text-sm font-bold group-hover:bg-[#0066CC] transition-colors">
+                    GET
+                  </span>
                 </div>
               </button>
             </div>
@@ -667,6 +699,156 @@ export default function MobileNavDrawer({
           </div>
         )}
       </div>
+
+      {/* PWA Install Modal - Animated */}
+      {showInstallModal && (
+        <div className="fixed inset-0 z-[100] flex items-end justify-center">
+          {/* Backdrop */}
+          <div
+            className="absolute inset-0 bg-black/60 backdrop-blur-sm animate-fade-in"
+            onClick={() => setShowInstallModal(false)}
+          />
+
+          {/* Modal Content */}
+          <div className="relative w-full max-w-md mx-4 mb-4 animate-slide-up">
+            <div className="bg-gradient-to-b from-[#1a1a2e] to-[#0f0f23] rounded-3xl overflow-hidden border border-white/10 shadow-2xl">
+              {/* Header with App Preview */}
+              <div className="relative pt-8 pb-6 px-6 text-center bg-gradient-to-b from-[#DC2626]/20 to-transparent">
+                {/* Close Button */}
+                <button
+                  onClick={() => setShowInstallModal(false)}
+                  className="absolute top-4 right-4 w-8 h-8 flex items-center justify-center rounded-full bg-white/10 text-white/60 hover:bg-white/20 hover:text-white transition-all"
+                >
+                  ✕
+                </button>
+
+                {/* App Icon with Animation */}
+                <div className="inline-block mb-4 animate-bounce-gentle">
+                  <div className="w-20 h-20 rounded-2xl bg-white shadow-xl overflow-hidden mx-auto ring-4 ring-white/20">
+                    {tenant.logoUrl ? (
+                      <img src={tenant.logoUrl} alt={tenant.name} className="w-full h-full object-cover" />
+                    ) : (
+                      <div className="w-full h-full flex items-center justify-center bg-gradient-to-br from-red-600 to-amber-500 text-3xl">🍽️</div>
+                    )}
+                  </div>
+                </div>
+
+                <h3 className="text-xl font-bold text-white mb-1">{tenant.name}</h3>
+                <p className="text-sm text-gray-400">Taqueria y Carniceria</p>
+              </div>
+
+              {/* Content based on step */}
+              <div className="px-6 pb-6">
+                {installStep === 'intro' && (
+                  <div className="space-y-4 animate-fade-in">
+                    {/* Benefits */}
+                    <div className="space-y-3 py-4">
+                      <div className="flex items-center gap-3 text-white/90">
+                        <span className="w-8 h-8 rounded-full bg-green-500/20 flex items-center justify-center text-green-400">⚡</span>
+                        <span className="text-sm">Instant access from home screen</span>
+                      </div>
+                      <div className="flex items-center gap-3 text-white/90">
+                        <span className="w-8 h-8 rounded-full bg-blue-500/20 flex items-center justify-center text-blue-400">🔔</span>
+                        <span className="text-sm">Get order updates & special offers</span>
+                      </div>
+                      <div className="flex items-center gap-3 text-white/90">
+                        <span className="w-8 h-8 rounded-full bg-amber-500/20 flex items-center justify-center text-amber-400">🏆</span>
+                        <span className="text-sm">Faster checkout & rewards tracking</span>
+                      </div>
+                    </div>
+
+                    {/* Install Button */}
+                    <button
+                      onClick={handleConfirmInstall}
+                      className="w-full py-4 rounded-xl bg-[#007AFF] text-white font-bold text-lg hover:bg-[#0066CC] transition-all transform hover:scale-[1.02] active:scale-[0.98]"
+                    >
+                      Add to Home Screen
+                    </button>
+
+                    <p className="text-center text-xs text-gray-500">
+                      Free • No App Store required
+                    </p>
+                  </div>
+                )}
+
+                {installStep === 'ios-instructions' && (
+                  <div className="space-y-4 animate-fade-in py-4">
+                    <p className="text-center text-white/80 text-sm mb-4">
+                      Follow these steps in Safari:
+                    </p>
+
+                    <div className="space-y-4">
+                      <div className="flex items-start gap-3">
+                        <span className="w-7 h-7 rounded-full bg-[#007AFF] flex items-center justify-center text-white text-sm font-bold flex-shrink-0">1</span>
+                        <div>
+                          <p className="text-white font-medium">Tap the Share button</p>
+                          <p className="text-gray-400 text-sm">📤 at the bottom of Safari</p>
+                        </div>
+                      </div>
+                      <div className="flex items-start gap-3">
+                        <span className="w-7 h-7 rounded-full bg-[#007AFF] flex items-center justify-center text-white text-sm font-bold flex-shrink-0">2</span>
+                        <div>
+                          <p className="text-white font-medium">Scroll down and tap</p>
+                          <p className="text-gray-400 text-sm">"Add to Home Screen" ➕</p>
+                        </div>
+                      </div>
+                      <div className="flex items-start gap-3">
+                        <span className="w-7 h-7 rounded-full bg-[#007AFF] flex items-center justify-center text-white text-sm font-bold flex-shrink-0">3</span>
+                        <div>
+                          <p className="text-white font-medium">Tap "Add"</p>
+                          <p className="text-gray-400 text-sm">in the top right corner</p>
+                        </div>
+                      </div>
+                    </div>
+
+                    <button
+                      onClick={() => setShowInstallModal(false)}
+                      className="w-full py-3 rounded-xl bg-white/10 text-white font-medium hover:bg-white/20 transition-all mt-4"
+                    >
+                      Got it!
+                    </button>
+                  </div>
+                )}
+
+                {installStep === 'success' && (
+                  <div className="py-8 text-center animate-fade-in">
+                    <div className="w-16 h-16 rounded-full bg-green-500/20 flex items-center justify-center mx-auto mb-4 animate-bounce-gentle">
+                      <span className="text-4xl">✓</span>
+                    </div>
+                    <p className="text-xl font-bold text-white mb-2">App Added!</p>
+                    <p className="text-gray-400">Find it on your home screen</p>
+                  </div>
+                )}
+              </div>
+            </div>
+          </div>
+        </div>
+      )}
+
+      {/* CSS Animations */}
+      <style jsx>{`
+        @keyframes fade-in {
+          from { opacity: 0; }
+          to { opacity: 1; }
+        }
+        @keyframes slide-up {
+          from { transform: translateY(100%); opacity: 0; }
+          to { transform: translateY(0); opacity: 1; }
+        }
+        @keyframes bounce-gentle {
+          0%, 100% { transform: translateY(0); }
+          50% { transform: translateY(-5px); }
+        }
+        .animate-fade-in {
+          animation: fade-in 0.3s ease-out;
+        }
+        .animate-slide-up {
+          animation: slide-up 0.4s cubic-bezier(0.16, 1, 0.3, 1);
+        }
+        .animate-bounce-gentle {
+          animation: bounce-gentle 2s ease-in-out infinite;
+        }
+      `}</style>
     </>
   );
 }

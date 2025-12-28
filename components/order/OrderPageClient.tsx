@@ -2638,33 +2638,39 @@ export default function OrderPageClient({
               </nav>
             </div>
 
-            {/* Center - Logo + Tenant Name (Mobile Only) */}
-            <button
-              onClick={() => setShowMobileNav(true)}
-              className="md:hidden flex items-center gap-2 absolute left-1/2 -translate-x-1/2"
-              aria-label="Open menu"
-            >
-              <div className={`rounded-full bg-white shadow-md p-0.5 transition-all duration-300 ${isScrolled ? 'w-7 h-7' : 'w-8 h-8'}`}>
-                {tenant.logoUrl ? (
-                  <Image
-                    src={tenant.logoUrl}
-                    alt={`${tenant.name} logo`}
-                    width={32}
-                    height={32}
-                    className="w-full h-full rounded-full object-contain"
-                    unoptimized={tenant.logoUrl.startsWith('/tenant/')}
-                  />
-                ) : (
-                  <div className="w-full h-full flex items-center justify-center rounded-full bg-gradient-to-br from-red-600 to-amber-500 text-sm">🍽️</div>
-                )}
-              </div>
-              <span className={`font-bold text-white transition-all duration-300 ${isScrolled ? 'text-sm' : 'text-base'}`}>
-                {tenant.name.length > 14 ? tenant.name.substring(0, 12) + '...' : tenant.name}
+            {/* Center-Left - Tenant Name + Tagline (Mobile Only) */}
+            <div className="md:hidden flex flex-col justify-center ml-1">
+              <span className={`font-bold text-white leading-tight transition-all duration-300 ${isScrolled ? 'text-sm' : 'text-base'}`}>
+                Las Reinas
               </span>
-            </button>
+              <span className={`text-[#FBBF24] font-medium leading-tight transition-all duration-300 ${isScrolled ? 'text-[10px]' : 'text-xs'}`}>
+                Taqueria y Carniceria
+              </span>
+            </div>
 
-            {/* Right Side - Location & Cart */}
+            {/* Right Side - Logo (Mobile) & Location & Cart */}
             <div className="flex items-center gap-3">
+              {/* Logo - Mobile Only (right side) */}
+              <button
+                onClick={() => setShowMobileNav(true)}
+                className="md:hidden flex-shrink-0"
+                aria-label="Open menu"
+              >
+                <div className={`rounded-full bg-white shadow-lg ring-2 ring-white/30 transition-all duration-300 ${isScrolled ? 'p-0.5' : 'p-1'}`}>
+                  {tenant.logoUrl ? (
+                    <Image
+                      src={tenant.logoUrl}
+                      alt={`${tenant.name} logo`}
+                      width={48}
+                      height={48}
+                      className={`rounded-full object-contain transition-all duration-300 ${isScrolled ? 'h-9 w-9' : 'h-11 w-11'}`}
+                      unoptimized={tenant.logoUrl.startsWith('/tenant/')}
+                    />
+                  ) : (
+                    <div className={`flex items-center justify-center rounded-full bg-gradient-to-br from-red-600 to-amber-500 transition-all duration-300 ${isScrolled ? 'h-9 w-9 text-lg' : 'h-11 w-11 text-xl'}`}>🍽️</div>
+                  )}
+                </div>
+              </button>
               {/* Location Selector */}
               <div className="hidden sm:flex items-center gap-2 rounded-lg bg-[#6B1C1C] px-3 py-2">
                 <span className="text-xs text-white/60">Pickup at</span>
