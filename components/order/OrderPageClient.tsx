@@ -1995,13 +1995,19 @@ export default function OrderPageClient({
     if (!featuredItem) return null;
 
     const handleFeaturedClick = () => {
-      console.log('[Featured] Clicked, featuredItem:', featuredItem);
+      console.log('[Featured] Clicked! featuredItem:', featuredItem);
+      // Always show notification first to confirm click is working
+      showNotification(`Opening ${featuredItem.name}...`);
+
       if (featuredItem.id) {
         // Find and open the item
         const item = menuItems.find(i => i.id === featuredItem.id);
         console.log('[Featured] Found item:', item);
         if (item) {
-          setSelectedMenuItem(item);
+          // Small delay to show notification
+          setTimeout(() => {
+            setSelectedMenuItem(item);
+          }, 100);
         } else {
           // If we can't find the exact item, show notification
           showNotification(`${featuredItem.name} - tap items below to order`);
@@ -2021,7 +2027,7 @@ export default function OrderPageClient({
     };
 
     return (
-      <section key="mobile-featured" className="md:hidden relative mt-2 mb-6 mx-4">
+      <section key="mobile-featured" className="md:hidden relative mt-4 mb-6 mx-4">
         {/* Clickable container - using native button for best touch support */}
         <button
           type="button"
@@ -3013,7 +3019,7 @@ export default function OrderPageClient({
       <div className={`sm:hidden ${restaurantIsOpen ? 'h-[52px]' : 'h-[80px]'}`} />
 
       {/* Position-based sections BEFORE menu (hero, quickInfo, featuredCarousel, and early banners) */}
-      <div className="relative">
+      <div className="relative z-20">
         {renderSectionsBeforeMenu()}
       </div>
 

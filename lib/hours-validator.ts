@@ -255,10 +255,19 @@ export function validateOperatingHours(
 
   // Check isOpen flag - must be explicitly true to be open
   if (isOpenFlag !== true) {
+    // Even though closed by flag, try to get next open time for better messaging
+    const timezone = operatingHours.timezone || 'America/Los_Angeles';
+    const localDate = toTimezone(currentDate, timezone);
+    const activeHours = getActiveHours(operatingHours, localDate);
+    const nextOpen = activeHours ? getNextOpenTime(localDate, activeHours) : undefined;
+
     return {
       isOpen: false,
       reason: 'isOpen_flag',
-      message: 'Restaurant is currently closed.',
+      message: nextOpen
+        ? `Kitchen is closed. We'll be open ${nextOpen}.`
+        : 'Restaurant is currently closed.',
+      nextOpenTime: nextOpen,
     };
   }
 
