@@ -44,13 +44,13 @@ export default function MenuItemCard({
   const quickAddButton = `
     absolute top-3 left-3 z-10
     w-10 h-10 rounded-full
-    bg-[#C41E3A]/90 backdrop-blur-md
-    border border-white/20
-    shadow-lg shadow-[#C41E3A]/30
+    bg-black/50 backdrop-blur-md
+    border border-white/30
+    shadow-lg
     flex items-center justify-center
-    text-white text-xl font-bold
+    text-white text-xl font-medium
     transition-all duration-200
-    hover:scale-110 hover:bg-[#C41E3A] hover:shadow-xl
+    hover:scale-110 hover:bg-black/70 hover:border-white/50 hover:shadow-xl
     active:scale-95
   `;
 
@@ -84,7 +84,7 @@ export default function MenuItemCard({
           {item.available && (
             <button
               onClick={(e) => { e.stopPropagation(); onAddToCart(); }}
-              className="absolute top-1 left-1 w-7 h-7 rounded-full bg-[#C41E3A]/90 backdrop-blur-sm border border-white/20 flex items-center justify-center text-white text-sm shadow-lg hover:scale-110 transition-transform"
+              className="absolute top-1 left-1 w-7 h-7 rounded-full bg-black/50 backdrop-blur-sm border border-white/30 flex items-center justify-center text-white text-sm shadow-lg hover:scale-110 hover:bg-black/70 transition-all"
               title="Quick add to cart"
             >
               +
@@ -158,8 +158,8 @@ export default function MenuItemCard({
           )}
 
           {/* Price badge */}
-          <div className="absolute top-3 right-3 rounded-xl bg-[#C41E3A]/90 backdrop-blur-sm px-3 py-1.5 border border-white/10">
-            <span className="text-lg font-bold text-white">${item.price.toFixed(2)}</span>
+          <div className="absolute top-3 right-3 rounded-full bg-black/50 backdrop-blur-sm px-3 py-1.5 border border-white/30 shadow-lg">
+            <span className="text-lg font-semibold text-white">${item.price.toFixed(2)}</span>
           </div>
 
           {!item.available && (
@@ -188,7 +188,7 @@ export default function MenuItemCard({
 
   // Grid layout (default) - Compact mobile-first card
   return (
-    <article className={`group relative overflow-hidden rounded-xl sm:rounded-2xl bg-white/[0.03] backdrop-blur-sm border transition-all duration-300 hover:shadow-xl ${isInCart ? 'border-amber-400/60 ring-1 ring-amber-400/30 hover:border-amber-400/80' : 'border-white/[0.08] hover:border-[#C41E3A]/40 hover:shadow-[#C41E3A]/10'}`}>
+    <article className={`group relative overflow-hidden rounded-xl sm:rounded-2xl bg-white/[0.03] backdrop-blur-sm border transition-all duration-300 hover:shadow-xl ${isInCart ? 'border-amber-400/60 ring-1 ring-amber-400/30 hover:border-amber-400/80' : 'border-white/[0.08] hover:border-white/20 hover:shadow-white/5'}`}>
       {/* Image container - shorter on mobile */}
       <div className="relative aspect-square sm:aspect-[4/3] w-full overflow-hidden bg-[#1a1a1a]">
         {isExternalImage ? (
@@ -259,7 +259,7 @@ export default function MenuItemCard({
             {item.tags.slice(0, 3).map((tag) => (
               <span
                 key={tag}
-                className="rounded-full bg-[#C41E3A]/10 border border-[#C41E3A]/20 px-2 py-0.5 text-[10px] font-medium text-[#C41E3A] uppercase tracking-wide"
+                className="rounded-full bg-amber-500/10 border border-amber-500/20 px-2 py-0.5 text-[10px] font-medium text-amber-400 uppercase tracking-wide"
               >
                 {tag}
               </span>
