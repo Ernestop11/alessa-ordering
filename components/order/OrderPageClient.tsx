@@ -2690,15 +2690,18 @@ export default function OrderPageClient({
           {navSections.map((section) => (
             <button
               key={`nav-${section.id}`}
-              onClick={() => {
+              onClick={(e) => {
+                // Prevent scroll interference
+                e.preventDefault();
+                e.stopPropagation();
                 const el = document.getElementById(`section-${section.id}`);
                 if (el) {
-                  const yOffset = -140;
+                  const yOffset = -160;
                   const y = el.getBoundingClientRect().top + window.pageYOffset + yOffset;
                   window.scrollTo({ top: y, behavior: 'smooth' });
                 }
               }}
-              className="flex-shrink-0 px-4 py-2 rounded-full text-xs font-semibold bg-white/10 text-white/90 border border-white/20 hover:bg-[#DC2626] hover:border-[#DC2626] hover:text-white transition-all whitespace-nowrap"
+              className="flex-shrink-0 px-4 py-2.5 rounded-full text-xs font-semibold bg-white/10 text-white/90 border border-white/20 active:bg-[#DC2626] active:border-[#DC2626] active:text-white active:scale-95 transition-all whitespace-nowrap touch-manipulation"
             >
               {section.name}
             </button>
@@ -2954,8 +2957,8 @@ export default function OrderPageClient({
           </div>
         </div>
 
-        {/* Promotional Banner */}
-        <div className={`border-t border-white/10 ${restaurantIsOpen ? 'bg-[#6B1C1C]' : 'bg-red-900'}`}>
+        {/* Promotional Banner - Desktop Only */}
+        <div className={`hidden sm:block border-t border-white/10 ${restaurantIsOpen ? 'bg-[#6B1C1C]' : 'bg-red-900'}`}>
           <div className="mx-auto max-w-7xl px-4 py-2 flex items-center justify-center gap-4">
             {restaurantIsOpen ? (
               <>
@@ -2978,6 +2981,21 @@ export default function OrderPageClient({
         </div>
       </header>
 
+      {/* Mobile Open/Closed Status Banner - Shows below nav */}
+      {!restaurantIsOpen && (
+        <div
+          className="fixed left-0 right-0 sm:hidden bg-red-900/95 backdrop-blur-sm border-b border-red-700/50 z-30"
+          style={{
+            top: isScrolled ? 'calc(env(safe-area-inset-top, 0px) + 112px)' : 'calc(env(safe-area-inset-top, 0px) + 136px)',
+            transition: 'top 0.3s ease'
+          }}
+        >
+          <div className="px-4 py-2 flex items-center justify-center gap-2">
+            <span className="text-red-200 font-semibold text-sm">🚫 {restaurantClosedMessage || 'Currently closed'}</span>
+          </div>
+        </div>
+      )}
+
       {/* Spacer for fixed header - accounts for safe area on iPhone */}
       <div
         className="w-full"
@@ -2997,8 +3015,14 @@ export default function OrderPageClient({
 
       <main id="menu" className="mx-auto max-w-7xl space-y-6 sm:space-y-10 px-4 py-4 sm:py-8">
         {notification && (
-          <div className="fixed right-6 top-20 z-50 rounded-2xl bg-green-500/95 px-6 py-3 text-sm font-semibold text-white shadow-lg shadow-green-500/40">
-            {notification}
+          <div
+            className="fixed left-4 right-4 sm:left-auto sm:right-6 z-[100] rounded-2xl bg-green-500/95 px-6 py-3 text-sm font-semibold text-white shadow-xl shadow-green-500/40 text-center sm:text-left"
+            style={{
+              top: 'calc(env(safe-area-inset-top, 0px) + 160px)',
+              animation: 'fadeInUp 0.3s ease-out'
+            }}
+          >
+            ✓ {notification}
           </div>
         )}
 
