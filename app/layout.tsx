@@ -25,11 +25,20 @@ export function generateViewport(): Viewport {
     const theme = getStaticTenantTheme(slug);
     return {
       themeColor: theme.themeColor,
+      // Enable safe area insets for iPhone notch/Dynamic Island
+      viewportFit: 'cover',
+      width: 'device-width',
+      initialScale: 1,
+      maximumScale: 1,
     };
   } catch {
     const fallback = getStaticTenantTheme();
     return {
       themeColor: fallback.themeColor,
+      viewportFit: 'cover',
+      width: 'device-width',
+      initialScale: 1,
+      maximumScale: 1,
     };
   }
 }

@@ -2575,39 +2575,44 @@ export default function OrderPageClient({
 
       {/* Main content wrapper */}
       <div className="relative z-10">
-      {/* Warm Header - Panda Express Style with scroll shrink */}
-      <header className={`sticky top-0 z-40 bg-[#8B2323] shadow-lg transition-all duration-300 ${isScrolled ? 'py-0' : ''}`}>
+      {/* Warm Header - Sticky with safe area support for iPhone notch/Dynamic Island */}
+      <header
+        className={`fixed top-0 left-0 right-0 z-40 bg-[#8B2323] shadow-lg transition-all duration-300`}
+        style={{ paddingTop: 'env(safe-area-inset-top, 0px)' }}
+      >
         <div className="mx-auto max-w-7xl px-4">
           {/* Top Row - Logo & Actions */}
-          <div className={`flex items-center justify-between transition-all duration-300 ${isScrolled ? 'py-1' : 'py-2'}`}>
-            {/* Logo & Name */}
-            <div className="flex items-center gap-3">
-              {/* Hamburger Menu - Mobile Only */}
+          <div className={`flex items-center justify-between transition-all duration-300 ${isScrolled ? 'py-1.5' : 'py-2'}`}>
+            {/* Left Side - Hamburger Menu (Mobile) */}
+            <div className="flex items-center">
               <button
                 onClick={() => setShowMobileNav(true)}
-                className={`md:hidden flex items-center justify-center rounded-lg bg-white/10 hover:bg-white/20 transition-all duration-300 ${isScrolled ? 'w-8 h-8' : 'w-10 h-10'}`}
+                className={`md:hidden flex items-center justify-center rounded-lg bg-white/10 hover:bg-white/20 transition-all duration-300 ${isScrolled ? 'w-9 h-9' : 'w-10 h-10'}`}
                 aria-label="Open menu"
               >
                 <svg className={`text-white transition-all duration-300 ${isScrolled ? 'w-5 h-5' : 'w-6 h-6'}`} fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2}>
                   <path strokeLinecap="round" strokeLinejoin="round" d="M4 6h16M4 12h16M4 18h16" />
                 </svg>
               </button>
+            </div>
 
+            {/* Center - Logo (Mobile) / Left side with nav (Desktop) */}
+            <div className="flex items-center gap-3 md:order-first">
               <div className="relative flex-shrink-0 group">
                 {/* Glowing ring effect - smaller when scrolled */}
                 <div className={`absolute bg-gradient-to-r from-amber-400 via-red-500 to-amber-400 rounded-full opacity-75 group-hover:opacity-100 blur-sm animate-pulse transition-all duration-300 ${isScrolled ? '-inset-0.5' : '-inset-1'}`} />
-                <div className={`relative rounded-full bg-white shadow-xl ring-2 ring-white/50 transition-all duration-300 ${isScrolled ? 'p-1' : 'p-2'}`}>
+                <div className={`relative rounded-full bg-white shadow-xl ring-2 ring-white/50 transition-all duration-300 ${isScrolled ? 'p-0.5' : 'p-1.5'}`}>
                   {tenant.logoUrl ? (
                     <Image
                       src={tenant.logoUrl}
                       alt={`${tenant.name} logo`}
                       width={64}
                       height={64}
-                      className={`rounded-full object-contain transition-all duration-300 group-hover:scale-110 ${isScrolled ? 'h-10 w-10' : 'h-16 w-16'}`}
+                      className={`rounded-full object-contain transition-all duration-300 group-hover:scale-110 ${isScrolled ? 'h-8 w-8' : 'h-12 w-12'}`}
                       unoptimized={tenant.logoUrl.startsWith('/tenant/')}
                     />
                   ) : (
-                    <div className={`flex items-center justify-center rounded-full bg-gradient-to-br from-red-600 to-amber-500 transition-all duration-300 ${isScrolled ? 'h-10 w-10 text-xl' : 'h-16 w-16 text-3xl'}`}>🍽️</div>
+                    <div className={`flex items-center justify-center rounded-full bg-gradient-to-br from-red-600 to-amber-500 transition-all duration-300 ${isScrolled ? 'h-8 w-8 text-lg' : 'h-12 w-12 text-2xl'}`}>🍽️</div>
                   )}
                 </div>
               </div>
@@ -2808,6 +2813,15 @@ export default function OrderPageClient({
         </div>
       </header>
 
+      {/* Spacer for fixed header - accounts for safe area on iPhone */}
+      <div
+        className="w-full"
+        style={{
+          height: isScrolled ? 'calc(env(safe-area-inset-top, 0px) + 56px)' : 'calc(env(safe-area-inset-top, 0px) + 72px)',
+          transition: 'height 0.3s ease'
+        }}
+      />
+
       {/* Position-based sections BEFORE menu (hero, quickInfo, featuredCarousel, and early banners) */}
       {renderSectionsBeforeMenu()}
 
@@ -2820,7 +2834,10 @@ export default function OrderPageClient({
 
 
         {/* Mobile Section Navigation Shortcuts */}
-        <div className="sticky top-[140px] z-30 sm:hidden bg-gradient-to-b from-[#1a0a0a] to-transparent pb-2">
+        <div
+          className="sticky z-30 sm:hidden bg-gradient-to-b from-[#1a0a0a] to-transparent pb-2"
+          style={{ top: 'calc(env(safe-area-inset-top, 0px) + 60px)' }}
+        >
           <div className="flex gap-2 overflow-x-auto px-3 py-2 scrollbar-hide">
             {navSections.slice(0, 6).map((section) => (
               <button
