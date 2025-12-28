@@ -2015,14 +2015,17 @@ export default function OrderPageClient({
     };
 
     return (
-      <section key="mobile-featured" className="md:hidden relative overflow-hidden">
-        {/* Make the entire section clickable */}
-        <button
+      <section key="mobile-featured" className="md:hidden relative overflow-hidden mb-6">
+        {/* Make the entire section clickable with cursor pointer */}
+        <div
           onClick={handleFeaturedClick}
-          className="relative w-full text-left"
+          className="relative w-full cursor-pointer active:opacity-90 transition-opacity"
+          role="button"
+          tabIndex={0}
+          onKeyDown={(e) => e.key === 'Enter' && handleFeaturedClick()}
         >
           {/* Featured Image - 16:9 aspect ratio for better proportions */}
-          <div className="relative aspect-[16/10] w-full">
+          <div className="relative aspect-[16/9] w-full">
             {featuredItem.displayImage ? (
               <Image
                 src={featuredItem.displayImage}
@@ -2036,33 +2039,33 @@ export default function OrderPageClient({
             ) : (
               <div className="flex items-center justify-center h-full bg-[#2a2a2a] text-6xl">🍽️</div>
             )}
-            {/* Gradient overlay */}
-            <div className="absolute inset-0 bg-gradient-to-t from-black/90 via-black/40 to-transparent" />
+            {/* Gradient overlay - pointer-events-none to not block clicks */}
+            <div className="absolute inset-0 bg-gradient-to-t from-black/90 via-black/30 to-transparent pointer-events-none" />
 
             {/* HOT badge */}
-            <div className="absolute top-3 right-3 px-2.5 py-1 rounded-full bg-gradient-to-r from-[#FF4444] to-[#FF6B00] text-white text-[10px] font-black shadow-lg flex items-center gap-1">
+            <div className="absolute top-3 right-3 px-2.5 py-1 rounded-full bg-gradient-to-r from-[#FF4444] to-[#FF6B00] text-white text-[10px] font-black shadow-lg flex items-center gap-1 pointer-events-none">
               🔥 HOT
             </div>
 
             {/* Content overlay at bottom */}
-            <div className="absolute bottom-0 left-0 right-0 p-4">
+            <div className="absolute bottom-0 left-0 right-0 p-4 pointer-events-none">
               <div className="flex items-end justify-between gap-3">
                 <div className="flex-1 min-w-0">
-                  <h3 className="text-lg font-black text-white mb-0.5 drop-shadow-lg uppercase tracking-wide">
+                  <h3 className="text-xl font-black text-white mb-0.5 drop-shadow-lg uppercase tracking-wide">
                     {featuredItem.name || 'Featured Special'}
                   </h3>
-                  <p className="text-white/70 text-xs line-clamp-1">
+                  <p className="text-white/70 text-sm line-clamp-1">
                     {featuredItem.description || 'Authentic Mexican flavors'}
                   </p>
                 </div>
-                <div className="flex-shrink-0 flex flex-col items-center gap-0.5 px-4 py-2 rounded-lg bg-gradient-to-r from-[#FFD700] to-[#FFA500] text-[#8B0000] font-black shadow-xl">
-                  <span className="text-base">From ${featuredItem.price?.toFixed(2) || '14.00'}</span>
-                  <span className="text-[10px] uppercase tracking-wide">Order Now</span>
+                <div className="flex-shrink-0 flex flex-col items-center gap-0.5 px-5 py-2.5 rounded-xl bg-gradient-to-r from-[#FFD700] to-[#FFA500] text-[#8B0000] font-black shadow-xl">
+                  <span className="text-lg">From ${featuredItem.price?.toFixed(2) || '14.00'}</span>
+                  <span className="text-[10px] uppercase tracking-wide">Tap to Order</span>
                 </div>
               </div>
             </div>
           </div>
-        </button>
+        </div>
       </section>
     );
   };
@@ -2224,7 +2227,7 @@ export default function OrderPageClient({
     if (featuredCarouselConfig && !featuredCarouselConfig.enabled) return null;
 
     return (
-      <div key="featured-carousel">
+      <div key="featured-carousel" className="py-4 sm:py-6">
         <FeaturedCarousel
           items={carouselItems}
           onAddToCart={handleCarouselAddToCart}
@@ -2958,24 +2961,24 @@ export default function OrderPageClient({
         }}
       />
 
-      {/* Mobile Section Navigation - Sticky below header */}
+      {/* Mobile Section Navigation - Sticky below header (z-30 to stay below header's z-50) */}
       <div
-        className="sticky z-40 sm:hidden bg-[#0d0d0d]/95 backdrop-blur-sm border-b border-white/10"
-        style={{ top: 'calc(env(safe-area-inset-top, 0px) + 56px)' }}
+        className="sticky z-30 sm:hidden bg-[#0d0d0d] border-b border-white/10"
+        style={{ top: isScrolled ? 'calc(env(safe-area-inset-top, 0px) + 56px)' : 'calc(env(safe-area-inset-top, 0px) + 72px)' }}
       >
-        <div className="flex gap-2 overflow-x-auto px-4 py-2.5 scrollbar-hide">
+        <div className="flex gap-2 overflow-x-auto px-4 py-3 scrollbar-hide">
           {navSections.slice(0, 8).map((section) => (
             <button
               key={section.id}
               onClick={() => {
                 const el = document.getElementById(`section-${section.id}`);
                 if (el) {
-                  const yOffset = -140;
+                  const yOffset = -160;
                   const y = el.getBoundingClientRect().top + window.pageYOffset + yOffset;
                   window.scrollTo({ top: y, behavior: 'smooth' });
                 }
               }}
-              className="flex-shrink-0 px-4 py-1.5 rounded-full text-xs font-semibold bg-white/10 text-white/90 border border-white/20 hover:bg-[#DC2626] hover:border-[#DC2626] hover:text-white transition-all"
+              className="flex-shrink-0 px-4 py-2 rounded-full text-xs font-semibold bg-white/10 text-white/90 border border-white/20 hover:bg-[#DC2626] hover:border-[#DC2626] hover:text-white transition-all whitespace-nowrap"
             >
               {section.name}
             </button>
@@ -2986,7 +2989,7 @@ export default function OrderPageClient({
       {/* Position-based sections BEFORE menu (hero, quickInfo, featuredCarousel, and early banners) */}
       {renderSectionsBeforeMenu()}
 
-      <main id="menu" className="mx-auto max-w-7xl space-y-10 px-4 py-8">
+      <main id="menu" className="mx-auto max-w-7xl space-y-6 sm:space-y-10 px-4 py-4 sm:py-8">
         {notification && (
           <div className="fixed right-6 top-20 z-50 rounded-2xl bg-green-500/95 px-6 py-3 text-sm font-semibold text-white shadow-lg shadow-green-500/40">
             {notification}
