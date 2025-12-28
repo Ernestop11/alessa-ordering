@@ -1,5 +1,5 @@
 import { NextResponse } from 'next/server';
-import { headers } from 'next/headers';
+import { headers, cookies } from 'next/headers';
 import fs from 'fs/promises';
 import path from 'path';
 
@@ -11,9 +11,13 @@ import path from 'path';
  */
 export async function GET() {
   try {
-    // Use next/headers to get middleware-modified headers
+    // Try header first, then cookie (middleware sets both)
     const headersList = headers();
-    const tenantSlug = headersList.get('x-tenant-slug');
+    const cookieStore = cookies();
+
+    const tenantSlug =
+      headersList.get('x-tenant-slug') ||
+      cookieStore.get('x-tenant-slug')?.value;
 
     if (tenantSlug) {
       // Try tenant-specific favicon

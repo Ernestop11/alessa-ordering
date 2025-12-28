@@ -1,5 +1,5 @@
 import { NextResponse } from 'next/server';
-import { headers } from 'next/headers';
+import { headers, cookies } from 'next/headers';
 import { getTenantBySlug } from '@/lib/tenant';
 import { getStaticTenantTheme } from '@/lib/tenant-theme-map';
 
@@ -13,14 +13,18 @@ import { getStaticTenantTheme } from '@/lib/tenant-theme-map';
  */
 export async function GET() {
   try {
-    // Use next/headers to get middleware-modified headers
+    // Try header first, then cookie (middleware sets both)
     const headersList = headers();
-    const tenantSlugHeader = headersList.get('x-tenant-slug');
+    const cookieStore = cookies();
+
+    const tenantSlug =
+      headersList.get('x-tenant-slug') ||
+      cookieStore.get('x-tenant-slug')?.value;
 
     let tenant = null;
-    if (tenantSlugHeader) {
+    if (tenantSlug) {
       try {
-        tenant = await getTenantBySlug(tenantSlugHeader);
+        tenant = await getTenantBySlug(tenantSlug);
       } catch {
         // Tenant lookup failed
       }
