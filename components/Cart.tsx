@@ -1,6 +1,5 @@
 "use client";
 
-import Image from "next/image";
 import React, { useEffect, useMemo, useState } from "react";
 import { useSearchParams } from "next/navigation";
 import type { OrderPayload } from "../lib/order-service";
@@ -585,12 +584,15 @@ export default function Cart() {
               >
                 <div className="relative h-16 w-16 sm:h-20 sm:w-20 flex-shrink-0 overflow-hidden rounded-lg sm:rounded-xl bg-gray-100 shadow-sm">
                   {item.image ? (
-                    <Image
+                    <img
                       src={item.image}
                       alt={item.name}
-                      fill
-                      sizes="80px"
-                      className="object-cover transition-transform group-hover:scale-110"
+                      className="w-full h-full object-cover transition-transform group-hover:scale-110"
+                      onError={(e) => {
+                        // Hide the entire image container on error
+                        const target = e.target as HTMLImageElement;
+                        target.parentElement!.style.display = 'none';
+                      }}
                     />
                   ) : (
                     <div className="flex h-full w-full items-center justify-center text-lg font-bold text-gray-400">
