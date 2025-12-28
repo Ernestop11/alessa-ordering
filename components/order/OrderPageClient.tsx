@@ -2583,8 +2583,9 @@ export default function OrderPageClient({
         <div className="mx-auto max-w-7xl px-4">
           {/* Top Row - Logo & Actions */}
           <div className={`flex items-center justify-between transition-all duration-300 ${isScrolled ? 'py-1.5' : 'py-2'}`}>
-            {/* Left Side - Hamburger Menu (Mobile) */}
-            <div className="flex items-center">
+            {/* Left Side - Hamburger Menu (Mobile) / Logo + Nav (Desktop) */}
+            <div className="flex items-center gap-3">
+              {/* Hamburger Menu - Mobile Only */}
               <button
                 onClick={() => setShowMobileNav(true)}
                 className={`md:hidden flex items-center justify-center rounded-lg bg-white/10 hover:bg-white/20 transition-all duration-300 ${isScrolled ? 'w-9 h-9' : 'w-10 h-10'}`}
@@ -2594,12 +2595,9 @@ export default function OrderPageClient({
                   <path strokeLinecap="round" strokeLinejoin="round" d="M4 6h16M4 12h16M4 18h16" />
                 </svg>
               </button>
-            </div>
 
-            {/* Center - Logo (Mobile) / Left side with nav (Desktop) */}
-            <div className="flex items-center gap-3 md:order-first">
-              <div className="relative flex-shrink-0 group">
-                {/* Glowing ring effect - smaller when scrolled */}
+              {/* Logo - Desktop Only (left side) */}
+              <div className="relative flex-shrink-0 group hidden md:block">
                 <div className={`absolute bg-gradient-to-r from-amber-400 via-red-500 to-amber-400 rounded-full opacity-75 group-hover:opacity-100 blur-sm animate-pulse transition-all duration-300 ${isScrolled ? '-inset-0.5' : '-inset-1'}`} />
                 <div className={`relative rounded-full bg-white shadow-xl ring-2 ring-white/50 transition-all duration-300 ${isScrolled ? 'p-0.5' : 'p-1.5'}`}>
                   {tenant.logoUrl ? (
@@ -2616,7 +2614,8 @@ export default function OrderPageClient({
                   )}
                 </div>
               </div>
-              {/* Navigation Links */}
+
+              {/* Navigation Links - Desktop Only */}
               <nav className="hidden md:flex items-center gap-1">
                 <span className="px-3 py-2 text-sm font-semibold text-white/90 hover:text-white cursor-pointer">Our Food</span>
                 <span className="text-white/30">|</span>
@@ -2637,8 +2636,27 @@ export default function OrderPageClient({
               </nav>
             </div>
 
-            {/* Right Side - Location & Cart */}
+            {/* Right Side - Logo (Mobile) & Location & Cart */}
             <div className="flex items-center gap-3">
+              {/* Logo - Mobile Only (right side) */}
+              <div className="relative flex-shrink-0 group md:hidden">
+                <div className={`absolute bg-gradient-to-r from-amber-400 via-red-500 to-amber-400 rounded-full opacity-75 group-hover:opacity-100 blur-sm animate-pulse transition-all duration-300 ${isScrolled ? '-inset-0.5' : '-inset-1'}`} />
+                <div className={`relative rounded-full bg-white shadow-xl ring-2 ring-white/50 transition-all duration-300 ${isScrolled ? 'p-0.5' : 'p-1'}`}>
+                  {tenant.logoUrl ? (
+                    <Image
+                      src={tenant.logoUrl}
+                      alt={`${tenant.name} logo`}
+                      width={48}
+                      height={48}
+                      className={`rounded-full object-contain transition-all duration-300 ${isScrolled ? 'h-8 w-8' : 'h-10 w-10'}`}
+                      unoptimized={tenant.logoUrl.startsWith('/tenant/')}
+                    />
+                  ) : (
+                    <div className={`flex items-center justify-center rounded-full bg-gradient-to-br from-red-600 to-amber-500 transition-all duration-300 ${isScrolled ? 'h-8 w-8 text-lg' : 'h-10 w-10 text-xl'}`}>🍽️</div>
+                  )}
+                </div>
+              </div>
+
               {/* Location Selector */}
               <div className="hidden sm:flex items-center gap-2 rounded-lg bg-[#6B1C1C] px-3 py-2">
                 <span className="text-xs text-white/60">Pickup at</span>
@@ -5066,12 +5084,21 @@ export default function OrderPageClient({
               </button>
             </div>
 
-            {/* Item Image Gallery */}
-            {customModal.item.displayGallery && customModal.item.displayGallery.length > 0 && (
+            {/* Item Image Gallery - with fallback for broken images */}
+            {customModal.item.displayGallery && customModal.item.displayGallery.length > 0 && customModal.item.displayGallery[0] && (
               <div className="mb-5 flex gap-2 overflow-x-auto pb-2 -mx-2 px-2">
-                {customModal.item.displayGallery.map((url, index) => (
-                  <div key={`${customModal.item.id}-modal-${index}`} className="relative h-24 w-36 flex-shrink-0 overflow-hidden rounded-2xl border-2 border-white/10 hover:border-[#C41E3A]/50 transition-all">
-                    <Image src={url} alt={`${customModal.item.name} preview ${index + 1}`} fill className="object-cover" sizes="144px" />
+                {customModal.item.displayGallery.filter(url => url && url.length > 0).map((url, index) => (
+                  <div key={`${customModal.item.id}-modal-${index}`} className="relative h-24 w-36 flex-shrink-0 overflow-hidden rounded-2xl border-2 border-white/10 hover:border-[#C41E3A]/50 transition-all bg-white/5">
+                    <img
+                      src={url}
+                      alt={`${customModal.item.name} preview ${index + 1}`}
+                      className="w-full h-full object-cover"
+                      onError={(e) => {
+                        // Hide broken image container
+                        const target = e.target as HTMLImageElement;
+                        target.parentElement!.style.display = 'none';
+                      }}
+                    />
                   </div>
                 ))}
               </div>

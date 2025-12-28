@@ -31,7 +31,7 @@ const TENANT_THEME_MAP: Record<string, StaticTenantTheme> = {
     name: 'Las Reinas',
     primaryColor: '#DC2626',
     secondaryColor: '#FBBF24',
-    themeColor: '#DC2626',
+    themeColor: '#8B2323', // Matches header background for consistent status bar
     assets: {
       hero: '/tenant/lasreinas/images/hero-quesabirria-action.jpg',
       membership: '/tenant/lasreinas/images/membership.jpg',
