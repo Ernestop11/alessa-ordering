@@ -1993,11 +1993,36 @@ export default function OrderPageClient({
     const featuredItem = carouselItems[0];
     if (!featuredItem) return null;
 
+    const handleFeaturedClick = () => {
+      if (featuredItem.id) {
+        // Find and open the item
+        const item = menuItems.find(i => i.id === featuredItem.id);
+        if (item) {
+          setSelectedMenuItem(item);
+        }
+      } else {
+        // Scroll to menu
+        const firstSection = navSections[0];
+        if (firstSection) {
+          const element = document.getElementById(`section-${firstSection.id}`);
+          if (element) {
+            const offset = 100;
+            const elementPosition = element.getBoundingClientRect().top + window.scrollY;
+            window.scrollTo({ top: elementPosition - offset, behavior: isSafariBrowser ? 'auto' : 'smooth' });
+          }
+        }
+      }
+    };
+
     return (
-      <section key="mobile-featured" className="md:hidden relative overflow-hidden bg-gradient-to-b from-[#5C1515] to-[#8B0000]">
-        <div className="relative">
-          {/* Featured Image */}
-          <div className="relative aspect-[4/3] w-full">
+      <section key="mobile-featured" className="md:hidden relative overflow-hidden">
+        {/* Make the entire section clickable */}
+        <button
+          onClick={handleFeaturedClick}
+          className="relative w-full text-left"
+        >
+          {/* Featured Image - 16:9 aspect ratio for better proportions */}
+          <div className="relative aspect-[16/10] w-full">
             {featuredItem.displayImage ? (
               <Image
                 src={featuredItem.displayImage}
@@ -2005,60 +2030,39 @@ export default function OrderPageClient({
                 fill
                 className="object-cover"
                 sizes="100vw"
+                priority
                 unoptimized={featuredItem.displayImage?.startsWith('/tenant/')}
               />
             ) : (
               <div className="flex items-center justify-center h-full bg-[#2a2a2a] text-6xl">🍽️</div>
             )}
             {/* Gradient overlay */}
-            <div className="absolute inset-0 bg-gradient-to-t from-black/80 via-black/30 to-transparent" />
+            <div className="absolute inset-0 bg-gradient-to-t from-black/90 via-black/40 to-transparent" />
 
             {/* HOT badge */}
-            <div className="absolute top-4 right-4 px-3 py-1.5 rounded-full bg-gradient-to-r from-[#FF4444] to-[#FF6B00] text-white text-xs font-black shadow-lg flex items-center gap-1">
+            <div className="absolute top-3 right-3 px-2.5 py-1 rounded-full bg-gradient-to-r from-[#FF4444] to-[#FF6B00] text-white text-[10px] font-black shadow-lg flex items-center gap-1">
               🔥 HOT
             </div>
-          </div>
 
-          {/* Content overlay at bottom */}
-          <div className="absolute bottom-0 left-0 right-0 p-4 pb-6">
-            <div className="flex items-end justify-between gap-4">
-              <div className="flex-1">
-                <h3 className="text-xl font-black text-white mb-1 drop-shadow-lg">
-                  {featuredItem.name || 'Featured Special'}
-                </h3>
-                <p className="text-white/80 text-sm line-clamp-1">
-                  {featuredItem.description || 'Authentic Mexican flavors'}
-                </p>
+            {/* Content overlay at bottom */}
+            <div className="absolute bottom-0 left-0 right-0 p-4">
+              <div className="flex items-end justify-between gap-3">
+                <div className="flex-1 min-w-0">
+                  <h3 className="text-lg font-black text-white mb-0.5 drop-shadow-lg uppercase tracking-wide">
+                    {featuredItem.name || 'Featured Special'}
+                  </h3>
+                  <p className="text-white/70 text-xs line-clamp-1">
+                    {featuredItem.description || 'Authentic Mexican flavors'}
+                  </p>
+                </div>
+                <div className="flex-shrink-0 flex flex-col items-center gap-0.5 px-4 py-2 rounded-lg bg-gradient-to-r from-[#FFD700] to-[#FFA500] text-[#8B0000] font-black shadow-xl">
+                  <span className="text-base">From ${featuredItem.price?.toFixed(2) || '14.00'}</span>
+                  <span className="text-[10px] uppercase tracking-wide">Order Now</span>
+                </div>
               </div>
-              <button
-                onClick={() => {
-                  if (featuredItem.id) {
-                    // Find and open the item
-                    const item = menuItems.find(i => i.id === featuredItem.id);
-                    if (item) {
-                      setSelectedMenuItem(item);
-                    }
-                  } else {
-                    // Scroll to menu
-                    const firstSection = navSections[0];
-                    if (firstSection) {
-                      const element = document.getElementById(`section-${firstSection.id}`);
-                      if (element) {
-                        const offset = 100;
-                        const elementPosition = element.getBoundingClientRect().top + window.scrollY;
-                        window.scrollTo({ top: elementPosition - offset, behavior: isSafariBrowser ? 'auto' : 'smooth' });
-                      }
-                    }
-                  }
-                }}
-                className="flex-shrink-0 flex flex-col items-center gap-1 px-5 py-3 rounded-xl bg-gradient-to-r from-[#FFD700] to-[#FFA500] text-[#8B0000] font-black shadow-xl"
-              >
-                <span className="text-lg">From ${featuredItem.price?.toFixed(2) || '14.00'}</span>
-                <span className="text-xs uppercase tracking-wide">Order Now</span>
-              </button>
             </div>
           </div>
-        </div>
+        </button>
       </section>
     );
   };
@@ -2954,6 +2958,31 @@ export default function OrderPageClient({
         }}
       />
 
+      {/* Mobile Section Navigation - Sticky below header */}
+      <div
+        className="sticky z-40 sm:hidden bg-[#0d0d0d]/95 backdrop-blur-sm border-b border-white/10"
+        style={{ top: 'calc(env(safe-area-inset-top, 0px) + 56px)' }}
+      >
+        <div className="flex gap-2 overflow-x-auto px-4 py-2.5 scrollbar-hide">
+          {navSections.slice(0, 8).map((section) => (
+            <button
+              key={section.id}
+              onClick={() => {
+                const el = document.getElementById(`section-${section.id}`);
+                if (el) {
+                  const yOffset = -140;
+                  const y = el.getBoundingClientRect().top + window.pageYOffset + yOffset;
+                  window.scrollTo({ top: y, behavior: 'smooth' });
+                }
+              }}
+              className="flex-shrink-0 px-4 py-1.5 rounded-full text-xs font-semibold bg-white/10 text-white/90 border border-white/20 hover:bg-[#DC2626] hover:border-[#DC2626] hover:text-white transition-all"
+            >
+              {section.name}
+            </button>
+          ))}
+        </div>
+      </div>
+
       {/* Position-based sections BEFORE menu (hero, quickInfo, featuredCarousel, and early banners) */}
       {renderSectionsBeforeMenu()}
 
@@ -2963,32 +2992,6 @@ export default function OrderPageClient({
             {notification}
           </div>
         )}
-
-
-        {/* Mobile Section Navigation Shortcuts */}
-        <div
-          className="sticky z-30 sm:hidden bg-gradient-to-b from-[#1a0a0a] to-transparent pb-2"
-          style={{ top: 'calc(env(safe-area-inset-top, 0px) + 60px)' }}
-        >
-          <div className="flex gap-2 overflow-x-auto px-3 py-2 scrollbar-hide">
-            {navSections.slice(0, 6).map((section) => (
-              <button
-                key={section.id}
-                onClick={() => {
-                  const el = document.getElementById(`section-${section.id}`);
-                  if (el) {
-                    const yOffset = -160;
-                    const y = el.getBoundingClientRect().top + window.pageYOffset + yOffset;
-                    window.scrollTo({ top: y, behavior: 'smooth' });
-                  }
-                }}
-                className="flex-shrink-0 px-3 py-1.5 rounded-full text-xs font-medium bg-white/10 text-white/80 border border-white/10 hover:bg-white/20 hover:text-white transition-all"
-              >
-                {section.name}
-              </button>
-            ))}
-          </div>
-        </div>
 
         {/* Floating Cart Button (FAB) - Mobile Only - Golden/Amber theme */}
         <button
