@@ -20,6 +20,7 @@ interface FeaturedCarouselProps {
   onViewDetails?: (item: FeaturedItem) => void;
   title?: string;
   subtitle?: string;
+  cartItemIds?: string[];
 }
 
 export default function FeaturedCarousel({
@@ -28,6 +29,7 @@ export default function FeaturedCarousel({
   onViewDetails,
   title = 'Chef Recommends',
   subtitle = 'Handpicked favorites from our kitchen',
+  cartItemIds = [],
 }: FeaturedCarouselProps) {
   const [currentIndex, setCurrentIndex] = useState(0);
   const scrollRef = useRef<HTMLDivElement>(null);
@@ -104,7 +106,7 @@ export default function FeaturedCarousel({
             >
               <button
                 onClick={() => onViewDetails?.(item)}
-                className="w-full text-left group relative overflow-hidden rounded-xl border border-white/10 bg-gradient-to-br from-white/10 to-white/5 transition-all active:scale-[0.98]"
+                className={`w-full text-left group relative overflow-hidden rounded-xl border bg-gradient-to-br from-white/10 to-white/5 transition-all active:scale-[0.98] ${cartItemIds.includes(item.id) ? 'border-amber-400/60 ring-1 ring-amber-400/30' : 'border-white/10'}`}
               >
                 {/* Chef's Pick Badge */}
                 {index === 0 && (
@@ -180,7 +182,7 @@ export default function FeaturedCarousel({
 
       {/* Desktop: Single Featured Card */}
       <div className="hidden sm:block relative overflow-hidden">
-        <article className="group relative overflow-hidden rounded-2xl border border-white/10 bg-gradient-to-br from-white/10 to-white/5 shadow-xl transition-all duration-300 hover:border-white/20">
+        <article className={`group relative overflow-hidden rounded-2xl border bg-gradient-to-br from-white/10 to-white/5 shadow-xl transition-all duration-300 ${cartItemIds.includes(currentItem.id) ? 'border-amber-400/60 ring-1 ring-amber-400/30' : 'border-white/10 hover:border-white/20'}`}>
           {/* Chef's Pick Badge */}
           <div className="absolute right-4 top-4 z-10 rounded-full bg-gradient-to-r from-rose-500 via-amber-500 to-yellow-400 px-3 py-1.5 text-sm font-bold text-black shadow-lg">
             ⭐ Chef&apos;s Pick

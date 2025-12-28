@@ -11,6 +11,7 @@ interface MenuItemCardProps {
   layout: 'grid' | 'list' | 'cards';
   onAddToCart: () => void;
   onCustomize: () => void;
+  isInCart?: boolean;
 }
 
 export default function MenuItemCard({
@@ -20,25 +21,24 @@ export default function MenuItemCard({
   layout,
   onAddToCart,
   onCustomize,
+  isInCart = false,
 }: MenuItemCardProps) {
   const imageSrc = item.displayImage || getStockImageForCategory(item.category || sectionType, 0);
   const isExternalImage = imageSrc.startsWith('http');
   const isTenantImage = imageSrc.startsWith('/tenant/');
 
-  // Apple Liquid Glass Button Styles
-  const liquidGlassButton = `
+  // Unified gradient button style (matches Chef Recommends carousel)
+  const gradientButton = `
     relative overflow-hidden
-    rounded-2xl py-3.5 text-sm font-bold
-    bg-gradient-to-b from-white/20 to-white/5
-    backdrop-blur-xl
-    border border-white/20
-    shadow-[0_8px_32px_rgba(0,0,0,0.3),inset_0_1px_0_rgba(255,255,255,0.3),inset_0_-1px_0_rgba(0,0,0,0.1)]
-    text-white
+    rounded-lg sm:rounded-xl py-2.5 sm:py-3 text-xs sm:text-sm font-bold
+    bg-gradient-to-r from-rose-500 via-amber-500 to-yellow-400
+    text-black
+    shadow-lg shadow-amber-500/20
     transition-all duration-300 ease-out
-    hover:shadow-[0_12px_40px_rgba(196,30,58,0.4),inset_0_1px_0_rgba(255,255,255,0.4)]
-    hover:scale-[1.02] hover:border-white/30
+    hover:shadow-xl hover:shadow-amber-500/30
+    hover:scale-[1.02]
     active:scale-[0.98]
-    disabled:opacity-50 disabled:cursor-not-allowed disabled:hover:scale-100
+    disabled:opacity-50 disabled:cursor-not-allowed disabled:hover:scale-100 disabled:from-gray-500 disabled:via-gray-500 disabled:to-gray-500 disabled:text-white/70
   `;
 
   const quickAddButton = `
@@ -57,7 +57,7 @@ export default function MenuItemCard({
   // List layout - compact horizontal card
   if (layout === 'list') {
     return (
-      <article className="group flex gap-4 rounded-2xl bg-white/[0.03] backdrop-blur-sm border border-white/[0.08] p-3 transition-all duration-300 hover:bg-white/[0.06] hover:border-white/10 active:scale-[0.99]">
+      <article className={`group flex gap-4 rounded-2xl bg-white/[0.03] backdrop-blur-sm border p-3 transition-all duration-300 hover:bg-white/[0.06] active:scale-[0.99] ${isInCart ? 'border-amber-400/60 ring-1 ring-amber-400/30' : 'border-white/[0.08] hover:border-white/10'}`}>
         {/* Image */}
         <div className="relative h-24 w-24 flex-shrink-0 overflow-hidden rounded-xl bg-[#1a1a1a]">
           {isExternalImage ? (
@@ -121,7 +121,7 @@ export default function MenuItemCard({
   // Cards layout - larger horizontal card
   if (layout === 'cards') {
     return (
-      <article className="group relative overflow-hidden rounded-2xl bg-white/[0.03] backdrop-blur-sm border border-white/[0.08] transition-all duration-300 hover:bg-white/[0.06] hover:border-white/10">
+      <article className={`group relative overflow-hidden rounded-2xl bg-white/[0.03] backdrop-blur-sm border transition-all duration-300 hover:bg-white/[0.06] ${isInCart ? 'border-amber-400/60 ring-1 ring-amber-400/30' : 'border-white/[0.08] hover:border-white/10'}`}>
         {/* Image */}
         <div className="relative h-44 w-full overflow-hidden bg-[#1a1a1a]">
           {isExternalImage ? (
@@ -177,11 +177,9 @@ export default function MenuItemCard({
           <button
             onClick={onCustomize}
             disabled={!item.available}
-            className={`mt-4 w-full flex items-center justify-center gap-2 ${liquidGlassButton}`}
+            className={`mt-4 w-full flex items-center justify-center gap-2 ${gradientButton}`}
           >
-            <span className="relative z-10">{item.available ? 'ADD TO ORDER' : 'Sold Out'}</span>
-            {/* Animated shine effect */}
-            <span className="absolute inset-0 bg-gradient-to-r from-transparent via-white/10 to-transparent -translate-x-full group-hover:translate-x-full transition-transform duration-700" />
+            <span className="relative z-10">{item.available ? '+ Add to Order' : 'Sold Out'}</span>
           </button>
         </div>
       </article>
@@ -190,7 +188,7 @@ export default function MenuItemCard({
 
   // Grid layout (default) - Compact mobile-first card
   return (
-    <article className="group relative overflow-hidden rounded-xl sm:rounded-2xl bg-white/[0.03] backdrop-blur-sm border border-white/[0.08] transition-all duration-300 hover:border-[#C41E3A]/40 hover:shadow-xl hover:shadow-[#C41E3A]/10">
+    <article className={`group relative overflow-hidden rounded-xl sm:rounded-2xl bg-white/[0.03] backdrop-blur-sm border transition-all duration-300 hover:shadow-xl ${isInCart ? 'border-amber-400/60 ring-1 ring-amber-400/30 hover:border-amber-400/80' : 'border-white/[0.08] hover:border-[#C41E3A]/40 hover:shadow-[#C41E3A]/10'}`}>
       {/* Image container - shorter on mobile */}
       <div className="relative aspect-square sm:aspect-[4/3] w-full overflow-hidden bg-[#1a1a1a]">
         {isExternalImage ? (
@@ -273,9 +271,9 @@ export default function MenuItemCard({
         <button
           onClick={onCustomize}
           disabled={!item.available}
-          className={`mt-2 sm:mt-4 w-full flex items-center justify-center gap-1 sm:gap-2 relative overflow-hidden rounded-lg sm:rounded-2xl py-2 sm:py-3.5 text-xs sm:text-sm font-bold bg-gradient-to-b from-white/20 to-white/5 backdrop-blur-xl border border-white/20 shadow-[0_4px_16px_rgba(0,0,0,0.2),inset_0_1px_0_rgba(255,255,255,0.3)] text-white transition-all duration-300 ease-out hover:shadow-[0_8px_24px_rgba(196,30,58,0.3)] hover:scale-[1.02] active:scale-[0.98] disabled:opacity-50 disabled:cursor-not-allowed`}
+          className={`mt-2 sm:mt-4 w-full flex items-center justify-center gap-1 sm:gap-2 ${gradientButton}`}
         >
-          <span className="relative z-10">{item.available ? 'ADD' : 'Sold Out'}</span>
+          <span className="relative z-10">{item.available ? '+ Add' : 'Sold Out'}</span>
         </button>
       </div>
     </article>

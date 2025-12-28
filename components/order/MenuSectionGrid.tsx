@@ -8,6 +8,7 @@ interface MenuSectionGridProps {
   layout: 'grid' | 'list' | 'cards';
   onAddToCart: (item: OrderMenuItem, image?: string) => void;
   onCustomize: (item: OrderMenuItem & { displayImage: string }, sectionType: string) => void;
+  cartItemIds?: string[];
 }
 
 export default function MenuSectionGrid({
@@ -15,6 +16,7 @@ export default function MenuSectionGrid({
   layout,
   onAddToCart,
   onCustomize,
+  cartItemIds = [],
 }: MenuSectionGridProps) {
   // Mobile: 2 columns, Desktop: 3 columns for grid layout
   const gridClass = layout === 'grid'
@@ -35,6 +37,7 @@ export default function MenuSectionGrid({
           layout={layout}
           onAddToCart={() => onAddToCart(item, item.displayImage || item.image || undefined)}
           onCustomize={() => onCustomize(item as OrderMenuItem & { displayImage: string }, section.type)}
+          isInCart={cartItemIds.includes(item.id)}
         />
       ))}
     </div>

@@ -309,6 +309,7 @@ export default function OrderPageClient({
   const assets = getTenantAssets(tenantSlug || tenant.slug);
   const { addToCart, items: cartItems } = useCart();
   const cartItemCount = useMemo(() => cartItems.reduce((sum, item) => sum + item.quantity, 0), [cartItems]);
+  const cartItemIds = useMemo(() => cartItems.map(item => item.menuItemId), [cartItems]);
 
   // Client-side state for frontendUISections with polling (same pattern as Accept Orders)
   const [frontendUISections, setFrontendUISections] = useState<FrontendUISection[]>(initialFrontendUISections);
@@ -2237,6 +2238,7 @@ export default function OrderPageClient({
           onAddToCart={handleCarouselAddToCart}
           title={carouselTitle}
           subtitle={carouselSubtitle}
+          cartItemIds={cartItemIds}
         />
       </div>
     );
@@ -3007,8 +3009,8 @@ export default function OrderPageClient({
         }}
       />
 
-      {/* Spacer for fixed category nav on mobile */}
-      <div className="h-[52px] sm:hidden" />
+      {/* Spacer for fixed category nav on mobile - taller when closed to account for status message */}
+      <div className={`sm:hidden ${restaurantIsOpen ? 'h-[52px]' : 'h-[80px]'}`} />
 
       {/* Position-based sections BEFORE menu (hero, quickInfo, featuredCarousel, and early banners) */}
       <div className="relative">
@@ -4188,6 +4190,7 @@ export default function OrderPageClient({
                 layout={activeLayout}
                 onAddToCart={handleAddToCart}
                 onCustomize={openCustomization}
+                cartItemIds={cartItemIds}
               />
             </section>
           </div>
