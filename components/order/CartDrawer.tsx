@@ -60,17 +60,25 @@ export function CartDrawer({ open, onClose }: CartDrawerProps) {
                 onClick={() => setEditingItem(item)}
               >
                 {/* Item Image */}
-                <div className="w-20 h-20 flex-shrink-0 rounded-xl overflow-hidden bg-white/10">
-                  {item.image ? (
-                    <img
-                      src={item.image}
-                      alt={item.name}
-                      className="w-full h-full object-cover"
-                      onError={(e) => {
-                        const target = e.target as HTMLImageElement;
-                        target.style.display = 'none';
-                      }}
-                    />
+                <div className="w-20 h-20 flex-shrink-0 rounded-xl overflow-hidden bg-white/10 relative">
+                  {item.image && item.image.length > 0 ? (
+                    <>
+                      <img
+                        src={item.image}
+                        alt={item.name}
+                        className="w-full h-full object-cover"
+                        onError={(e) => {
+                          const target = e.target as HTMLImageElement;
+                          target.style.display = 'none';
+                          // Show fallback sibling
+                          const fallback = target.nextElementSibling as HTMLElement;
+                          if (fallback) fallback.style.display = 'flex';
+                        }}
+                      />
+                      <div className="w-full h-full items-center justify-center text-2xl absolute inset-0 hidden">
+                        🍽️
+                      </div>
+                    </>
                   ) : (
                     <div className="w-full h-full flex items-center justify-center text-2xl">
                       🍽️

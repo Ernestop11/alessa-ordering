@@ -5272,6 +5272,7 @@ export default function OrderPageClient({
         onRewardsClick={() => customerData ? setShowMembershipPanel(true) : setShowJoinModal(true)}
         onAccessibilityClick={() => setAccessibilityOpen((prev) => !prev)}
         onReorderClick={customerData?.orders && customerData.orders.length > 0 ? () => setShowReorderModal(true) : undefined}
+        onLoginClick={() => setShowJoinModal(true)}
         onSignOut={customerData ? async () => {
           try {
             await fetch('/api/rewards/logout', { method: 'POST' });

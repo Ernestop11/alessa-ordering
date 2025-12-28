@@ -6,15 +6,17 @@
  * between the VPS order events and your local WiFi/network thermal printer.
  *
  * HOW IT WORKS:
- * 1. Polls the VPS API for new orders (no SSE dependency)
- * 2. When a new order is detected, generates an ESC/POS receipt
- * 3. Sends the receipt directly to your Munbyn WiFi printer via TCP port 9100
+ * 1. AUTO-DISCOVERS the printer on any network (scans for port 9100)
+ * 2. Polls the VPS API for new orders (no SSE dependency)
+ * 3. When a new order is detected, generates an ESC/POS receipt
+ * 4. Sends the receipt directly to your Munbyn WiFi printer via TCP port 9100
  *
  * Usage:
- *   PRINTER_HOST=10.10.100.254 node scripts/local-print-relay.mjs
+ *   node scripts/local-print-relay.mjs           # Auto-discover printer
+ *   PRINTER_HOST=192.168.1.108 node scripts/local-print-relay.mjs  # Manual IP
  *
  * Configuration (via environment variables):
- *   PRINTER_HOST=10.10.100.254   # Your Munbyn printer's IP address
+ *   PRINTER_HOST=auto            # Set to 'auto' or omit to auto-discover (default)
  *   PRINTER_PORT=9100            # Printer port (default: 9100)
  *   VPS_URL=https://lasreinascolusa.com  # Your VPS URL
  *   POLL_INTERVAL=5000           # How often to check for new orders (ms)
@@ -23,9 +25,10 @@
 import net from 'net';
 import https from 'https';
 import http from 'http';
+import os from 'os';
 
 // Configuration
-const PRINTER_HOST = process.env.PRINTER_HOST || '10.0.0.44';
+let PRINTER_HOST = process.env.PRINTER_HOST || 'auto';
 const PRINTER_PORT = parseInt(process.env.PRINTER_PORT || '9100');
 const VPS_URL = process.env.VPS_URL || 'https://lasreinascolusa.com';
 const POLL_INTERVAL = parseInt(process.env.POLL_INTERVAL || '5000'); // 5 seconds
@@ -35,19 +38,132 @@ const TENANT_SLUG = process.env.TENANT_SLUG || 'lasreinas';
 // Track printed orders to avoid duplicates
 const printedOrders = new Set();
 
+/**
+ * Get local network subnet from Mac's IP address
+ */
+function getLocalSubnet() {
+  const interfaces = os.networkInterfaces();
+  for (const name of Object.keys(interfaces)) {
+    for (const iface of interfaces[name]) {
+      // Skip loopback and non-IPv4
+      if (iface.family === 'IPv4' && !iface.internal) {
+        // Get subnet (e.g., 192.168.1 from 192.168.1.103)
+        const parts = iface.address.split('.');
+        return {
+          subnet: parts.slice(0, 3).join('.'),
+          localIP: iface.address
+        };
+      }
+    }
+  }
+  return null;
+}
+
+/**
+ * Check if a specific IP has port 9100 open (thermal printer)
+ */
+function checkPrinterPort(ip, port = 9100, timeout = 500) {
+  return new Promise((resolve) => {
+    const socket = new net.Socket();
+    socket.setTimeout(timeout);
+
+    socket.on('connect', () => {
+      socket.destroy();
+      resolve(true);
+    });
+
+    socket.on('timeout', () => {
+      socket.destroy();
+      resolve(false);
+    });
+
+    socket.on('error', () => {
+      socket.destroy();
+      resolve(false);
+    });
+
+    socket.connect(port, ip);
+  });
+}
+
+/**
+ * Scan network for thermal printers (port 9100)
+ */
+async function discoverPrinter() {
+  const network = getLocalSubnet();
+  if (!network) {
+    console.log('❌ Could not determine local network');
+    return null;
+  }
+
+  console.log(`🔍 Scanning network ${network.subnet}.x for thermal printers...`);
+  console.log(`   Your IP: ${network.localIP}`);
+  console.log('');
+
+  // Common printer IPs to check first (faster discovery)
+  const priorityIPs = [
+    `${network.subnet}.108`,  // Last known IP
+    `${network.subnet}.44`,   // Restaurant static IP
+    `${network.subnet}.100`,  // Common DHCP start
+    `${network.subnet}.101`,
+    `${network.subnet}.102`,
+    `${network.subnet}.50`,
+    `${network.subnet}.51`,
+  ];
+
+  // Check priority IPs first
+  for (const ip of priorityIPs) {
+    process.stdout.write(`   Checking ${ip}...`);
+    const found = await checkPrinterPort(ip);
+    if (found) {
+      console.log(' ✅ FOUND!');
+      return ip;
+    }
+    console.log(' no');
+  }
+
+  // Full subnet scan (skip already checked and local IP)
+  const checkedIPs = new Set([...priorityIPs, network.localIP]);
+  const scanPromises = [];
+
+  console.log('   Scanning remaining IPs...');
+
+  for (let i = 1; i <= 254; i++) {
+    const ip = `${network.subnet}.${i}`;
+    if (checkedIPs.has(ip)) continue;
+
+    scanPromises.push(
+      checkPrinterPort(ip).then(found => found ? ip : null)
+    );
+  }
+
+  // Run scans in batches of 50 for speed
+  const batchSize = 50;
+  for (let i = 0; i < scanPromises.length; i += batchSize) {
+    const batch = scanPromises.slice(i, i + batchSize);
+    const results = await Promise.all(batch);
+    const found = results.find(ip => ip !== null);
+    if (found) {
+      console.log(`   ✅ Found printer at ${found}`);
+      return found;
+    }
+  }
+
+  return null;
+}
+
 console.log('');
 console.log('🖨️  Las Reinas - Local Print Relay');
 console.log('===================================');
-console.log(`Printer: ${PRINTER_HOST}:${PRINTER_PORT}`);
 console.log(`VPS: ${VPS_URL}`);
 console.log(`Poll interval: ${POLL_INTERVAL}ms`);
 console.log(`Queue API: ${PRINT_RELAY_API_KEY ? 'Enabled' : 'Disabled (set PRINT_RELAY_API_KEY)'}`);
 console.log('');
 
 /**
- * Send ESC/POS data to the network printer
+ * Send ESC/POS data to the network printer (single attempt)
  */
-function sendToPrinter(data) {
+function sendToPrinterOnce(data) {
   return new Promise((resolve, reject) => {
     const socket = net.createConnection(
       { host: PRINTER_HOST, port: PRINTER_PORT, timeout: 5000 },
@@ -70,7 +186,6 @@ function sendToPrinter(data) {
     });
 
     socket.on('error', (error) => {
-      console.error('❌ Printer connection error:', error.message);
       reject(error);
     });
 
@@ -79,6 +194,30 @@ function sendToPrinter(data) {
       reject(new Error('Connection timeout'));
     });
   });
+}
+
+/**
+ * Send ESC/POS data to the network printer with retry logic
+ * Retries up to 3 times with 2 second delay between attempts
+ * This handles WiFi sleep mode and temporary disconnections
+ */
+async function sendToPrinter(data, maxRetries = 3) {
+  let lastError;
+
+  for (let attempt = 1; attempt <= maxRetries; attempt++) {
+    try {
+      return await sendToPrinterOnce(data);
+    } catch (error) {
+      lastError = error;
+      if (attempt < maxRetries) {
+        console.log(`   ⚠️  Attempt ${attempt} failed, retrying in 2s... (${error.message})`);
+        await new Promise(r => setTimeout(r, 2000)); // Wait 2 seconds before retry
+      }
+    }
+  }
+
+  console.error(`❌ Printer connection failed after ${maxRetries} attempts: ${lastError.message}`);
+  throw lastError;
 }
 
 /**
@@ -559,6 +698,36 @@ async function pollPrintQueue() {
 
 // Main
 async function main() {
+  // Auto-discover printer if not specified
+  if (PRINTER_HOST === 'auto' || !PRINTER_HOST) {
+    console.log('🔍 Auto-discovering printer on network...');
+    console.log('');
+
+    const discoveredIP = await discoverPrinter();
+
+    if (discoveredIP) {
+      PRINTER_HOST = discoveredIP;
+      console.log('');
+      console.log(`✅ Printer discovered at: ${PRINTER_HOST}`);
+    } else {
+      console.log('');
+      console.log('❌ No thermal printer found on network!');
+      console.log('');
+      console.log('   Make sure:');
+      console.log('   1. Printer is powered on');
+      console.log('   2. Printer is connected to the same WiFi as this computer');
+      console.log('   3. Printer has DHCP enabled (or correct static IP for this network)');
+      console.log('');
+      console.log('   You can also specify the IP manually:');
+      console.log('   PRINTER_HOST=192.168.1.100 node scripts/local-print-relay.mjs');
+      console.log('');
+      process.exit(1);
+    }
+  } else {
+    console.log(`📍 Using specified printer: ${PRINTER_HOST}`);
+  }
+
+  console.log('');
   console.log('🔍 Testing printer connection...');
 
   // Test printer connection first
@@ -576,6 +745,7 @@ async function main() {
 
   // Start polling for orders
   console.log('📡 Starting order polling...');
+  console.log(`   Printer: ${PRINTER_HOST}:${PRINTER_PORT}`);
   console.log(`   Checking ${VPS_URL} every ${POLL_INTERVAL / 1000}s`);
   if (PRINT_RELAY_API_KEY) {
     console.log('   Print queue polling enabled (manual print button)');
