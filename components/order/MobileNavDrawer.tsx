@@ -91,8 +91,9 @@ export default function MobileNavDrawer({
   const [deferredPrompt, setDeferredPrompt] = useState<any>(null);
   const [isInstalled, setIsInstalled] = useState(false);
   const [isIOS, setIsIOS] = useState(false);
+  const [isAndroid, setIsAndroid] = useState(false);
   const [showInstallModal, setShowInstallModal] = useState(false);
-  const [installStep, setInstallStep] = useState<'intro' | 'confirm' | 'ios-instructions' | 'success'>('intro');
+  const [installStep, setInstallStep] = useState<'intro' | 'confirm' | 'android-instructions' | 'ios-instructions' | 'success'>('intro');
 
   useEffect(() => {
     if (isOpen) {
@@ -112,8 +113,10 @@ export default function MobileNavDrawer({
 
   // PWA Install prompt handling
   useEffect(() => {
-    // Check if already installed
-    if (window.matchMedia('(display-mode: standalone)').matches) {
+    // Check if already installed (standalone mode or Capacitor)
+    const isStandalone = window.matchMedia('(display-mode: standalone)').matches;
+    const isCapacitor = !!(window as any).Capacitor;
+    if (isStandalone || isCapacitor) {
       setIsInstalled(true);
       return;
     }
@@ -122,22 +125,30 @@ export default function MobileNavDrawer({
     const isIOSDevice = /iPad|iPhone|iPod/.test(navigator.userAgent) && !(window as any).MSStream;
     setIsIOS(isIOSDevice);
 
-    // Listen for beforeinstallprompt event (Chrome, Edge, etc.)
+    // Check for Android
+    const isAndroidDevice = /Android/.test(navigator.userAgent);
+    setIsAndroid(isAndroidDevice);
+
+    // Listen for beforeinstallprompt event (Chrome, Edge, Samsung Browser, etc.)
     const handleBeforeInstallPrompt = (e: Event) => {
       e.preventDefault();
       setDeferredPrompt(e);
+      console.log('[PWA] Install prompt captured and ready');
     };
 
     window.addEventListener('beforeinstallprompt', handleBeforeInstallPrompt);
 
     // Listen for app installed event
-    window.addEventListener('appinstalled', () => {
+    const handleAppInstalled = () => {
+      console.log('[PWA] App was installed');
       setIsInstalled(true);
       setDeferredPrompt(null);
-    });
+    };
+    window.addEventListener('appinstalled', handleAppInstalled);
 
     return () => {
       window.removeEventListener('beforeinstallprompt', handleBeforeInstallPrompt);
+      window.removeEventListener('appinstalled', handleAppInstalled);
     };
   }, []);
 
@@ -154,20 +165,36 @@ export default function MobileNavDrawer({
       return;
     }
 
+    // If we have the deferred prompt, trigger the native install
     if (deferredPrompt) {
-      setInstallStep('confirm');
-      deferredPrompt.prompt();
-      const { outcome } = await deferredPrompt.userChoice;
-      if (outcome === 'accepted') {
-        setInstallStep('success');
-        setIsInstalled(true);
-        setTimeout(() => {
+      try {
+        console.log('[PWA] Triggering native install prompt...');
+        deferredPrompt.prompt();
+        const { outcome } = await deferredPrompt.userChoice;
+        console.log('[PWA] User choice:', outcome);
+
+        if (outcome === 'accepted') {
+          setInstallStep('success');
+          setIsInstalled(true);
+          setTimeout(() => {
+            setShowInstallModal(false);
+          }, 2000);
+        } else {
+          // User dismissed - close our modal
           setShowInstallModal(false);
-        }, 2000);
-      } else {
-        setShowInstallModal(false);
+        }
+        setDeferredPrompt(null);
+      } catch (err) {
+        console.error('[PWA] Install prompt error:', err);
+        // Fall back to manual instructions
+        setInstallStep('android-instructions');
       }
-      setDeferredPrompt(null);
+    } else if (isAndroid) {
+      // No deferred prompt on Android - show manual instructions
+      setInstallStep('android-instructions');
+    } else {
+      // Desktop or other - show generic instructions
+      setInstallStep('android-instructions');
     }
   };
 
@@ -638,8 +665,8 @@ export default function MobileNavDrawer({
             </div>
           )}
 
-          {/* PWA Install Button - App Store Style */}
-          {!isInstalled && (deferredPrompt || isIOS) && (
+          {/* PWA Install Button - App Store Style - Show on mobile devices */}
+          {!isInstalled && (deferredPrompt || isIOS || isAndroid) && (
             <div className="p-4 border-t border-white/10">
               <button
                 onClick={handleInstallClick}
@@ -771,6 +798,45 @@ export default function MobileNavDrawer({
                   </div>
                 )}
 
+                {installStep === 'android-instructions' && (
+                  <div className="space-y-4 animate-fade-in py-4">
+                    <p className="text-center text-white/80 text-sm mb-4">
+                      Follow these steps in Chrome:
+                    </p>
+
+                    <div className="space-y-4">
+                      <div className="flex items-start gap-3">
+                        <span className="w-7 h-7 rounded-full bg-[#34A853] flex items-center justify-center text-white text-sm font-bold flex-shrink-0">1</span>
+                        <div>
+                          <p className="text-white font-medium">Tap the menu button</p>
+                          <p className="text-gray-400 text-sm">⋮ in the top right corner</p>
+                        </div>
+                      </div>
+                      <div className="flex items-start gap-3">
+                        <span className="w-7 h-7 rounded-full bg-[#34A853] flex items-center justify-center text-white text-sm font-bold flex-shrink-0">2</span>
+                        <div>
+                          <p className="text-white font-medium">Tap &quot;Add to Home screen&quot;</p>
+                          <p className="text-gray-400 text-sm">or &quot;Install app&quot;</p>
+                        </div>
+                      </div>
+                      <div className="flex items-start gap-3">
+                        <span className="w-7 h-7 rounded-full bg-[#34A853] flex items-center justify-center text-white text-sm font-bold flex-shrink-0">3</span>
+                        <div>
+                          <p className="text-white font-medium">Tap &quot;Add&quot; or &quot;Install&quot;</p>
+                          <p className="text-gray-400 text-sm">to confirm</p>
+                        </div>
+                      </div>
+                    </div>
+
+                    <button
+                      onClick={() => setShowInstallModal(false)}
+                      className="w-full py-3 rounded-xl bg-white/10 text-white font-medium hover:bg-white/20 transition-all mt-4"
+                    >
+                      Got it!
+                    </button>
+                  </div>
+                )}
+
                 {installStep === 'ios-instructions' && (
                   <div className="space-y-4 animate-fade-in py-4">
                     <p className="text-center text-white/80 text-sm mb-4">
@@ -789,13 +855,13 @@ export default function MobileNavDrawer({
                         <span className="w-7 h-7 rounded-full bg-[#007AFF] flex items-center justify-center text-white text-sm font-bold flex-shrink-0">2</span>
                         <div>
                           <p className="text-white font-medium">Scroll down and tap</p>
-                          <p className="text-gray-400 text-sm">"Add to Home Screen" ➕</p>
+                          <p className="text-gray-400 text-sm">&quot;Add to Home Screen&quot; ➕</p>
                         </div>
                       </div>
                       <div className="flex items-start gap-3">
                         <span className="w-7 h-7 rounded-full bg-[#007AFF] flex items-center justify-center text-white text-sm font-bold flex-shrink-0">3</span>
                         <div>
-                          <p className="text-white font-medium">Tap "Add"</p>
+                          <p className="text-white font-medium">Tap &quot;Add&quot;</p>
                           <p className="text-gray-400 text-sm">in the top right corner</p>
                         </div>
                       </div>
