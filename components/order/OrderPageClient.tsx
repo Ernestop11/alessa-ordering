@@ -2680,14 +2680,14 @@ export default function OrderPageClient({
 
       {/* Mobile Section Navigation - Fixed below header (OUTSIDE z-10 wrapper for proper stacking) */}
       <div
-        className="fixed left-0 right-0 sm:hidden bg-[#0d0d0d]/95 backdrop-blur-sm border-b border-white/10 shadow-lg"
+        className="fixed left-0 right-0 sm:hidden bg-[#0d0d0d]/95 backdrop-blur-sm border-b border-white/10 shadow-lg transition-all duration-300 ease-out"
         style={{
-          top: isScrolled ? 'calc(env(safe-area-inset-top, 0px) + 64px)' : 'calc(env(safe-area-inset-top, 0px) + 80px)',
+          top: isScrolled ? 'calc(env(safe-area-inset-top, 0px) + 56px)' : 'calc(env(safe-area-inset-top, 0px) + 72px)',
           zIndex: 35
         }}
       >
         <div className="flex gap-2 overflow-x-auto px-4 py-2.5 scrollbar-hide">
-          {navSections.slice(0, 8).map((section) => (
+          {navSections.map((section) => (
             <button
               key={`nav-${section.id}`}
               onClick={() => {
