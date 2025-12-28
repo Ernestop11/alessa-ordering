@@ -255,10 +255,41 @@ export function validateOperatingHours(
 
   // Check isOpen flag - must be explicitly true to be open
   if (isOpenFlag !== true) {
-    // Even though closed by flag, try to get next open time for better messaging
+    // Even though closed by flag, try to provide helpful messaging
     const timezone = operatingHours.timezone || 'America/Los_Angeles';
     const localDate = toTimezone(currentDate, timezone);
     const activeHours = getActiveHours(operatingHours, localDate);
+    const dayName = getDayName(localDate);
+    const todayHours = activeHours?.[dayName];
+
+    // Check if we're within today's normal operating hours
+    if (todayHours && !todayHours.closed) {
+      const currentMinutes = localDate.getHours() * 60 + localDate.getMinutes();
+      const openMinutes = timeToMinutes(todayHours.open);
+      const closeMinutes = timeToMinutes(todayHours.close);
+
+      // If we're before open time today
+      if (currentMinutes < openMinutes) {
+        return {
+          isOpen: false,
+          reason: 'isOpen_flag',
+          message: `Kitchen opens at ${todayHours.open} today.`,
+          nextOpenTime: `today at ${todayHours.open}`,
+        };
+      }
+
+      // If we're within normal hours but admin closed
+      if (currentMinutes >= openMinutes && currentMinutes < closeMinutes) {
+        return {
+          isOpen: false,
+          reason: 'isOpen_flag',
+          message: `Kitchen is temporarily closed. Normal hours: ${todayHours.open} - ${todayHours.close}.`,
+          nextOpenTime: undefined,
+        };
+      }
+    }
+
+    // Otherwise find next open time
     const nextOpen = activeHours ? getNextOpenTime(localDate, activeHours) : undefined;
 
     return {
