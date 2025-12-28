@@ -2682,7 +2682,7 @@ export default function OrderPageClient({
       <div
         className="fixed left-0 right-0 sm:hidden bg-[#0d0d0d]/95 backdrop-blur-sm border-b border-white/10 shadow-lg transition-all duration-300 ease-out"
         style={{
-          top: isScrolled ? 'calc(env(safe-area-inset-top, 0px) + 56px)' : 'calc(env(safe-area-inset-top, 0px) + 72px)',
+          top: isScrolled ? 'calc(env(safe-area-inset-top, 0px) + 64px)' : 'calc(env(safe-area-inset-top, 0px) + 88px)',
           zIndex: 35
         }}
       >
