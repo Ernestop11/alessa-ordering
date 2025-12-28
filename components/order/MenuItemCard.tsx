@@ -27,18 +27,18 @@ export default function MenuItemCard({
   const isExternalImage = imageSrc.startsWith('http');
   const isTenantImage = imageSrc.startsWith('/tenant/');
 
-  // Unified gradient button style (matches Chef Recommends carousel)
+  // Unified gradient button style - more rounded, refined gradient
   const gradientButton = `
     relative overflow-hidden
-    rounded-lg sm:rounded-xl py-2.5 sm:py-3 text-xs sm:text-sm font-bold
-    bg-gradient-to-r from-rose-500 via-amber-500 to-yellow-400
-    text-black
-    shadow-lg shadow-amber-500/20
-    transition-all duration-300 ease-out
-    hover:shadow-xl hover:shadow-amber-500/30
-    hover:scale-[1.02]
-    active:scale-[0.98]
-    disabled:opacity-50 disabled:cursor-not-allowed disabled:hover:scale-100 disabled:from-gray-500 disabled:via-gray-500 disabled:to-gray-500 disabled:text-white/70
+    rounded-xl sm:rounded-2xl py-2.5 sm:py-3 text-xs sm:text-sm font-semibold
+    bg-gradient-to-r from-amber-400 via-amber-500 to-yellow-500
+    text-black/90
+    shadow-md shadow-amber-500/15
+    transition-all duration-200 ease-out
+    hover:shadow-lg hover:shadow-amber-500/25
+    hover:from-amber-300 hover:via-amber-400 hover:to-yellow-400
+    active:scale-[0.97]
+    disabled:opacity-50 disabled:cursor-not-allowed disabled:hover:scale-100 disabled:bg-gray-600 disabled:from-gray-600 disabled:via-gray-600 disabled:to-gray-600 disabled:text-white/70
   `;
 
   const quickAddButton = `
@@ -215,21 +215,21 @@ export default function MenuItemCard({
         {/* Gradient overlay */}
         <div className="absolute inset-0 bg-gradient-to-t from-black/70 via-black/20 to-transparent" />
 
-        {/* Quick Add Button - smaller on mobile */}
+        {/* Quick Add Button - subtle glass style */}
         {item.available && (
           <button
             onClick={(e) => { e.stopPropagation(); onAddToCart(); }}
-            className="absolute top-2 left-2 sm:top-3 sm:left-3 z-10 w-8 h-8 sm:w-10 sm:h-10 rounded-full bg-[#C41E3A]/90 backdrop-blur-md border border-white/20 shadow-lg shadow-[#C41E3A]/30 flex items-center justify-center text-white text-lg sm:text-xl font-bold transition-all duration-200 hover:scale-110 hover:bg-[#C41E3A] active:scale-95"
+            className="absolute top-2.5 left-2.5 sm:top-3 sm:left-3 z-10 w-7 h-7 sm:w-8 sm:h-8 rounded-full bg-black/40 backdrop-blur-sm border border-white/20 shadow-md flex items-center justify-center text-white text-base sm:text-lg font-medium transition-all duration-200 hover:scale-110 hover:bg-black/60 hover:border-white/40 active:scale-95"
             title="Quick add to cart"
           >
             +
           </button>
         )}
 
-        {/* Price badge - top right, smaller on mobile */}
-        <div className="absolute top-2 right-2 sm:top-3 sm:right-3">
-          <div className="rounded-lg sm:rounded-xl bg-[#C41E3A]/90 backdrop-blur-sm px-2 py-1 sm:px-3 sm:py-1.5 shadow-lg border border-white/10">
-            <span className="text-sm sm:text-base font-bold text-white">${item.price.toFixed(2)}</span>
+        {/* Price badge - subtle glass style */}
+        <div className="absolute top-2.5 right-2.5 sm:top-3 sm:right-3">
+          <div className="rounded-full bg-black/40 backdrop-blur-sm px-2.5 py-1 sm:px-3 sm:py-1.5 shadow-md border border-white/20">
+            <span className="text-sm sm:text-base font-semibold text-white">${item.price.toFixed(2)}</span>
           </div>
         </div>
 
@@ -273,7 +273,7 @@ export default function MenuItemCard({
           disabled={!item.available}
           className={`mt-2 sm:mt-4 w-full flex items-center justify-center gap-1 sm:gap-2 ${gradientButton}`}
         >
-          <span className="relative z-10">{item.available ? '+ Add' : 'Sold Out'}</span>
+          <span className="relative z-10">{item.available ? '+ Add to Order' : 'Sold Out'}</span>
         </button>
       </div>
     </article>

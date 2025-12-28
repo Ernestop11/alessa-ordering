@@ -1996,20 +1996,20 @@ export default function OrderPageClient({
 
     const handleFeaturedClick = () => {
       console.log('[Featured] Clicked! featuredItem:', featuredItem);
-      // Always show notification first to confirm click is working
-      showNotification(`Opening ${featuredItem.name}...`);
+
+      // Check if restaurant is closed first
+      if (!restaurantIsOpen) {
+        showNotification(restaurantClosedMessage || 'Restaurant is currently closed');
+        return;
+      }
 
       if (featuredItem.id) {
         // Find and open the item
         const item = menuItems.find(i => i.id === featuredItem.id);
         console.log('[Featured] Found item:', item);
         if (item) {
-          // Small delay to show notification
-          setTimeout(() => {
-            setSelectedMenuItem(item);
-          }, 100);
+          setSelectedMenuItem(item);
         } else {
-          // If we can't find the exact item, show notification
           showNotification(`${featuredItem.name} - tap items below to order`);
         }
       } else {
@@ -2042,8 +2042,8 @@ export default function OrderPageClient({
             onClick={handleFeaturedClick}
             className="relative w-full text-left block focus:outline-none active:scale-[0.98] transition-all touch-manipulation rounded-xl overflow-hidden border border-white/10 bg-gradient-to-br from-white/10 to-white/5"
           >
-            {/* Featured Image - taller for better visibility */}
-            <div className="relative h-44 w-full overflow-hidden bg-gradient-to-br from-gray-800 to-gray-900">
+            {/* Featured Image - square aspect like menu cards for full plate view */}
+            <div className="relative aspect-square w-full overflow-hidden bg-[#1a1a1a]">
               {featuredItem.displayImage ? (
                 <Image
                   src={featuredItem.displayImage}
@@ -2057,17 +2057,17 @@ export default function OrderPageClient({
               ) : (
                 <div className="flex items-center justify-center h-full text-5xl">🍽️</div>
               )}
-              {/* Gradient overlay */}
-              <div className="absolute inset-0 bg-gradient-to-t from-black/80 via-black/20 to-transparent pointer-events-none" />
+              {/* Subtle gradient overlay */}
+              <div className="absolute inset-0 bg-gradient-to-t from-black/60 via-transparent to-transparent pointer-events-none" />
 
-              {/* HOT badge */}
-              <div className="absolute top-2 right-2 px-2 py-0.5 rounded-full bg-gradient-to-r from-rose-500 via-amber-500 to-yellow-400 text-black text-[10px] font-bold shadow-lg flex items-center gap-1 pointer-events-none">
+              {/* HOT badge - subtle glass style */}
+              <div className="absolute top-2.5 right-2.5 px-2.5 py-1 rounded-full bg-black/40 backdrop-blur-sm border border-amber-400/30 text-amber-300 text-[10px] font-bold shadow-lg flex items-center gap-1 pointer-events-none">
                 🔥 HOT
               </div>
 
-              {/* Price badge */}
-              <div className="absolute bottom-2 left-2 px-2.5 py-1 rounded-lg bg-amber-500 text-black text-sm font-bold shadow-lg pointer-events-none">
-                ${featuredItem.price?.toFixed(2) || '14.00'}
+              {/* Price badge - matching menu cards style */}
+              <div className="absolute top-2.5 left-2.5 px-2.5 py-1 rounded-full bg-black/40 backdrop-blur-sm border border-white/20 shadow-lg pointer-events-none">
+                <span className="text-sm font-bold text-white">${featuredItem.price?.toFixed(2) || '14.00'}</span>
               </div>
             </div>
 
@@ -2080,9 +2080,9 @@ export default function OrderPageClient({
                 {featuredItem.description || 'Authentic Mexican flavors'}
               </p>
 
-              {/* CTA Button */}
-              <div className="mt-3 w-full rounded-lg bg-gradient-to-r from-rose-500 via-amber-500 to-yellow-400 px-4 py-2.5 text-center text-sm font-bold text-black shadow-lg shadow-amber-500/20">
-                Tap to Order
+              {/* CTA Button - matching menu card style */}
+              <div className="mt-3 w-full rounded-xl bg-gradient-to-r from-amber-400 via-amber-500 to-yellow-500 px-4 py-2.5 text-center text-sm font-semibold text-black/90 shadow-md shadow-amber-500/15">
+                + Add to Order
               </div>
             </div>
           </button>
