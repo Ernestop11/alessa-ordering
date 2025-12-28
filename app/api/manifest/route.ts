@@ -1,5 +1,5 @@
 import { NextResponse } from 'next/server';
-import { resolveTenant } from '@/lib/tenant';
+import { getTenantBySlug } from '@/lib/tenant';
 import { getStaticTenantTheme } from '@/lib/tenant-theme-map';
 
 /**
@@ -12,13 +12,18 @@ import { getStaticTenantTheme } from '@/lib/tenant-theme-map';
  */
 export async function GET(req: Request) {
   try {
-    const host = req.headers.get('host') || '';
+    // Try to get tenant from middleware-set header first (for custom domains)
+    const tenantSlugHeader = req.headers.get('x-tenant-slug');
+
     let tenant = null;
-    try {
-      tenant = await resolveTenant({ host });
-    } catch {
-      // Tenant resolution failed, use defaults
+    if (tenantSlugHeader) {
+      try {
+        tenant = await getTenantBySlug(tenantSlugHeader);
+      } catch {
+        // Tenant lookup failed
+      }
     }
+
     const staticTheme = tenant ? getStaticTenantTheme(tenant.slug) : getStaticTenantTheme();
 
     // Determine tenant name for PWA

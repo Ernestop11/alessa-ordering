@@ -1,5 +1,4 @@
 import { NextResponse } from 'next/server';
-import { resolveTenant } from '@/lib/tenant';
 import fs from 'fs/promises';
 import path from 'path';
 
@@ -11,21 +10,16 @@ import path from 'path';
  */
 export async function GET(req: Request) {
   try {
-    const host = req.headers.get('host') || '';
-    let tenant = null;
-    try {
-      tenant = await resolveTenant({ host });
-    } catch {
-      // Tenant resolution failed, use defaults
-    }
+    // Get tenant slug from middleware-set header (for custom domains)
+    const tenantSlug = req.headers.get('x-tenant-slug');
 
-    if (tenant?.slug) {
+    if (tenantSlug) {
       // Try tenant-specific favicon
       const tenantFaviconPath = path.join(
         process.cwd(),
         'public',
         'tenant',
-        tenant.slug,
+        tenantSlug,
         'favicon.ico'
       );
 
@@ -40,8 +34,8 @@ export async function GET(req: Request) {
       } catch {
         // Tenant favicon not found, try logo as PNG
         const tenantLogoPaths = [
-          path.join(process.cwd(), 'public', 'tenant', tenant.slug, 'images', 'logo.png'),
-          path.join(process.cwd(), 'public', 'tenant', tenant.slug, 'logo.png'),
+          path.join(process.cwd(), 'public', 'tenant', tenantSlug, 'images', 'logo.png'),
+          path.join(process.cwd(), 'public', 'tenant', tenantSlug, 'logo.png'),
         ];
 
         for (const logoPath of tenantLogoPaths) {
