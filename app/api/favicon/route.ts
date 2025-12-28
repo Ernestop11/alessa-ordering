@@ -1,4 +1,5 @@
 import { NextResponse } from 'next/server';
+import { headers } from 'next/headers';
 import fs from 'fs/promises';
 import path from 'path';
 
@@ -8,10 +9,11 @@ import path from 'path';
  * Returns tenant-specific favicon if available,
  * otherwise returns default Alessa Cloud favicon.
  */
-export async function GET(req: Request) {
+export async function GET() {
   try {
-    // Get tenant slug from middleware-set header (for custom domains)
-    const tenantSlug = req.headers.get('x-tenant-slug');
+    // Use next/headers to get middleware-modified headers
+    const headersList = headers();
+    const tenantSlug = headersList.get('x-tenant-slug');
 
     if (tenantSlug) {
       // Try tenant-specific favicon

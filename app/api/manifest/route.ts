@@ -1,4 +1,5 @@
 import { NextResponse } from 'next/server';
+import { headers } from 'next/headers';
 import { getTenantBySlug } from '@/lib/tenant';
 import { getStaticTenantTheme } from '@/lib/tenant-theme-map';
 
@@ -10,26 +11,18 @@ import { getStaticTenantTheme } from '@/lib/tenant-theme-map';
  * - Tenant theme colors
  * - Tenant-specific icons (if available)
  */
-export async function GET(req: Request) {
+export async function GET() {
   try {
-    // Try to get tenant from middleware-set header first (for custom domains)
-    const tenantSlugHeader = req.headers.get('x-tenant-slug');
-    const host = req.headers.get('host') || '';
-
-    // Debug logging
-    console.log('[manifest] Headers:', {
-      'x-tenant-slug': tenantSlugHeader,
-      host,
-      cookie: req.headers.get('cookie')?.substring(0, 100),
-    });
+    // Use next/headers to get middleware-modified headers
+    const headersList = headers();
+    const tenantSlugHeader = headersList.get('x-tenant-slug');
 
     let tenant = null;
     if (tenantSlugHeader) {
       try {
         tenant = await getTenantBySlug(tenantSlugHeader);
-        console.log('[manifest] Tenant resolved:', tenant?.slug);
-      } catch (err) {
-        console.error('[manifest] Tenant lookup failed:', err);
+      } catch {
+        // Tenant lookup failed
       }
     }
 
