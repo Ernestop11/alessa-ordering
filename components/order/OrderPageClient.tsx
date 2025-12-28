@@ -2678,6 +2678,34 @@ export default function OrderPageClient({
         <div className="absolute inset-0 bg-[url('data:image/svg+xml;base64,PHN2ZyB4bWxucz0iaHR0cDovL3d3dy53My5vcmcvMjAwMC9zdmciIHdpZHRoPSI0IiBoZWlnaHQ9IjQiPjxyZWN0IHdpZHRoPSI0IiBoZWlnaHQ9IjQiIGZpbGw9IiMwMDAiLz48cmVjdCB3aWR0aD0iMSIgaGVpZ2h0PSIxIiBmaWxsPSIjMTExIi8+PC9zdmc+')] opacity-30" />
       </div>
 
+      {/* Mobile Section Navigation - Fixed below header (OUTSIDE z-10 wrapper for proper stacking) */}
+      <div
+        className="fixed left-0 right-0 z-35 sm:hidden bg-[#0d0d0d] border-b border-white/10 shadow-lg"
+        style={{
+          top: isScrolled ? 'calc(env(safe-area-inset-top, 0px) + 56px)' : 'calc(env(safe-area-inset-top, 0px) + 72px)',
+          zIndex: 35
+        }}
+      >
+        <div className="flex gap-2 overflow-x-auto px-4 py-3 scrollbar-hide">
+          {navSections.slice(0, 8).map((section) => (
+            <button
+              key={`nav-${section.id}`}
+              onClick={() => {
+                const el = document.getElementById(`section-${section.id}`);
+                if (el) {
+                  const yOffset = -140;
+                  const y = el.getBoundingClientRect().top + window.pageYOffset + yOffset;
+                  window.scrollTo({ top: y, behavior: 'smooth' });
+                }
+              }}
+              className="flex-shrink-0 px-4 py-2 rounded-full text-xs font-semibold bg-white/10 text-white/90 border border-white/20 hover:bg-[#DC2626] hover:border-[#DC2626] hover:text-white transition-all whitespace-nowrap"
+            >
+              {section.name}
+            </button>
+          ))}
+        </div>
+      </div>
+
       {/* Main content wrapper */}
       <div className="relative z-10">
       {/* Warm Header - Sticky with safe area support for iPhone notch/Dynamic Island */}
@@ -2958,31 +2986,6 @@ export default function OrderPageClient({
           transition: 'height 0.3s ease'
         }}
       />
-
-      {/* Mobile Section Navigation - Fixed below header */}
-      <div
-        className="fixed left-0 right-0 z-30 sm:hidden bg-[#0d0d0d] border-b border-white/10 shadow-lg"
-        style={{ top: isScrolled ? 'calc(env(safe-area-inset-top, 0px) + 56px)' : 'calc(env(safe-area-inset-top, 0px) + 72px)' }}
-      >
-        <div className="flex gap-2 overflow-x-auto px-4 py-3 scrollbar-hide">
-          {navSections.slice(0, 8).map((section) => (
-            <button
-              key={section.id}
-              onClick={() => {
-                const el = document.getElementById(`section-${section.id}`);
-                if (el) {
-                  const yOffset = -160;
-                  const y = el.getBoundingClientRect().top + window.pageYOffset + yOffset;
-                  window.scrollTo({ top: y, behavior: 'smooth' });
-                }
-              }}
-              className="flex-shrink-0 px-4 py-2 rounded-full text-xs font-semibold bg-white/10 text-white/90 border border-white/20 hover:bg-[#DC2626] hover:border-[#DC2626] hover:text-white transition-all whitespace-nowrap"
-            >
-              {section.name}
-            </button>
-          ))}
-        </div>
-      </div>
 
       {/* Spacer for fixed category nav on mobile */}
       <div className="h-[52px] sm:hidden" />
