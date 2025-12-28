@@ -28,6 +28,7 @@ interface CartStore {
   addToCart: (item: CartItem) => void;
   removeFromCart: (itemId: string) => void;
   updateQuantity: (itemId: string, quantity: number) => void;
+  updateItem: (itemId: string, updates: Partial<CartItem>) => void;
   clearCart: () => void;
   total: () => number;
 }
@@ -76,7 +77,15 @@ export const useCart = create<CartStore>((set, get) => ({
       };
     });
   },
-  
+
+  updateItem: (itemId, updates) => {
+    set((state) => ({
+      items: state.items.map((item) =>
+        item.id === itemId ? { ...item, ...updates } : item
+      ),
+    }));
+  },
+
   clearCart: () => {
     set({ items: [] });
   },

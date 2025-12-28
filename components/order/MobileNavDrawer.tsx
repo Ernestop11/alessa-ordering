@@ -3,6 +3,11 @@
 import { useEffect, useState } from 'react';
 import { useTenantTheme } from '../TenantThemeProvider';
 
+interface MenuSection {
+  id: string;
+  name: string;
+}
+
 interface MobileNavDrawerProps {
   isOpen: boolean;
   onClose: () => void;
@@ -14,6 +19,7 @@ interface MobileNavDrawerProps {
   cateringEnabled: boolean;
   customerData: { name?: string; loyaltyPoints?: number; orders?: any[] } | null;
   isAccessibilityOpen: boolean;
+  menuSections?: MenuSection[];
 }
 
 export default function MobileNavDrawer({
@@ -27,6 +33,7 @@ export default function MobileNavDrawer({
   cateringEnabled,
   customerData,
   isAccessibilityOpen,
+  menuSections = [],
 }: MobileNavDrawerProps) {
   const tenant = useTenantTheme();
   const [mounted, setMounted] = useState(false);
@@ -208,6 +215,34 @@ export default function MobileNavDrawer({
             )}
           </button>
         </nav>
+
+        {/* Menu Section Shortcuts */}
+        {menuSections.length > 0 && (
+          <div className="px-4 py-3 border-t border-white/10">
+            <p className="text-xs uppercase tracking-widest text-white/40 mb-3">Jump to Section</p>
+            <div className="grid grid-cols-2 gap-2">
+              {menuSections.map((section) => (
+                <button
+                  key={section.id}
+                  onClick={() => {
+                    onClose();
+                    setTimeout(() => {
+                      const el = document.getElementById(`section-${section.id}`);
+                      if (el) {
+                        const yOffset = -160;
+                        const y = el.getBoundingClientRect().top + window.pageYOffset + yOffset;
+                        window.scrollTo({ top: y, behavior: 'smooth' });
+                      }
+                    }, 300);
+                  }}
+                  className="px-3 py-2 rounded-lg text-sm font-medium text-white/80 bg-white/5 border border-white/10 hover:bg-white/10 hover:border-[#C41E3A]/40 transition-all text-left truncate"
+                >
+                  {section.name}
+                </button>
+              ))}
+            </div>
+          </div>
+        )}
 
         {/* Footer Actions */}
         {customerData && onSignOut && (

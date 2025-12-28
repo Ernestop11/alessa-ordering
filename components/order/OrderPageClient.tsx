@@ -2822,63 +2822,43 @@ export default function OrderPageClient({
         )}
 
 
-        {/* Mobile Sticky Bottom Bar - Warm Theme */}
-        <div className="fixed bottom-0 left-0 right-0 z-50 sm:hidden">
-          <div className="mx-2 mb-2 flex items-center justify-around rounded-2xl bg-[#8B2323] shadow-lg px-2 py-2">
-            {cateringEnabled && (
+        {/* Mobile Section Navigation Shortcuts */}
+        <div className="sticky top-[140px] z-30 sm:hidden bg-gradient-to-b from-[#1a0a0a] to-transparent pb-2">
+          <div className="flex gap-2 overflow-x-auto px-3 py-2 scrollbar-hide">
+            {navSections.slice(0, 6).map((section) => (
               <button
-                onClick={() => setShowCateringPanel(true)}
-                className={`flex flex-col items-center gap-0.5 rounded-xl px-3 py-2 text-[11px] font-medium transition-all ${
-                  showCateringPanel
-                    ? 'bg-white/20 text-white'
-                    : 'text-white/70'
-                }`}
+                key={section.id}
+                onClick={() => {
+                  const el = document.getElementById(`section-${section.id}`);
+                  if (el) {
+                    const yOffset = -160;
+                    const y = el.getBoundingClientRect().top + window.pageYOffset + yOffset;
+                    window.scrollTo({ top: y, behavior: 'smooth' });
+                  }
+                }}
+                className="flex-shrink-0 px-3 py-1.5 rounded-full text-xs font-medium bg-white/10 text-white/80 border border-white/10 hover:bg-white/20 hover:text-white transition-all"
               >
-                <span className="text-base">🎉</span>
-                <span>Catering</span>
+                {section.name}
               </button>
-            )}
-            <button
-              onClick={() => setAccessibilityOpen((prev) => !prev)}
-              className={`flex flex-col items-center gap-0.5 rounded-xl px-3 py-2 text-[11px] font-medium transition-all ${
-                isAccessibilityOpen
-                  ? 'bg-white/20 text-white'
-                  : 'text-white/70'
-              }`}
-            >
-              <span className="text-base">♿</span>
-              <span>ADA</span>
-            </button>
-            <button
-              onClick={() => {
-                if (customerData) {
-                  setShowMembershipPanel(true);
-                } else {
-                  setShowJoinModal(true);
-                }
-              }}
-              className="flex flex-col items-center gap-0.5 rounded-xl px-3 py-2 text-[11px] font-medium text-amber-300 transition-all"
-            >
-              <span className="text-base">🎁</span>
-              <span>{customerData ? 'Rewards' : 'Join'}</span>
-            </button>
-            <button
-              onClick={() => {
-                const cartButton = document.querySelector('[data-cart-launcher]') as HTMLElement;
-                cartButton?.click();
-              }}
-              className="relative flex flex-col items-center gap-0.5 rounded-xl bg-[#FFF5E6] px-4 py-2 text-[11px] font-bold text-[#8B2323] transition-all"
-            >
-              <span className="text-base">🛒</span>
-              <span>My Bag</span>
-              {cartItemCount > 0 && (
-                <span className="absolute -top-1.5 -right-1 flex h-5 w-5 items-center justify-center rounded-full bg-[#C41E3A] text-[10px] font-bold text-white shadow-md">
-                  {cartItemCount}
-                </span>
-              )}
-            </button>
+            ))}
           </div>
         </div>
+
+        {/* Floating Cart Button (FAB) - Mobile Only */}
+        <button
+          onClick={() => {
+            const cartButton = document.querySelector('[data-cart-launcher]') as HTMLElement;
+            cartButton?.click();
+          }}
+          className="fixed bottom-6 right-4 z-50 sm:hidden flex items-center justify-center w-16 h-16 rounded-full bg-gradient-to-br from-[#C41E3A] to-[#8B2323] shadow-xl shadow-[#C41E3A]/40 border-2 border-white/20 transition-all active:scale-95 hover:shadow-2xl hover:shadow-[#C41E3A]/50"
+        >
+          <span className="text-2xl">🛒</span>
+          {cartItemCount > 0 && (
+            <span className="absolute -top-1 -right-1 flex h-7 w-7 items-center justify-center rounded-full bg-amber-400 text-sm font-black text-black shadow-lg ring-2 ring-white">
+              {cartItemCount > 9 ? '9+' : cartItemCount}
+            </span>
+          )}
+        </button>
         
         {/* Cart Launcher - Only rendered in root layout, header buttons trigger it */}
 
@@ -5304,6 +5284,7 @@ export default function OrderPageClient({
         cateringEnabled={cateringEnabled}
         customerData={customerData}
         isAccessibilityOpen={isAccessibilityOpen}
+        menuSections={navSections.map(s => ({ id: s.id, name: s.name }))}
       />
       </div>{/* End main content wrapper */}
     </div>

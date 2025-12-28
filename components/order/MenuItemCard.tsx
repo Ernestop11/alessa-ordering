@@ -188,11 +188,11 @@ export default function MenuItemCard({
     );
   }
 
-  // Grid layout (default) - Premium card with liquid glass
+  // Grid layout (default) - Compact mobile-first card
   return (
-    <article className="group relative overflow-hidden rounded-2xl bg-white/[0.03] backdrop-blur-sm border border-white/[0.08] transition-all duration-300 hover:border-[#C41E3A]/40 hover:shadow-xl hover:shadow-[#C41E3A]/10">
-      {/* Image container */}
-      <div className="relative aspect-[4/3] w-full overflow-hidden bg-[#1a1a1a]">
+    <article className="group relative overflow-hidden rounded-xl sm:rounded-2xl bg-white/[0.03] backdrop-blur-sm border border-white/[0.08] transition-all duration-300 hover:border-[#C41E3A]/40 hover:shadow-xl hover:shadow-[#C41E3A]/10">
+      {/* Image container - shorter on mobile */}
+      <div className="relative aspect-square sm:aspect-[4/3] w-full overflow-hidden bg-[#1a1a1a]">
         {isExternalImage ? (
           <img
             src={imageSrc}
@@ -209,7 +209,7 @@ export default function MenuItemCard({
             alt={item.name}
             fill
             className="object-cover transition-transform duration-500 group-hover:scale-105"
-            sizes="(min-width: 1280px) 33vw, (min-width: 640px) 50vw, 100vw"
+            sizes="(min-width: 1280px) 33vw, (min-width: 640px) 50vw, 50vw"
             unoptimized={isExternalImage || isTenantImage}
           />
         )}
@@ -217,47 +217,47 @@ export default function MenuItemCard({
         {/* Gradient overlay */}
         <div className="absolute inset-0 bg-gradient-to-t from-black/70 via-black/20 to-transparent" />
 
-        {/* Quick Add Button - Always visible */}
+        {/* Quick Add Button - smaller on mobile */}
         {item.available && (
           <button
             onClick={(e) => { e.stopPropagation(); onAddToCart(); }}
-            className={quickAddButton}
+            className="absolute top-2 left-2 sm:top-3 sm:left-3 z-10 w-8 h-8 sm:w-10 sm:h-10 rounded-full bg-[#C41E3A]/90 backdrop-blur-md border border-white/20 shadow-lg shadow-[#C41E3A]/30 flex items-center justify-center text-white text-lg sm:text-xl font-bold transition-all duration-200 hover:scale-110 hover:bg-[#C41E3A] active:scale-95"
             title="Quick add to cart"
           >
             +
           </button>
         )}
 
-        {/* Price badge - top right */}
-        <div className="absolute top-3 right-3">
-          <div className="rounded-xl bg-[#C41E3A]/90 backdrop-blur-sm px-3 py-1.5 shadow-lg border border-white/10">
-            <span className="text-base font-bold text-white">${item.price.toFixed(2)}</span>
+        {/* Price badge - top right, smaller on mobile */}
+        <div className="absolute top-2 right-2 sm:top-3 sm:right-3">
+          <div className="rounded-lg sm:rounded-xl bg-[#C41E3A]/90 backdrop-blur-sm px-2 py-1 sm:px-3 sm:py-1.5 shadow-lg border border-white/10">
+            <span className="text-sm sm:text-base font-bold text-white">${item.price.toFixed(2)}</span>
           </div>
         </div>
 
         {/* Sold out overlay */}
         {!item.available && (
           <div className="absolute inset-0 flex items-center justify-center bg-black/80">
-            <span className="rounded-xl bg-[#333] px-6 py-3 text-sm font-bold text-white/80">
+            <span className="rounded-lg sm:rounded-xl bg-[#333] px-4 py-2 text-xs sm:text-sm font-bold text-white/80">
               SOLD OUT
             </span>
           </div>
         )}
       </div>
 
-      {/* Content */}
-      <div className="p-4">
-        {/* Title */}
-        <h3 className="text-lg font-bold text-white leading-tight line-clamp-1">{item.name}</h3>
+      {/* Content - more compact on mobile */}
+      <div className="p-2.5 sm:p-4">
+        {/* Title - smaller on mobile */}
+        <h3 className="text-sm sm:text-lg font-bold text-white leading-tight line-clamp-2 sm:line-clamp-1">{item.name}</h3>
 
-        {/* Description */}
-        <p className="mt-2 text-sm text-white/50 line-clamp-2 leading-relaxed min-h-[2.5rem]">
+        {/* Description - hidden on mobile, shown on larger screens */}
+        <p className="hidden sm:block mt-2 text-sm text-white/50 line-clamp-2 leading-relaxed">
           {item.description}
         </p>
 
-        {/* Tags */}
+        {/* Tags - hidden on mobile */}
         {item.tags && item.tags.length > 0 && (
-          <div className="mt-3 flex flex-wrap gap-1.5">
+          <div className="hidden sm:flex mt-3 flex-wrap gap-1.5">
             {item.tags.slice(0, 3).map((tag) => (
               <span
                 key={tag}
@@ -269,18 +269,13 @@ export default function MenuItemCard({
           </div>
         )}
 
-        {/* Apple Liquid Glass Add Button */}
+        {/* Add Button - compact on mobile */}
         <button
           onClick={onCustomize}
           disabled={!item.available}
-          className={`mt-4 w-full flex items-center justify-center gap-2 ${liquidGlassButton}`}
+          className={`mt-2 sm:mt-4 w-full flex items-center justify-center gap-1 sm:gap-2 relative overflow-hidden rounded-lg sm:rounded-2xl py-2 sm:py-3.5 text-xs sm:text-sm font-bold bg-gradient-to-b from-white/20 to-white/5 backdrop-blur-xl border border-white/20 shadow-[0_4px_16px_rgba(0,0,0,0.2),inset_0_1px_0_rgba(255,255,255,0.3)] text-white transition-all duration-300 ease-out hover:shadow-[0_8px_24px_rgba(196,30,58,0.3)] hover:scale-[1.02] active:scale-[0.98] disabled:opacity-50 disabled:cursor-not-allowed`}
         >
-          <svg className="h-5 w-5 relative z-10" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2.5}>
-            <path strokeLinecap="round" strokeLinejoin="round" d="M12 4v16m8-8H4" />
-          </svg>
-          <span className="relative z-10">{item.available ? 'ADD TO ORDER' : 'Sold Out'}</span>
-          {/* Animated shine effect */}
-          <span className="absolute inset-0 bg-gradient-to-r from-transparent via-white/10 to-transparent -translate-x-full group-hover:translate-x-full transition-transform duration-700" />
+          <span className="relative z-10">{item.available ? 'ADD' : 'Sold Out'}</span>
         </button>
       </div>
     </article>

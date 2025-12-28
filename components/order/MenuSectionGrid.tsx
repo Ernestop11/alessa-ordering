@@ -16,11 +16,12 @@ export default function MenuSectionGrid({
   onAddToCart,
   onCustomize,
 }: MenuSectionGridProps) {
+  // Mobile: 2 columns, Desktop: 3 columns for grid layout
   const gridClass = layout === 'grid'
-    ? 'grid gap-4 sm:gap-5 grid-cols-1 sm:grid-cols-2 lg:grid-cols-3'
+    ? 'grid gap-3 sm:gap-5 grid-cols-2 lg:grid-cols-3'
     : layout === 'list'
     ? 'flex flex-col gap-3'
-    : 'grid gap-4 sm:gap-5 grid-cols-1 sm:grid-cols-2';
+    : 'grid gap-3 sm:gap-5 grid-cols-2 lg:grid-cols-3';
 
   // Header is now rendered by parent component with varied styles
   return (

@@ -1,9 +1,11 @@
 "use client";
 
-import { X } from 'lucide-react';
+import { useState } from 'react';
+import { X, Pencil } from 'lucide-react';
 import { useRouter, useSearchParams } from 'next/navigation';
-import { useCart } from '../../lib/store/cart';
+import { useCart, CartItem } from '../../lib/store/cart';
 import { useTenantTheme } from '../TenantThemeProvider';
+import CartItemEditModal from './CartItemEditModal';
 
 interface CartDrawerProps {
   open: boolean;
@@ -16,6 +18,7 @@ export function CartDrawer({ open, onClose }: CartDrawerProps) {
   const router = useRouter();
   const searchParams = useSearchParams();
   const tenantSlug = searchParams.get('tenant');
+  const [editingItem, setEditingItem] = useState<CartItem | null>(null);
 
   const handleCheckout = () => {
     router.push(`/checkout?tenant=${tenantSlug}`);
@@ -25,6 +28,7 @@ export function CartDrawer({ open, onClose }: CartDrawerProps) {
   if (!open) return null;
 
   return (
+    <>
     <div className="fixed inset-0 z-50 flex items-end justify-center bg-black/60 backdrop-blur-sm sm:items-center sm:justify-end">
       <div className="h-[85vh] w-full max-w-md rounded-t-3xl border border-white/10 bg-[#050A1C] text-white shadow-2xl sm:h-full sm:rounded-none sm:border-l sm:border-t-0 sm:shadow-[0_0_50px_rgba(0,0,0,0.45)]">
         <div
@@ -50,27 +54,37 @@ export function CartDrawer({ open, onClose }: CartDrawerProps) {
           )}
           <div className="space-y-4">
             {items.map((item) => (
-              <div key={item.id} className="rounded-2xl border border-white/10 bg-white/5 p-4 transition-all hover:border-[#DC2626]/30 hover:shadow-[0_0_15px_rgba(220,38,38,0.15)]">
+              <div
+                key={item.id}
+                className="rounded-2xl border border-white/10 bg-white/5 p-4 transition-all hover:border-[#DC2626]/30 hover:shadow-[0_0_15px_rgba(220,38,38,0.15)] cursor-pointer"
+                onClick={() => setEditingItem(item)}
+              >
                 <div className="flex items-center justify-between gap-3">
-                  <div>
-                    <p className="text-base font-semibold">{item.name}</p>
+                  <div className="flex-1 min-w-0">
+                    <p className="text-base font-semibold truncate">{item.name}</p>
                     {item.description && <p className="text-xs text-white/60 line-clamp-1">{item.description}</p>}
+                    {item.note && (
+                      <p className="text-xs text-[#FBBF24]/70 mt-1 italic truncate">Note: {item.note}</p>
+                    )}
                   </div>
-                  <button onClick={() => removeFromCart(item.id)} className="text-xs text-white/50 hover:text-red-400">
-                    Remove
+                  <button
+                    onClick={(e) => { e.stopPropagation(); setEditingItem(item); }}
+                    className="p-2 rounded-full bg-white/10 text-white/60 hover:bg-white/20 hover:text-white transition-colors"
+                  >
+                    <Pencil className="w-4 h-4" />
                   </button>
                 </div>
                 <div className="mt-3 flex items-center gap-3">
                   <button
-                    onClick={() => updateQuantity(item.id, item.quantity - 1)}
-                    className="rounded-full border border-white/10 px-3 py-1 text-sm font-semibold hover:border-[#DC2626]/60 hover:bg-[#DC2626]/10"
+                    onClick={(e) => { e.stopPropagation(); updateQuantity(item.id, item.quantity - 1); }}
+                    className="w-9 h-9 rounded-full border border-white/10 flex items-center justify-center text-lg font-semibold hover:border-[#DC2626]/60 hover:bg-[#DC2626]/10 transition-colors"
                   >
                     -
                   </button>
-                  <span className="text-sm font-semibold">{item.quantity}</span>
+                  <span className="text-base font-bold w-6 text-center">{item.quantity}</span>
                   <button
-                    onClick={() => updateQuantity(item.id, item.quantity + 1)}
-                    className="rounded-full border border-white/10 px-3 py-1 text-sm font-semibold hover:border-[#DC2626]/60 hover:bg-[#DC2626]/10"
+                    onClick={(e) => { e.stopPropagation(); updateQuantity(item.id, item.quantity + 1); }}
+                    className="w-9 h-9 rounded-full border border-white/10 flex items-center justify-center text-lg font-semibold hover:border-[#DC2626]/60 hover:bg-[#DC2626]/10 transition-colors"
                   >
                     +
                   </button>
@@ -102,6 +116,14 @@ export function CartDrawer({ open, onClose }: CartDrawerProps) {
         </div>
       </div>
     </div>
+
+    {/* Edit Item Modal */}
+    <CartItemEditModal
+      open={!!editingItem}
+      onClose={() => setEditingItem(null)}
+      item={editingItem}
+    />
+    </>
   );
 }
 
