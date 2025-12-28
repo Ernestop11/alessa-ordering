@@ -5303,7 +5303,7 @@ export default function OrderPageClient({
         } : undefined}
         cateringEnabled={cateringEnabled}
         customerData={customerData}
-        isAccessibilityOpen={accessibilityOpen}
+        isAccessibilityOpen={isAccessibilityOpen}
       />
       </div>{/* End main content wrapper */}
     </div>
