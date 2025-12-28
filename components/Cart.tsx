@@ -551,7 +551,7 @@ export default function Cart() {
   }, [items.length, isContactValid, customerEmail, customerPhone, clientSecret, loading, orderPayload, restaurantIsOpen]);
 
   return (
-    <div className="flex w-full max-w-lg flex-col gap-4 sm:gap-6 rounded-3xl border border-gray-100 bg-white p-4 sm:p-6 shadow-xl md:p-8">
+    <div className="flex w-full max-w-lg flex-col gap-3 sm:gap-6 rounded-2xl sm:rounded-3xl border border-gray-100 bg-white p-3 sm:p-6 shadow-xl md:p-8">
       <header className="flex items-center justify-between">
         <div>
           <h2 className="text-2xl font-bold text-gray-900">Checkout</h2>
@@ -581,9 +581,9 @@ export default function Cart() {
             {items.map((item) => (
               <article
                 key={item.id}
-                className="group flex gap-4 rounded-2xl border border-gray-200 bg-white p-4 shadow-sm transition-all hover:border-gray-300 hover:shadow-md"
+                className="group flex gap-3 sm:gap-4 rounded-xl sm:rounded-2xl border border-gray-200 bg-white p-3 sm:p-4 shadow-sm transition-all hover:border-gray-300 hover:shadow-md"
               >
-                <div className="relative h-20 w-20 flex-shrink-0 overflow-hidden rounded-xl bg-gray-100 shadow-sm">
+                <div className="relative h-16 w-16 sm:h-20 sm:w-20 flex-shrink-0 overflow-hidden rounded-lg sm:rounded-xl bg-gray-100 shadow-sm">
                   {item.image ? (
                     <Image
                       src={item.image}
@@ -598,50 +598,47 @@ export default function Cart() {
                     </div>
                   )}
                 </div>
-                <div className="flex flex-1 flex-col gap-2">
+                <div className="flex flex-1 flex-col gap-1 min-w-0">
                   <div className="flex items-start justify-between gap-2">
-                    <div className="flex-1">
-                      <p className="text-base font-bold text-gray-900">{item.name}</p>
+                    <div className="flex-1 min-w-0">
+                      <p className="text-sm sm:text-base font-bold text-gray-900 truncate">{item.name}</p>
                       {item.description && (
-                        <p className="mt-1 text-xs text-gray-600 line-clamp-2">{item.description}</p>
+                        <p className="mt-0.5 text-xs text-gray-600 line-clamp-1 sm:line-clamp-2">{item.description}</p>
                       )}
                       {item.addons?.length ? (
-                        <p className="mt-1 text-xs font-medium text-gray-700">
+                        <p className="mt-0.5 text-xs font-medium text-gray-700 truncate">
                           + {item.addons.map((addon) => addon.name).join(", ")}
                         </p>
                       ) : null}
-                      {item.note && (
-                        <p className="mt-1 text-xs italic text-gray-600">Note: {item.note}</p>
-                      )}
                     </div>
                     <button
                       onClick={() => removeFromCart(item.id)}
-                      className="rounded-lg border border-gray-200 px-2 py-1 text-xs font-medium text-rose-600 transition hover:border-rose-300 hover:bg-rose-50"
+                      className="flex-shrink-0 rounded-lg border border-gray-200 px-2 py-1 text-xs font-medium text-rose-600 transition hover:border-rose-300 hover:bg-rose-50"
                     >
                       ✕
                     </button>
                   </div>
-                  <div className="mt-3 flex items-center justify-between">
-                    <div className="flex items-center gap-3">
+                  <div className="mt-auto flex items-center justify-between gap-2">
+                    <div className="flex items-center gap-2">
                       <button
                         onClick={() => updateQuantity(item.id, Math.max(1, item.quantity - 1))}
-                        className="flex h-9 w-9 items-center justify-center rounded-lg border-2 border-gray-200 bg-white text-base font-bold text-gray-700 transition hover:border-gray-300 hover:bg-gray-50 hover:scale-110"
+                        className="flex h-7 w-7 sm:h-8 sm:w-8 items-center justify-center rounded-lg border-2 border-gray-200 bg-white text-sm sm:text-base font-bold text-gray-700 transition hover:border-gray-300 hover:bg-gray-50 active:scale-95"
                         aria-label={`Decrease quantity of ${item.name}`}
                       >
                         −
                       </button>
-                      <span className="w-10 text-center text-base font-bold text-gray-900">
+                      <span className="w-6 sm:w-8 text-center text-sm sm:text-base font-bold text-gray-900">
                         {item.quantity}
                       </span>
                       <button
                         onClick={() => updateQuantity(item.id, item.quantity + 1)}
-                        className="flex h-9 w-9 items-center justify-center rounded-lg border-2 border-gray-200 bg-white text-base font-bold text-gray-700 transition hover:border-gray-300 hover:bg-gray-50 hover:scale-110"
+                        className="flex h-7 w-7 sm:h-8 sm:w-8 items-center justify-center rounded-lg border-2 border-gray-200 bg-white text-sm sm:text-base font-bold text-gray-700 transition hover:border-gray-300 hover:bg-gray-50 active:scale-95"
                         aria-label={`Increase quantity of ${item.name}`}
                       >
                         +
                       </button>
                     </div>
-                    <span className="text-lg font-bold text-gray-900">
+                    <span className="text-sm sm:text-lg font-bold text-gray-900 flex-shrink-0">
                       {formatCurrency(item.price * item.quantity)}
                     </span>
                   </div>
@@ -650,55 +647,55 @@ export default function Cart() {
             ))}
           </section>
 
-          <section className="space-y-6 rounded-2xl border border-gray-100 bg-gray-50 p-6">
-            <h3 className="text-lg font-bold text-gray-900">Order Details</h3>
-              <div className="grid gap-4 sm:grid-cols-2">
-                <label className="text-sm font-semibold text-gray-700">
+          <section className="space-y-4 sm:space-y-6 rounded-xl sm:rounded-2xl border border-gray-100 bg-gray-50 p-4 sm:p-6">
+            <h3 className="text-base sm:text-lg font-bold text-gray-900">Order Details</h3>
+              <div className="grid gap-3 sm:gap-4 sm:grid-cols-2">
+                <label className="text-xs sm:text-sm font-semibold text-gray-700">
                   Name
                   <input
                     value={customerName}
                     onChange={(event) => setCustomerName(event.target.value)}
-                    className="mt-2 w-full rounded-xl border-2 border-gray-200 bg-white px-4 py-3 text-sm font-medium transition focus:border-blue-500 focus:outline-none focus:ring-2 focus:ring-blue-200"
+                    className="mt-1.5 sm:mt-2 w-full rounded-lg sm:rounded-xl border-2 border-gray-200 bg-white px-3 sm:px-4 py-2.5 sm:py-3 text-sm font-medium transition focus:border-blue-500 focus:outline-none focus:ring-2 focus:ring-blue-200"
                     placeholder="Maria Perez"
                   />
                 </label>
-                <label className="text-sm font-semibold text-gray-700">
+                <label className="text-xs sm:text-sm font-semibold text-gray-700">
                   Email<span className="ml-1 text-rose-500">*</span>
                   <input
                     value={customerEmail}
                     onChange={(event) => setCustomerEmail(event.target.value)}
                     type="email"
-                    className="mt-2 w-full rounded-xl border-2 border-gray-200 bg-white px-4 py-3 text-sm font-medium transition focus:border-blue-500 focus:outline-none focus:ring-2 focus:ring-blue-200"
+                    className="mt-1.5 sm:mt-2 w-full rounded-lg sm:rounded-xl border-2 border-gray-200 bg-white px-3 sm:px-4 py-2.5 sm:py-3 text-sm font-medium transition focus:border-blue-500 focus:outline-none focus:ring-2 focus:ring-blue-200"
                     placeholder="maria@example.com"
                   />
                 </label>
-                <label className="text-sm font-semibold text-gray-700">
+                <label className="text-xs sm:text-sm font-semibold text-gray-700">
                   Phone
                   <input
                     value={customerPhone}
                     onChange={(event) => setCustomerPhone(event.target.value)}
                     type="tel"
-                    className="mt-2 w-full rounded-xl border-2 border-gray-200 bg-white px-4 py-3 text-sm font-medium transition focus:border-blue-500 focus:outline-none focus:ring-2 focus:ring-blue-200"
+                    className="mt-1.5 sm:mt-2 w-full rounded-lg sm:rounded-xl border-2 border-gray-200 bg-white px-3 sm:px-4 py-2.5 sm:py-3 text-sm font-medium transition focus:border-blue-500 focus:outline-none focus:ring-2 focus:ring-blue-200"
                     placeholder="(123) 456-7890"
                   />
                 </label>
-                <label className="text-sm font-semibold text-gray-700">
+                <label className="text-xs sm:text-sm font-semibold text-gray-700">
                   Order notes
                   <input
                     value={orderNotes}
                     onChange={(event) => setOrderNotes(event.target.value)}
-                    className="mt-2 w-full rounded-xl border-2 border-gray-200 bg-white px-4 py-3 text-sm font-medium transition focus:border-blue-500 focus:outline-none focus:ring-2 focus:ring-blue-200"
+                    className="mt-1.5 sm:mt-2 w-full rounded-lg sm:rounded-xl border-2 border-gray-200 bg-white px-3 sm:px-4 py-2.5 sm:py-3 text-sm font-medium transition focus:border-blue-500 focus:outline-none focus:ring-2 focus:ring-blue-200"
                     placeholder="Add utensils, etc."
                   />
                 </label>
               </div>
 
               <div>
-                <p className="text-sm font-semibold text-gray-800">Fulfillment Method</p>
-                <div className="mt-3 flex gap-3">
+                <p className="text-xs sm:text-sm font-semibold text-gray-800">Fulfillment Method</p>
+                <div className="mt-2 sm:mt-3 flex gap-2 sm:gap-3">
                   <button
                     onClick={() => setFulfillmentMethod("pickup")}
-                    className={`flex-1 rounded-xl border-2 px-4 py-3 text-sm font-bold transition ${
+                    className={`flex-1 rounded-lg sm:rounded-xl border-2 px-3 sm:px-4 py-2.5 sm:py-3 text-xs sm:text-sm font-bold transition ${
                       fulfillmentMethod === "pickup"
                         ? "shadow-md"
                         : "border-gray-200 bg-white text-gray-700 hover:border-gray-300"
@@ -714,7 +711,7 @@ export default function Cart() {
                   </button>
                   <button
                     onClick={() => setFulfillmentMethod("delivery")}
-                    className={`flex-1 rounded-xl border-2 px-4 py-3 text-sm font-bold transition ${
+                    className={`flex-1 rounded-lg sm:rounded-xl border-2 px-3 sm:px-4 py-2.5 sm:py-3 text-xs sm:text-sm font-bold transition ${
                       fulfillmentMethod === "delivery"
                         ? "shadow-md"
                         : "border-gray-200 bg-white text-gray-700 hover:border-gray-300"
@@ -785,14 +782,14 @@ export default function Cart() {
             </div>
 
               <div>
-                <p className="text-sm font-semibold text-gray-800">Tip the team</p>
-                <div className="mt-3 grid grid-cols-2 sm:grid-cols-4 gap-2 sm:gap-3">
+                <p className="text-xs sm:text-sm font-semibold text-gray-800">Tip the team</p>
+                <div className="mt-2 sm:mt-3 grid grid-cols-3 sm:grid-cols-5 gap-1.5 sm:gap-2">
                   {TIP_OPTIONS.map((option) => (
                     <button
                       key={option}
                       onClick={() => setTipSelection(option)}
                       type="button"
-                      className={`rounded-xl border-2 px-3 py-2.5 text-sm font-bold transition ${
+                      className={`rounded-lg sm:rounded-xl border-2 px-2 sm:px-3 py-2 sm:py-2.5 text-xs sm:text-sm font-bold transition ${
                         tipSelection === option
                           ? "shadow-md"
                           : "border-gray-200 bg-white text-gray-700 hover:border-gray-300"

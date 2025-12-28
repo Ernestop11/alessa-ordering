@@ -36,34 +36,34 @@ export default function CartLauncher() {
 
       {open && (
         <div
-          className="fixed inset-0 z-50 flex items-center justify-center bg-black/60 backdrop-blur-sm px-4 py-8"
+          className="fixed inset-0 z-50 flex items-end sm:items-center justify-center bg-black/60 backdrop-blur-sm sm:px-4 sm:py-8"
           role="dialog"
           aria-modal="true"
           aria-labelledby="cart-title"
           onClick={() => setOpen(false)}
         >
           <div
-            className="relative flex h-full w-full max-w-2xl flex-col overflow-hidden rounded-3xl bg-white shadow-2xl sm:h-auto sm:max-h-[90vh]"
+            className="relative flex h-[92vh] sm:h-auto w-full max-w-2xl flex-col overflow-hidden rounded-t-2xl sm:rounded-2xl bg-white shadow-2xl sm:max-h-[90vh]"
             onClick={(event) => event.stopPropagation()}
             style={{
               borderTop: `4px solid ${primaryColor}`,
             }}
           >
-            <div 
-              className="flex items-center justify-between border-b bg-gradient-to-r px-6 py-4"
+            <div
+              className="flex items-center justify-between border-b bg-gradient-to-r px-4 sm:px-6 py-3 sm:py-4 flex-shrink-0"
               style={{
                 borderBottomColor: `${primaryColor}20`,
                 background: `linear-gradient(to right, ${primaryColor}08, ${secondaryColor}08)`,
               }}
             >
-              <h2 id="cart-title" className="text-xl font-bold" style={{ color: primaryColor }}>
+              <h2 id="cart-title" className="text-lg sm:text-xl font-bold" style={{ color: primaryColor }}>
                 Your Cart
               </h2>
               <button
                 type="button"
                 onClick={() => setOpen(false)}
-                className="inline-flex h-9 w-9 items-center justify-center rounded-full border text-gray-500 transition hover:bg-gray-50"
-                style={{ 
+                className="inline-flex h-8 w-8 sm:h-9 sm:w-9 items-center justify-center rounded-full border text-gray-500 transition hover:bg-gray-50"
+                style={{
                   borderColor: `${primaryColor}30`,
                   color: primaryColor,
                 }}
@@ -75,10 +75,10 @@ export default function CartLauncher() {
                 }}
                 aria-label="Close cart"
               >
-                <X className="h-5 w-5" />
+                <X className="h-4 w-4 sm:h-5 sm:w-5" />
               </button>
             </div>
-            <div className="max-h-[calc(85vh-80px)] overflow-y-auto px-4 pb-6 pt-4 sm:px-6">
+            <div className="flex-1 overflow-y-auto px-2 sm:px-4 pb-6 pt-2 sm:pt-4 overscroll-contain">
               <Cart />
             </div>
           </div>
