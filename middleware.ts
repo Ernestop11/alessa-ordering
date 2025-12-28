@@ -29,6 +29,11 @@ export async function middleware(req: NextRequest) {
       return NextResponse.next();
     }
 
+    // Allow manifest and favicon to work without strict tenant requirement
+    // but still pass tenant info if available
+    const isPublicAssetApi = url.pathname === '/api/manifest' ||
+                              url.pathname === '/api/favicon';
+
     // Skip tenant resolution for root domain (show landing page)
     const hostname = host?.split(':')[0] || '';
     if (hostname === ROOT_DOMAIN || hostname === `www.${ROOT_DOMAIN}`) {
@@ -55,7 +60,8 @@ export async function middleware(req: NextRequest) {
 
     // SECURITY: If no tenant resolved and not root domain, this is an error
     // Do NOT silently fall back to a default tenant - that causes cross-tenant pollution
-    if (!tenant) {
+    // Exception: Public asset APIs (manifest, favicon) can work without tenant
+    if (!tenant && !isPublicAssetApi) {
       console.error(`[middleware] TENANT RESOLUTION FAILED: host="${hostname}", path="${url.pathname}"`);
       // Return error page instead of falling back
       return NextResponse.rewrite(new URL('/tenant-not-found', req.url));
@@ -64,7 +70,9 @@ export async function middleware(req: NextRequest) {
     // Use request headers to pass tenant to server components
     // This works because we're modifying the request, not the response
     const requestHeaders = new Headers(req.headers);
-    requestHeaders.set('x-tenant-slug', tenant);
+    if (tenant) {
+      requestHeaders.set('x-tenant-slug', tenant);
+    }
 
     const response = NextResponse.next({
       request: {
@@ -73,13 +81,15 @@ export async function middleware(req: NextRequest) {
     });
 
     // Also set a cookie for client-side access (more reliable than headers)
-    response.cookies.set('x-tenant-slug', tenant, {
-      httpOnly: false, // Allow JS access for client components
-      secure: process.env.NODE_ENV === 'production',
-      sameSite: 'lax',
-      path: '/',
-      maxAge: 60 * 60 * 24, // 24 hours
-    });
+    if (tenant) {
+      response.cookies.set('x-tenant-slug', tenant, {
+        httpOnly: false, // Allow JS access for client components
+        secure: process.env.NODE_ENV === 'production',
+        sameSite: 'lax',
+        path: '/',
+        maxAge: 60 * 60 * 24, // 24 hours
+      });
+    }
 
     // Force no-cache for dynamic pages
     if (url.pathname.startsWith('/order') || url.pathname.startsWith('/admin') || url.pathname.startsWith('/checkout') || url.pathname.startsWith('/grocery')) {

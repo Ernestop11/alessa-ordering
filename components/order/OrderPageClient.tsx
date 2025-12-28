@@ -45,6 +45,7 @@ import RewardsModal from './RewardsModal';
 import JoinRewardsModal from './JoinRewardsModal';
 import ReorderModal from './ReorderModal';
 import MenuSectionGrid from './MenuSectionGrid';
+import MobileNavDrawer from './MobileNavDrawer';
 import { isTimeSpecificActive, getTimeSpecificPrice, getTimeSpecificLabel, shouldShowItem } from '../../lib/menu-time-specific';
 import { generateCSSVariables, generatePageStyles, generatePatternStyles, getAnimationClass, type TemplateSettings } from '@/lib/template-renderer';
 
@@ -1031,6 +1032,7 @@ export default function OrderPageClient({
   const [showReorderModal, setShowReorderModal] = useState(false);
   const [showJoinModal, setShowJoinModal] = useState(false);
   const [joinModalMode, setJoinModalMode] = useState<'join' | 'login'>('join');
+  const [showMobileNav, setShowMobileNav] = useState(false);
   const [showCateringPanel, setShowCateringPanel] = useState(false);
   const [cateringName, setCateringName] = useState('');
   const [cateringEmail, setCateringEmail] = useState('');
@@ -2566,6 +2568,17 @@ export default function OrderPageClient({
           <div className="flex items-center justify-between py-2">
             {/* Logo & Name */}
             <div className="flex items-center gap-4">
+              {/* Hamburger Menu - Mobile Only */}
+              <button
+                onClick={() => setShowMobileNav(true)}
+                className="md:hidden flex items-center justify-center w-10 h-10 rounded-lg bg-white/10 hover:bg-white/20 transition-colors"
+                aria-label="Open menu"
+              >
+                <svg className="w-6 h-6 text-white" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2}>
+                  <path strokeLinecap="round" strokeLinejoin="round" d="M4 6h16M4 12h16M4 18h16" />
+                </svg>
+              </button>
+
               <div className="relative flex-shrink-0 group">
                 {/* Glowing ring effect */}
                 <div className="absolute -inset-1 bg-gradient-to-r from-amber-400 via-red-500 to-amber-400 rounded-full opacity-75 group-hover:opacity-100 blur-sm animate-pulse" />
@@ -5269,6 +5282,28 @@ export default function OrderPageClient({
           });
         }}
         onReorderAll={handleReorder}
+      />
+
+      {/* Mobile Navigation Drawer */}
+      <MobileNavDrawer
+        isOpen={showMobileNav}
+        onClose={() => setShowMobileNav(false)}
+        onCateringClick={() => setShowCateringPanel(true)}
+        onRewardsClick={() => customerData ? setShowMembershipPanel(true) : setShowJoinModal(true)}
+        onAccessibilityClick={() => setAccessibilityOpen((prev) => !prev)}
+        onReorderClick={customerData?.orders && customerData.orders.length > 0 ? () => setShowReorderModal(true) : undefined}
+        onSignOut={customerData ? async () => {
+          try {
+            await fetch('/api/rewards/logout', { method: 'POST' });
+            setCustomerData(null);
+            showNotification('Signed out successfully');
+          } catch (err) {
+            console.error('Logout failed:', err);
+          }
+        } : undefined}
+        cateringEnabled={cateringEnabled}
+        customerData={customerData}
+        isAccessibilityOpen={accessibilityOpen}
       />
       </div>{/* End main content wrapper */}
     </div>

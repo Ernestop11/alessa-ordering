@@ -16,28 +16,8 @@ import {
   type TenantBranding,
 } from '../components/TenantThemeProvider'
 
-export const metadata: Metadata = {
-  title: {
-    default: 'Alessa Cloud',
-    template: '%s · Alessa Cloud',
-  },
-  description: 'Multi-tenant restaurant ordering platform powered by Alessa Cloud.',
-  manifest: '/manifest.json',
-  appleWebApp: {
-    capable: true,
-    statusBarStyle: 'default',
-    title: 'Alessa Ordering',
-  },
-  icons: {
-    icon: [
-      { url: '/icons/alessa-cloud-icon-192.png', sizes: '192x192', type: 'image/png' },
-      { url: '/icons/alessa-cloud-icon-512.png', sizes: '512x512', type: 'image/png' },
-    ],
-    apple: [
-      { url: '/icons/alessa-cloud-icon-192.png', sizes: '192x192', type: 'image/png' },
-    ],
-  },
-}
+// Note: Dynamic metadata is generated below in generateMetadata()
+// Static metadata removed in favor of tenant-specific dynamic metadata
 
 export function generateViewport(): Viewport {
   try {
@@ -50,6 +30,69 @@ export function generateViewport(): Viewport {
     const fallback = getStaticTenantTheme();
     return {
       themeColor: fallback.themeColor,
+    };
+  }
+}
+
+export async function generateMetadata(): Promise<Metadata> {
+  try {
+    const slug = getTenantSlugFromHeaders();
+    const theme = getStaticTenantTheme(slug);
+
+    // Determine icon paths based on tenant
+    const hasCustomIcons = slug === 'lasreinas';
+    const iconPath = hasCustomIcons
+      ? `/tenant/${slug}/images/logo.png`
+      : '/icons/alessa-cloud-icon-192.png';
+    const icon512Path = hasCustomIcons
+      ? `/tenant/${slug}/images/logo.png`
+      : '/icons/alessa-cloud-icon-512.png';
+
+    return {
+      title: {
+        default: theme.name,
+        template: `%s · ${theme.name}`,
+      },
+      description: `Order from ${theme.name}`,
+      manifest: '/api/manifest',
+      appleWebApp: {
+        capable: true,
+        statusBarStyle: 'default',
+        title: theme.name,
+      },
+      icons: {
+        icon: [
+          { url: iconPath, sizes: '192x192', type: 'image/png' },
+          { url: icon512Path, sizes: '512x512', type: 'image/png' },
+        ],
+        apple: [
+          { url: iconPath, sizes: '180x180', type: 'image/png' },
+        ],
+        shortcut: [{ url: '/api/favicon' }],
+      },
+    };
+  } catch {
+    return {
+      title: {
+        default: 'Alessa Cloud',
+        template: '%s · Alessa Cloud',
+      },
+      description: 'Multi-tenant restaurant ordering platform powered by Alessa Cloud.',
+      manifest: '/api/manifest',
+      appleWebApp: {
+        capable: true,
+        statusBarStyle: 'default',
+        title: 'Alessa Ordering',
+      },
+      icons: {
+        icon: [
+          { url: '/icons/alessa-cloud-icon-192.png', sizes: '192x192', type: 'image/png' },
+          { url: '/icons/alessa-cloud-icon-512.png', sizes: '512x512', type: 'image/png' },
+        ],
+        apple: [
+          { url: '/icons/alessa-cloud-icon-192.png', sizes: '192x192', type: 'image/png' },
+        ],
+      },
     };
   }
 }
@@ -320,7 +363,7 @@ export default async function RootLayout({
       <head>
         <script dangerouslySetInnerHTML={{ __html: cacheCleanupScript }} />
         <script dangerouslySetInnerHTML={{ __html: preventExternalBrowserScript }} />
-        <link rel="manifest" href="/manifest.json" />
+        <link rel="manifest" href="/api/manifest" />
         <meta name="theme-color" content={tenantTheme.themeColor || tenantTheme.primaryColor} />
         <meta name="mobile-web-app-capable" content="yes" />
         <meta name="apple-mobile-web-app-capable" content="yes" />
