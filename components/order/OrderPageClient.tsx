@@ -2680,13 +2680,23 @@ export default function OrderPageClient({
 
       {/* Mobile Section Navigation - Fixed below header (OUTSIDE z-10 wrapper for proper stacking) */}
       <div
-        className="fixed left-0 right-0 sm:hidden bg-[#0d0d0d]/95 backdrop-blur-sm border-b border-white/10 shadow-lg transition-all duration-300 ease-out"
+        className={`fixed left-0 right-0 sm:hidden backdrop-blur-sm border-b shadow-lg transition-all duration-300 ease-out ${
+          restaurantIsOpen
+            ? 'bg-[#0d0d0d]/95 border-white/10'
+            : 'bg-gradient-to-r from-red-900/95 to-[#0d0d0d]/95 border-red-700/30'
+        }`}
         style={{
           top: isScrolled ? 'calc(env(safe-area-inset-top, 0px) + 64px)' : 'calc(env(safe-area-inset-top, 0px) + 88px)',
           zIndex: 35
         }}
       >
-        <div className="flex gap-2 overflow-x-auto px-4 py-2.5 scrollbar-hide">
+        {/* Closed status indicator - integrated into nav bar */}
+        {!restaurantIsOpen && (
+          <div className="px-4 pt-2 pb-1 flex items-center justify-center">
+            <span className="text-red-300 font-semibold text-xs">🚫 {restaurantClosedMessage || 'Currently closed'}</span>
+          </div>
+        )}
+        <div className={`flex gap-2 overflow-x-auto px-4 scrollbar-hide ${restaurantIsOpen ? 'py-2.5' : 'pb-2.5 pt-1'}`}>
           {navSections.map((section) => (
             <button
               key={`nav-${section.id}`}
@@ -2696,12 +2706,12 @@ export default function OrderPageClient({
                 e.stopPropagation();
                 const el = document.getElementById(`section-${section.id}`);
                 if (el) {
-                  const yOffset = -160;
+                  const yOffset = -180;
                   const y = el.getBoundingClientRect().top + window.pageYOffset + yOffset;
                   window.scrollTo({ top: y, behavior: 'smooth' });
                 }
               }}
-              className="flex-shrink-0 px-4 py-2.5 rounded-full text-xs font-semibold bg-white/10 text-white/90 border border-white/20 active:bg-[#DC2626] active:border-[#DC2626] active:text-white active:scale-95 transition-all whitespace-nowrap touch-manipulation"
+              className="flex-shrink-0 px-4 py-2 rounded-full text-xs font-semibold bg-white/10 text-white/90 border border-white/20 active:bg-[#DC2626] active:border-[#DC2626] active:text-white active:scale-95 transition-all whitespace-nowrap touch-manipulation"
             >
               {section.name}
             </button>
@@ -2981,20 +2991,6 @@ export default function OrderPageClient({
         </div>
       </header>
 
-      {/* Mobile Open/Closed Status Banner - Shows below nav */}
-      {!restaurantIsOpen && (
-        <div
-          className="fixed left-0 right-0 sm:hidden bg-red-900/95 backdrop-blur-sm border-b border-red-700/50 z-30"
-          style={{
-            top: isScrolled ? 'calc(env(safe-area-inset-top, 0px) + 112px)' : 'calc(env(safe-area-inset-top, 0px) + 136px)',
-            transition: 'top 0.3s ease'
-          }}
-        >
-          <div className="px-4 py-2 flex items-center justify-center gap-2">
-            <span className="text-red-200 font-semibold text-sm">🚫 {restaurantClosedMessage || 'Currently closed'}</span>
-          </div>
-        </div>
-      )}
 
       {/* Spacer for fixed header - accounts for safe area on iPhone */}
       <div
