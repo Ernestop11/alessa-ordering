@@ -445,6 +445,9 @@ export default function OrderPageClient({
   const [restaurantIsOpen, setRestaurantIsOpen] = useState(isOpen);
   const [restaurantClosedMessage, setRestaurantClosedMessage] = useState(closedMessage || '');
 
+  // Scroll state for sticky header shrinking
+  const [isScrolled, setIsScrolled] = useState(false);
+
   // Featured items state - polls for real-time updates when admin changes carousel
   const [currentFeaturedItems, setCurrentFeaturedItems] = useState<OrderMenuItem[]>(featuredItems);
 
@@ -460,6 +463,17 @@ export default function OrderPageClient({
     handleChange();
     media.addEventListener('change', handleChange);
     return () => media.removeEventListener('change', handleChange);
+  }, []);
+
+  // Scroll listener for sticky header shrinking
+  useEffect(() => {
+    if (typeof window === 'undefined') return;
+    const handleScroll = () => {
+      setIsScrolled(window.scrollY > 50);
+    };
+    window.addEventListener('scroll', handleScroll, { passive: true });
+    handleScroll(); // Check initial state
+    return () => window.removeEventListener('scroll', handleScroll);
   }, []);
 
   useEffect(() => {
@@ -2561,39 +2575,39 @@ export default function OrderPageClient({
 
       {/* Main content wrapper */}
       <div className="relative z-10">
-      {/* Warm Header - Panda Express Style */}
-      <header className="sticky top-0 z-40 bg-[#8B2323] shadow-lg">
+      {/* Warm Header - Panda Express Style with scroll shrink */}
+      <header className={`sticky top-0 z-40 bg-[#8B2323] shadow-lg transition-all duration-300 ${isScrolled ? 'py-0' : ''}`}>
         <div className="mx-auto max-w-7xl px-4">
           {/* Top Row - Logo & Actions */}
-          <div className="flex items-center justify-between py-2">
+          <div className={`flex items-center justify-between transition-all duration-300 ${isScrolled ? 'py-1' : 'py-2'}`}>
             {/* Logo & Name */}
-            <div className="flex items-center gap-4">
+            <div className="flex items-center gap-3">
               {/* Hamburger Menu - Mobile Only */}
               <button
                 onClick={() => setShowMobileNav(true)}
-                className="md:hidden flex items-center justify-center w-10 h-10 rounded-lg bg-white/10 hover:bg-white/20 transition-colors"
+                className={`md:hidden flex items-center justify-center rounded-lg bg-white/10 hover:bg-white/20 transition-all duration-300 ${isScrolled ? 'w-8 h-8' : 'w-10 h-10'}`}
                 aria-label="Open menu"
               >
-                <svg className="w-6 h-6 text-white" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2}>
+                <svg className={`text-white transition-all duration-300 ${isScrolled ? 'w-5 h-5' : 'w-6 h-6'}`} fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2}>
                   <path strokeLinecap="round" strokeLinejoin="round" d="M4 6h16M4 12h16M4 18h16" />
                 </svg>
               </button>
 
               <div className="relative flex-shrink-0 group">
-                {/* Glowing ring effect */}
-                <div className="absolute -inset-1 bg-gradient-to-r from-amber-400 via-red-500 to-amber-400 rounded-full opacity-75 group-hover:opacity-100 blur-sm animate-pulse" />
-                <div className="relative rounded-full bg-white p-2 shadow-xl ring-2 ring-white/50">
+                {/* Glowing ring effect - smaller when scrolled */}
+                <div className={`absolute bg-gradient-to-r from-amber-400 via-red-500 to-amber-400 rounded-full opacity-75 group-hover:opacity-100 blur-sm animate-pulse transition-all duration-300 ${isScrolled ? '-inset-0.5' : '-inset-1'}`} />
+                <div className={`relative rounded-full bg-white shadow-xl ring-2 ring-white/50 transition-all duration-300 ${isScrolled ? 'p-1' : 'p-2'}`}>
                   {tenant.logoUrl ? (
                     <Image
                       src={tenant.logoUrl}
                       alt={`${tenant.name} logo`}
                       width={64}
                       height={64}
-                      className="h-16 w-16 rounded-full object-contain transition-transform duration-300 group-hover:scale-110"
+                      className={`rounded-full object-contain transition-all duration-300 group-hover:scale-110 ${isScrolled ? 'h-10 w-10' : 'h-16 w-16'}`}
                       unoptimized={tenant.logoUrl.startsWith('/tenant/')}
                     />
                   ) : (
-                    <div className="flex h-16 w-16 items-center justify-center rounded-full bg-gradient-to-br from-red-600 to-amber-500 text-3xl">🍽️</div>
+                    <div className={`flex items-center justify-center rounded-full bg-gradient-to-br from-red-600 to-amber-500 transition-all duration-300 ${isScrolled ? 'h-10 w-10 text-xl' : 'h-16 w-16 text-3xl'}`}>🍽️</div>
                   )}
                 </div>
               </div>
@@ -2628,23 +2642,6 @@ export default function OrderPageClient({
                   <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M19 9l-7 7-7-7" />
                 </svg>
               </div>
-
-              {/* Cart Button - Panda Style */}
-              <button
-                onClick={() => {
-                  const cartButton = document.querySelector('[data-cart-launcher]') as HTMLElement;
-                  cartButton?.click();
-                }}
-                className="relative flex items-center gap-2 rounded-lg bg-[#FFF5E6] px-4 py-2 text-sm font-bold text-[#8B2323] hover:bg-white transition-all"
-              >
-                <span>My Bag</span>
-                <span className="font-black">${(cartItems.reduce((sum, item) => sum + item.price * item.quantity, 0)).toFixed(2)}</span>
-                {cartItemCount > 0 && (
-                  <span className="absolute -top-2 -right-2 flex h-6 w-6 items-center justify-center rounded-full bg-[#C41E3A] text-xs font-bold text-white shadow-md">
-                    {cartItemCount}
-                  </span>
-                )}
-              </button>
 
               {/* Profile Icon with Dropdown */}
               <div className="relative hidden sm:block">

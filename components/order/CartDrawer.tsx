@@ -48,8 +48,12 @@ export function CartDrawer({ open, onClose }: CartDrawerProps) {
 
         <div className="flex h-[calc(100%-190px)] flex-col overflow-y-auto px-5 py-4">
           {items.length === 0 && (
-            <div className="flex flex-1 flex-col items-center justify-center text-center text-white/60">
-              Your cart is empty. Tap any + button to add Las Reinas favorites.
+            <div className="flex flex-1 flex-col items-center justify-center text-center pt-8">
+              <div className="w-20 h-20 rounded-full bg-white/5 border border-white/10 flex items-center justify-center mb-4">
+                <span className="text-4xl">🛒</span>
+              </div>
+              <p className="text-white font-medium mb-1">Your cart is empty</p>
+              <p className="text-white/50 text-sm">Tap any + button to add Las Reinas favorites</p>
             </div>
           )}
           <div className="space-y-3">
@@ -59,33 +63,6 @@ export function CartDrawer({ open, onClose }: CartDrawerProps) {
                 className="flex gap-3 rounded-2xl border border-white/10 bg-white/5 p-3 transition-all hover:border-[#DC2626]/30 cursor-pointer"
                 onClick={() => setEditingItem(item)}
               >
-                {/* Item Image */}
-                <div className="w-20 h-20 flex-shrink-0 rounded-xl overflow-hidden bg-white/10 relative">
-                  {item.image && item.image.length > 0 ? (
-                    <>
-                      <img
-                        src={item.image}
-                        alt={item.name}
-                        className="w-full h-full object-cover"
-                        onError={(e) => {
-                          const target = e.target as HTMLImageElement;
-                          target.style.display = 'none';
-                          // Show fallback sibling
-                          const fallback = target.nextElementSibling as HTMLElement;
-                          if (fallback) fallback.style.display = 'flex';
-                        }}
-                      />
-                      <div className="w-full h-full items-center justify-center text-2xl absolute inset-0 hidden">
-                        🍽️
-                      </div>
-                    </>
-                  ) : (
-                    <div className="w-full h-full flex items-center justify-center text-2xl">
-                      🍽️
-                    </div>
-                  )}
-                </div>
-
                 {/* Item Details */}
                 <div className="flex-1 min-w-0 flex flex-col justify-between">
                   <div>

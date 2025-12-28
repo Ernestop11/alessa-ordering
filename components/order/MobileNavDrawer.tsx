@@ -65,39 +65,48 @@ export default function MobileNavDrawer({
         onTransitionEnd={() => !isOpen && setMounted(false)}
       />
 
-      {/* Drawer */}
+      {/* Drawer - Dark theme matching cart/checkout */}
       <div
-        className={`fixed inset-y-0 left-0 z-50 w-80 max-w-[85vw] bg-[#1a1a1a] shadow-2xl transform transition-transform duration-300 ease-out overflow-y-auto ${
+        className={`fixed inset-y-0 left-0 z-50 w-80 max-w-[85vw] bg-[#050A1C] border-r border-white/10 shadow-2xl transform transition-transform duration-300 ease-out overflow-y-auto ${
           isOpen ? 'translate-x-0' : '-translate-x-full'
         }`}
       >
-        {/* Header */}
-        <div className="flex items-center justify-between p-4 border-b border-white/10">
+        {/* Header with gradient accent */}
+        <div
+          className="flex items-center justify-between p-4 border-b border-white/10"
+          style={{
+            background: `linear-gradient(to bottom, rgba(220, 38, 38, 0.15), transparent)`,
+          }}
+        >
           <div className="flex items-center gap-3">
-            <div className="w-10 h-10 rounded-full bg-gradient-to-br from-red-600 to-amber-500 flex items-center justify-center text-xl">
-              {tenant.logoUrl ? (
-                <img
-                  src={tenant.logoUrl}
-                  alt={tenant.name}
-                  className="w-10 h-10 rounded-full object-cover"
-                />
-              ) : (
-                '🍽️'
-              )}
+            <div className="relative">
+              {/* Glowing ring effect like header logo */}
+              <div className="absolute -inset-0.5 bg-gradient-to-r from-amber-400 via-red-500 to-amber-400 rounded-full opacity-75 blur-sm animate-pulse" />
+              <div className="relative w-12 h-12 rounded-full bg-white p-1 shadow-xl ring-2 ring-white/50 flex items-center justify-center">
+                {tenant.logoUrl ? (
+                  <img
+                    src={tenant.logoUrl}
+                    alt={tenant.name}
+                    className="w-10 h-10 rounded-full object-cover"
+                  />
+                ) : (
+                  <span className="text-2xl">🍽️</span>
+                )}
+              </div>
             </div>
             <div>
               <h2 className="font-bold text-white text-lg">{tenant.name}</h2>
               {customerData && (
-                <p className="text-xs text-amber-300">{customerData.loyaltyPoints || 0} points</p>
+                <p className="text-xs text-[#FBBF24]">{customerData.loyaltyPoints || 0} points</p>
               )}
             </div>
           </div>
           <button
             onClick={onClose}
-            className="p-2 rounded-full hover:bg-white/10 transition-colors"
+            className="rounded-full border border-white/15 p-2 text-white/60 hover:border-[#DC2626]/60 hover:text-white transition-colors"
             aria-label="Close menu"
           >
-            <svg className="w-6 h-6 text-white" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2}>
+            <svg className="w-5 h-5" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2}>
               <path strokeLinecap="round" strokeLinejoin="round" d="M6 18L18 6M6 6l12 12" />
             </svg>
           </button>
@@ -105,9 +114,9 @@ export default function MobileNavDrawer({
 
         {/* User Section */}
         {customerData ? (
-          <div className="p-4 border-b border-white/10 bg-gradient-to-r from-amber-500/10 to-transparent">
+          <div className="p-4 border-b border-white/10 bg-gradient-to-r from-[#DC2626]/10 to-transparent">
             <p className="text-white font-medium">Welcome back, {customerData.name || 'Member'}!</p>
-            <p className="text-sm text-white/60 mt-1">You have {customerData.loyaltyPoints || 0} reward points</p>
+            <p className="text-sm text-[#FBBF24] mt-1">You have {customerData.loyaltyPoints || 0} reward points</p>
           </div>
         ) : (
           <div className="p-4 border-b border-white/10 space-y-3">
@@ -117,7 +126,7 @@ export default function MobileNavDrawer({
                   onClose();
                   onLoginClick();
                 }}
-                className="w-full py-3 rounded-xl bg-white/10 border border-white/20 text-white font-bold hover:bg-white/20 transition-all flex items-center justify-center gap-2"
+                className="w-full py-3 rounded-xl bg-white/5 border border-white/20 text-white font-bold hover:bg-white/10 hover:border-[#DC2626]/40 transition-all flex items-center justify-center gap-2"
               >
                 <svg className="w-5 h-5" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2}>
                   <path strokeLinecap="round" strokeLinejoin="round" d="M16 7a4 4 0 11-8 0 4 4 0 018 0zM12 14a7 7 0 00-7 7h14a7 7 0 00-7-7z" />
@@ -130,11 +139,15 @@ export default function MobileNavDrawer({
                 onClose();
                 onRewardsClick();
               }}
-              className="w-full py-3 rounded-xl bg-gradient-to-r from-red-600 to-red-500 text-white font-bold hover:from-red-500 hover:to-red-400 transition-all"
+              style={{
+                background: `linear-gradient(135deg, #DC2626 0%, #FBBF24 50%, #DC2626 100%)`,
+                boxShadow: `0 10px 20px rgba(220, 38, 38, 0.4), 0 0 30px rgba(251, 191, 36, 0.2)`,
+              }}
+              className="w-full py-3 rounded-xl text-white font-bold hover:scale-[1.02] transition-all"
             >
               Join Rewards - It&apos;s Free!
             </button>
-            <p className="text-center text-xs text-white/50">Earn points with every order</p>
+            <p className="text-center text-xs text-[#FBBF24]/60">Earn points with every order</p>
           </div>
         )}
 
@@ -145,7 +158,7 @@ export default function MobileNavDrawer({
               onClose();
               window.scrollTo({ top: 0, behavior: 'smooth' });
             }}
-            className="w-full flex items-center gap-4 px-4 py-3 rounded-xl text-left text-white hover:bg-white/5 transition-all"
+            className="w-full flex items-center gap-4 px-4 py-3 rounded-xl text-left text-white border border-transparent hover:bg-white/5 hover:border-[#DC2626]/30 transition-all"
           >
             <span className="text-xl">🍽️</span>
             <div>
@@ -160,7 +173,7 @@ export default function MobileNavDrawer({
                 onClose();
                 onCateringClick();
               }}
-              className="w-full flex items-center gap-4 px-4 py-3 rounded-xl text-left text-white hover:bg-white/5 transition-all"
+              className="w-full flex items-center gap-4 px-4 py-3 rounded-xl text-left text-white border border-transparent hover:bg-white/5 hover:border-[#DC2626]/30 transition-all"
             >
               <span className="text-xl">🎉</span>
               <div>
@@ -175,7 +188,7 @@ export default function MobileNavDrawer({
               onClose();
               onRewardsClick();
             }}
-            className="w-full flex items-center gap-4 px-4 py-3 rounded-xl text-left text-white hover:bg-white/5 transition-all"
+            className="w-full flex items-center gap-4 px-4 py-3 rounded-xl text-left text-white border border-transparent hover:bg-white/5 hover:border-[#DC2626]/30 transition-all"
           >
             <span className="text-xl">🎁</span>
             <div>
@@ -183,7 +196,7 @@ export default function MobileNavDrawer({
               <p className="text-xs text-white/50">{customerData ? 'View your rewards' : 'Join & earn points'}</p>
             </div>
             {customerData && (
-              <span className="ml-auto px-2 py-0.5 bg-amber-500 text-black text-xs font-bold rounded-full">
+              <span className="ml-auto px-2 py-0.5 bg-[#FBBF24] text-black text-xs font-bold rounded-full">
                 {customerData.loyaltyPoints || 0} pts
               </span>
             )}
@@ -195,7 +208,7 @@ export default function MobileNavDrawer({
                 onClose();
                 onReorderClick();
               }}
-              className="w-full flex items-center gap-4 px-4 py-3 rounded-xl text-left text-white hover:bg-white/5 transition-all"
+              className="w-full flex items-center gap-4 px-4 py-3 rounded-xl text-left text-white border border-transparent hover:bg-white/5 hover:border-[#DC2626]/30 transition-all"
             >
               <span className="text-xl">🔄</span>
               <div>
@@ -203,7 +216,7 @@ export default function MobileNavDrawer({
                 <p className="text-xs text-white/50">Order your favorites again</p>
               </div>
               {customerData.orders && customerData.orders.length > 0 && (
-                <span className="ml-auto px-2 py-0.5 bg-green-500 text-white text-xs font-bold rounded-full">
+                <span className="ml-auto px-2 py-0.5 bg-[#DC2626] text-white text-xs font-bold rounded-full">
                   {customerData.orders.length}
                 </span>
               )}
@@ -217,8 +230,8 @@ export default function MobileNavDrawer({
             }}
             className={`w-full flex items-center gap-4 px-4 py-3 rounded-xl text-left transition-all ${
               isAccessibilityOpen
-                ? 'bg-blue-500/20 text-blue-300'
-                : 'text-white hover:bg-white/5'
+                ? 'bg-[#DC2626]/20 text-[#FBBF24] border border-[#DC2626]/40'
+                : 'text-white border border-transparent hover:bg-white/5 hover:border-[#DC2626]/30'
             }`}
           >
             <span className="text-xl">♿</span>
@@ -227,7 +240,7 @@ export default function MobileNavDrawer({
               <p className="text-xs text-white/50">Adjust display settings</p>
             </div>
             {isAccessibilityOpen && (
-              <span className="ml-auto text-xs text-blue-300">ON</span>
+              <span className="ml-auto text-xs text-[#FBBF24]">ON</span>
             )}
           </button>
         </nav>
@@ -235,7 +248,7 @@ export default function MobileNavDrawer({
         {/* Menu Section Shortcuts */}
         {menuSections.length > 0 && (
           <div className="px-4 py-3 border-t border-white/10">
-            <p className="text-xs uppercase tracking-widest text-white/40 mb-3">Jump to Section</p>
+            <p className="text-xs uppercase tracking-[0.3em] text-[#FBBF24]/60 mb-3">Jump to Section</p>
             <div className="grid grid-cols-2 gap-2">
               {menuSections.map((section) => (
                 <button
@@ -251,7 +264,7 @@ export default function MobileNavDrawer({
                       }
                     }, 300);
                   }}
-                  className="px-3 py-2 rounded-lg text-sm font-medium text-white/80 bg-white/5 border border-white/10 hover:bg-white/10 hover:border-[#C41E3A]/40 transition-all text-left truncate"
+                  className="px-3 py-2 rounded-lg text-sm font-medium text-white/80 bg-white/5 border border-white/10 hover:bg-white/10 hover:border-[#DC2626]/40 transition-all text-left truncate"
                 >
                   {section.name}
                 </button>
@@ -268,7 +281,7 @@ export default function MobileNavDrawer({
                 onClose();
                 onSignOut();
               }}
-              className="w-full flex items-center justify-center gap-2 px-4 py-3 rounded-xl text-red-400 hover:bg-red-500/10 transition-all"
+              className="w-full flex items-center justify-center gap-2 px-4 py-3 rounded-xl text-[#DC2626] border border-[#DC2626]/30 hover:bg-[#DC2626]/10 transition-all"
             >
               <span className="text-lg">🚪</span>
               <span className="font-medium">Sign Out</span>
