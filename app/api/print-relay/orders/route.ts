@@ -70,13 +70,13 @@ export async function GET(request: NextRequest) {
     );
   }
 
-  // Get orders for this tenant (only recent pending/confirmed orders)
-  // Note: statuses can be lowercase or uppercase depending on how they were created
+  // Get orders for this tenant (only PENDING orders - not yet printed)
+  // Once printed, relay marks them as 'confirmed' so they won't appear here again
   const orders = await prisma.order.findMany({
     where: {
       tenantId: tenant.id,
       status: {
-        in: ['PENDING', 'CONFIRMED', 'PREPARING', 'pending', 'confirmed', 'preparing', 'new', 'NEW'],
+        in: ['PENDING', 'pending', 'new', 'NEW'],
       },
       createdAt: {
         // Only get orders from the last 7 days
@@ -121,4 +121,47 @@ export async function GET(request: NextRequest) {
     },
     orders: orders.map((order) => serializeOrder(order, null)),
   });
+}
+
+/**
+ * POST - Mark an order as printed (changes status to confirmed)
+ * This prevents the order from appearing in the GET response again
+ */
+export async function POST(request: NextRequest) {
+  const apiKey = request.headers.get('X-Print-Relay-Key') ||
+                 request.nextUrl.searchParams.get('key');
+
+  const validKey = process.env.PRINT_RELAY_API_KEY;
+  if (!validKey || apiKey !== validKey) {
+    return NextResponse.json({ error: 'Invalid API key' }, { status: 401 });
+  }
+
+  try {
+    const body = await request.json();
+    const { orderId } = body;
+
+    if (!orderId) {
+      return NextResponse.json({ error: 'orderId is required' }, { status: 400 });
+    }
+
+    // Update order status to confirmed
+    const updated = await prisma.order.update({
+      where: { id: orderId },
+      data: { status: 'confirmed' },
+      select: { id: true, status: true },
+    });
+
+    console.log(`[Print Relay] Order ${orderId.slice(-6)} marked as printed/confirmed`);
+
+    return NextResponse.json({
+      success: true,
+      order: updated,
+    });
+  } catch (error: any) {
+    console.error('[Print Relay] Error marking order as printed:', error);
+    return NextResponse.json(
+      { error: error.message || 'Failed to update order' },
+      { status: 500 }
+    );
+  }
 }
