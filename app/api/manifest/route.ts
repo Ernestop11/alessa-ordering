@@ -14,13 +14,22 @@ export async function GET(req: Request) {
   try {
     // Try to get tenant from middleware-set header first (for custom domains)
     const tenantSlugHeader = req.headers.get('x-tenant-slug');
+    const host = req.headers.get('host') || '';
+
+    // Debug logging
+    console.log('[manifest] Headers:', {
+      'x-tenant-slug': tenantSlugHeader,
+      host,
+      cookie: req.headers.get('cookie')?.substring(0, 100),
+    });
 
     let tenant = null;
     if (tenantSlugHeader) {
       try {
         tenant = await getTenantBySlug(tenantSlugHeader);
-      } catch {
-        // Tenant lookup failed
+        console.log('[manifest] Tenant resolved:', tenant?.slug);
+      } catch (err) {
+        console.error('[manifest] Tenant lookup failed:', err);
       }
     }
 
