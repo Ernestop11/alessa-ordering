@@ -25,7 +25,7 @@ import https from 'https';
 import http from 'http';
 
 // Configuration
-const PRINTER_HOST = process.env.PRINTER_HOST || '10.10.100.254';
+const PRINTER_HOST = process.env.PRINTER_HOST || '10.0.0.44';
 const PRINTER_PORT = parseInt(process.env.PRINTER_PORT || '9100');
 const VPS_URL = process.env.VPS_URL || 'https://lasreinascolusa.com';
 const POLL_INTERVAL = parseInt(process.env.POLL_INTERVAL || '5000'); // 5 seconds
