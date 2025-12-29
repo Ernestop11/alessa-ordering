@@ -48,7 +48,7 @@ export function AccessibilityModal({
   };
 
   return (
-    <div className="fixed inset-0 z-50 flex items-end justify-center bg-black/70 backdrop-blur-md sm:items-center">
+    <div className="fixed inset-0 z-[200] flex items-end justify-center bg-black/70 backdrop-blur-md sm:items-center">
       <div className="w-full max-w-lg rounded-t-3xl border border-white/10 bg-gradient-to-b from-[#040713] via-[#0f1729] to-[#060812] text-white shadow-2xl sm:rounded-3xl">
         <div className="flex items-center justify-between border-b border-white/10 px-6 py-4">
           <div>

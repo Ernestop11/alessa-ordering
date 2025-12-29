@@ -29,7 +29,7 @@ export function CartDrawer({ open, onClose }: CartDrawerProps) {
 
   return (
     <>
-    <div className="fixed inset-0 z-50 flex items-end justify-center bg-black/60 backdrop-blur-sm sm:items-center sm:justify-end">
+    <div className="fixed inset-0 z-[200] flex items-end justify-center bg-black/60 backdrop-blur-sm sm:items-center sm:justify-end">
       <div className="h-[85vh] w-full max-w-md rounded-t-3xl border border-white/10 bg-[#050A1C] text-white shadow-2xl sm:h-full sm:rounded-none sm:border-l sm:border-t-0 sm:shadow-[0_0_50px_rgba(0,0,0,0.45)]">
         <div
           className="flex items-center justify-between border-b border-white/10 px-5 py-4"

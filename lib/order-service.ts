@@ -147,6 +147,7 @@ export async function createOrderFromPayload({
   }
 
   let customerId: string | null = null;
+  let newMemberSessionToken: string | null = null;
   const { customerEmail, customerPhone, customerName } = payload;
 
   if (customerEmail || customerPhone) {
@@ -162,13 +163,21 @@ export async function createOrderFromPayload({
 
     if (existingCustomer) {
       customerId = existingCustomer.id;
+      // If joining rewards, also initialize loyalty if not already set
+      const joinRewards = payload.metadata?.becomeMember === true;
+      const updateData: any = {
+        name: customerName || existingCustomer.name,
+        email: customerEmail || existingCustomer.email,
+        phone: customerPhone || existingCustomer.phone,
+      };
+      // Initialize loyalty for existing customers who are joining rewards
+      if (joinRewards && existingCustomer.loyaltyPoints === null) {
+        updateData.loyaltyPoints = 0;
+        updateData.membershipTier = 'Bronze';
+      }
       await prisma.customer.update({
         where: { id: existingCustomer.id },
-        data: {
-          name: customerName || existingCustomer.name,
-          email: customerEmail || existingCustomer.email,
-          phone: customerPhone || existingCustomer.phone,
-        },
+        data: updateData,
       });
     } else {
       // Check if customer wants to join rewards program
@@ -196,20 +205,17 @@ export async function createOrderFromPayload({
           customerId: customerId,
         },
       });
-      
+
       // Create new session
-      const sessionToken = crypto.randomUUID();
+      newMemberSessionToken = crypto.randomUUID();
       await prisma.customerSession.create({
         data: {
           tenantId: tenant.id,
           customerId: customerId,
-          token: sessionToken,
+          token: newMemberSessionToken,
           expiresAt: new Date(Date.now() + 90 * 24 * 60 * 60 * 1000), // 90 days
         },
       });
-      
-      // Store session token in order metadata for later cookie setting
-      // This will be accessible via the order object
     }
   }
 
@@ -456,5 +462,10 @@ export async function createOrderFromPayload({
   })();
 
   emitOrderEvent({ type: 'order.created', order: serialized });
-  return serialized;
+
+  // Return order with optional session token for new members
+  return {
+    ...serialized,
+    newMemberSessionToken,
+  };
 }

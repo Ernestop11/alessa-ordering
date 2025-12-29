@@ -1,4 +1,5 @@
 import { NextResponse } from 'next/server';
+import { cookies } from 'next/headers';
 import prisma from '@/lib/prisma';
 import { requireTenant } from '@/lib/tenant';
 import { createOrderFromPayload, type OrderPayload } from '@/lib/order-service';
@@ -130,6 +131,7 @@ export async function POST(req: Request) {
         orderId: order.id,
         paymentIntentId: session.paymentIntentId,
         tenantId: tenant.id,
+        hasNewMemberSession: !!order.newMemberSessionToken,
       });
 
       // CRITICAL: createOrderFromPayload already emits order.created event
@@ -149,9 +151,22 @@ export async function POST(req: Request) {
         },
       });
 
+      // If customer signed up as new member, set session cookie
+      if (order.newMemberSessionToken) {
+        const cookieStore = await cookies();
+        cookieStore.set('customer_session', order.newMemberSessionToken, {
+          httpOnly: true,
+          secure: process.env.NODE_ENV === 'production',
+          sameSite: 'lax',
+          maxAge: 90 * 24 * 60 * 60, // 90 days
+          path: '/',
+        });
+      }
+
       return NextResponse.json({
         success: true,
         orderId: order.id,
+        newMember: !!order.newMemberSessionToken,
       });
     } catch (orderError: any) {
       console.error('[confirm] Order creation failed:', orderError);

@@ -9,7 +9,7 @@ export function RewardsModal({ open, onClose }: RewardsModalProps) {
   if (!open) return null;
 
   return (
-    <div className="fixed inset-0 z-50 flex items-end justify-center bg-black/80 backdrop-blur-md sm:items-center">
+    <div className="fixed inset-0 z-[200] flex items-end justify-center bg-black/80 backdrop-blur-md sm:items-center">
       <div className="w-full max-w-md rounded-t-3xl border border-[#ff0000]/40 bg-white text-center shadow-2xl sm:rounded-3xl">
         <div className="space-y-4 px-6 py-8 text-[#300]">
           <p className="text-xs font-semibold uppercase tracking-[0.4em] text-[#cc0000]">Rewards</p>

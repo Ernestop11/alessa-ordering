@@ -62,7 +62,7 @@ export function CateringModal({ open, onClose }: CateringModalProps) {
   if (!open) return null;
 
   return (
-    <div className="fixed inset-0 z-50 flex items-end justify-center bg-black/80 backdrop-blur-md sm:items-center">
+    <div className="fixed inset-0 z-[200] flex items-end justify-center bg-black/80 backdrop-blur-md sm:items-center">
       <div className="w-full max-w-6xl rounded-t-3xl border border-[#ff0000]/50 bg-white text-center text-[#2b0909] shadow-2xl sm:rounded-3xl max-h-[90vh] overflow-y-auto">
         {/* Gallery Carousel */}
         {gallery.length > 0 && (
