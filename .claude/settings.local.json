@@ -93,7 +93,21 @@
       "Bash(# Check what print relay scripts exist locally echo \"\"=== Print Relay on External Drive ===\"\" ls -la /Volumes/AlessaCloud/scripts/print-relay/ || echo \"\"Not found\"\" echo \"\"\"\" echo \"\"=== Print Relay in Project ===\"\" ls -la /Users/ernestoponce/alessa-ordering/scripts/local-print-relay.mjs || echo \"\"Not found\"\" echo \"\"\"\" echo \"\"=== Checking for any running print processes ===\"\" ps aux)",
       "Bash(# Test creating a payment intent curl -s -X POST \"\"https://lasreinascolusa.com/api/orders/create-payment-intent\"\" \\\\ -H \"\"Content-Type: application/json\"\" \\\\ -H \"\"Cookie: \"\" \\\\ -d ''{ \"\"items\"\": [{\"\"menuItemId\"\": \"\"test\"\", \"\"quantity\"\": 1, \"\"price\"\": 10.00, \"\"name\"\": \"\"Test Item\"\"}], \"\"fulfillmentMethod\"\": \"\"pickup\"\", \"\"customerName\"\": \"\"Test Customer\"\", \"\"customerPhone\"\": \"\"555-1234\"\", \"\"customerEmail\"\": \"\"test@example.com\"\", \"\"subtotal\"\": 10.00, \"\"tax\"\": 0.83, \"\"total\"\": 10.83 }'' | python3 -m json.tool)",
       "Bash(nc:*)",
-      "Bash(sips:*)"
+      "Bash(sips:*)",
+      "Bash(ssh:*)",
+      "Bash(ssh-keygen:*)",
+      "Bash(sshpass:*)",
+      "Bash(brew install:*)",
+      "Bash(arp:*)",
+      "Bash(zip:*)",
+      "Bash(echo:*)",
+      "Bash(git -C /Users/ernestoponce/alessa-ordering log --oneline --all)",
+      "Bash(mkdir:*)",
+      "Bash(expect -c '\nspawn ssh -o StrictHostKeyChecking=no \"\"Jose Valencia\"\"@10.1.10.10 \"\"whoami && hostname\"\"\nexpect {\n    \"\"password:\"\" { send \"\"Lasreinas751!\\\\r\"\"; exp_continue }\n    \"\"Password:\"\" { send \"\"Lasreinas751!\\\\r\"\"; exp_continue }\n    eof\n}\n')",
+      "Bash(/tmp/ssh-lasreinas.exp)",
+      "Bash(/tmp/scp-lasreinas.exp)",
+      "Bash(/tmp/scp-agent.exp)",
+      "Bash(/tmp/ssh-install.exp:*)"
     ],
     "deny": [],
     "ask": []

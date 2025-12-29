@@ -359,7 +359,7 @@ export default function MobileNavDrawer({
     <>
       {/* Backdrop */}
       <div
-        className={`fixed inset-0 z-[200] bg-black/60 backdrop-blur-sm transition-opacity duration-300 ${
+        className={`fixed inset-0 z-[300] bg-black/60 backdrop-blur-sm transition-opacity duration-300 ${
           isOpen ? 'opacity-100' : 'opacity-0 pointer-events-none'
         }`}
         onClick={onClose}
@@ -368,7 +368,7 @@ export default function MobileNavDrawer({
 
       {/* Drawer - Dark theme matching cart/checkout */}
       <div
-        className={`fixed inset-y-0 left-0 z-[200] w-80 max-w-[85vw] bg-[#050A1C] border-r border-white/10 shadow-2xl transform transition-transform duration-300 ease-out flex flex-col ${
+        className={`fixed inset-y-0 left-0 z-[310] w-80 max-w-[85vw] bg-[#050A1C] border-r border-white/10 shadow-2xl transform transition-transform duration-300 ease-out flex flex-col ${
           isOpen ? 'translate-x-0' : '-translate-x-full'
         }`}
       >

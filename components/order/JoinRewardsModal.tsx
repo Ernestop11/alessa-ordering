@@ -61,12 +61,14 @@ export default function JoinRewardsModal({ open, onClose, onSuccess, tenantSlug,
         throw new Error(data.error || "Failed to join rewards program");
       }
 
-      // Success - refresh page to show member UI
-      if (onSuccess) onSuccess();
+      // Success - refresh customer data then reload page
+      if (onSuccess) {
+        await onSuccess();
+      }
       onClose();
-      setTimeout(() => {
-        window.location.reload();
-      }, 500);
+      // Give the browser time to process the cookie before reloading
+      await new Promise(resolve => setTimeout(resolve, 300));
+      window.location.reload();
     } catch (err) {
       setError(err instanceof Error ? err.message : "Failed to join");
     } finally {
@@ -97,12 +99,14 @@ export default function JoinRewardsModal({ open, onClose, onSuccess, tenantSlug,
         throw new Error(data.error || "Login failed");
       }
 
-      // Success - refresh page to show member UI
-      if (onSuccess) onSuccess();
+      // Success - refresh customer data then reload page
+      if (onSuccess) {
+        await onSuccess();
+      }
       onClose();
-      setTimeout(() => {
-        window.location.reload();
-      }, 500);
+      // Give the browser time to process the cookie before reloading
+      await new Promise(resolve => setTimeout(resolve, 300));
+      window.location.reload();
     } catch (err) {
       setError(err instanceof Error ? err.message : "Login failed");
     } finally {
@@ -111,7 +115,7 @@ export default function JoinRewardsModal({ open, onClose, onSuccess, tenantSlug,
   };
 
   return (
-    <div className="fixed inset-0 z-[60] flex items-center justify-center p-4">
+    <div className="fixed inset-0 z-[400] flex items-center justify-center p-4">
       <div className="fixed inset-0 bg-black/60 backdrop-blur-sm" onClick={onClose} />
       <div className="relative w-full max-w-md rounded-3xl bg-gradient-to-br from-amber-50 via-yellow-50 to-amber-100 p-8 shadow-2xl">
         <button

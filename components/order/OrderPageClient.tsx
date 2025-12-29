@@ -1367,6 +1367,7 @@ export default function OrderPageClient({
         const timestamp = Date.now();
         const res = await fetch(`/api/rewards/customer?t=${timestamp}`, {
           cache: 'no-store',
+          credentials: 'include', // Ensure cookies are sent
           headers: {
             'Cache-Control': 'no-cache',
             'Pragma': 'no-cache',
@@ -1380,7 +1381,10 @@ export default function OrderPageClient({
         console.error('Failed to refresh customer data', err);
       }
     };
-    
+
+    // Fetch immediately on mount to sync state with server
+    fetchCustomerData();
+
     // Refresh every 30 seconds for real-time updates
     const interval = setInterval(fetchCustomerData, 30000);
     return () => clearInterval(interval);
@@ -5446,15 +5450,21 @@ export default function OrderPageClient({
         onClose={() => setShowJoinModal(false)}
         initialMode={joinModalMode}
         onSuccess={async () => {
-          // Refresh customer data
+          // Refresh customer data after signup/login
           try {
-            const res = await fetch('/api/rewards/customer');
+            const res = await fetch('/api/rewards/customer', {
+              credentials: 'include', // Ensure cookies are sent
+              cache: 'no-store',
+            });
             if (res.ok) {
               const data = await res.json();
               setCustomerData(data);
+              console.log('[Rewards] Customer data synced:', data?.name || 'null');
+            } else {
+              console.warn('[Rewards] Failed to fetch customer data:', res.status);
             }
           } catch (err) {
-            console.error('Failed to refresh customer data:', err);
+            console.error('[Rewards] Failed to refresh customer data:', err);
           }
         }}
         tenantSlug={tenantSlug}
