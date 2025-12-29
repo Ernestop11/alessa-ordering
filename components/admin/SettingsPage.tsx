@@ -61,7 +61,7 @@ export default function SettingsPage({ tenant }: SettingsPageProps) {
   const [isOpen, setIsOpen] = useState(tenant.settings?.isOpen !== false);
   const [temporarilyClosed, setTemporarilyClosed] = useState(tenant.settings?.operatingHours?.temporarilyClosed || false);
   const [closedMessage, setClosedMessage] = useState(tenant.settings?.operatingHours?.closedMessage || '');
-  const [holidays, setHolidays] = useState<Array<{ id: string; date: string; name: string }>>(
+  const [holidays, setHolidays] = useState<Array<{ id: string; date: string; name: string; closingTime?: string }>>(
     tenant.settings?.operatingHours?.holidays || []
   );
   const [timezone, setTimezone] = useState(tenant.settings?.operatingHours?.timezone || 'America/Los_Angeles');
@@ -376,41 +376,74 @@ export default function SettingsPage({ tenant }: SettingsPageProps) {
             <div className="bg-white rounded-lg shadow p-6">
               <h2 className="text-lg font-semibold text-gray-900 mb-4">Holiday Closures</h2>
               <p className="text-sm text-gray-500 mb-4">
-                Set specific dates when your restaurant will be closed (overrides regular hours)
+                Set specific dates when your restaurant will be closed or closing early (overrides regular hours)
               </p>
-              <div className="space-y-3">
+              <div className="space-y-4">
                 {holidays.map((holiday, index) => (
-                  <div key={holiday.id} className="flex items-center gap-3">
-                    <input
-                      type="date"
-                      value={holiday.date}
-                      onChange={(e) => {
-                        const updated = [...holidays];
-                        updated[index].date = e.target.value;
-                        setHolidays(updated);
-                      }}
-                      className="border-gray-300 rounded-md shadow-sm focus:ring-blue-500 focus:border-blue-500"
-                    />
-                    <input
-                      type="text"
-                      value={holiday.name}
-                      onChange={(e) => {
-                        const updated = [...holidays];
-                        updated[index].name = e.target.value;
-                        setHolidays(updated);
-                      }}
-                      placeholder="Holiday name (e.g., Christmas Day)"
-                      className="flex-1 border-gray-300 rounded-md shadow-sm focus:ring-blue-500 focus:border-blue-500"
-                    />
-                    <button
-                      type="button"
-                      onClick={() => {
-                        setHolidays(holidays.filter((_, i) => i !== index));
-                      }}
-                      className="px-3 py-2 text-sm text-red-600 hover:bg-red-50 rounded"
-                    >
-                      Remove
-                    </button>
+                  <div key={holiday.id} className="p-4 border border-gray-200 rounded-lg bg-gray-50 space-y-3">
+                    <div className="flex items-center gap-3">
+                      <input
+                        type="date"
+                        value={holiday.date}
+                        onChange={(e) => {
+                          const updated = [...holidays];
+                          updated[index].date = e.target.value;
+                          setHolidays(updated);
+                        }}
+                        className="border-gray-300 rounded-md shadow-sm focus:ring-blue-500 focus:border-blue-500"
+                      />
+                      <input
+                        type="text"
+                        value={holiday.name}
+                        onChange={(e) => {
+                          const updated = [...holidays];
+                          updated[index].name = e.target.value;
+                          setHolidays(updated);
+                        }}
+                        placeholder="Holiday name (e.g., New Year's Eve)"
+                        className="flex-1 border-gray-300 rounded-md shadow-sm focus:ring-blue-500 focus:border-blue-500"
+                      />
+                      <button
+                        type="button"
+                        onClick={() => {
+                          setHolidays(holidays.filter((_, i) => i !== index));
+                        }}
+                        className="px-3 py-2 text-sm text-red-600 hover:bg-red-50 rounded"
+                      >
+                        Remove
+                      </button>
+                    </div>
+                    <div className="flex items-center gap-3 pl-1">
+                      <input
+                        type="checkbox"
+                        id={`early-close-${holiday.id}`}
+                        checked={!!holiday.closingTime}
+                        onChange={(e) => {
+                          const updated = [...holidays];
+                          updated[index].closingTime = e.target.checked ? '15:00' : undefined;
+                          setHolidays(updated);
+                        }}
+                        className="h-4 w-4 text-blue-600 focus:ring-blue-500 border-gray-300 rounded"
+                      />
+                      <label htmlFor={`early-close-${holiday.id}`} className="text-sm text-gray-600">
+                        Early closing (instead of all-day closure)
+                      </label>
+                      {holiday.closingTime && (
+                        <div className="flex items-center gap-2">
+                          <span className="text-sm text-gray-500">Close at:</span>
+                          <input
+                            type="time"
+                            value={holiday.closingTime}
+                            onChange={(e) => {
+                              const updated = [...holidays];
+                              updated[index].closingTime = e.target.value;
+                              setHolidays(updated);
+                            }}
+                            className="border-gray-300 rounded-md shadow-sm focus:ring-blue-500 focus:border-blue-500 text-sm"
+                          />
+                        </div>
+                      )}
+                    </div>
                   </div>
                 ))}
                 <button
@@ -422,6 +455,7 @@ export default function SettingsPage({ tenant }: SettingsPageProps) {
                         id: `holiday-${Date.now()}`,
                         date: new Date().toISOString().split('T')[0],
                         name: '',
+                        closingTime: undefined,
                       },
                     ]);
                   }}

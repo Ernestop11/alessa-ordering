@@ -51,6 +51,7 @@ interface OperatingHours {
     id: string;
     date: string; // Format: "YYYY-MM-DD"
     name: string;
+    closingTime?: string; // Optional early closing time (HH:mm). If set, restaurant closes at this time instead of all day
   }>;
 }
 
@@ -102,13 +103,15 @@ function isInWinterMode(date: Date, winterStartDate?: string, winterEndDate?: st
 }
 
 /**
- * Check if a date is a holiday
+ * Check if a date is a holiday and get the holiday details
+ * Returns null if not a holiday, or the holiday object if it is
  */
-function isHoliday(date: Date, holidays?: Array<{ date: string; name: string }>): boolean {
-  if (!holidays || holidays.length === 0) return false;
-  
+function getHolidayInfo(date: Date, holidays?: Array<{ date: string; name: string; closingTime?: string }>): { name: string; closingTime?: string } | null {
+  if (!holidays || holidays.length === 0) return null;
+
   const dateStr = date.toISOString().split('T')[0]; // YYYY-MM-DD
-  return holidays.some(holiday => holiday.date === dateStr);
+  const holiday = holidays.find(h => h.date === dateStr);
+  return holiday ? { name: holiday.name, closingTime: holiday.closingTime } : null;
 }
 
 /**
@@ -317,17 +320,31 @@ export function validateOperatingHours(
   const localDate = toTimezone(currentDate, timezone);
 
   // Check if today is a holiday
-  if (isHoliday(localDate, operatingHours.holidays)) {
-    const holiday = operatingHours.holidays?.find(
-      h => h.date === localDate.toISOString().split('T')[0]
-    );
-    return {
-      isOpen: false,
-      reason: 'holiday',
-      message: holiday
-        ? `We are closed for ${holiday.name}.`
-        : 'We are closed for a holiday.',
-    };
+  const holidayInfo = getHolidayInfo(localDate, operatingHours.holidays);
+  if (holidayInfo) {
+    // Check if it's an early closing holiday (has closingTime set)
+    if (holidayInfo.closingTime) {
+      const currentMinutes = localDate.getHours() * 60 + localDate.getMinutes();
+      const closingMinutes = timeToMinutes(holidayInfo.closingTime);
+
+      if (currentMinutes >= closingMinutes) {
+        // Past the early closing time
+        return {
+          isOpen: false,
+          reason: 'holiday',
+          message: `We closed early at ${formatTimeAMPM(holidayInfo.closingTime)} for ${holidayInfo.name}.`,
+        };
+      }
+      // Before early closing time - continue to regular hours check
+      // But we'll use the early closing time as the close time for today
+    } else {
+      // Full day closure (no closingTime set)
+      return {
+        isOpen: false,
+        reason: 'holiday',
+        message: `We are closed for ${holidayInfo.name}.`,
+      };
+    }
   }
 
   // Get the active hours (store, kitchen, or winter)
@@ -345,7 +362,7 @@ export function validateOperatingHours(
 
   // Get today's hours
   const dayName = getDayName(localDate);
-  const dayHours = activeHours[dayName];
+  let dayHours = activeHours[dayName];
 
   // Check if day is marked as closed
   if (!dayHours || dayHours.closed) {
@@ -358,18 +375,43 @@ export function validateOperatingHours(
     };
   }
 
+  // If this is a holiday with early closing, adjust the closing time
+  let effectiveCloseTime = dayHours.close;
+  let holidayEarlyClose = false;
+  if (holidayInfo?.closingTime) {
+    effectiveCloseTime = holidayInfo.closingTime;
+    holidayEarlyClose = true;
+  }
+
+  // Create effective hours for comparison
+  const effectiveDayHours = {
+    ...dayHours,
+    close: effectiveCloseTime,
+  };
+
   // Check if current time is within operating hours
-  if (!isWithinHours(localDate, dayHours)) {
+  if (!isWithinHours(localDate, effectiveDayHours)) {
     const nextOpen = getNextOpenTime(localDate, activeHours);
+    const hoursMessage = holidayEarlyClose
+      ? `We are closing early at ${formatTimeAMPM(effectiveCloseTime)} for ${holidayInfo!.name}. Our regular hours are ${formatTimeAMPM(dayHours.open)} - ${formatTimeAMPM(dayHours.close)}.`
+      : `We are currently closed. Our hours today are ${formatTimeAMPM(dayHours.open)} - ${formatTimeAMPM(dayHours.close)}.`;
     return {
       isOpen: false,
-      reason: 'outside_hours',
-      message: `We are currently closed. Our hours today are ${formatTimeAMPM(dayHours.open)} - ${formatTimeAMPM(dayHours.close)}.${nextOpen ? ` We'll be open ${nextOpen}.` : ''}`,
+      reason: holidayEarlyClose ? 'holiday' : 'outside_hours',
+      message: `${hoursMessage}${nextOpen ? ` We'll be open ${nextOpen}.` : ''}`,
       nextOpenTime: nextOpen,
     };
   }
 
   // Restaurant is open!
+  // If it's a holiday with early closing, show a message about early closing
+  if (holidayEarlyClose) {
+    return {
+      isOpen: true,
+      message: `We are closing early at ${formatTimeAMPM(effectiveCloseTime)} for ${holidayInfo!.name}.`,
+    };
+  }
+
   return {
     isOpen: true,
   };
