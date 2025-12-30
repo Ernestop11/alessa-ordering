@@ -707,7 +707,7 @@ export default function Cart() {
                 </div>
 
                 {/* Content */}
-                <div className="p-4 space-y-4">
+                <div className="p-4 space-y-4 max-h-[60vh] overflow-y-auto">
                   {/* Item Preview */}
                   <div className="flex gap-3 p-3 bg-gray-50 rounded-xl">
                     {editingItem.image && (
@@ -724,6 +724,38 @@ export default function Cart() {
                       </p>
                     </div>
                   </div>
+
+                  {/* Current Add-ons (if any) */}
+                  {editingItem.addons && editingItem.addons.length > 0 && (
+                    <div className="rounded-xl border border-amber-200 bg-amber-50 p-3">
+                      <p className="text-xs font-semibold text-amber-700 mb-2">Add-ons included:</p>
+                      <div className="space-y-1">
+                        {editingItem.addons.map((addon) => (
+                          <div key={addon.id} className="flex justify-between text-sm">
+                            <span className="text-gray-700">{addon.name}</span>
+                            <span className="text-amber-600 font-semibold">+{formatCurrency(addon.price)}</span>
+                          </div>
+                        ))}
+                      </div>
+                    </div>
+                  )}
+
+                  {/* Current Modifiers/Customizations (if any) */}
+                  {editingItem.modifiers && editingItem.modifiers.length > 0 && (
+                    <div className="rounded-xl border border-gray-200 bg-gray-50 p-3">
+                      <p className="text-xs font-semibold text-gray-600 mb-2">Customizations:</p>
+                      <div className="flex flex-wrap gap-2">
+                        {editingItem.modifiers.map((mod, i) => (
+                          <span
+                            key={i}
+                            className="px-2 py-1 text-xs rounded-full bg-gray-200 text-gray-700"
+                          >
+                            {mod}
+                          </span>
+                        ))}
+                      </div>
+                    </div>
+                  )}
 
                   {/* Quantity */}
                   <div>
@@ -753,7 +785,7 @@ export default function Cart() {
                         +
                       </button>
                       <span className="ml-auto text-lg font-bold text-gray-900">
-                        {formatCurrency(editingItem.price * editQuantity)}
+                        {formatCurrency((editingItem.price + (editingItem.addons?.reduce((sum, a) => sum + a.price, 0) || 0)) * editQuantity)}
                       </span>
                     </div>
                   </div>
@@ -1086,8 +1118,11 @@ export default function Cart() {
                                       isUpsell: true,
                                     });
                                   }}
-                                  className="px-4 py-2 text-xs sm:text-sm font-bold text-white rounded-lg transition-all hover:scale-105 active:scale-95"
-                                  style={{ backgroundColor: primaryColor }}
+                                  className="px-4 py-2 text-xs sm:text-sm font-bold text-black rounded-lg transition-all hover:scale-105 active:scale-95"
+                                  style={{
+                                    background: 'linear-gradient(135deg, #FBBF24 0%, #F59E0B 100%)',
+                                    boxShadow: '0 2px 8px rgba(251, 191, 36, 0.4)',
+                                  }}
                                 >
                                   {bundle.cta || '+ Add to Order'}
                                 </button>
