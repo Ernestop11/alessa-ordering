@@ -88,6 +88,11 @@ export default function MobileNavDrawer({
   const [paymentError, setPaymentError] = useState<string | null>(null);
   const { addToCart, items: cartItems, clearCart } = useCart();
 
+  // Track quantities for reorder items (key: menuItemId, value: quantity)
+  const [reorderQuantities, setReorderQuantities] = useState<Record<string, number>>({});
+  // Track "added to cart" visual feedback (key: menuItemId)
+  const [addedToCartItems, setAddedToCartItems] = useState<Set<string>>(new Set());
+
   // PWA Install state
   const [deferredPrompt, setDeferredPrompt] = useState<any>(null);
   const [isInstalled, setIsInstalled] = useState(false);
@@ -216,6 +221,45 @@ export default function MobileNavDrawer({
     }
   };
 
+  // Get quantity for a reorder item (defaults to original order quantity)
+  const getReorderQuantity = (menuItemId: string, originalQty: number) => {
+    return reorderQuantities[menuItemId] ?? originalQty;
+  };
+
+  // Update quantity for a specific reorder item
+  const updateReorderQuantity = (menuItemId: string, newQty: number) => {
+    if (newQty < 1) return;
+    setReorderQuantities(prev => ({ ...prev, [menuItemId]: newQty }));
+  };
+
+  // Add a single item to cart (stays on modal, shows feedback)
+  const handleAddSingleItem = (item: OrderItem) => {
+    if (!item.menuItem || !item.menuItem.available) return;
+
+    const quantity = getReorderQuantity(item.menuItem.id, item.quantity);
+
+    addToCart({
+      id: `${item.menuItem.id}-${Date.now()}-${Math.random()}`,
+      name: item.menuItem.name,
+      price: item.menuItem.price,
+      quantity: quantity,
+      image: item.menuItem.image,
+      description: item.menuItem.description,
+    });
+
+    // Show "Added!" feedback
+    setAddedToCartItems(prev => new Set(prev).add(item.menuItem!.id));
+
+    // Clear feedback after 2 seconds
+    setTimeout(() => {
+      setAddedToCartItems(prev => {
+        const next = new Set(prev);
+        next.delete(item.menuItem!.id);
+        return next;
+      });
+    }, 2000);
+  };
+
   // Quick reorder function - adds all items from a past order to cart
   const handleQuickReorder = async (order: PastOrder) => {
     setReorderingOrderId(order.id);
@@ -223,11 +267,12 @@ export default function MobileNavDrawer({
     // Add each item from the order to cart
     for (const item of order.items) {
       if (item.menuItem && item.menuItem.available) {
+        const quantity = getReorderQuantity(item.menuItem.id, item.quantity);
         addToCart({
           id: `${item.menuItem.id}-${Date.now()}-${Math.random()}`, // Unique ID for cart
           name: item.menuItem.name,
           price: item.menuItem.price,
-          quantity: item.quantity,
+          quantity: quantity,
           image: item.menuItem.image,
           description: item.menuItem.description,
         });
@@ -238,11 +283,17 @@ export default function MobileNavDrawer({
     await new Promise(r => setTimeout(r, 500));
     setReorderingOrderId(null);
 
-    // Open cart/checkout
-    onClose();
-    if (onCheckoutClick) {
-      setTimeout(() => onCheckoutClick(), 300);
-    }
+    // Show feedback but stay on modal
+    // Mark all items as added
+    const addedIds = order.items
+      .filter(i => i.menuItem?.available)
+      .map(i => i.menuItem!.id);
+    setAddedToCartItems(new Set(addedIds));
+
+    // Clear feedback after 2 seconds
+    setTimeout(() => {
+      setAddedToCartItems(new Set());
+    }, 2000);
   };
 
   // One-click pay with saved card
@@ -466,7 +517,7 @@ export default function MobileNavDrawer({
             </div>
           )}
 
-          {/* Quick Reorder Section - For logged in users with past orders */}
+          {/* Quick Reorder Section - Cart-style with individual items */}
           {customerData && customerData.orders && customerData.orders.length > 0 && (
             <div className="p-4 border-b border-white/10">
               <div className="flex items-center justify-between mb-3">
@@ -488,78 +539,111 @@ export default function MobileNavDrawer({
                 </div>
               )}
 
-              <div className="space-y-2">
-                {customerData.orders.slice(0, 3).map((order) => (
-                  <div
-                    key={order.id}
-                    className="rounded-xl border border-white/10 bg-white/5 p-3"
+              {/* Individual items from past orders - Cart style */}
+              <div className="space-y-3">
+                {/* Get unique items from all orders */}
+                {(() => {
+                  // Collect unique items from past orders
+                  const uniqueItems = new Map<string, OrderItem>();
+                  customerData.orders.forEach(order => {
+                    order.items.forEach(item => {
+                      if (item.menuItem?.available && !uniqueItems.has(item.menuItem.id)) {
+                        uniqueItems.set(item.menuItem.id, item);
+                      }
+                    });
+                  });
+                  return Array.from(uniqueItems.values()).slice(0, 6);
+                })().map((item) => (
+                  <article
+                    key={item.menuItem!.id}
+                    className="group flex gap-3 rounded-xl border border-white/10 bg-white p-3 shadow-sm transition-all hover:border-gray-300 hover:shadow-md"
                   >
-                    <div className="flex items-start justify-between gap-2 mb-2">
-                      <div className="flex-1 min-w-0">
-                        <p className="text-xs text-white/50">{formatOrderDate(order.createdAt)}</p>
-                        <p className="text-sm text-white font-medium truncate">
-                          {order.items.slice(0, 2).map(i => i.menuItem?.name || 'Item').join(', ')}
-                          {order.items.length > 2 && ` +${order.items.length - 2} more`}
-                        </p>
-                        <p className="text-xs text-[#FBBF24]">${order.totalAmount.toFixed(2)}</p>
-                      </div>
-                    </div>
-
-                    {/* Action buttons */}
-                    <div className="flex gap-2">
-                      {/* One-click pay with saved card */}
-                      {savedCards.length > 0 && customerData.email && customerData.phone ? (
-                        <button
-                          onClick={() => handleOneClickPay(order, savedCards[0].id)}
-                          disabled={oneClickPayingOrderId === order.id || reorderingOrderId === order.id}
-                          className="flex-1 px-3 py-2 rounded-lg text-white text-xs font-bold transition-all disabled:opacity-50"
-                          style={{
-                            background: `linear-gradient(135deg, #DC2626 0%, #FBBF24 50%, #DC2626 100%)`,
-                            boxShadow: `0 4px 12px rgba(220, 38, 38, 0.3)`,
+                    {/* Item Image */}
+                    <div className="relative h-16 w-16 flex-shrink-0 overflow-hidden rounded-lg bg-gray-100 shadow-sm">
+                      {item.menuItem?.image ? (
+                        <img
+                          src={item.menuItem.image}
+                          alt={item.menuItem.name}
+                          className="w-full h-full object-cover transition-transform group-hover:scale-110"
+                          onError={(e) => {
+                            const target = e.target as HTMLImageElement;
+                            target.style.display = 'none';
                           }}
-                        >
-                          {oneClickPayingOrderId === order.id ? (
-                            <span className="flex items-center justify-center gap-1">
-                              <span className="w-3 h-3 border-2 border-white/30 border-t-white rounded-full animate-spin" />
-                              Paying...
-                            </span>
-                          ) : (
-                            <span className="flex items-center justify-center gap-1.5">
-                              <span>💳</span>
-                              Pay ${order.totalAmount.toFixed(2)} ••{savedCards[0].last4}
-                            </span>
-                          )}
-                        </button>
+                        />
                       ) : (
-                        <button
-                          onClick={() => handleQuickReorder(order)}
-                          disabled={reorderingOrderId === order.id}
-                          className="flex-1 px-3 py-2 rounded-lg bg-[#DC2626] text-white text-xs font-bold hover:bg-[#B91C1C] transition-all disabled:opacity-50"
-                        >
-                          {reorderingOrderId === order.id ? (
-                            <span className="flex items-center justify-center gap-1">
-                              <span className="w-3 h-3 border-2 border-white/30 border-t-white rounded-full animate-spin" />
-                              Adding...
-                            </span>
-                          ) : (
-                            '🔄 Reorder'
-                          )}
-                        </button>
-                      )}
-
-                      {/* Edit cart button - always show if saved card exists */}
-                      {savedCards.length > 0 && (
-                        <button
-                          onClick={() => handleQuickReorder(order)}
-                          disabled={reorderingOrderId === order.id}
-                          className="px-3 py-2 rounded-lg bg-white/10 border border-white/20 text-white/80 text-xs font-medium hover:bg-white/20 transition-all disabled:opacity-50"
-                        >
-                          {reorderingOrderId === order.id ? '...' : 'Edit'}
-                        </button>
+                        <div className="flex h-full w-full items-center justify-center text-lg font-bold text-gray-400">
+                          {item.menuItem?.name.charAt(0) || '?'}
+                        </div>
                       )}
                     </div>
-                  </div>
+
+                    {/* Item Details */}
+                    <div className="flex flex-1 flex-col gap-1 min-w-0">
+                      <div className="flex-1 min-w-0">
+                        <p className="text-sm font-bold text-gray-900 truncate">{item.menuItem?.name}</p>
+                        {item.menuItem?.description && (
+                          <p className="mt-0.5 text-xs text-gray-600 line-clamp-1">{item.menuItem.description}</p>
+                        )}
+                      </div>
+
+                      {/* Quantity controls and price */}
+                      <div className="flex items-center justify-between gap-2 mt-1">
+                        <div className="flex items-center gap-2">
+                          <button
+                            onClick={() => updateReorderQuantity(item.menuItem!.id, getReorderQuantity(item.menuItem!.id, item.quantity) - 1)}
+                            className="flex h-7 w-7 items-center justify-center rounded-lg border-2 border-gray-200 bg-white text-sm font-bold text-gray-700 transition hover:border-gray-300 hover:bg-gray-50 active:scale-95"
+                            aria-label="Decrease quantity"
+                          >
+                            −
+                          </button>
+                          <span className="w-6 text-center text-sm font-bold text-gray-900">
+                            {getReorderQuantity(item.menuItem!.id, item.quantity)}
+                          </span>
+                          <button
+                            onClick={() => updateReorderQuantity(item.menuItem!.id, getReorderQuantity(item.menuItem!.id, item.quantity) + 1)}
+                            className="flex h-7 w-7 items-center justify-center rounded-lg border-2 border-gray-200 bg-white text-sm font-bold text-gray-700 transition hover:border-gray-300 hover:bg-gray-50 active:scale-95"
+                            aria-label="Increase quantity"
+                          >
+                            +
+                          </button>
+                        </div>
+                        <span className="text-sm font-bold text-gray-900">
+                          ${(item.menuItem!.price * getReorderQuantity(item.menuItem!.id, item.quantity)).toFixed(2)}
+                        </span>
+                      </div>
+
+                      {/* Add to Cart button */}
+                      <button
+                        onClick={() => handleAddSingleItem(item)}
+                        className={`mt-2 w-full py-2 rounded-lg text-xs font-bold transition-all ${
+                          addedToCartItems.has(item.menuItem!.id)
+                            ? 'bg-green-500 text-white'
+                            : 'bg-[#DC2626] text-white hover:bg-[#B91C1C]'
+                        }`}
+                      >
+                        {addedToCartItems.has(item.menuItem!.id) ? '✓ Added!' : '+ Add to Cart'}
+                      </button>
+                    </div>
+                  </article>
                 ))}
+
+                {/* Reorder All button */}
+                {customerData.orders[0]?.items.filter(i => i.menuItem?.available).length > 0 && (
+                  <button
+                    onClick={() => handleQuickReorder(customerData.orders![0])}
+                    disabled={reorderingOrderId === customerData.orders![0].id}
+                    className="w-full py-3 rounded-xl bg-white/10 border border-white/20 text-white text-sm font-bold hover:bg-white/20 transition-all disabled:opacity-50 flex items-center justify-center gap-2"
+                  >
+                    {reorderingOrderId === customerData.orders![0].id ? (
+                      <>
+                        <span className="w-4 h-4 border-2 border-white/30 border-t-white rounded-full animate-spin" />
+                        Adding all...
+                      </>
+                    ) : (
+                      <>🔄 Add All from Last Order</>
+                    )}
+                  </button>
+                )}
               </div>
             </div>
           )}
@@ -719,9 +803,22 @@ export default function MobileNavDrawer({
           <div className="h-24" />
         </div>
 
-        {/* Fixed Checkout Button at Bottom */}
+        {/* Fixed Bottom Buttons - Order More & Checkout */}
         {cartItemCount > 0 && onCheckoutClick && (
-          <div className="flex-shrink-0 p-4 border-t border-white/10 bg-[#050A1C]">
+          <div className="flex-shrink-0 p-4 border-t border-white/10 bg-[#050A1C] space-y-3">
+            {/* Order More Button - closes drawer to browse menu */}
+            <button
+              onClick={() => {
+                onClose();
+                window.scrollTo({ top: 0, behavior: 'smooth' });
+              }}
+              className="w-full py-3 rounded-xl bg-white/10 border border-white/20 text-white font-bold hover:bg-white/20 transition-all flex items-center justify-center gap-2"
+            >
+              <span className="text-lg">🍽️</span>
+              <span>Order More</span>
+            </button>
+
+            {/* Checkout Button */}
             <button
               onClick={() => {
                 onClose();
