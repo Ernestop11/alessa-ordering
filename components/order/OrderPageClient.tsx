@@ -5529,7 +5529,7 @@ export default function OrderPageClient({
         onRewardsClick={() => customerData ? setShowMembershipPanel(true) : setShowJoinModal(true)}
         onAccessibilityClick={() => setAccessibilityOpen((prev) => !prev)}
         onReorderClick={customerData?.orders && customerData.orders.length > 0 ? () => setShowReorderModal(true) : undefined}
-        onLoginClick={() => { setJoinModalMode('join'); setShowJoinModal(true); }}
+        onLoginClick={() => { setJoinModalMode('login'); setShowJoinModal(true); }}
         onCheckoutClick={() => {
           // Trigger cart launcher
           const cartButton = document.querySelector('[data-cart-launcher]') as HTMLElement;

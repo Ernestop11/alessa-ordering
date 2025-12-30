@@ -2,6 +2,14 @@ import { NextResponse } from 'next/server';
 import prisma from '@/lib/prisma';
 import { requireTenant } from '@/lib/tenant';
 
+// Normalize phone number to digits only for consistent matching
+function normalizePhone(phone: string | null | undefined): string | null {
+  if (!phone) return null;
+  const digits = phone.replace(/\D/g, '');
+  // Return last 10 digits (removes country code if present)
+  return digits.length >= 10 ? digits.slice(-10) : digits;
+}
+
 export async function POST(req: Request) {
   try {
     const tenant = await requireTenant();
@@ -12,13 +20,15 @@ export async function POST(req: Request) {
       return NextResponse.json({ error: 'Email or phone required' }, { status: 400 });
     }
 
-    // Find customer by email or phone
+    const normalizedPhone = normalizePhone(phone);
+
+    // Find customer by email or phone (case-insensitive email, normalized phone)
     const customer = await prisma.customer.findFirst({
       where: {
         tenantId: tenant.id,
         OR: [
           email ? { email: { equals: email, mode: 'insensitive' } } : undefined,
-          phone ? { phone } : undefined,
+          normalizedPhone ? { phone: { contains: normalizedPhone } } : undefined,
         ].filter(Boolean) as any,
       },
     });
