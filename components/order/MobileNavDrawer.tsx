@@ -398,12 +398,12 @@ export default function MobileNavDrawer({
             }}
           >
             <div className="flex items-center gap-3">
-              <div className="w-12 h-12 rounded-full bg-white p-1 shadow-lg ring-2 ring-white/30 flex items-center justify-center">
+              <div className="w-12 h-12 rounded-full bg-white p-1 shadow-lg ring-2 ring-white/30 flex items-center justify-center overflow-hidden">
                 {tenant.logoUrl ? (
                   <img
                     src={tenant.logoUrl}
                     alt={tenant.name}
-                    className="w-10 h-10 rounded-full object-cover"
+                    className="w-10 h-10 rounded-full object-cover aspect-square"
                   />
                 ) : (
                   <span className="text-2xl">🍽️</span>

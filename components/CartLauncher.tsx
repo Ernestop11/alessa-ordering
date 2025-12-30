@@ -1,6 +1,7 @@
 "use client";
 
-import { useState } from "react";
+import { useState, useEffect } from "react";
+import { createPortal } from "react-dom";
 import { ShoppingCart, X } from "lucide-react";
 import Cart from "./Cart";
 import { useCart } from "../lib/store/cart";
@@ -8,8 +9,14 @@ import { useTenantTheme } from "./TenantThemeProvider";
 
 export default function CartLauncher() {
   const [open, setOpen] = useState(false);
+  const [mounted, setMounted] = useState(false);
   const { items } = useCart();
   const tenant = useTenantTheme();
+
+  // Set mounted on client-side for portal hydration
+  useEffect(() => {
+    setMounted(true);
+  }, []);
 
   const itemCount = items.reduce((sum, item) => sum + item.quantity, 0);
   const badge = itemCount > 99 ? "99+" : itemCount.toString();
@@ -34,9 +41,11 @@ export default function CartLauncher() {
         </span>
       </button>
 
-      {open && (
+      {/* Cart Modal - Portal for z-index fix */}
+      {mounted && open && createPortal(
         <div
-          className="fixed inset-0 z-[200] flex items-end sm:items-center justify-center bg-black/60 backdrop-blur-sm sm:px-4 sm:py-8"
+          style={{ position: 'fixed', inset: 0, zIndex: 9998, display: 'flex', alignItems: 'flex-end', justifyContent: 'center' }}
+          className="sm:items-center bg-black/60 backdrop-blur-sm sm:px-4 sm:py-8"
           role="dialog"
           aria-modal="true"
           aria-labelledby="cart-title"
@@ -47,6 +56,7 @@ export default function CartLauncher() {
             onClick={(event) => event.stopPropagation()}
             style={{
               borderTop: `4px solid ${primaryColor}`,
+              zIndex: 9999,
             }}
           >
             <div
@@ -82,7 +92,8 @@ export default function CartLauncher() {
               <Cart />
             </div>
           </div>
-        </div>
+        </div>,
+        document.body
       )}
     </>
   );

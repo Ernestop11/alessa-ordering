@@ -34,6 +34,7 @@
 import Image from 'next/image';
 import Link from 'next/link';
 import { useCallback, useEffect, useMemo, useRef, useState } from 'react';
+import { createPortal } from 'react-dom';
 import { useSearchParams, useRouter } from 'next/navigation';
 import { getStockImageForCategory, cycleFallbackImage } from '../../lib/menu-imagery';
 import { useCart } from '../../lib/store/cart';
@@ -432,6 +433,7 @@ export default function OrderPageClient({
   const [hasHydratedAccessibility, setHasHydratedAccessibility] = useState(false);
   const skipPersistAccessibilityRef = useRef(false);
   const [customModal, setCustomModal] = useState<CustomModalState | null>(null);
+  const [portalMounted, setPortalMounted] = useState(false);
   const [customRemovals, setCustomRemovals] = useState<string[]>([]);
   const [customAddons, setCustomAddons] = useState<string[]>([]);
   const [customNote, setCustomNote] = useState('');
@@ -464,6 +466,11 @@ export default function OrderPageClient({
     handleChange();
     media.addEventListener('change', handleChange);
     return () => media.removeEventListener('change', handleChange);
+  }, []);
+
+  // Set portal mounted on client-side for createPortal hydration
+  useEffect(() => {
+    setPortalMounted(true);
   }, []);
 
   // Scroll listener for sticky header shrinking
@@ -4222,16 +4229,19 @@ export default function OrderPageClient({
         {renderSectionsAfterMenu()}
       </main>
 
-      {/* Catering Slide-In Panel */}
-      {showCateringPanel && (
+      {/* Catering Slide-In Panel - Portal for z-index fix */}
+      {portalMounted && showCateringPanel && createPortal(
         <>
           {/* Backdrop */}
           <div
-            className="fixed inset-0 z-[200] bg-black/60 backdrop-blur-sm transition-opacity"
+            style={{ position: 'fixed', inset: 0, zIndex: 9998 }}
+            className="bg-black/60 backdrop-blur-sm transition-opacity"
             onClick={() => setShowCateringPanel(false)}
           />
           {/* Side Panel */}
-          <div className="fixed right-0 top-0 z-[210] h-full w-full max-w-2xl overflow-y-auto bg-gradient-to-br from-[#2D1810] via-[#1A0F08] to-black p-8 shadow-2xl transform transition-transform duration-300 ease-out animate-in slide-in-from-right">
+          <div
+            style={{ position: 'fixed', right: 0, top: 0, bottom: 0, zIndex: 9999, maxWidth: '672px', width: '100%' }}
+            className="overflow-y-auto bg-gradient-to-br from-[#2D1810] via-[#1A0F08] to-black p-8 shadow-2xl transform transition-transform duration-300 ease-out animate-in slide-in-from-right">
             <div className="mb-6 flex items-center justify-between">
               <h2 className="text-3xl font-black text-amber-100">🎉 Catering Services</h2>
               <button
@@ -4801,19 +4811,23 @@ export default function OrderPageClient({
               </p>
             </form>
           </div>
-        </>
+        </>,
+        document.body
       )}
 
-      {/* Membership Slide-In Panel (Costco Style) */}
-      {showMembershipPanel && (
+      {/* Membership Slide-In Panel (Costco Style) - Portal for z-index fix */}
+      {portalMounted && showMembershipPanel && createPortal(
         <>
           {/* Backdrop */}
           <div
-            className="fixed inset-0 z-[200] bg-black/60 backdrop-blur-sm transition-opacity"
+            style={{ position: 'fixed', inset: 0, zIndex: 9998 }}
+            className="bg-black/60 backdrop-blur-sm transition-opacity"
             onClick={() => setShowMembershipPanel(false)}
           />
           {/* Side Panel */}
-          <div className="fixed right-0 top-0 z-[210] h-full w-full max-w-md overflow-y-auto bg-gradient-to-br from-black via-gray-900 to-black p-8 shadow-2xl transition-transform sm:w-96">
+          <div
+            style={{ position: 'fixed', right: 0, top: 0, bottom: 0, zIndex: 9999, maxWidth: '384px', width: '100%' }}
+            className="overflow-y-auto bg-gradient-to-br from-black via-gray-900 to-black p-8 shadow-2xl transition-transform">
             <div className="mb-6 flex items-center justify-between">
               <h2 className="text-3xl font-black text-white">⭐ Rewards Program</h2>
               <button
@@ -5170,7 +5184,8 @@ export default function OrderPageClient({
               </div>
             )}
           </div>
-        </>
+        </>,
+        document.body
       )}
 
       <footer className="border-t border-white/10 bg-black/50 py-12">
@@ -5232,10 +5247,16 @@ export default function OrderPageClient({
         </div>
       </footer>
 
-      {customModal && (
-        <div className="fixed inset-0 z-[200] flex items-center justify-center bg-black/80 backdrop-blur-sm p-4" onClick={closeCustomization}>
+      {/* Customization Modal - Portal for z-index fix */}
+      {portalMounted && customModal && createPortal(
+        <div
+          style={{ position: 'fixed', inset: 0, zIndex: 9998, display: 'flex', alignItems: 'center', justifyContent: 'center', padding: '16px' }}
+          className="bg-black/80 backdrop-blur-sm"
+          onClick={closeCustomization}
+        >
           <div
-            className="w-full max-w-xl rounded-3xl border border-white/20 bg-gradient-to-br from-[#1a1a1a] via-[#0d0d0d] to-[#1a1a1a] p-6 text-white shadow-2xl shadow-black/50 max-h-[90vh] overflow-y-auto"
+            style={{ zIndex: 9999, maxHeight: '90vh' }}
+            className="w-full max-w-xl rounded-3xl border border-white/20 bg-gradient-to-br from-[#1a1a1a] via-[#0d0d0d] to-[#1a1a1a] p-6 text-white shadow-2xl shadow-black/50 overflow-y-auto"
             onClick={(e) => e.stopPropagation()}
           >
             {/* Header with close button */}
@@ -5396,7 +5417,8 @@ export default function OrderPageClient({
               </button>
             </div>
           </div>
-        </div>
+        </div>,
+        document.body
       )}
 
       {/* Accessibility Panel - Positioned above button stack on desktop */}
