@@ -41,45 +41,41 @@ export default function CartLauncher() {
         </span>
       </button>
 
-      {/* Cart Modal - Portal for z-index fix - Dark theme matching hamburger menu */}
+      {/* Cart Modal - Portal for z-index fix */}
       {mounted && open && createPortal(
         <div
           style={{ position: 'fixed', inset: 0, zIndex: 9998, display: 'flex', alignItems: 'flex-end', justifyContent: 'center' }}
-          className="sm:items-center bg-black/60 backdrop-blur-sm sm:px-4 sm:py-8"
+          className="sm:items-center bg-black/50 backdrop-blur-sm sm:px-4 sm:py-8"
           role="dialog"
           aria-modal="true"
           aria-labelledby="cart-title"
           onClick={() => setOpen(false)}
         >
           <div
-            className="relative flex h-[92vh] sm:h-auto w-full max-w-2xl flex-col overflow-hidden rounded-t-2xl sm:rounded-2xl shadow-2xl sm:max-h-[90vh]"
+            className="relative flex h-[92vh] sm:h-auto w-full max-w-2xl flex-col overflow-hidden rounded-t-2xl sm:rounded-2xl bg-white shadow-2xl sm:max-h-[90vh]"
             onClick={(event) => event.stopPropagation()}
             style={{
-              background: '#050A1C',
               borderTop: `4px solid ${primaryColor}`,
               zIndex: 9999,
             }}
           >
             <div
-              className="flex items-center justify-between border-b border-white/10 px-4 sm:px-6 py-3 sm:py-4 flex-shrink-0"
-              style={{
-                background: `linear-gradient(to bottom, rgba(220, 38, 38, 0.15), transparent)`,
-              }}
+              className="flex items-center justify-between border-b border-gray-200 px-4 sm:px-6 py-3 sm:py-4 flex-shrink-0 bg-gray-50"
             >
-              <h2 id="cart-title" className="text-lg sm:text-xl font-bold" style={{ color: primaryColor }}>
+              <h2 id="cart-title" className="text-lg sm:text-xl font-bold text-gray-900">
                 Your Cart
               </h2>
               <button
                 type="button"
                 onClick={() => setOpen(false)}
-                className="inline-flex h-8 w-8 sm:h-9 sm:w-9 items-center justify-center rounded-full border border-white/15 text-white/60 transition hover:border-[#DC2626]/60 hover:text-white"
+                className="inline-flex h-8 w-8 sm:h-9 sm:w-9 items-center justify-center rounded-full border border-gray-200 text-gray-500 transition hover:border-gray-300 hover:bg-gray-100 hover:text-gray-700"
                 aria-label="Close cart"
               >
                 <X className="h-4 w-4 sm:h-5 sm:w-5" />
               </button>
             </div>
-            <div className="flex-1 overflow-y-auto px-2 sm:px-4 pb-6 pt-2 sm:pt-4 overscroll-contain">
-              <Cart darkMode={true} />
+            <div className="flex-1 overflow-y-auto px-2 sm:px-4 pb-6 pt-2 sm:pt-4 overscroll-contain bg-gray-50">
+              <Cart />
             </div>
           </div>
         </div>,

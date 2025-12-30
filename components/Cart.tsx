@@ -25,11 +25,7 @@ type TipOption = typeof TIP_OPTIONS[number];
 const roundCurrency = (value: number) => Number(value.toFixed(2));
 const formatCurrency = (value: number) => `$${value.toFixed(2)}`;
 
-interface CartProps {
-  darkMode?: boolean;
-}
-
-export default function Cart({ darkMode = false }: CartProps) {
+export default function Cart() {
   const tenant = useTenantTheme();
   const membershipProgram: any = tenant.membershipProgram;
   const {
@@ -574,10 +570,10 @@ export default function Cart({ darkMode = false }: CartProps) {
 
 
       {items.length === 0 ? (
-        <div className={`rounded-2xl border-2 border-dashed p-12 text-center ${darkMode ? 'border-white/20 bg-white/5' : 'border-gray-200 bg-gray-50'}`}>
+        <div className="rounded-2xl border-2 border-dashed border-gray-200 bg-gray-50 p-12 text-center">
           <div className="text-5xl mb-4">🛒</div>
-          <p className={`text-base font-semibold ${darkMode ? 'text-white' : 'text-gray-700'}`}>Your cart is empty</p>
-          <p className={`mt-2 text-sm ${darkMode ? 'text-white/50' : 'text-gray-500'}`}>Browse the menu to add something delicious!</p>
+          <p className="text-base font-semibold text-gray-700">Your cart is empty</p>
+          <p className="mt-2 text-sm text-gray-500">Browse the menu to add something delicious!</p>
         </div>
       ) : (
         <>
@@ -585,15 +581,9 @@ export default function Cart({ darkMode = false }: CartProps) {
             {items.map((item) => (
               <article
                 key={item.id}
-                className={`group flex gap-3 sm:gap-4 rounded-xl sm:rounded-2xl border p-3 sm:p-4 shadow-sm transition-all ${
-                  darkMode
-                    ? 'border-white/10 bg-white/5 hover:border-[#DC2626]/30 hover:bg-white/10'
-                    : 'border-gray-200 bg-white hover:border-gray-300 hover:shadow-md'
-                }`}
+                className="group flex gap-3 sm:gap-4 rounded-xl sm:rounded-2xl border border-gray-200 bg-white p-3 sm:p-4 shadow-sm transition-all hover:border-gray-300 hover:shadow-md"
               >
-                <div className={`relative h-16 w-16 sm:h-20 sm:w-20 flex-shrink-0 overflow-hidden rounded-lg sm:rounded-xl shadow-sm ${
-                  darkMode ? 'bg-white/10 ring-1 ring-white/10' : 'bg-gray-100'
-                }`}>
+                <div className="relative h-16 w-16 sm:h-20 sm:w-20 flex-shrink-0 overflow-hidden rounded-lg sm:rounded-xl bg-gray-100 shadow-sm">
                   {item.image ? (
                     <img
                       src={item.image}
@@ -606,7 +596,7 @@ export default function Cart({ darkMode = false }: CartProps) {
                       }}
                     />
                   ) : (
-                    <div className={`flex h-full w-full items-center justify-center text-lg font-bold ${darkMode ? 'text-white/40' : 'text-gray-400'}`}>
+                    <div className="flex h-full w-full items-center justify-center text-lg font-bold text-gray-400">
                       {item.name.charAt(0)}
                     </div>
                   )}
@@ -614,23 +604,19 @@ export default function Cart({ darkMode = false }: CartProps) {
                 <div className="flex flex-1 flex-col gap-1 min-w-0">
                   <div className="flex items-start justify-between gap-2">
                     <div className="flex-1 min-w-0">
-                      <p className={`text-sm sm:text-base font-bold truncate ${darkMode ? 'text-white' : 'text-gray-900'}`}>{item.name}</p>
+                      <p className="text-sm sm:text-base font-bold text-gray-900 truncate">{item.name}</p>
                       {item.description && (
-                        <p className={`mt-0.5 text-xs line-clamp-1 sm:line-clamp-2 ${darkMode ? 'text-white/50' : 'text-gray-600'}`}>{item.description}</p>
+                        <p className="mt-0.5 text-xs text-gray-600 line-clamp-1 sm:line-clamp-2">{item.description}</p>
                       )}
                       {item.addons?.length ? (
-                        <p className={`mt-0.5 text-xs font-medium truncate ${darkMode ? 'text-white/70' : 'text-gray-700'}`}>
+                        <p className="mt-0.5 text-xs font-medium text-gray-700 truncate">
                           + {item.addons.map((addon) => addon.name).join(", ")}
                         </p>
                       ) : null}
                     </div>
                     <button
                       onClick={() => removeFromCart(item.id)}
-                      className={`flex-shrink-0 rounded-lg border px-2 py-1 text-xs font-medium transition ${
-                        darkMode
-                          ? 'border-white/20 text-rose-400 hover:border-rose-400/40 hover:bg-rose-500/10'
-                          : 'border-gray-200 text-rose-600 hover:border-rose-300 hover:bg-rose-50'
-                      }`}
+                      className="flex-shrink-0 rounded-lg border border-gray-200 px-2 py-1 text-xs font-medium text-rose-600 transition hover:border-rose-300 hover:bg-rose-50"
                     >
                       ✕
                     </button>
@@ -639,31 +625,23 @@ export default function Cart({ darkMode = false }: CartProps) {
                     <div className="flex items-center gap-2">
                       <button
                         onClick={() => updateQuantity(item.id, Math.max(1, item.quantity - 1))}
-                        className={`flex h-7 w-7 sm:h-8 sm:w-8 items-center justify-center rounded-lg border text-sm sm:text-base font-bold transition active:scale-95 ${
-                          darkMode
-                            ? 'border-white/20 bg-white/5 text-white hover:border-[#DC2626]/40 hover:bg-white/10'
-                            : 'border-2 border-gray-200 bg-white text-gray-700 hover:border-gray-300 hover:bg-gray-50'
-                        }`}
+                        className="flex h-7 w-7 sm:h-8 sm:w-8 items-center justify-center rounded-lg border-2 border-gray-200 bg-white text-sm sm:text-base font-bold text-gray-700 transition hover:border-gray-300 hover:bg-gray-50 active:scale-95"
                         aria-label={`Decrease quantity of ${item.name}`}
                       >
                         −
                       </button>
-                      <span className={`w-6 sm:w-8 text-center text-sm sm:text-base font-bold ${darkMode ? 'text-white' : 'text-gray-900'}`}>
+                      <span className="w-6 sm:w-8 text-center text-sm sm:text-base font-bold text-gray-900">
                         {item.quantity}
                       </span>
                       <button
                         onClick={() => updateQuantity(item.id, item.quantity + 1)}
-                        className={`flex h-7 w-7 sm:h-8 sm:w-8 items-center justify-center rounded-lg border text-sm sm:text-base font-bold transition active:scale-95 ${
-                          darkMode
-                            ? 'border-white/20 bg-white/5 text-white hover:border-[#DC2626]/40 hover:bg-white/10'
-                            : 'border-2 border-gray-200 bg-white text-gray-700 hover:border-gray-300 hover:bg-gray-50'
-                        }`}
+                        className="flex h-7 w-7 sm:h-8 sm:w-8 items-center justify-center rounded-lg border-2 border-gray-200 bg-white text-sm sm:text-base font-bold text-gray-700 transition hover:border-gray-300 hover:bg-gray-50 active:scale-95"
                         aria-label={`Increase quantity of ${item.name}`}
                       >
                         +
                       </button>
                     </div>
-                    <span className={`text-sm sm:text-lg font-bold flex-shrink-0 ${darkMode ? 'text-[#FBBF24]' : 'text-gray-900'}`}>
+                    <span className="text-sm sm:text-lg font-bold text-gray-900 flex-shrink-0">
                       {formatCurrency(item.price * item.quantity)}
                     </span>
                   </div>
@@ -672,83 +650,63 @@ export default function Cart({ darkMode = false }: CartProps) {
             ))}
           </section>
 
-          <section className={`space-y-4 sm:space-y-6 rounded-xl sm:rounded-2xl border p-4 sm:p-6 ${
-            darkMode ? 'border-white/10 bg-white/5' : 'border-gray-100 bg-gray-50'
-          }`}>
-            <h3 className={`text-base sm:text-lg font-bold ${darkMode ? 'text-white' : 'text-gray-900'}`}>Order Details</h3>
+          <section className="space-y-4 sm:space-y-6 rounded-xl sm:rounded-2xl border border-gray-100 bg-gray-50 p-4 sm:p-6">
+            <h3 className="text-base sm:text-lg font-bold text-gray-900">Order Details</h3>
               <div className="grid gap-3 sm:gap-4 sm:grid-cols-2">
-                <label className={`text-xs sm:text-sm font-semibold ${darkMode ? 'text-white/70' : 'text-gray-700'}`}>
+                <label className="text-xs sm:text-sm font-semibold text-gray-700">
                   Name
                   <input
                     value={customerName}
                     onChange={(event) => setCustomerName(event.target.value)}
-                    className={`mt-1.5 sm:mt-2 w-full rounded-lg sm:rounded-xl border px-3 sm:px-4 py-2.5 sm:py-3 text-sm font-medium transition focus:outline-none ${
-                      darkMode
-                        ? 'border-white/20 bg-white/5 text-white placeholder:text-white/30 focus:border-[#DC2626]/60 focus:ring-2 focus:ring-[#DC2626]/20'
-                        : 'border-2 border-gray-200 bg-white text-gray-900 focus:border-blue-500 focus:ring-2 focus:ring-blue-200'
-                    }`}
+                    className="mt-1.5 sm:mt-2 w-full rounded-lg sm:rounded-xl border-2 border-gray-200 bg-white px-3 sm:px-4 py-2.5 sm:py-3 text-sm font-medium text-gray-900 transition focus:border-blue-500 focus:outline-none focus:ring-2 focus:ring-blue-200"
                     placeholder="Maria Perez"
                   />
                 </label>
-                <label className={`text-xs sm:text-sm font-semibold ${darkMode ? 'text-white/70' : 'text-gray-700'}`}>
+                <label className="text-xs sm:text-sm font-semibold text-gray-700">
                   Email<span className="ml-1 text-rose-500">*</span>
                   <input
                     value={customerEmail}
                     onChange={(event) => setCustomerEmail(event.target.value)}
                     type="email"
-                    className={`mt-1.5 sm:mt-2 w-full rounded-lg sm:rounded-xl border px-3 sm:px-4 py-2.5 sm:py-3 text-sm font-medium transition focus:outline-none ${
-                      darkMode
-                        ? 'border-white/20 bg-white/5 text-white placeholder:text-white/30 focus:border-[#DC2626]/60 focus:ring-2 focus:ring-[#DC2626]/20'
-                        : 'border-2 border-gray-200 bg-white text-gray-900 focus:border-blue-500 focus:ring-2 focus:ring-blue-200'
-                    }`}
+                    className="mt-1.5 sm:mt-2 w-full rounded-lg sm:rounded-xl border-2 border-gray-200 bg-white px-3 sm:px-4 py-2.5 sm:py-3 text-sm font-medium text-gray-900 transition focus:border-blue-500 focus:outline-none focus:ring-2 focus:ring-blue-200"
                     placeholder="maria@example.com"
                   />
                 </label>
-                <label className={`text-xs sm:text-sm font-semibold ${darkMode ? 'text-white/70' : 'text-gray-700'}`}>
+                <label className="text-xs sm:text-sm font-semibold text-gray-700">
                   Phone
                   <input
                     value={customerPhone}
                     onChange={(event) => setCustomerPhone(event.target.value)}
                     type="tel"
-                    className={`mt-1.5 sm:mt-2 w-full rounded-lg sm:rounded-xl border px-3 sm:px-4 py-2.5 sm:py-3 text-sm font-medium transition focus:outline-none ${
-                      darkMode
-                        ? 'border-white/20 bg-white/5 text-white placeholder:text-white/30 focus:border-[#DC2626]/60 focus:ring-2 focus:ring-[#DC2626]/20'
-                        : 'border-2 border-gray-200 bg-white text-gray-900 focus:border-blue-500 focus:ring-2 focus:ring-blue-200'
-                    }`}
+                    className="mt-1.5 sm:mt-2 w-full rounded-lg sm:rounded-xl border-2 border-gray-200 bg-white px-3 sm:px-4 py-2.5 sm:py-3 text-sm font-medium text-gray-900 transition focus:border-blue-500 focus:outline-none focus:ring-2 focus:ring-blue-200"
                     placeholder="(123) 456-7890"
                   />
                 </label>
-                <label className={`text-xs sm:text-sm font-semibold ${darkMode ? 'text-white/70' : 'text-gray-700'}`}>
+                <label className="text-xs sm:text-sm font-semibold text-gray-700">
                   Order notes
                   <input
                     value={orderNotes}
                     onChange={(event) => setOrderNotes(event.target.value)}
-                    className={`mt-1.5 sm:mt-2 w-full rounded-lg sm:rounded-xl border px-3 sm:px-4 py-2.5 sm:py-3 text-sm font-medium transition focus:outline-none ${
-                      darkMode
-                        ? 'border-white/20 bg-white/5 text-white placeholder:text-white/30 focus:border-[#DC2626]/60 focus:ring-2 focus:ring-[#DC2626]/20'
-                        : 'border-2 border-gray-200 bg-white text-gray-900 focus:border-blue-500 focus:ring-2 focus:ring-blue-200'
-                    }`}
+                    className="mt-1.5 sm:mt-2 w-full rounded-lg sm:rounded-xl border-2 border-gray-200 bg-white px-3 sm:px-4 py-2.5 sm:py-3 text-sm font-medium text-gray-900 transition focus:border-blue-500 focus:outline-none focus:ring-2 focus:ring-blue-200"
                     placeholder="Add utensils, etc."
                   />
                 </label>
               </div>
 
               <div>
-                <p className={`text-xs sm:text-sm font-semibold ${darkMode ? 'text-white/80' : 'text-gray-800'}`}>Fulfillment Method</p>
+                <p className="text-xs sm:text-sm font-semibold text-gray-800">Fulfillment Method</p>
                 <div className="mt-2 sm:mt-3 flex gap-2 sm:gap-3">
                   <button
                     onClick={() => setFulfillmentMethod("pickup")}
                     className={`flex-1 rounded-lg sm:rounded-xl border-2 px-3 sm:px-4 py-2.5 sm:py-3 text-xs sm:text-sm font-bold transition ${
                       fulfillmentMethod === "pickup"
                         ? "shadow-md"
-                        : darkMode
-                          ? "border-white/20 bg-white/5 text-white/70 hover:border-white/30"
-                          : "border-gray-200 bg-white text-gray-700 hover:border-gray-300"
+                        : "border-gray-200 bg-white text-gray-700 hover:border-gray-300"
                     }`}
                     style={fulfillmentMethod === "pickup" ? {
                       borderColor: primaryColor,
-                      backgroundColor: darkMode ? `${primaryColor}30` : `${primaryColor}15`,
-                      color: darkMode ? '#fff' : primaryColor,
+                      backgroundColor: `${primaryColor}15`,
+                      color: primaryColor,
                     } : {}}
                     type="button"
                   >
@@ -759,14 +717,12 @@ export default function Cart({ darkMode = false }: CartProps) {
                     className={`flex-1 rounded-lg sm:rounded-xl border-2 px-3 sm:px-4 py-2.5 sm:py-3 text-xs sm:text-sm font-bold transition ${
                       fulfillmentMethod === "delivery"
                         ? "shadow-md"
-                        : darkMode
-                          ? "border-white/20 bg-white/5 text-white/70 hover:border-white/30"
-                          : "border-gray-200 bg-white text-gray-700 hover:border-gray-300"
+                        : "border-gray-200 bg-white text-gray-700 hover:border-gray-300"
                     }`}
                     style={fulfillmentMethod === "delivery" ? {
                       borderColor: primaryColor,
-                      backgroundColor: darkMode ? `${primaryColor}30` : `${primaryColor}15`,
-                      color: darkMode ? '#fff' : primaryColor,
+                      backgroundColor: `${primaryColor}15`,
+                      color: primaryColor,
                     } : {}}
                     type="button"
                   >

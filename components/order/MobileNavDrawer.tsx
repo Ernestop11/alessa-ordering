@@ -612,14 +612,18 @@ export default function MobileNavDrawer({
                         </span>
                       </div>
 
-                      {/* Add to Cart button */}
+                      {/* Add to Cart button - Yellow gradient matching page buttons */}
                       <button
                         onClick={() => handleAddSingleItem(item)}
                         className={`mt-2 w-full py-2 rounded-lg text-xs font-bold transition-all ${
                           addedToCartItems.has(item.menuItem!.id)
                             ? 'bg-green-500 text-white'
-                            : 'bg-[#DC2626] text-white hover:bg-[#B91C1C]'
+                            : 'text-black hover:scale-[1.02]'
                         }`}
+                        style={addedToCartItems.has(item.menuItem!.id) ? {} : {
+                          background: 'linear-gradient(135deg, #FBBF24 0%, #F59E0B 50%, #FBBF24 100%)',
+                          boxShadow: '0 4px 12px rgba(251, 191, 36, 0.4)',
+                        }}
                       >
                         {addedToCartItems.has(item.menuItem!.id) ? '✓ Added!' : '+ Add to Cart'}
                       </button>
@@ -627,16 +631,20 @@ export default function MobileNavDrawer({
                   </article>
                 ))}
 
-                {/* Reorder All button */}
+                {/* Reorder All button - Yellow gradient */}
                 {customerData.orders[0]?.items.filter(i => i.menuItem?.available).length > 0 && (
                   <button
                     onClick={() => handleQuickReorder(customerData.orders![0])}
                     disabled={reorderingOrderId === customerData.orders![0].id}
-                    className="w-full py-3 rounded-xl bg-white/10 border border-white/20 text-white text-sm font-bold hover:bg-white/20 transition-all disabled:opacity-50 flex items-center justify-center gap-2"
+                    className="w-full py-3 rounded-xl text-black text-sm font-bold hover:scale-[1.02] transition-all disabled:opacity-50 flex items-center justify-center gap-2"
+                    style={{
+                      background: 'linear-gradient(135deg, #FBBF24 0%, #F59E0B 50%, #FBBF24 100%)',
+                      boxShadow: '0 4px 12px rgba(251, 191, 36, 0.4)',
+                    }}
                   >
                     {reorderingOrderId === customerData.orders![0].id ? (
                       <>
-                        <span className="w-4 h-4 border-2 border-white/30 border-t-white rounded-full animate-spin" />
+                        <span className="w-4 h-4 border-2 border-black/30 border-t-black rounded-full animate-spin" />
                         Adding all...
                       </>
                     ) : (
