@@ -556,10 +556,10 @@ export default function MobileNavDrawer({
                 })().map((item) => (
                   <article
                     key={item.menuItem!.id}
-                    className="group flex gap-3 rounded-xl border border-white/10 bg-white p-3 shadow-sm transition-all hover:border-gray-300 hover:shadow-md"
+                    className="group flex gap-3 rounded-xl border border-white/10 bg-white/5 p-3 shadow-sm transition-all hover:border-[#DC2626]/30 hover:bg-white/10"
                   >
                     {/* Item Image */}
-                    <div className="relative h-16 w-16 flex-shrink-0 overflow-hidden rounded-lg bg-gray-100 shadow-sm">
+                    <div className="relative h-16 w-16 flex-shrink-0 overflow-hidden rounded-lg bg-white/10 shadow-sm ring-1 ring-white/10">
                       {item.menuItem?.image ? (
                         <img
                           src={item.menuItem.image}
@@ -571,7 +571,7 @@ export default function MobileNavDrawer({
                           }}
                         />
                       ) : (
-                        <div className="flex h-full w-full items-center justify-center text-lg font-bold text-gray-400">
+                        <div className="flex h-full w-full items-center justify-center text-lg font-bold text-white/40">
                           {item.menuItem?.name.charAt(0) || '?'}
                         </div>
                       )}
@@ -580,9 +580,9 @@ export default function MobileNavDrawer({
                     {/* Item Details */}
                     <div className="flex flex-1 flex-col gap-1 min-w-0">
                       <div className="flex-1 min-w-0">
-                        <p className="text-sm font-bold text-gray-900 truncate">{item.menuItem?.name}</p>
+                        <p className="text-sm font-bold text-white truncate">{item.menuItem?.name}</p>
                         {item.menuItem?.description && (
-                          <p className="mt-0.5 text-xs text-gray-600 line-clamp-1">{item.menuItem.description}</p>
+                          <p className="mt-0.5 text-xs text-white/50 line-clamp-1">{item.menuItem.description}</p>
                         )}
                       </div>
 
@@ -591,23 +591,23 @@ export default function MobileNavDrawer({
                         <div className="flex items-center gap-2">
                           <button
                             onClick={() => updateReorderQuantity(item.menuItem!.id, getReorderQuantity(item.menuItem!.id, item.quantity) - 1)}
-                            className="flex h-7 w-7 items-center justify-center rounded-lg border-2 border-gray-200 bg-white text-sm font-bold text-gray-700 transition hover:border-gray-300 hover:bg-gray-50 active:scale-95"
+                            className="flex h-7 w-7 items-center justify-center rounded-lg border border-white/20 bg-white/5 text-sm font-bold text-white transition hover:border-[#DC2626]/40 hover:bg-white/10 active:scale-95"
                             aria-label="Decrease quantity"
                           >
                             −
                           </button>
-                          <span className="w-6 text-center text-sm font-bold text-gray-900">
+                          <span className="w-6 text-center text-sm font-bold text-white">
                             {getReorderQuantity(item.menuItem!.id, item.quantity)}
                           </span>
                           <button
                             onClick={() => updateReorderQuantity(item.menuItem!.id, getReorderQuantity(item.menuItem!.id, item.quantity) + 1)}
-                            className="flex h-7 w-7 items-center justify-center rounded-lg border-2 border-gray-200 bg-white text-sm font-bold text-gray-700 transition hover:border-gray-300 hover:bg-gray-50 active:scale-95"
+                            className="flex h-7 w-7 items-center justify-center rounded-lg border border-white/20 bg-white/5 text-sm font-bold text-white transition hover:border-[#DC2626]/40 hover:bg-white/10 active:scale-95"
                             aria-label="Increase quantity"
                           >
                             +
                           </button>
                         </div>
-                        <span className="text-sm font-bold text-gray-900">
+                        <span className="text-sm font-bold text-[#FBBF24]">
                           ${(item.menuItem!.price * getReorderQuantity(item.menuItem!.id, item.quantity)).toFixed(2)}
                         </span>
                       </div>
