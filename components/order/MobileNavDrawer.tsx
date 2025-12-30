@@ -1,6 +1,7 @@
 "use client";
 
 import { useEffect, useState } from 'react';
+import { createPortal } from 'react-dom';
 import { useRouter, useSearchParams } from 'next/navigation';
 import { useTenantTheme } from '../TenantThemeProvider';
 import { useCart } from '../../lib/store/cart';
@@ -95,9 +96,13 @@ export default function MobileNavDrawer({
   const [showInstallModal, setShowInstallModal] = useState(false);
   const [installStep, setInstallStep] = useState<'intro' | 'confirm' | 'android-instructions' | 'ios-instructions' | 'success'>('intro');
 
+  // Set mounted on client-side for portal hydration
+  useEffect(() => {
+    setMounted(true);
+  }, []);
+
   useEffect(() => {
     if (isOpen) {
-      setMounted(true);
       document.body.style.overflow = 'hidden';
       // Fetch saved payment methods when drawer opens
       if (customerData) {
@@ -353,24 +358,35 @@ export default function MobileNavDrawer({
   const cartTotal = cartItems.reduce((sum, item) => sum + item.price * item.quantity, 0);
   const cartItemCount = cartItems.reduce((sum, item) => sum + item.quantity, 0);
 
-  if (!isOpen && !mounted) return null;
+  // Don't render anything until mounted (client-side only for portal)
+  if (!mounted) return null;
 
-  return (
+  // Use portal to render directly to document.body, bypassing all parent stacking contexts
+  return createPortal(
     <>
       {/* Backdrop */}
       <div
-        className={`fixed inset-0 z-[300] bg-black/60 backdrop-blur-sm transition-opacity duration-300 ${
+        className={`fixed inset-0 bg-black/60 backdrop-blur-sm transition-opacity duration-300 ${
           isOpen ? 'opacity-100' : 'opacity-0 pointer-events-none'
         }`}
+        style={{ position: 'fixed', zIndex: 9998 }}
         onClick={onClose}
-        onTransitionEnd={() => !isOpen && setMounted(false)}
       />
 
       {/* Drawer - Dark theme matching cart/checkout */}
       <div
-        className={`fixed inset-y-0 left-0 z-[310] w-80 max-w-[85vw] bg-[#050A1C] border-r border-white/10 shadow-2xl transform transition-transform duration-300 ease-out flex flex-col ${
+        className={`bg-[#050A1C] border-r border-white/10 shadow-2xl transform transition-transform duration-300 ease-out flex flex-col ${
           isOpen ? 'translate-x-0' : '-translate-x-full'
         }`}
+        style={{
+          position: 'fixed',
+          top: 0,
+          left: 0,
+          bottom: 0,
+          width: '320px',
+          maxWidth: '85vw',
+          zIndex: 9999,
+        }}
       >
         {/* Scrollable content area */}
         <div className="flex-1 overflow-y-auto">
@@ -915,6 +931,7 @@ export default function MobileNavDrawer({
           animation: bounce-gentle 2s ease-in-out infinite;
         }
       `}</style>
-    </>
+    </>,
+    document.body
   );
 }
