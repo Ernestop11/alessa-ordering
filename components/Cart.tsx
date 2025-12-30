@@ -2,8 +2,9 @@
 
 import React, { useEffect, useMemo, useState } from "react";
 import { useSearchParams } from "next/navigation";
+import { Trash2, Pencil, X } from "lucide-react";
 import type { OrderPayload } from "../lib/order-service";
-import { useCart } from "../lib/store/cart";
+import { useCart, CartItem } from "../lib/store/cart";
 import { StripeCheckoutWrapper } from "./StripeCheckout";
 import { useTenantTheme } from "./TenantThemeProvider";
 
@@ -33,6 +34,7 @@ export default function Cart() {
     addToCart,
     removeFromCart,
     updateQuantity,
+    updateItem,
     clearCart,
   } = useCart();
   const searchParams = useSearchParams();
@@ -65,6 +67,11 @@ export default function Cart() {
   const [rewardFreeShipping, setRewardFreeShipping] = useState(false);
   const [restaurantIsOpen, setRestaurantIsOpen] = useState(true);
   const [restaurantClosedMessage, setRestaurantClosedMessage] = useState("");
+
+  // Edit item state
+  const [editingItem, setEditingItem] = useState<CartItem | null>(null);
+  const [editQuantity, setEditQuantity] = useState(1);
+  const [editNote, setEditNote] = useState("");
 
   // Poll restaurant status every 10 seconds
   useEffect(() => {
@@ -613,29 +620,57 @@ export default function Cart() {
                           + {item.addons.map((addon) => addon.name).join(", ")}
                         </p>
                       ) : null}
+                      {item.note && (
+                        <p className="mt-0.5 text-xs text-amber-600 italic truncate">
+                          Note: {item.note}
+                        </p>
+                      )}
                     </div>
-                    <button
-                      onClick={() => removeFromCart(item.id)}
-                      className="flex-shrink-0 rounded-lg border border-gray-200 px-2 py-1 text-xs font-medium text-rose-600 transition hover:border-rose-300 hover:bg-rose-50"
-                    >
-                      ✕
-                    </button>
+                    {/* Edit & Delete buttons */}
+                    <div className="flex items-center gap-1 flex-shrink-0">
+                      <button
+                        onClick={() => {
+                          setEditingItem(item);
+                          setEditQuantity(item.quantity);
+                          setEditNote(item.note || "");
+                        }}
+                        className="flex h-8 w-8 items-center justify-center rounded-lg border border-gray-200 text-gray-500 transition hover:border-amber-400 hover:bg-amber-50 hover:text-amber-600"
+                        aria-label={`Edit ${item.name}`}
+                      >
+                        <Pencil className="h-4 w-4" />
+                      </button>
+                      <button
+                        onClick={() => removeFromCart(item.id)}
+                        className="flex h-8 w-8 items-center justify-center rounded-lg border border-gray-200 text-gray-500 transition hover:border-rose-400 hover:bg-rose-50 hover:text-rose-600"
+                        aria-label={`Remove ${item.name}`}
+                      >
+                        <Trash2 className="h-4 w-4" />
+                      </button>
+                    </div>
                   </div>
                   <div className="mt-auto flex items-center justify-between gap-2">
-                    <div className="flex items-center gap-2">
+                    <div className="flex items-center gap-1">
                       <button
                         onClick={() => updateQuantity(item.id, Math.max(1, item.quantity - 1))}
-                        className="flex h-7 w-7 sm:h-8 sm:w-8 items-center justify-center rounded-lg border-2 border-gray-200 bg-white text-sm sm:text-base font-bold text-gray-700 transition hover:border-gray-300 hover:bg-gray-50 active:scale-95"
+                        className="flex h-8 w-8 items-center justify-center rounded-lg text-sm font-bold text-black transition hover:scale-105 active:scale-95"
+                        style={{
+                          background: 'linear-gradient(135deg, #FBBF24 0%, #F59E0B 100%)',
+                          boxShadow: '0 2px 8px rgba(251, 191, 36, 0.3)',
+                        }}
                         aria-label={`Decrease quantity of ${item.name}`}
                       >
                         −
                       </button>
-                      <span className="w-6 sm:w-8 text-center text-sm sm:text-base font-bold text-gray-900">
+                      <span className="w-8 text-center text-sm sm:text-base font-bold text-gray-900">
                         {item.quantity}
                       </span>
                       <button
                         onClick={() => updateQuantity(item.id, item.quantity + 1)}
-                        className="flex h-7 w-7 sm:h-8 sm:w-8 items-center justify-center rounded-lg border-2 border-gray-200 bg-white text-sm sm:text-base font-bold text-gray-700 transition hover:border-gray-300 hover:bg-gray-50 active:scale-95"
+                        className="flex h-8 w-8 items-center justify-center rounded-lg text-sm font-bold text-black transition hover:scale-105 active:scale-95"
+                        style={{
+                          background: 'linear-gradient(135deg, #FBBF24 0%, #F59E0B 100%)',
+                          boxShadow: '0 2px 8px rgba(251, 191, 36, 0.3)',
+                        }}
                         aria-label={`Increase quantity of ${item.name}`}
                       >
                         +
@@ -649,6 +684,125 @@ export default function Cart() {
               </article>
             ))}
           </section>
+
+          {/* Edit Item Modal */}
+          {editingItem && (
+            <div
+              className="fixed inset-0 z-[10000] flex items-center justify-center bg-black/50 backdrop-blur-sm p-4"
+              onClick={() => setEditingItem(null)}
+            >
+              <div
+                className="w-full max-w-md rounded-2xl bg-white shadow-2xl overflow-hidden"
+                onClick={(e) => e.stopPropagation()}
+              >
+                {/* Header */}
+                <div className="flex items-center justify-between border-b border-gray-200 px-4 py-3 bg-gray-50">
+                  <h3 className="text-lg font-bold text-gray-900">Edit Item</h3>
+                  <button
+                    onClick={() => setEditingItem(null)}
+                    className="flex h-8 w-8 items-center justify-center rounded-full text-gray-500 hover:bg-gray-200"
+                  >
+                    <X className="h-5 w-5" />
+                  </button>
+                </div>
+
+                {/* Content */}
+                <div className="p-4 space-y-4">
+                  {/* Item Preview */}
+                  <div className="flex gap-3 p-3 bg-gray-50 rounded-xl">
+                    {editingItem.image && (
+                      <img
+                        src={editingItem.image}
+                        alt={editingItem.name}
+                        className="h-16 w-16 rounded-lg object-cover"
+                      />
+                    )}
+                    <div className="flex-1 min-w-0">
+                      <p className="font-bold text-gray-900">{editingItem.name}</p>
+                      <p className="text-sm text-amber-600 font-semibold">
+                        {formatCurrency(editingItem.price)} each
+                      </p>
+                    </div>
+                  </div>
+
+                  {/* Quantity */}
+                  <div>
+                    <label className="text-sm font-semibold text-gray-700">Quantity</label>
+                    <div className="mt-2 flex items-center gap-3">
+                      <button
+                        onClick={() => setEditQuantity(Math.max(1, editQuantity - 1))}
+                        className="flex h-10 w-10 items-center justify-center rounded-xl text-lg font-bold text-black transition hover:scale-105 active:scale-95"
+                        style={{
+                          background: 'linear-gradient(135deg, #FBBF24 0%, #F59E0B 100%)',
+                          boxShadow: '0 2px 8px rgba(251, 191, 36, 0.3)',
+                        }}
+                      >
+                        −
+                      </button>
+                      <span className="w-12 text-center text-xl font-bold text-gray-900">
+                        {editQuantity}
+                      </span>
+                      <button
+                        onClick={() => setEditQuantity(editQuantity + 1)}
+                        className="flex h-10 w-10 items-center justify-center rounded-xl text-lg font-bold text-black transition hover:scale-105 active:scale-95"
+                        style={{
+                          background: 'linear-gradient(135deg, #FBBF24 0%, #F59E0B 100%)',
+                          boxShadow: '0 2px 8px rgba(251, 191, 36, 0.3)',
+                        }}
+                      >
+                        +
+                      </button>
+                      <span className="ml-auto text-lg font-bold text-gray-900">
+                        {formatCurrency(editingItem.price * editQuantity)}
+                      </span>
+                    </div>
+                  </div>
+
+                  {/* Special Instructions */}
+                  <div>
+                    <label className="text-sm font-semibold text-gray-700">Special Instructions</label>
+                    <textarea
+                      value={editNote}
+                      onChange={(e) => setEditNote(e.target.value)}
+                      placeholder="Add any special requests..."
+                      className="mt-2 w-full rounded-xl border-2 border-gray-200 px-4 py-3 text-sm transition focus:border-amber-400 focus:outline-none focus:ring-2 focus:ring-amber-200"
+                      rows={3}
+                    />
+                  </div>
+                </div>
+
+                {/* Footer */}
+                <div className="flex gap-3 border-t border-gray-200 p-4 bg-gray-50">
+                  <button
+                    onClick={() => {
+                      removeFromCart(editingItem.id);
+                      setEditingItem(null);
+                    }}
+                    className="flex-1 py-3 rounded-xl border-2 border-rose-200 text-rose-600 font-bold hover:bg-rose-50 transition flex items-center justify-center gap-2"
+                  >
+                    <Trash2 className="h-4 w-4" />
+                    Remove
+                  </button>
+                  <button
+                    onClick={() => {
+                      updateItem(editingItem.id, {
+                        quantity: editQuantity,
+                        note: editNote.trim() || null,
+                      });
+                      setEditingItem(null);
+                    }}
+                    className="flex-1 py-3 rounded-xl text-black font-bold hover:scale-[1.02] transition"
+                    style={{
+                      background: 'linear-gradient(135deg, #FBBF24 0%, #F59E0B 100%)',
+                      boxShadow: '0 4px 12px rgba(251, 191, 36, 0.4)',
+                    }}
+                  >
+                    Save Changes
+                  </button>
+                </div>
+              </div>
+            </div>
+          )}
 
           <section className="space-y-4 sm:space-y-6 rounded-xl sm:rounded-2xl border border-gray-100 bg-gray-50 p-4 sm:p-6">
             <h3 className="text-base sm:text-lg font-bold text-gray-900">Order Details</h3>
