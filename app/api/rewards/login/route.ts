@@ -59,11 +59,13 @@ export async function POST(req: Request) {
       membershipTier: customer.membershipTier,
     });
 
+    const expiresDate = new Date(Date.now() + 90 * 24 * 60 * 60 * 1000);
     response.cookies.set('customer_session', sessionToken, {
       httpOnly: true,
       secure: process.env.NODE_ENV === 'production',
       sameSite: 'lax',
       maxAge: 90 * 24 * 60 * 60,
+      expires: expiresDate,
       path: '/',
     });
 

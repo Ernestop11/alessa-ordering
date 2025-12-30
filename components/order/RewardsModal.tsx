@@ -1,16 +1,31 @@
 "use client";
 
+import { useEffect, useState } from "react";
+import { createPortal } from "react-dom";
+
 interface RewardsModalProps {
   open: boolean;
   onClose: () => void;
 }
 
 export function RewardsModal({ open, onClose }: RewardsModalProps) {
-  if (!open) return null;
+  const [mounted, setMounted] = useState(false);
 
-  return (
-    <div className="fixed inset-0 z-[200] flex items-end justify-center bg-black/80 backdrop-blur-md sm:items-center">
-      <div className="w-full max-w-md rounded-t-3xl border border-[#ff0000]/40 bg-white text-center shadow-2xl sm:rounded-3xl">
+  useEffect(() => {
+    setMounted(true);
+  }, []);
+
+  if (!open || !mounted) return null;
+
+  return createPortal(
+    <div
+      style={{ position: 'fixed', inset: 0, zIndex: 9998, display: 'flex', alignItems: 'flex-end', justifyContent: 'center' }}
+      className="sm:items-center bg-black/80 backdrop-blur-md"
+    >
+      <div
+        style={{ zIndex: 9999 }}
+        className="w-full max-w-md rounded-t-3xl border border-[#ff0000]/40 bg-white text-center shadow-2xl sm:rounded-3xl"
+      >
         <div className="space-y-4 px-6 py-8 text-[#300]">
           <p className="text-xs font-semibold uppercase tracking-[0.4em] text-[#cc0000]">Rewards</p>
           <h3 className="text-2xl font-black text-[#cc0000]">Coming Soon</h3>
@@ -25,7 +40,8 @@ export function RewardsModal({ open, onClose }: RewardsModalProps) {
           </button>
         </div>
       </div>
-    </div>
+    </div>,
+    document.body
   );
 }
 

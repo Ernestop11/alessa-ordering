@@ -5163,15 +5163,28 @@ export default function OrderPageClient({
                 )}
 
                 {!customerData && (
-                  <button 
-                    onClick={() => {
-                      setShowMembershipPanel(false);
-                      setShowJoinModal(true);
-                    }}
-                    className="w-full rounded-2xl bg-gradient-to-r from-amber-400 via-yellow-400 to-amber-400 px-6 py-4 text-lg font-black text-black shadow-2xl shadow-amber-500/40 transition-all hover:scale-105 hover:shadow-amber-500/60"
-                  >
-                    Join Rewards Program
-                  </button>
+                  <div className="space-y-3">
+                    <button
+                      onClick={() => {
+                        setShowMembershipPanel(false);
+                        setJoinModalMode('join');
+                        setShowJoinModal(true);
+                      }}
+                      className="w-full rounded-2xl bg-gradient-to-r from-amber-400 via-yellow-400 to-amber-400 px-6 py-4 text-lg font-black text-black shadow-2xl shadow-amber-500/40 transition-all hover:scale-105 hover:shadow-amber-500/60"
+                    >
+                      Join Rewards Program
+                    </button>
+                    <button
+                      onClick={() => {
+                        setShowMembershipPanel(false);
+                        setJoinModalMode('login');
+                        setShowJoinModal(true);
+                      }}
+                      className="w-full rounded-xl border-2 border-white/20 bg-white/5 px-6 py-3 text-base font-bold text-white/80 transition-all hover:border-amber-400/50 hover:bg-white/10"
+                    >
+                      Already a member? Sign In
+                    </button>
+                  </div>
                 )}
               </div>
             ) : (
@@ -5516,7 +5529,7 @@ export default function OrderPageClient({
         onRewardsClick={() => customerData ? setShowMembershipPanel(true) : setShowJoinModal(true)}
         onAccessibilityClick={() => setAccessibilityOpen((prev) => !prev)}
         onReorderClick={customerData?.orders && customerData.orders.length > 0 ? () => setShowReorderModal(true) : undefined}
-        onLoginClick={() => setShowJoinModal(true)}
+        onLoginClick={() => { setJoinModalMode('join'); setShowJoinModal(true); }}
         onCheckoutClick={() => {
           // Trigger cart launcher
           const cartButton = document.querySelector('[data-cart-launcher]') as HTMLElement;

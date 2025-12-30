@@ -1,6 +1,7 @@
 "use client";
 
 import { useMemo, useState, useEffect } from "react";
+import { createPortal } from "react-dom";
 import { X, ShoppingBag, Sparkles, Clock, Plus, Check } from "lucide-react";
 import { useTenantTheme } from "../TenantThemeProvider";
 
@@ -90,12 +91,18 @@ export default function ReorderModal({
   onReorderAll,
 }: ReorderModalProps) {
   const tenant = useTenantTheme();
+  const [mounted, setMounted] = useState(false);
   const [bundles, setBundles] = useState<UpsellBundle[]>([]);
   const [snacks, setSnacks] = useState<UpsellItem[]>([]);
   const [drinks, setDrinks] = useState<UpsellItem[]>([]);
   const [sweets, setSweets] = useState<UpsellItem[]>([]);
   const [addedItems, setAddedItems] = useState<Set<string>>(new Set());
   const [reorderedOrders, setReorderedOrders] = useState<Set<string>>(new Set());
+
+  // Set mounted on client-side for portal hydration
+  useEffect(() => {
+    setMounted(true);
+  }, []);
 
   // Fetch upsell bundles and items
   useEffect(() => {
@@ -218,13 +225,19 @@ export default function ReorderModal({
     }, 500);
   };
 
-  if (!open) return null;
+  if (!open || !mounted) return null;
 
   const primaryColor = tenant?.primaryColor || "#C41E3A";
 
-  return (
-    <div className="fixed inset-0 z-[60] flex items-end justify-center bg-black/60 backdrop-blur-md sm:items-center">
-      <div className="w-full max-w-4xl rounded-t-3xl bg-gradient-to-br from-[#1a0a0a] via-[#2d0f0f] to-[#1a0a0a] shadow-2xl sm:rounded-3xl max-h-[90vh] overflow-hidden flex flex-col border border-[#C41E3A]/30">
+  return createPortal(
+    <div
+      style={{ position: 'fixed', inset: 0, zIndex: 9998, display: 'flex', alignItems: 'flex-end', justifyContent: 'center' }}
+      className="sm:items-center bg-black/60 backdrop-blur-md"
+    >
+      <div
+        style={{ zIndex: 9999 }}
+        className="w-full max-w-4xl rounded-t-3xl bg-gradient-to-br from-[#1a0a0a] via-[#2d0f0f] to-[#1a0a0a] shadow-2xl sm:rounded-3xl max-h-[90vh] overflow-hidden flex flex-col border border-[#C41E3A]/30"
+      >
         {/* Header */}
         <div className="relative px-6 py-5 border-b border-[#C41E3A]/20 bg-gradient-to-r from-[#C41E3A]/30 via-[#8B0000]/20 to-[#C41E3A]/30">
           <button
@@ -676,6 +689,7 @@ export default function ReorderModal({
           )}
         </div>
       </div>
-    </div>
+    </div>,
+    document.body
   );
 }

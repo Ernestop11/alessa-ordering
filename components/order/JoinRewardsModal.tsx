@@ -1,6 +1,7 @@
 "use client";
 
-import { useState } from "react";
+import { useState, useEffect } from "react";
+import { createPortal } from "react-dom";
 import { X } from "lucide-react";
 
 interface JoinRewardsModalProps {
@@ -13,6 +14,12 @@ interface JoinRewardsModalProps {
 
 export default function JoinRewardsModal({ open, onClose, onSuccess, tenantSlug, initialMode = 'join' }: JoinRewardsModalProps) {
   const [mode, setMode] = useState<'join' | 'login'>(initialMode);
+  const [mounted, setMounted] = useState(false);
+
+  // Set mounted on client-side for portal hydration
+  useEffect(() => {
+    setMounted(true);
+  }, []);
   const [name, setName] = useState("");
   const [email, setEmail] = useState("");
   const [phone, setPhone] = useState("");
@@ -24,7 +31,7 @@ export default function JoinRewardsModal({ open, onClose, onSuccess, tenantSlug,
     setMode(initialMode);
   }
 
-  if (!open) return null;
+  if (!open || !mounted) return null;
 
   const resetForm = () => {
     setName("");
@@ -114,10 +121,19 @@ export default function JoinRewardsModal({ open, onClose, onSuccess, tenantSlug,
     }
   };
 
-  return (
-    <div className="fixed inset-0 z-[400] flex items-center justify-center p-4">
-      <div className="fixed inset-0 bg-black/60 backdrop-blur-sm" onClick={onClose} />
-      <div className="relative w-full max-w-md rounded-3xl bg-gradient-to-br from-amber-50 via-yellow-50 to-amber-100 p-8 shadow-2xl">
+  return createPortal(
+    <div
+      style={{ position: 'fixed', inset: 0, zIndex: 9998, display: 'flex', alignItems: 'center', justifyContent: 'center', padding: '16px' }}
+    >
+      <div
+        style={{ position: 'fixed', inset: 0, zIndex: 9998 }}
+        className="bg-black/60 backdrop-blur-sm"
+        onClick={onClose}
+      />
+      <div
+        style={{ position: 'relative', zIndex: 9999 }}
+        className="w-full max-w-md rounded-3xl bg-gradient-to-br from-amber-50 via-yellow-50 to-amber-100 p-8 shadow-2xl"
+      >
         <button
           onClick={onClose}
           className="absolute right-4 top-4 rounded-full p-2 text-gray-500 hover:bg-white/50"
@@ -270,6 +286,7 @@ export default function JoinRewardsModal({ open, onClose, onSuccess, tenantSlug,
           </form>
         )}
       </div>
-    </div>
+    </div>,
+    document.body
   );
 }
