@@ -163,8 +163,8 @@ export default function GroupOrderModal({
       onClick={onClose}
     >
       <div
-        style={{ zIndex: 9999 }}
-        className="w-full max-w-md rounded-t-3xl sm:rounded-3xl bg-gradient-to-b from-[#1a1a1a] to-[#0d0d0d] border border-white/10 shadow-2xl overflow-hidden"
+        style={{ zIndex: 9999, maxHeight: '90vh' }}
+        className="w-full max-w-md rounded-t-3xl sm:rounded-3xl bg-gradient-to-b from-[#1a1a1a] to-[#0d0d0d] border border-white/10 shadow-2xl overflow-hidden flex flex-col"
         onClick={(e) => e.stopPropagation()}
       >
         {/* Header */}
@@ -192,8 +192,8 @@ export default function GroupOrderModal({
           </div>
         </div>
 
-        {/* Content */}
-        <div className="p-5">
+        {/* Content - Scrollable */}
+        <div className="p-5 overflow-y-auto flex-1">
           {step === 'form' ? (
             <form onSubmit={handleSubmit} className="space-y-4">
               {/* Group Name */}
