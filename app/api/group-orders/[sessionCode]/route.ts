@@ -74,6 +74,9 @@ export async function GET(request: NextRequest, { params }: RouteParams) {
     const timeRemainingMs = Math.max(0, groupOrder.expiresAt.getTime() - now.getTime());
     const timeRemainingMinutes = Math.floor(timeRemainingMs / 60000);
 
+    // Check if sponsor has paid (for sponsored orders)
+    const awaitingPayment = groupOrder.isSponsoredOrder && !groupOrder.sponsorPaidAt;
+
     return NextResponse.json({
       id: groupOrder.id,
       sessionCode: groupOrder.sessionCode,
@@ -90,6 +93,11 @@ export async function GET(request: NextRequest, { params }: RouteParams) {
       orderCount: groupOrder.orderCount,
       totalAmount: groupOrder.totalAmount,
       timeRemainingMinutes,
+      // "I'm Buying" feature
+      isSponsoredOrder: groupOrder.isSponsoredOrder,
+      sponsorName: groupOrder.sponsorName,
+      sponsorPaidAt: groupOrder.sponsorPaidAt,
+      awaitingPayment,
       orders: groupOrder.orders.map((order) => ({
         id: order.id,
         participantName: order.participantName,

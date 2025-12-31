@@ -65,6 +65,9 @@ export default async function GroupOrderPage({ params }: PageProps) {
       orderCount: true,
       totalAmount: true,
       createdAt: true,
+      // "I'm Buying" feature
+      isSponsoredOrder: true,
+      sponsorName: true,
     },
   });
 
@@ -104,6 +107,9 @@ export default async function GroupOrderPage({ params }: PageProps) {
         isExpired,
         isClosed,
         timeRemainingMinutes,
+        // "I'm Buying" feature
+        isSponsoredOrder: groupOrder.isSponsoredOrder,
+        sponsorName: groupOrder.sponsorName,
       }}
     />
   );

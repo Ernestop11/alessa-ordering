@@ -588,6 +588,12 @@ model GroupOrder {
   orderCount            Int         @default(0)
   totalAmount           Float       @default(0)
 
+  // "I'm Buying" feature - sponsor pays for everyone
+  isSponsoredOrder      Boolean     @default(false)  // Organizer pays for all
+  sponsorName           String?                       // "Rob's buying!" display name
+  sponsorCustomerId     String?                       // Link to paying customer
+  sponsorPaidAt         DateTime?                     // When sponsor completed payment
+
   createdAt             DateTime    @default(now())
   updatedAt             DateTime    @updatedAt
 

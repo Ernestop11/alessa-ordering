@@ -4,7 +4,7 @@ import { useState, useEffect, useMemo } from 'react';
 import { useRouter, useSearchParams } from 'next/navigation';
 import { useCart } from '@/lib/store/cart';
 import { useTenantTheme } from '@/components/TenantThemeProvider';
-import { ArrowLeft, CreditCard, Trash2, Check, Users } from 'lucide-react';
+import { ArrowLeft, CreditCard, Trash2, Check, Users, PartyPopper } from 'lucide-react';
 import { loadStripe } from '@stripe/stripe-js';
 import {
   Elements,
@@ -539,7 +539,7 @@ function PaymentForm({
 }
 
 export default function CheckoutPage() {
-  const { items, total, clearCart, groupSessionCode, participantName, clearGroupOrder } = useCart();
+  const { items, total, clearCart, groupSessionCode, participantName, clearGroupOrder, isSponsoredOrder, sponsorName } = useCart();
   const tenant = useTenantTheme();
   const router = useRouter();
   const searchParams = useSearchParams();
@@ -557,6 +557,7 @@ export default function CheckoutPage() {
   const [error, setError] = useState<string | null>(null);
   const [savedCards, setSavedCards] = useState<SavedPaymentMethod[]>([]);
   const [isLoggedIn, setIsLoggedIn] = useState(false);
+  const [sponsoredOrderLoading, setSponsoredOrderLoading] = useState(false);
 
   const stripePromise = useMemo(() => {
     if (stripeAccount) {
@@ -600,6 +601,64 @@ export default function CheckoutPage() {
       setSavedCards(data.paymentMethods || []);
     } catch (err) {
       console.error('Failed to refresh cards:', err);
+    }
+  };
+
+  // Handle sponsored order submission (no payment needed)
+  const handleSponsoredOrderSubmit = async () => {
+    // Validate required fields
+    if (!customerInfo.name || !customerInfo.email || !customerInfo.phone) {
+      setError('Please fill in all required fields');
+      return;
+    }
+    if (orderType === 'delivery' && !customerInfo.address) {
+      setError('Please enter a delivery address');
+      return;
+    }
+
+    setSponsoredOrderLoading(true);
+    setError(null);
+
+    try {
+      // Create order without payment (sponsored order)
+      const response = await fetch('/api/group-orders/add-participant-order', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({
+          groupSessionCode,
+          participantName,
+          customerName: customerInfo.name,
+          customerEmail: customerInfo.email,
+          customerPhone: customerInfo.phone,
+          fulfillmentMethod: orderType,
+          deliveryAddress: orderType === 'delivery' ? customerInfo.address : undefined,
+          items: items.map((item) => ({
+            menuItemId: extractMenuItemId(item.id),
+            quantity: item.quantity,
+            price: item.price,
+            name: item.name,
+            modifiers: item.modifiers,
+            addons: item.addons,
+            note: item.note,
+          })),
+          subtotalAmount: total(),
+          totalAmount: total(),
+        }),
+      });
+
+      if (!response.ok) {
+        const errorData = await response.json();
+        throw new Error(errorData.error || 'Failed to add order to group');
+      }
+
+      // Success - clear cart and redirect
+      clearCart();
+      clearGroupOrder();
+
+      router.push(`/order/success?tenant=${tenantSlug}&group=${groupSessionCode}&sponsored=true`);
+    } catch (err) {
+      setError(err instanceof Error ? err.message : 'Failed to add order');
+      setSponsoredOrderLoading(false);
     }
   };
 
@@ -663,16 +722,33 @@ export default function CheckoutPage() {
         </div>
       </header>
 
-      {/* Group Order Banner */}
+      {/* Group Order Banner - Different for sponsored orders */}
       {groupSessionCode && participantName && (
-        <div className="bg-amber-500 px-4 py-2">
+        <div className={isSponsoredOrder ? "bg-gradient-to-r from-green-500 to-emerald-500 px-4 py-3" : "bg-amber-500 px-4 py-2"}>
           <div className="max-w-lg mx-auto flex items-center gap-3">
-            <Users className="w-5 h-5 text-black/70" />
+            {isSponsoredOrder ? (
+              <PartyPopper className="w-6 h-6 text-white" />
+            ) : (
+              <Users className="w-5 h-5 text-black/70" />
+            )}
             <div className="flex-1">
-              <p className="text-sm font-medium text-black/90">
-                Group Order for <span className="font-bold">{participantName}</span>
-              </p>
-              <p className="text-xs text-black/60">Your order will be grouped with others</p>
+              {isSponsoredOrder ? (
+                <>
+                  <p className="text-sm font-bold text-white">
+                    {sponsorName}&apos;s buying!
+                  </p>
+                  <p className="text-xs text-white/80">
+                    Just add your items - no payment needed
+                  </p>
+                </>
+              ) : (
+                <>
+                  <p className="text-sm font-medium text-black/90">
+                    Group Order for <span className="font-bold">{participantName}</span>
+                  </p>
+                  <p className="text-xs text-black/60">Your order will be grouped with others</p>
+                </>
+              )}
             </div>
           </div>
         </div>
@@ -771,34 +847,67 @@ export default function CheckoutPage() {
           </div>
         )}
 
-        {/* Payment Section */}
-        <section className="rounded-2xl border border-white/10 bg-white/5 p-4">
-          <h2 className="font-semibold mb-4">Payment</h2>
-          {stripeReady ? (
-            <Elements stripe={stripePromise}>
-              <PaymentForm
-                totalAmount={total()}
-                tenantName={tenant.name || 'Las Reinas'}
-                customerInfo={customerInfo}
-                orderType={orderType}
-                items={items.map((i) => ({ id: i.id, quantity: i.quantity, price: i.price }))}
-                onSuccess={handlePaymentSuccess}
-                onError={(msg) => setError(msg)}
-                primaryColor={tenant.primaryColor || '#DC2626'}
-                savedCards={savedCards}
-                onRefreshCards={refreshCards}
-                isLoggedIn={isLoggedIn}
-                groupSessionCode={groupSessionCode}
-                participantName={participantName}
-              />
-            </Elements>
-          ) : (
-            <div className="flex items-center justify-center py-8">
-              <div className="h-6 w-6 animate-spin rounded-full border-2 border-white/20 border-t-white"></div>
-              <span className="ml-3 text-white/60">Loading payment...</span>
+        {/* Payment Section - Skip for sponsored orders */}
+        {isSponsoredOrder ? (
+          <section className="rounded-2xl border border-green-500/30 bg-green-500/10 p-4">
+            <div className="text-center mb-4">
+              <PartyPopper className="w-10 h-10 text-green-400 mx-auto mb-2" />
+              <h2 className="font-semibold text-white">No Payment Needed!</h2>
+              <p className="text-sm text-white/60 mt-1">
+                {sponsorName} will pay for your order
+              </p>
             </div>
-          )}
-        </section>
+            <button
+              onClick={handleSponsoredOrderSubmit}
+              disabled={sponsoredOrderLoading}
+              className="w-full rounded-xl py-4 text-base font-bold text-white transition-all active:scale-[0.98] disabled:opacity-50"
+              style={{
+                background: 'linear-gradient(135deg, #22c55e 0%, #16a34a 100%)',
+                boxShadow: '0 4px 12px rgba(34, 197, 94, 0.4)',
+              }}
+            >
+              {sponsoredOrderLoading ? (
+                <span className="flex items-center justify-center gap-2">
+                  <div className="h-5 w-5 animate-spin rounded-full border-2 border-white/30 border-t-white"></div>
+                  Adding to Group...
+                </span>
+              ) : (
+                <span className="flex items-center justify-center gap-2">
+                  <PartyPopper className="w-5 h-5" />
+                  Add My Order to Group
+                </span>
+              )}
+            </button>
+          </section>
+        ) : (
+          <section className="rounded-2xl border border-white/10 bg-white/5 p-4">
+            <h2 className="font-semibold mb-4">Payment</h2>
+            {stripeReady ? (
+              <Elements stripe={stripePromise}>
+                <PaymentForm
+                  totalAmount={total()}
+                  tenantName={tenant.name || 'Las Reinas'}
+                  customerInfo={customerInfo}
+                  orderType={orderType}
+                  items={items.map((i) => ({ id: i.id, quantity: i.quantity, price: i.price }))}
+                  onSuccess={handlePaymentSuccess}
+                  onError={(msg) => setError(msg)}
+                  primaryColor={tenant.primaryColor || '#DC2626'}
+                  savedCards={savedCards}
+                  onRefreshCards={refreshCards}
+                  isLoggedIn={isLoggedIn}
+                  groupSessionCode={groupSessionCode}
+                  participantName={participantName}
+                />
+              </Elements>
+            ) : (
+              <div className="flex items-center justify-center py-8">
+                <div className="h-6 w-6 animate-spin rounded-full border-2 border-white/20 border-t-white"></div>
+                <span className="ml-3 text-white/60">Loading payment...</span>
+              </div>
+            )}
+          </section>
+        )}
       </main>
     </div>
   );

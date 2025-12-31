@@ -26,6 +26,9 @@ export async function POST(request: NextRequest) {
       deliveryAddress,
       scheduledPickupTime,
       expiresInHours = 2,
+      // "I'm Buying" feature
+      isSponsoredOrder = false,
+      sponsorName,
     } = body;
 
     // Validate required fields
@@ -73,6 +76,9 @@ export async function POST(request: NextRequest) {
         scheduledPickupTime: scheduledPickupTime ? new Date(scheduledPickupTime) : null,
         expiresAt,
         status: 'open',
+        // "I'm Buying" feature
+        isSponsoredOrder: Boolean(isSponsoredOrder),
+        sponsorName: isSponsoredOrder ? (sponsorName || organizerName) : null,
       },
     });
 
@@ -90,6 +96,9 @@ export async function POST(request: NextRequest) {
       expiresAt: groupOrder.expiresAt,
       shareableLink,
       status: groupOrder.status,
+      // "I'm Buying" feature
+      isSponsoredOrder: groupOrder.isSponsoredOrder,
+      sponsorName: groupOrder.sponsorName,
     });
   } catch (error) {
     console.error('[Group Orders] Create error:', error);

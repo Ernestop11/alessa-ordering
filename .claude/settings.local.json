@@ -107,7 +107,8 @@
       "Bash(/tmp/ssh-lasreinas.exp)",
       "Bash(/tmp/scp-lasreinas.exp)",
       "Bash(/tmp/scp-agent.exp)",
-      "Bash(/tmp/ssh-install.exp:*)"
+      "Bash(/tmp/ssh-install.exp:*)",
+      "Bash(timeout 60 npx tsc:*)"
     ],
     "deny": [],
     "ask": []

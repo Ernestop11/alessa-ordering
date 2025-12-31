@@ -938,7 +938,7 @@ export default function Cart() {
             <h3 className="text-base sm:text-lg font-bold text-gray-900">Order Details</h3>
 
             {/* Logged-in member banner */}
-            {loggedInCustomer && !sendAsGift && (
+            {loggedInCustomer && (
               <div className="flex items-center gap-3 rounded-xl border-2 border-amber-300 bg-gradient-to-r from-amber-50 to-yellow-50 p-3 sm:p-4">
                 <div className="flex h-10 w-10 items-center justify-center rounded-full bg-gradient-to-br from-amber-400 to-yellow-400 text-lg">
                   👤
@@ -951,101 +951,61 @@ export default function Cart() {
                     {loggedInCustomer.loyaltyPoints || 0} points • Order as yourself
                   </p>
                 </div>
-                <button
-                  type="button"
-                  onClick={() => {
-                    setSendAsGift(true);
-                    setCustomerInfoLocked(false);
-                    setCustomerName('');
-                    setCustomerEmail('');
-                    setCustomerPhone('');
-                  }}
-                  className="flex-shrink-0 rounded-lg border border-gray-300 bg-white px-3 py-1.5 text-xs font-semibold text-gray-700 hover:bg-gray-50 transition"
-                >
-                  🎁 Send as Gift
-                </button>
-              </div>
-            )}
-
-            {/* Gift recipient mode banner */}
-            {loggedInCustomer && sendAsGift && (
-              <div className="rounded-xl border-2 border-pink-300 bg-gradient-to-r from-pink-50 to-rose-50 p-3 sm:p-4">
-                <div className="flex items-center justify-between mb-2">
-                  <div className="flex items-center gap-2">
-                    <span className="text-lg">🎁</span>
-                    <p className="text-sm font-bold text-gray-900">Sending as a Gift</p>
-                  </div>
-                  <button
-                    type="button"
-                    onClick={() => {
-                      setSendAsGift(false);
-                      // Restore logged-in customer info
-                      if (loggedInCustomer.name) setCustomerName(loggedInCustomer.name);
-                      if (loggedInCustomer.email) setCustomerEmail(loggedInCustomer.email);
-                      if (loggedInCustomer.phone) setCustomerPhone(loggedInCustomer.phone);
-                      setCustomerInfoLocked(true);
-                    }}
-                    className="text-xs font-semibold text-pink-700 hover:text-pink-900 underline"
-                  >
-                    Cancel gift
-                  </button>
-                </div>
-                <p className="text-xs text-gray-600">Enter the recipient&apos;s details below. They&apos;ll receive pickup/delivery notifications.</p>
               </div>
             )}
 
               <div className="grid gap-3 sm:gap-4 sm:grid-cols-2">
                 <label className="text-xs sm:text-sm font-semibold text-gray-700">
-                  {sendAsGift ? 'Recipient Name' : 'Name'}
+                  Name
                   <input
                     value={customerName}
                     onChange={(event) => setCustomerName(event.target.value)}
-                    disabled={customerInfoLocked && !sendAsGift}
+                    disabled={customerInfoLocked}
                     className={`mt-1.5 sm:mt-2 w-full rounded-lg sm:rounded-xl border-2 px-3 sm:px-4 py-2.5 sm:py-3 text-sm font-medium text-gray-900 transition focus:border-blue-500 focus:outline-none focus:ring-2 focus:ring-blue-200 ${
-                      customerInfoLocked && !sendAsGift
+                      customerInfoLocked
                         ? 'border-gray-100 bg-gray-100 cursor-not-allowed'
                         : 'border-gray-200 bg-white'
                     }`}
-                    placeholder={sendAsGift ? "Gift recipient's name" : "Maria Perez"}
+                    placeholder="Maria Perez"
                   />
                 </label>
                 <label className="text-xs sm:text-sm font-semibold text-gray-700">
-                  {sendAsGift ? 'Recipient Email' : 'Email'}<span className="ml-1 text-rose-500">*</span>
+                  Email<span className="ml-1 text-rose-500">*</span>
                   <input
                     value={customerEmail}
                     onChange={(event) => setCustomerEmail(event.target.value)}
-                    disabled={customerInfoLocked && !sendAsGift}
+                    disabled={customerInfoLocked}
                     type="email"
                     className={`mt-1.5 sm:mt-2 w-full rounded-lg sm:rounded-xl border-2 px-3 sm:px-4 py-2.5 sm:py-3 text-sm font-medium text-gray-900 transition focus:border-blue-500 focus:outline-none focus:ring-2 focus:ring-blue-200 ${
-                      customerInfoLocked && !sendAsGift
+                      customerInfoLocked
                         ? 'border-gray-100 bg-gray-100 cursor-not-allowed'
                         : 'border-gray-200 bg-white'
                     }`}
-                    placeholder={sendAsGift ? "Gift recipient's email" : "maria@example.com"}
+                    placeholder="maria@example.com"
                   />
                 </label>
                 <label className="text-xs sm:text-sm font-semibold text-gray-700">
-                  {sendAsGift ? 'Recipient Phone' : 'Phone'}
+                  Phone
                   <input
                     value={customerPhone}
                     onChange={(event) => setCustomerPhone(event.target.value)}
-                    disabled={customerInfoLocked && !sendAsGift}
+                    disabled={customerInfoLocked}
                     type="tel"
                     className={`mt-1.5 sm:mt-2 w-full rounded-lg sm:rounded-xl border-2 px-3 sm:px-4 py-2.5 sm:py-3 text-sm font-medium text-gray-900 transition focus:border-blue-500 focus:outline-none focus:ring-2 focus:ring-blue-200 ${
-                      customerInfoLocked && !sendAsGift
+                      customerInfoLocked
                         ? 'border-gray-100 bg-gray-100 cursor-not-allowed'
                         : 'border-gray-200 bg-white'
                     }`}
-                    placeholder={sendAsGift ? "Gift recipient's phone" : "(123) 456-7890"}
+                    placeholder="(123) 456-7890"
                   />
                 </label>
                 <label className="text-xs sm:text-sm font-semibold text-gray-700">
-                  {sendAsGift ? 'Gift message' : 'Order notes'}
+                  Order notes
                   <input
                     value={orderNotes}
                     onChange={(event) => setOrderNotes(event.target.value)}
                     className="mt-1.5 sm:mt-2 w-full rounded-lg sm:rounded-xl border-2 border-gray-200 bg-white px-3 sm:px-4 py-2.5 sm:py-3 text-sm font-medium text-gray-900 transition focus:border-blue-500 focus:outline-none focus:ring-2 focus:ring-blue-200"
-                    placeholder={sendAsGift ? "Happy Birthday! Enjoy your meal 🎉" : "Add utensils, etc."}
+                    placeholder="Add utensils, etc."
                   />
                 </label>
               </div>
@@ -1179,8 +1139,8 @@ export default function Cart() {
                 )}
               </div>
 
-              {/* Membership Toggle */}
-              {membershipProgram && (
+              {/* Membership Toggle - Only for guests */}
+              {membershipProgram && !loggedInCustomer && (
                 <div
                   className="rounded-xl border-2 border-dashed p-4"
                   style={{
@@ -1208,6 +1168,17 @@ export default function Cart() {
                       </p>
                     </div>
                   </label>
+                </div>
+              )}
+
+              {/* Points preview for logged-in members */}
+              {membershipProgram && loggedInCustomer && estimatedPoints && estimatedPoints > 0 && (
+                <div className="rounded-xl border-2 border-amber-200 bg-amber-50 p-4 flex items-center gap-3">
+                  <span className="text-2xl">⭐</span>
+                  <div>
+                    <p className="font-semibold text-gray-900">You'll earn {estimatedPoints} points</p>
+                    <p className="text-xs text-gray-600">Current balance: {loggedInCustomer.loyaltyPoints || 0} points</p>
+                  </div>
                 </div>
               )}
 

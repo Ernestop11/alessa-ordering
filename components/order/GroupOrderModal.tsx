@@ -2,7 +2,7 @@
 
 import { useState, useEffect } from "react";
 import { createPortal } from "react-dom";
-import { X, Users, Copy, Check, Share2, Clock, MapPin, Calendar, Eye } from "lucide-react";
+import { X, Users, Copy, Check, Share2, Clock, MapPin, Calendar, Eye, CreditCard } from "lucide-react";
 
 interface GroupOrderModalProps {
   open: boolean;
@@ -33,12 +33,17 @@ export default function GroupOrderModal({
   const [organizerPhone, setOrganizerPhone] = useState("");
   const [fulfillmentMethod, setFulfillmentMethod] = useState<'pickup' | 'delivery'>('pickup');
   const [expiresInHours, setExpiresInHours] = useState(2);
+  // "I'm Buying" feature
+  const [isBuying, setIsBuying] = useState(false);
+  const [sponsorDisplayName, setSponsorDisplayName] = useState("");
 
   // Success state
   const [groupOrderData, setGroupOrderData] = useState<{
     sessionCode: string;
     shareableLink: string;
     expiresAt: string;
+    isSponsoredOrder?: boolean;
+    sponsorName?: string;
   } | null>(null);
 
   useEffect(() => {
@@ -77,6 +82,9 @@ export default function GroupOrderModal({
           organizerPhone: organizerPhone.trim() || null,
           fulfillmentMethod,
           expiresInHours,
+          // "I'm Buying" feature
+          isSponsoredOrder: isBuying,
+          sponsorName: isBuying ? (sponsorDisplayName.trim() || organizerName.trim()) : null,
         }),
       });
 
@@ -90,6 +98,8 @@ export default function GroupOrderModal({
         sessionCode: data.sessionCode,
         shareableLink: data.shareableLink,
         expiresAt: data.expiresAt,
+        isSponsoredOrder: data.isSponsoredOrder,
+        sponsorName: data.sponsorName,
       });
       setStep('success');
     } catch (err) {
@@ -286,6 +296,46 @@ export default function GroupOrderModal({
                 </div>
               </div>
 
+              {/* I'm Buying Toggle */}
+              <div className={`rounded-xl border-2 p-4 transition-all ${
+                isBuying
+                  ? 'border-green-500/50 bg-green-500/10'
+                  : 'border-dashed border-white/20 bg-white/5'
+              }`}>
+                <label className="flex items-start gap-3 cursor-pointer">
+                  <input
+                    type="checkbox"
+                    checked={isBuying}
+                    onChange={(e) => setIsBuying(e.target.checked)}
+                    className="mt-1 h-5 w-5 rounded border-white/30 bg-white/10 text-green-500 focus:ring-green-500/30"
+                  />
+                  <div className="flex-1">
+                    <div className="flex items-center gap-2">
+                      <CreditCard className="w-4 h-4 text-green-400" />
+                      <span className="font-semibold text-white">I&apos;m buying for everyone</span>
+                    </div>
+                    <p className="text-xs text-white/60 mt-1">
+                      You&apos;ll pay for the entire group order. Others just add items.
+                    </p>
+                  </div>
+                </label>
+
+                {isBuying && (
+                  <div className="mt-3 pl-8">
+                    <input
+                      type="text"
+                      value={sponsorDisplayName}
+                      onChange={(e) => setSponsorDisplayName(e.target.value)}
+                      placeholder={organizerName.trim() || "Your name"}
+                      className="w-full px-4 py-2 rounded-xl bg-white/10 border border-white/20 text-white placeholder-white/40 focus:border-green-500/50 focus:outline-none focus:ring-1 focus:ring-green-500/30 text-sm"
+                    />
+                    <p className="text-xs text-white/40 mt-1.5">
+                      Shown as &ldquo;{sponsorDisplayName.trim() || organizerName.trim() || 'Boss'}&apos;s buying!&rdquo; to participants
+                    </p>
+                  </div>
+                )}
+              </div>
+
               {/* Error */}
               {error && (
                 <div className="p-3 rounded-xl bg-red-500/10 border border-red-500/20 text-red-400 text-sm">
@@ -396,10 +446,21 @@ export default function GroupOrderModal({
                 )}
               </div>
 
-              {/* Tip */}
-              <p className="text-center text-xs text-white/40">
-                Everyone pays for their own order. All orders are grouped for pickup/delivery.
-              </p>
+              {/* Tip - different for sponsored orders */}
+              {groupOrderData?.isSponsoredOrder ? (
+                <div className="rounded-xl bg-green-500/10 border border-green-500/20 p-3 text-center">
+                  <p className="text-sm text-green-400 font-medium">
+                    {groupOrderData.sponsorName}&apos;s buying!
+                  </p>
+                  <p className="text-xs text-white/50 mt-1">
+                    Participants add items - you&apos;ll pay for everyone when ready.
+                  </p>
+                </div>
+              ) : (
+                <p className="text-center text-xs text-white/40">
+                  Everyone pays for their own order. All orders are grouped for pickup/delivery.
+                </p>
+              )}
             </div>
           )}
         </div>

@@ -280,3 +280,18 @@ export async function getTenantId(slug?: string, options?: TenantResolutionOptio
   const tenant = await requireTenant(slug, options);
   return tenant.id;
 }
+
+/**
+ * Get tenant from a NextRequest object (for use in API routes)
+ * Returns null if tenant cannot be resolved (instead of throwing)
+ */
+export async function getTenantByRequest(request: NextRequest) {
+  try {
+    const host = request.headers.get('host');
+    const tenant = await resolveTenant({ request, host });
+    return tenant;
+  } catch {
+    // Return null instead of throwing for API route compatibility
+    return null;
+  }
+}

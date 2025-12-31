@@ -33,6 +33,9 @@ interface CartStore {
   // Group order context
   groupSessionCode: string | null;
   participantName: string | null;
+  // "I'm Buying" feature - sponsor info
+  isSponsoredOrder: boolean;
+  sponsorName: string | null;
   setHasHydrated: (state: boolean) => void;
   addToCart: (item: CartItem) => void;
   removeFromCart: (itemId: string) => void;
@@ -41,7 +44,7 @@ interface CartStore {
   clearCart: () => void;
   total: () => number;
   // Group order methods
-  setGroupOrder: (sessionCode: string, participantName: string) => void;
+  setGroupOrder: (sessionCode: string, participantName: string, isSponsoredOrder?: boolean, sponsorName?: string | null) => void;
   clearGroupOrder: () => void;
   isGroupOrder: () => boolean;
 }
@@ -53,17 +56,20 @@ export const useCart = create<CartStore>()(
       _hasHydrated: false,
       groupSessionCode: null,
       participantName: null,
+      // "I'm Buying" feature
+      isSponsoredOrder: false,
+      sponsorName: null,
 
       setHasHydrated: (state) => {
         set({ _hasHydrated: state });
       },
 
-      setGroupOrder: (sessionCode, participantName) => {
-        set({ groupSessionCode: sessionCode, participantName });
+      setGroupOrder: (sessionCode, participantName, isSponsoredOrder = false, sponsorName = null) => {
+        set({ groupSessionCode: sessionCode, participantName, isSponsoredOrder, sponsorName });
       },
 
       clearGroupOrder: () => {
-        set({ groupSessionCode: null, participantName: null });
+        set({ groupSessionCode: null, participantName: null, isSponsoredOrder: false, sponsorName: null });
       },
 
       isGroupOrder: () => {
@@ -152,6 +158,9 @@ export const useCart = create<CartStore>()(
         items: state.items,
         groupSessionCode: state.groupSessionCode,
         participantName: state.participantName,
+        // "I'm Buying" feature
+        isSponsoredOrder: state.isSponsoredOrder,
+        sponsorName: state.sponsorName,
       }),
       onRehydrateStorage: () => (state) => {
         state?.setHasHydrated(true);

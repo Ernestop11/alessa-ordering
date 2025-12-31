@@ -15,6 +15,8 @@ import {
   XCircle,
   ChevronDown,
   ChevronUp,
+  CreditCard,
+  PartyPopper,
 } from "lucide-react";
 
 interface GroupOrderSummaryProps {
@@ -59,6 +61,11 @@ interface GroupOrderData {
   timeRemainingMinutes: number;
   orders: ParticipantOrder[];
   createdAt: string;
+  // "I'm Buying" feature
+  isSponsoredOrder?: boolean;
+  sponsorName?: string | null;
+  sponsorPaidAt?: string | null;
+  awaitingPayment?: boolean;
 }
 
 export default function GroupOrderSummary({
@@ -73,6 +80,7 @@ export default function GroupOrderSummary({
   const [data, setData] = useState<GroupOrderData | null>(null);
   const [expandedOrders, setExpandedOrders] = useState<Set<string>>(new Set());
   const [actionLoading, setActionLoading] = useState<string | null>(null);
+  const [sponsorPaymentLoading, setSponsorPaymentLoading] = useState(false);
 
   useEffect(() => {
     setMounted(true);
@@ -227,6 +235,21 @@ export default function GroupOrderSummary({
     }
   };
 
+  // Handle sponsor payment (Pay for Everyone)
+  const handleSponsorPayment = async () => {
+    if (!data || data.orderCount === 0) return;
+
+    setSponsorPaymentLoading(true);
+
+    try {
+      // Redirect to sponsor checkout page
+      window.location.href = `/checkout/sponsor?session=${sessionCode}`;
+    } catch (err) {
+      setError(err instanceof Error ? err.message : "Failed to start payment");
+      setSponsorPaymentLoading(false);
+    }
+  };
+
   const formatTime = (dateString: string) => {
     const date = new Date(dateString);
     return date.toLocaleTimeString([], { hour: "2-digit", minute: "2-digit" });
@@ -375,6 +398,43 @@ export default function GroupOrderSummary({
                     </span>
                   </div>
                 </div>
+
+                {/* Sponsor Payment - "I'm Buying" Feature */}
+                {data.isSponsoredOrder && data.awaitingPayment && data.orderCount > 0 && (
+                  <div className="pt-4 border-t border-white/10 mt-3">
+                    <button
+                      onClick={handleSponsorPayment}
+                      disabled={sponsorPaymentLoading}
+                      className="w-full flex items-center justify-center gap-3 py-4 rounded-xl font-bold text-white transition-all disabled:opacity-50"
+                      style={{
+                        background: "linear-gradient(135deg, #22c55e 0%, #16a34a 100%)",
+                        boxShadow: "0 4px 12px rgba(34, 197, 94, 0.4)",
+                      }}
+                    >
+                      {sponsorPaymentLoading ? (
+                        <div className="w-5 h-5 border-2 border-white/30 border-t-white rounded-full animate-spin" />
+                      ) : (
+                        <>
+                          <CreditCard className="w-5 h-5" />
+                          Pay for Everyone (${data.totalAmount.toFixed(2)})
+                        </>
+                      )}
+                    </button>
+                    <p className="text-center text-xs text-white/40 mt-2">
+                      {data.orderCount} {data.orderCount === 1 ? "order" : "orders"} ready for payment
+                    </p>
+                  </div>
+                )}
+
+                {/* Sponsor Already Paid */}
+                {data.isSponsoredOrder && data.sponsorPaidAt && (
+                  <div className="pt-4 border-t border-white/10 mt-3">
+                    <div className="flex items-center justify-center gap-2 py-3 rounded-xl bg-green-500/20 border border-green-500/30">
+                      <CheckCircle className="w-5 h-5 text-green-400" />
+                      <span className="text-green-400 font-medium">Paid by {data.sponsorName}</span>
+                    </div>
+                  </div>
+                )}
               </div>
 
               {/* Action Buttons */}

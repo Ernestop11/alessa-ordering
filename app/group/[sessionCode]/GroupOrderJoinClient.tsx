@@ -2,7 +2,7 @@
 
 import { useState, useEffect } from "react";
 import { useRouter } from "next/navigation";
-import { Users, Clock, MapPin, Calendar, AlertCircle, ArrowRight } from "lucide-react";
+import { Users, Clock, MapPin, Calendar, AlertCircle, ArrowRight, PartyPopper } from "lucide-react";
 import { useCart } from "@/lib/store/cart";
 
 interface GroupOrderJoinClientProps {
@@ -27,6 +27,9 @@ interface GroupOrderJoinClientProps {
     isExpired: boolean;
     isClosed: boolean;
     timeRemainingMinutes: number;
+    // "I'm Buying" feature
+    isSponsoredOrder?: boolean;
+    sponsorName?: string | null;
   };
 }
 
@@ -64,8 +67,13 @@ export default function GroupOrderJoinClient({
       return;
     }
 
-    // Store group order context in cart
-    setGroupOrder(groupOrder.sessionCode, participantName.trim());
+    // Store group order context in cart (including sponsor info for "I'm Buying" feature)
+    setGroupOrder(
+      groupOrder.sessionCode,
+      participantName.trim(),
+      groupOrder.isSponsoredOrder || false,
+      groupOrder.sponsorName || null
+    );
 
     // Redirect to order page
     router.push("/order");
@@ -193,6 +201,19 @@ export default function GroupOrderJoinClient({
           </div>
         </div>
 
+        {/* Sponsor Banner - "I'm Buying" Feature */}
+        {groupOrder.isSponsoredOrder && groupOrder.sponsorName && (
+          <div className="rounded-2xl bg-gradient-to-r from-green-500/20 to-emerald-500/20 border border-green-500/30 p-5 mb-6 text-center">
+            <PartyPopper className="w-8 h-8 text-green-400 mx-auto mb-3" />
+            <p className="text-xl font-bold text-white">
+              {groupOrder.sponsorName}&apos;s buying!
+            </p>
+            <p className="text-sm text-white/70 mt-1">
+              Just add your items - no payment needed from you
+            </p>
+          </div>
+        )}
+
         {/* Join Form */}
         <div className="bg-white/5 rounded-2xl border border-white/10 p-6">
           <h2 className="text-lg font-bold text-white mb-4">Join this group order</h2>
@@ -244,7 +265,9 @@ export default function GroupOrderJoinClient({
 
         {/* Footer Note */}
         <p className="text-center text-xs text-white/40 mt-6 px-4">
-          You&apos;ll pay for your own order. All orders will be grouped together for {groupOrder.fulfillmentMethod}.
+          {groupOrder.isSponsoredOrder
+            ? `${groupOrder.sponsorName || 'The organizer'} will pay for everyone. All orders will be grouped together for ${groupOrder.fulfillmentMethod}.`
+            : `You'll pay for your own order. All orders will be grouped together for ${groupOrder.fulfillmentMethod}.`}
         </p>
       </div>
     </div>
