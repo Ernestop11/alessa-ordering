@@ -2,13 +2,14 @@
 
 import { useState, useEffect } from "react";
 import { createPortal } from "react-dom";
-import { X, Users, Copy, Check, Share2, Clock, MapPin, Calendar } from "lucide-react";
+import { X, Users, Copy, Check, Share2, Clock, MapPin, Calendar, Eye } from "lucide-react";
 
 interface GroupOrderModalProps {
   open: boolean;
   onClose: () => void;
   tenantSlug: string;
   customDomain?: string | null;
+  onViewOrders?: (sessionCode: string) => void;
 }
 
 type Step = 'form' | 'success';
@@ -18,6 +19,7 @@ export default function GroupOrderModal({
   onClose,
   tenantSlug,
   customDomain,
+  onViewOrders,
 }: GroupOrderModalProps) {
   const [mounted, setMounted] = useState(false);
   const [step, setStep] = useState<Step>('form');
@@ -364,20 +366,34 @@ export default function GroupOrderModal({
               </div>
 
               {/* Action Buttons */}
-              <div className="grid grid-cols-2 gap-3">
-                <button
-                  onClick={handleShare}
-                  className="flex items-center justify-center gap-2 py-3 rounded-xl font-bold text-black/90 bg-gradient-to-r from-amber-400 via-amber-500 to-yellow-500 hover:from-amber-300 hover:via-amber-400 hover:to-yellow-400 shadow-lg shadow-amber-500/30 transition-all"
-                >
-                  <Share2 className="w-5 h-5" />
-                  Share
-                </button>
-                <button
-                  onClick={onClose}
-                  className="py-3 rounded-xl font-medium text-white bg-white/10 hover:bg-white/20 border border-white/10 transition-all"
-                >
-                  Done
-                </button>
+              <div className="space-y-3">
+                <div className="grid grid-cols-2 gap-3">
+                  <button
+                    onClick={handleShare}
+                    className="flex items-center justify-center gap-2 py-3 rounded-xl font-bold text-black/90 bg-gradient-to-r from-amber-400 via-amber-500 to-yellow-500 hover:from-amber-300 hover:via-amber-400 hover:to-yellow-400 shadow-lg shadow-amber-500/30 transition-all"
+                  >
+                    <Share2 className="w-5 h-5" />
+                    Share
+                  </button>
+                  <button
+                    onClick={onClose}
+                    className="py-3 rounded-xl font-medium text-white bg-white/10 hover:bg-white/20 border border-white/10 transition-all"
+                  >
+                    Done
+                  </button>
+                </div>
+                {onViewOrders && groupOrderData && (
+                  <button
+                    onClick={() => {
+                      onClose();
+                      onViewOrders(groupOrderData.sessionCode);
+                    }}
+                    className="w-full flex items-center justify-center gap-2 py-3 rounded-xl font-medium text-white bg-white/5 hover:bg-white/10 border border-white/10 transition-all"
+                  >
+                    <Eye className="w-4 h-4" />
+                    View Incoming Orders
+                  </button>
+                )}
               </div>
 
               {/* Tip */}

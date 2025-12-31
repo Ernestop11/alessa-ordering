@@ -46,6 +46,7 @@ import RewardsModal from './RewardsModal';
 import JoinRewardsModal from './JoinRewardsModal';
 import ReorderModal from './ReorderModal';
 import GroupOrderModal from './GroupOrderModal';
+import GroupOrderSummary from './GroupOrderSummary';
 import GroupOrderBanner from './GroupOrderBanner';
 import MenuSectionGrid from './MenuSectionGrid';
 import MobileNavDrawer from './MobileNavDrawer';
@@ -1072,6 +1073,8 @@ export default function OrderPageClient({
   const [showMobileNav, setShowMobileNav] = useState(false);
   const [showCateringPanel, setShowCateringPanel] = useState(false);
   const [showGroupOrderModal, setShowGroupOrderModal] = useState(false);
+  const [showGroupOrderSummary, setShowGroupOrderSummary] = useState(false);
+  const [groupOrderSummaryCode, setGroupOrderSummaryCode] = useState<string | null>(null);
   const [cateringName, setCateringName] = useState('');
   const [cateringEmail, setCateringEmail] = useState('');
   const [cateringPhone, setCateringPhone] = useState('');
@@ -5587,7 +5590,22 @@ export default function OrderPageClient({
         open={showGroupOrderModal}
         onClose={() => setShowGroupOrderModal(false)}
         tenantSlug={tenantSlug}
+        onViewOrders={(sessionCode) => {
+          setGroupOrderSummaryCode(sessionCode);
+          setShowGroupOrderSummary(true);
+        }}
       />
+      {groupOrderSummaryCode && (
+        <GroupOrderSummary
+          sessionCode={groupOrderSummaryCode}
+          open={showGroupOrderSummary}
+          onClose={() => {
+            setShowGroupOrderSummary(false);
+            setGroupOrderSummaryCode(null);
+          }}
+          primaryColor={tenant.primaryColor || '#f59e0b'}
+        />
+      )}
 
       {/* Mobile Navigation Drawer */}
       <MobileNavDrawer
