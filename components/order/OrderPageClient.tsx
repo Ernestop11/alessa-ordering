@@ -45,6 +45,7 @@ import CartLauncher from '../CartLauncher';
 import RewardsModal from './RewardsModal';
 import JoinRewardsModal from './JoinRewardsModal';
 import ReorderModal from './ReorderModal';
+import GroupOrderModal from './GroupOrderModal';
 import MenuSectionGrid from './MenuSectionGrid';
 import MobileNavDrawer from './MobileNavDrawer';
 import { isTimeSpecificActive, getTimeSpecificPrice, getTimeSpecificLabel, shouldShowItem } from '../../lib/menu-time-specific';
@@ -5575,6 +5576,11 @@ export default function OrderPageClient({
         }}
         onReorderAll={handleReorder}
       />
+      <GroupOrderModal
+        open={showGroupOrderModal}
+        onClose={() => setShowGroupOrderModal(false)}
+        tenantSlug={tenantSlug}
+      />
 
       {/* Mobile Navigation Drawer */}
       <MobileNavDrawer
@@ -5584,6 +5590,7 @@ export default function OrderPageClient({
         onRewardsClick={() => customerData ? setShowMembershipPanel(true) : setShowJoinModal(true)}
         onAccessibilityClick={() => setAccessibilityOpen((prev) => !prev)}
         onReorderClick={customerData?.orders && customerData.orders.length > 0 ? () => setShowReorderModal(true) : undefined}
+        onGroupOrderClick={() => setShowGroupOrderModal(true)}
         onLoginClick={() => { setJoinModalMode('login'); setShowJoinModal(true); }}
         onCheckoutClick={() => {
           // Trigger cart launcher
