@@ -310,7 +310,7 @@ export default function OrderPageClient({
   const assets = getTenantAssets(tenantSlug || tenant.slug);
   const { addToCart, items: cartItems } = useCart();
   const cartItemCount = useMemo(() => cartItems.reduce((sum, item) => sum + item.quantity, 0), [cartItems]);
-  const cartItemIds = useMemo(() => cartItems.map(item => item.menuItemId), [cartItems]);
+  const cartItemIds = useMemo(() => cartItems.map(item => item.menuItemId).filter((id): id is string => !!id), [cartItems]);
 
   // Client-side state for frontendUISections with polling (same pattern as Accept Orders)
   const [frontendUISections, setFrontendUISections] = useState<FrontendUISection[]>(initialFrontendUISections);
