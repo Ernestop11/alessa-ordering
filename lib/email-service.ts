@@ -378,10 +378,13 @@ This is an automated confirmation. If you have questions, please contact us.
   }
 }
 
-// Convenience function to send both emails after order completion
-export async function sendOrderEmails(orderId: string): Promise<{ customerSent: boolean; tenantSent: boolean }> {
+// Platform admin email for order notifications
+const PLATFORM_ADMIN_EMAIL = process.env.PLATFORM_ADMIN_EMAIL || 'ernesto@mvicorp.net';
+
+// Convenience function to send all order emails after order completion
+export async function sendOrderEmails(orderId: string): Promise<{ customerSent: boolean; tenantSent: boolean; platformSent: boolean }> {
   const prisma = await getPrisma();
-  const result = { customerSent: false, tenantSent: false };
+  const result = { customerSent: false, tenantSent: false, platformSent: false };
 
   try {
     const order = await prisma.order.findUnique({
@@ -473,6 +476,26 @@ export async function sendOrderEmails(orderId: string): Promise<{ customerSent: 
         result.tenantSent = true;
       } catch (err) {
         console.error('[email] Failed to send tenant email:', err);
+      }
+    }
+
+    // Send to platform admin (you) for all orders
+    if (PLATFORM_ADMIN_EMAIL && PLATFORM_ADMIN_EMAIL !== order.tenant.contactEmail) {
+      try {
+        await sendOrderNotificationEmail({
+          to: PLATFORM_ADMIN_EMAIL,
+          orderId: order.id,
+          customerName: order.customerName,
+          totalAmount: order.totalAmount,
+          items,
+          tenantName: order.tenant.name,
+          fulfillmentUrl: `${baseUrl}/admin/fulfillment`,
+          fromAddress,
+          replyTo,
+        });
+        result.platformSent = true;
+      } catch (err) {
+        console.error('[email] Failed to send platform admin email:', err);
       }
     }
 
