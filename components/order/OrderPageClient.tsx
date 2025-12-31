@@ -2026,18 +2026,25 @@ export default function OrderPageClient({
 
       if (featuredItem.id) {
         // Find the item and its section to open customization modal
-        const item = menuItems.find(i => i.id === featuredItem.id);
-        console.log('[Featured] Found item:', item);
-        if (item) {
-          // Find the section this item belongs to
-          const section = safeSections.find(s =>
-            s && Array.isArray(s.items) && s.items.some(sItem => sItem.id === item.id)
-          );
-          const sectionType = section?.type || item.category || 'RESTAURANT';
-          const displayImage = featuredItem.displayImage || item.image || getStockImageForCategory(sectionType, 0);
+        let foundItem: OrderMenuItem | undefined;
+        let foundSection: OrderMenuSection | undefined;
+        for (const section of safeSections) {
+          if (section && Array.isArray(section.items)) {
+            const item = section.items.find(i => i.id === featuredItem.id);
+            if (item) {
+              foundItem = item;
+              foundSection = section;
+              break;
+            }
+          }
+        }
+        console.log('[Featured] Found item:', foundItem);
+        if (foundItem) {
+          const sectionType = foundSection?.type || foundItem.category || 'RESTAURANT';
+          const displayImage = featuredItem.displayImage || foundItem.image || getStockImageForCategory(sectionType, 0);
 
           // Open customization modal
-          openCustomization({ ...item, displayImage }, sectionType);
+          openCustomization({ ...foundItem, displayImage }, sectionType);
         } else {
           showNotification(`${featuredItem.name} - tap items below to order`);
         }
@@ -2198,15 +2205,23 @@ export default function OrderPageClient({
                   }
                   const featuredItem = carouselItems[0];
                   if (featuredItem?.id) {
-                    const item = menuItems.find(i => i.id === featuredItem.id);
-                    if (item) {
-                      // Find the section this item belongs to
-                      const section = safeSections.find(s =>
-                        s && Array.isArray(s.items) && s.items.some(sItem => sItem.id === item.id)
-                      );
-                      const sectionType = section?.type || item.category || 'RESTAURANT';
-                      const displayImage = featuredItem.displayImage || item.image || getStockImageForCategory(sectionType, 0);
-                      openCustomization({ ...item, displayImage }, sectionType);
+                    // Find the item and its section
+                    let foundItem: OrderMenuItem | undefined;
+                    let foundSection: OrderMenuSection | undefined;
+                    for (const section of safeSections) {
+                      if (section && Array.isArray(section.items)) {
+                        const item = section.items.find(i => i.id === featuredItem.id);
+                        if (item) {
+                          foundItem = item;
+                          foundSection = section;
+                          break;
+                        }
+                      }
+                    }
+                    if (foundItem) {
+                      const sectionType = foundSection?.type || foundItem.category || 'RESTAURANT';
+                      const displayImage = featuredItem.displayImage || foundItem.image || getStockImageForCategory(sectionType, 0);
+                      openCustomization({ ...foundItem, displayImage }, sectionType);
                     }
                   }
                 }}
