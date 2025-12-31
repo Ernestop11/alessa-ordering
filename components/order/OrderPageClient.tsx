@@ -2025,11 +2025,19 @@ export default function OrderPageClient({
       }
 
       if (featuredItem.id) {
-        // Find and open the item
+        // Find the item and its section to open customization modal
         const item = menuItems.find(i => i.id === featuredItem.id);
         console.log('[Featured] Found item:', item);
         if (item) {
-          setSelectedMenuItem(item);
+          // Find the section this item belongs to
+          const section = safeSections.find(s =>
+            s && Array.isArray(s.items) && s.items.some(sItem => sItem.id === item.id)
+          );
+          const sectionType = section?.type || item.category || 'RESTAURANT';
+          const displayImage = featuredItem.displayImage || item.image || getStockImageForCategory(sectionType, 0);
+
+          // Open customization modal
+          openCustomization({ ...item, displayImage }, sectionType);
         } else {
           showNotification(`${featuredItem.name} - tap items below to order`);
         }
@@ -2184,10 +2192,22 @@ export default function OrderPageClient({
             <div className="relative flex items-center justify-center">
               <button
                 onClick={() => {
+                  if (!restaurantIsOpen) {
+                    showNotification(restaurantClosedMessage || 'Restaurant is currently closed');
+                    return;
+                  }
                   const featuredItem = carouselItems[0];
                   if (featuredItem?.id) {
                     const item = menuItems.find(i => i.id === featuredItem.id);
-                    if (item) setSelectedMenuItem(item);
+                    if (item) {
+                      // Find the section this item belongs to
+                      const section = safeSections.find(s =>
+                        s && Array.isArray(s.items) && s.items.some(sItem => sItem.id === item.id)
+                      );
+                      const sectionType = section?.type || item.category || 'RESTAURANT';
+                      const displayImage = featuredItem.displayImage || item.image || getStockImageForCategory(sectionType, 0);
+                      openCustomization({ ...item, displayImage }, sectionType);
+                    }
                   }
                 }}
                 className="relative w-full max-w-md mx-auto cursor-pointer group"
