@@ -567,7 +567,7 @@ export default function CheckoutPage() {
     return getStripePromise();
   }, [stripeAccount]);
 
-  // Fetch Stripe config and saved cards
+  // Fetch Stripe config, saved cards, and logged-in customer info
   useEffect(() => {
     async function fetchData() {
       try {
@@ -582,6 +582,25 @@ export default function CheckoutPage() {
         if (cardsData.paymentMethods && cardsData.paymentMethods.length > 0) {
           setSavedCards(cardsData.paymentMethods);
           setIsLoggedIn(true);
+        }
+
+        // Fetch logged-in customer info to auto-fill form
+        const customerRes = await fetch('/api/rewards/customer', {
+          credentials: 'include',
+          cache: 'no-store',
+        });
+        if (customerRes.ok) {
+          const customerData = await customerRes.json();
+          if (customerData && customerData.id) {
+            setIsLoggedIn(true);
+            // Auto-fill customer info
+            setCustomerInfo(prev => ({
+              ...prev,
+              name: customerData.name || prev.name,
+              email: customerData.email || prev.email,
+              phone: customerData.phone || prev.phone,
+            }));
+          }
         }
 
         setStripeReady(true);
