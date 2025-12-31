@@ -2011,56 +2011,31 @@ export default function OrderPageClient({
   }, [frontendUISections]);
 
   // Render Mobile Featured Item (replaces hero on mobile)
+  // Uses the same flow as regular menu items - finds the actual item from safeSections
+  // to ensure customizationRemovals/customizationAddons from menu editor are used
   const renderMobileFeaturedItem = () => {
-    const featuredItem = carouselItems[0];
-    if (!featuredItem) return null;
+    const carouselItem = carouselItems[0];
+    if (!carouselItem || !carouselItem.id) return null;
 
-    const handleFeaturedClick = () => {
-      console.log('[Featured] Clicked! featuredItem:', featuredItem);
-
-      // Check if restaurant is closed first
-      if (!restaurantIsOpen) {
-        showNotification(restaurantClosedMessage || 'Restaurant is currently closed');
-        return;
-      }
-
-      if (featuredItem.id) {
-        // Find the item and its section to open customization modal
-        let foundItem: OrderMenuItem | undefined;
-        let foundSection: OrderMenuSection | undefined;
-        for (const section of safeSections) {
-          if (section && Array.isArray(section.items)) {
-            const item = section.items.find(i => i.id === featuredItem.id);
-            if (item) {
-              foundItem = item;
-              foundSection = section;
-              break;
-            }
-          }
-        }
-        console.log('[Featured] Found item:', foundItem);
-        if (foundItem) {
-          const sectionType = foundSection?.type || foundItem.category || 'RESTAURANT';
-          const displayImage = featuredItem.displayImage || foundItem.image || getStockImageForCategory(sectionType, 0);
-
-          // Open customization modal
-          openCustomization({ ...foundItem, displayImage }, sectionType);
-        } else {
-          showNotification(`${featuredItem.name} - tap items below to order`);
-        }
-      } else {
-        // Scroll to menu
-        const firstSection = navSections[0];
-        if (firstSection) {
-          const element = document.getElementById(`section-${firstSection.id}`);
-          if (element) {
-            const offset = 180;
-            const elementPosition = element.getBoundingClientRect().top + window.scrollY;
-            window.scrollTo({ top: elementPosition - offset, behavior: isSafariBrowser ? 'auto' : 'smooth' });
-          }
+    // Find the actual menu item from safeSections (has all menu editor fields)
+    let foundItem: (OrderMenuItem & { displayImage: string }) | undefined;
+    let foundSection: OrderMenuSection | undefined;
+    for (const section of safeSections) {
+      if (section && Array.isArray(section.items)) {
+        const item = section.items.find(i => i.id === carouselItem.id);
+        if (item) {
+          const displayImage = carouselItem.displayImage || item.image || getStockImageForCategory(section.type, 0);
+          foundItem = { ...item, displayImage };
+          foundSection = section;
+          break;
         }
       }
-    };
+    }
+
+    if (!foundItem || !foundSection) return null;
+
+    const sectionType = foundSection.type || foundItem.category || 'RESTAURANT';
+    const isInCart = cartItemIds.includes(foundItem.id);
 
     return (
       <section key="mobile-featured" className="md:hidden relative mt-6 mb-6 mx-4">
@@ -2072,56 +2047,102 @@ export default function OrderPageClient({
             <h3 className="text-base font-semibold text-white">Today&apos;s Special</h3>
           </div>
 
-          {/* Clickable card */}
-          <button
-            type="button"
-            onClick={handleFeaturedClick}
-            className="relative w-full text-left block focus:outline-none active:scale-[0.98] transition-all touch-manipulation rounded-xl overflow-hidden border border-white/10 bg-gradient-to-br from-white/10 to-white/5"
-          >
-            {/* Featured Image - square aspect like menu cards for full plate view */}
+          {/* Use same card structure as menu items */}
+          <article className={`group relative overflow-hidden rounded-xl sm:rounded-2xl bg-white/[0.03] backdrop-blur-sm border transition-all duration-300 hover:shadow-xl ${isInCart ? 'border-amber-400/60 ring-1 ring-amber-400/30 hover:border-amber-400/80' : 'border-white/[0.08] hover:border-white/20 hover:shadow-white/5'}`}>
+            {/* Image container */}
             <div className="relative aspect-square w-full overflow-hidden bg-[#1a1a1a]">
-              {featuredItem.displayImage ? (
-                <Image
-                  src={featuredItem.displayImage}
-                  alt={featuredItem.name || 'Featured dish'}
-                  fill
-                  className="object-cover"
-                  sizes="100vw"
-                  priority
-                  unoptimized={featuredItem.displayImage?.startsWith('/tenant/')}
+              {foundItem.displayImage?.startsWith('http') ? (
+                <img
+                  src={foundItem.displayImage}
+                  alt={foundItem.name}
+                  className="h-full w-full object-cover transition-transform duration-500 group-hover:scale-105"
+                  onError={(e) => {
+                    const target = e.target as HTMLImageElement;
+                    target.src = getStockImageForCategory(sectionType, 0);
+                  }}
                 />
               ) : (
-                <div className="flex items-center justify-center h-full text-5xl">🍽️</div>
+                <Image
+                  src={foundItem.displayImage || getStockImageForCategory(sectionType, 0)}
+                  alt={foundItem.name}
+                  fill
+                  className="object-cover transition-transform duration-500 group-hover:scale-105"
+                  sizes="100vw"
+                  priority
+                  unoptimized={foundItem.displayImage?.startsWith('/tenant/')}
+                />
               )}
-              {/* Subtle gradient overlay */}
-              <div className="absolute inset-0 bg-gradient-to-t from-black/60 via-transparent to-transparent pointer-events-none" />
 
-              {/* HOT badge - subtle glass style */}
-              <div className="absolute top-2.5 right-2.5 px-2.5 py-1 rounded-full bg-black/40 backdrop-blur-sm border border-amber-400/30 text-amber-300 text-[10px] font-bold shadow-lg flex items-center gap-1 pointer-events-none">
+              {/* Gradient overlay */}
+              <div className="absolute inset-0 bg-gradient-to-t from-black/70 via-black/20 to-transparent" />
+
+              {/* Quick Add Button - same as MenuItemCard */}
+              {foundItem.available && (
+                <button
+                  onClick={(e) => {
+                    e.stopPropagation();
+                    // Quick add with default options
+                    addToCart({
+                      id: `${foundItem!.id}-${Date.now()}`,
+                      menuItemId: foundItem!.id,
+                      name: foundItem!.name,
+                      price: foundItem!.price,
+                      quantity: 1,
+                      image: foundItem!.displayImage,
+                      description: foundItem!.description,
+                      availableModifiers: foundItem!.customizationRemovals || [],
+                      availableAddons: (foundItem!.customizationAddons || []).map((a: any) => ({
+                        id: a.id,
+                        name: a.label,
+                        price: a.price,
+                      })),
+                    });
+                    showNotification(`${foundItem!.name} added to cart!`);
+                  }}
+                  className="absolute top-2.5 left-2.5 z-10 w-7 h-7 sm:w-8 sm:h-8 rounded-full bg-black/40 backdrop-blur-sm border border-white/20 shadow-md flex items-center justify-center text-white text-base sm:text-lg font-medium transition-all duration-200 hover:scale-110 hover:bg-black/60 hover:border-white/40 active:scale-95"
+                  title="Quick add to cart"
+                >
+                  +
+                </button>
+              )}
+
+              {/* HOT badge */}
+              <div className="absolute top-2.5 right-2.5 px-2.5 py-1 rounded-full bg-black/40 backdrop-blur-sm border border-amber-400/30 text-amber-300 text-[10px] font-bold shadow-lg flex items-center gap-1">
                 🔥 HOT
               </div>
 
-              {/* Price badge - matching menu cards style */}
-              <div className="absolute top-2.5 left-2.5 px-2.5 py-1 rounded-full bg-black/40 backdrop-blur-sm border border-white/20 shadow-lg pointer-events-none">
-                <span className="text-sm font-bold text-white">${featuredItem.price?.toFixed(2) || '14.00'}</span>
+              {/* Price badge */}
+              <div className="absolute bottom-2.5 right-2.5 px-2.5 py-1 rounded-full bg-black/40 backdrop-blur-sm border border-white/20 shadow-md">
+                <span className="text-sm font-semibold text-white">${foundItem.price.toFixed(2)}</span>
               </div>
+
+              {/* Sold out overlay */}
+              {!foundItem.available && (
+                <div className="absolute inset-0 flex items-center justify-center bg-black/80">
+                  <span className="rounded-lg sm:rounded-xl bg-[#333] px-4 py-2 text-xs sm:text-sm font-bold text-white/80">
+                    SOLD OUT
+                  </span>
+                </div>
+              )}
             </div>
 
-            {/* Content section */}
-            <div className="p-3">
-              <h4 className="text-base font-bold text-white line-clamp-1">
-                {featuredItem.name || 'Featured Special'}
-              </h4>
-              <p className="text-xs text-white/60 line-clamp-2 mt-0.5">
-                {featuredItem.description || 'Authentic Mexican flavors'}
+            {/* Content */}
+            <div className="p-2.5 sm:p-4">
+              <h3 className="text-sm sm:text-lg font-bold text-white leading-tight line-clamp-2 sm:line-clamp-1">{foundItem.name}</h3>
+              <p className="hidden sm:block mt-2 text-sm text-white/50 line-clamp-2 leading-relaxed">
+                {foundItem.description}
               </p>
 
-              {/* CTA Button - matching menu card style */}
-              <div className="mt-3 w-full rounded-xl bg-gradient-to-r from-amber-400 via-amber-500 to-yellow-500 px-4 py-2.5 text-center text-sm font-semibold text-black/90 shadow-md shadow-amber-500/15">
-                + Add to Order
-              </div>
+              {/* Add Button - same style as MenuItemCard, opens customization modal */}
+              <button
+                onClick={() => openCustomization(foundItem!, sectionType)}
+                disabled={!foundItem.available}
+                className="mt-2 sm:mt-4 w-full flex items-center justify-center gap-1 sm:gap-2 relative overflow-hidden rounded-xl sm:rounded-2xl py-2.5 sm:py-3 text-xs sm:text-sm font-semibold bg-gradient-to-r from-amber-400 via-amber-500 to-yellow-500 text-black/90 shadow-md shadow-amber-500/15 transition-all duration-200 ease-out hover:shadow-lg hover:shadow-amber-500/25 hover:from-amber-300 hover:via-amber-400 hover:to-yellow-400 active:scale-[0.97] disabled:opacity-50 disabled:cursor-not-allowed disabled:hover:scale-100 disabled:bg-gray-600 disabled:from-gray-600 disabled:via-gray-600 disabled:to-gray-600 disabled:text-white/70"
+              >
+                <span className="relative z-10">{foundItem.available ? '+ Add to Order' : 'Sold Out'}</span>
+              </button>
             </div>
-          </button>
+          </article>
         </div>
       </section>
     );
