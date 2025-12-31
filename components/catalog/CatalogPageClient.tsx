@@ -136,7 +136,8 @@ export function CatalogPageClient({ sections, featuredItems = [], tenantSlug }: 
 
   const handleAddToCart = (item: OrderMenuItem) => {
     addToCart({
-      id: item.id,
+      id: `${item.id}-${Date.now()}`,
+      menuItemId: item.id,
       name: item.name,
       price: item.price,
       quantity: 1,

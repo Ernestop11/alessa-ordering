@@ -8,6 +8,61 @@ const stripe = new Stripe(process.env.STRIPE_SECRET_KEY!, {
   apiVersion: '2025-11-17.clover' as any, // Use latest compatible version
 });
 
+// Validate cart items exist in database before payment
+async function validateCartItems(items: any[], tenantId: string) {
+  const invalidItems: { name: string; reason: string }[] = [];
+  const validItems: any[] = [];
+
+  for (const item of items) {
+    // Extract menuItemId - handle both formats (with and without timestamp suffix)
+    const menuItemId = item.menuItemId || item.id?.replace(/-\d{13}$/, '');
+
+    if (!menuItemId) {
+      invalidItems.push({ name: item.name || 'Unknown item', reason: 'Missing item ID' });
+      continue;
+    }
+
+    // Check item type to determine which table to query
+    const itemType = item.itemType || 'food';
+
+    if (itemType === 'grocery' || itemType === 'bakery') {
+      // Validate against GroceryItem table
+      const groceryItem = await prisma.groceryItem.findUnique({
+        where: { id: menuItemId },
+        select: { tenantId: true, name: true, available: true },
+      });
+
+      if (!groceryItem) {
+        invalidItems.push({ name: item.name || menuItemId, reason: 'Item not found' });
+      } else if (groceryItem.tenantId !== tenantId) {
+        invalidItems.push({ name: item.name || menuItemId, reason: 'Item belongs to different store' });
+      } else if (!groceryItem.available) {
+        invalidItems.push({ name: groceryItem.name, reason: 'Item is no longer available' });
+      } else {
+        validItems.push(item);
+      }
+    } else {
+      // Validate against MenuItem table (default for food)
+      const menuItem = await prisma.menuItem.findUnique({
+        where: { id: menuItemId },
+        select: { tenantId: true, name: true, available: true },
+      });
+
+      if (!menuItem) {
+        invalidItems.push({ name: item.name || menuItemId, reason: 'Item not found' });
+      } else if (menuItem.tenantId !== tenantId) {
+        invalidItems.push({ name: item.name || menuItemId, reason: 'Item belongs to different store' });
+      } else if (!menuItem.available) {
+        invalidItems.push({ name: menuItem.name, reason: 'Item is no longer available' });
+      } else {
+        validItems.push(item);
+      }
+    }
+  }
+
+  return { validItems, invalidItems };
+}
+
 export async function POST(req: NextRequest) {
   try {
     const tenant = await requireTenant();
@@ -23,6 +78,22 @@ export async function POST(req: NextRequest) {
 
     if (!items || items.length === 0) {
       return NextResponse.json({ error: 'No items in cart' }, { status: 400 });
+    }
+
+    // PRE-PAYMENT VALIDATION: Ensure all items exist in the database BEFORE charging customer
+    // This prevents the scenario where payment succeeds but order creation fails
+    const itemValidation = await validateCartItems(items, tenant.id);
+    if (itemValidation.invalidItems.length > 0) {
+      console.error('[create-payment-intent] Invalid items detected before payment:', {
+        tenantId: tenant.id,
+        invalidItems: itemValidation.invalidItems,
+        totalItems: items.length,
+      });
+      return NextResponse.json({
+        error: 'Some items in your cart are no longer available',
+        invalidItems: itemValidation.invalidItems,
+        message: 'Please remove unavailable items and try again',
+      }, { status: 400 });
     }
 
     if (!customer.name || !customer.email || !customer.phone) {

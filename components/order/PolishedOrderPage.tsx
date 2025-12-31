@@ -301,7 +301,8 @@ export default function PolishedOrderPage({
       if (item.menuItem && item.menuItem.available) {
         for (let i = 0; i < item.quantity; i++) {
           addToCart({
-            id: item.menuItem.id,
+            id: `${item.menuItem.id}-${Date.now()}-${i}`,
+            menuItemId: item.menuItem.id,
             name: item.menuItem.name,
             price: item.menuItem.price,
             quantity: 1,
@@ -384,7 +385,8 @@ export default function PolishedOrderPage({
       if (!item.available) return;
 
       addToCart({
-        id: item.id,
+        id: `${item.id}-${Date.now()}`,
+        menuItemId: item.id,
         name: item.name,
         description: item.description,
         price: item.price,
@@ -411,7 +413,8 @@ export default function PolishedOrderPage({
         return;
       }
       addToCart({
-        id: item.id,
+        id: `${item.id}-${Date.now()}`,
+        menuItemId: item.id,
         name: item.name,
         description: item.description,
         price: item.price,

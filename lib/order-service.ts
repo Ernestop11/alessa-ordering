@@ -289,6 +289,23 @@ export async function createOrderFromPayload({
     }
   }
 
+  // CRITICAL: Validate that at least one item was created
+  // If no items exist, the order is invalid and must be rolled back
+  const createdItemCount = await prisma.orderItem.count({
+    where: { orderId: order.id },
+  });
+
+  if (createdItemCount === 0) {
+    // Delete the empty order - this is a critical failure
+    await prisma.order.delete({ where: { id: order.id } });
+    console.error('[order-service] CRITICAL: Order created with 0 items, rolling back', {
+      orderId: order.id,
+      payloadItems: payload.items,
+      tenantId: tenant.id,
+    });
+    throw new Error('Order creation failed: No valid items could be added. Please try again or contact support.');
+  }
+
   if (customerId && tenant.settings?.membershipProgram) {
     const program = tenant.settings.membershipProgram as any;
     if (program?.enabled !== false) {

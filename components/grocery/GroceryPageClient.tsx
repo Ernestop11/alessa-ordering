@@ -121,7 +121,8 @@ export default function GroceryPageClient({
   // Handle add to cart
   const handleAddToCart = (item: GroceryItem) => {
     addToCart({
-      id: item.id,
+      id: `${item.id}-${Date.now()}`,
+      menuItemId: item.id,
       name: item.name,
       price: item.price,
       quantity: 1,
@@ -266,7 +267,8 @@ export default function GroceryPageClient({
                         {quantity === 0 ? (
                           <button
                             onClick={() => addToCart({
-                              id: special.id,
+                              id: `${special.id}-${Date.now()}`,
+                              menuItemId: special.id,
                               name: special.name,
                               price: special.weekendPrice || special.price,
                               quantity: 1,
@@ -408,7 +410,8 @@ export default function GroceryPageClient({
                     {quantity === 0 ? (
                       <button
                         onClick={() => addToCart({
-                          id: bundle.id,
+                          id: `${bundle.id}-${Date.now()}`,
+                          menuItemId: bundle.id,
                           name: bundle.name,
                           price: bundle.price,
                           quantity: 1,

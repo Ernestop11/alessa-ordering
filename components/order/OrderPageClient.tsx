@@ -949,7 +949,8 @@ export default function OrderPageClient({
       if (!item.available) return;
 
       addToCart({
-        id: item.id,
+        id: `${item.id}-${Date.now()}`,
+        menuItemId: item.id,
         name: item.name,
         description: item.description,
         price: item.price,
@@ -970,6 +971,7 @@ export default function OrderPageClient({
       }
       addToCart({
         id: `${card.id}-${Date.now()}`,
+        menuItemId: card.id,
         name: card.title,
         description: card.description,
         price: card.price,
@@ -990,7 +992,8 @@ export default function OrderPageClient({
         return;
       }
       addToCart({
-        id: item.id,
+        id: `${item.id}-${Date.now()}`,
+        menuItemId: item.id,
         name: item.name,
         description: item.description,
         price: item.price,
