@@ -175,48 +175,18 @@ export async function POST(req: Request) {
           }
         }
 
-        // Send email notification to admin
-        if (session.tenant.contactEmail) {
-          try {
-            const { sendOrderNotificationEmail } = await import('@/lib/email-service');
-            
-            // Fetch order items with menu item details for email
-            const orderItems = await prisma.orderItem.findMany({
-              where: { orderId: order.id },
-              include: {
-                menuItem: {
-                  select: {
-                    name: true,
-                  },
-                },
-              },
-            });
-
-            const itemsForEmail = orderItems.map((item) => ({
-              name: item.menuItem?.name || 'Item',
-              quantity: item.quantity,
-              price: item.price,
-            }));
-
-            const fulfillmentUrl = `${process.env.NEXTAUTH_URL || 'https://lasreinas.alessacloud.com'}/admin/fulfillment`;
-
-            await sendOrderNotificationEmail({
-              to: session.tenant.contactEmail,
-              orderId: order.id,
-              customerName: order.customerName || null,
-              totalAmount: order.totalAmount,
-              items: itemsForEmail,
-              tenantName: session.tenant.name,
-              fulfillmentUrl,
-            });
-
-            console.log('[email] Order notification email sent', { orderId: order.id, to: session.tenant.contactEmail });
-          } catch (emailError) {
-            console.error('[email] Failed to send order notification email:', emailError);
-            // Don't fail the webhook if email fails
-          }
-        } else {
-          console.warn('[email] Tenant contact email not set, skipping order notification', { tenantId: session.tenant.id });
+        // Send confirmation emails (to customer and tenant)
+        try {
+          const { sendOrderEmails } = await import('@/lib/email-service');
+          const emailResult = await sendOrderEmails(order.id);
+          console.log('[email] Order emails sent', {
+            orderId: order.id,
+            customerSent: emailResult.customerSent,
+            tenantSent: emailResult.tenantSent
+          });
+        } catch (emailError) {
+          console.error('[email] Failed to send order emails:', emailError);
+          // Don't fail the webhook if email fails
         }
       } catch (error) {
         console.error('[stripe] Failed to finalize order from webhook', error);
