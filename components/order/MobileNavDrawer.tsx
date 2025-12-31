@@ -50,6 +50,7 @@ interface MobileNavDrawerProps {
   onSignOut?: () => void;
   onLoginClick?: () => void;
   onCheckoutClick?: () => void;
+  onGroupOrderClick?: () => void;
   cateringEnabled: boolean;
   customerData: {
     name?: string;
@@ -72,6 +73,7 @@ export default function MobileNavDrawer({
   onSignOut,
   onLoginClick,
   onCheckoutClick,
+  onGroupOrderClick,
   cateringEnabled,
   customerData,
   isAccessibilityOpen,
@@ -684,6 +686,22 @@ export default function MobileNavDrawer({
                 <div>
                   <span className="font-medium">Catering</span>
                   <p className="text-xs text-white/50">Events & large orders</p>
+                </div>
+              </button>
+            )}
+
+            {onGroupOrderClick && (
+              <button
+                onClick={() => {
+                  onClose();
+                  onGroupOrderClick();
+                }}
+                className="w-full flex items-center gap-4 px-4 py-3 rounded-xl text-left text-white border border-transparent hover:bg-white/5 hover:border-[#DC2626]/30 transition-all"
+              >
+                <span className="text-xl">👥</span>
+                <div>
+                  <span className="font-medium">Group Order</span>
+                  <p className="text-xs text-white/50">Office & team orders</p>
                 </div>
               </button>
             )}

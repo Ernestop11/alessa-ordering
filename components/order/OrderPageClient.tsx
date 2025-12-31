@@ -1066,6 +1066,7 @@ export default function OrderPageClient({
   const [joinModalMode, setJoinModalMode] = useState<'join' | 'login'>('join');
   const [showMobileNav, setShowMobileNav] = useState(false);
   const [showCateringPanel, setShowCateringPanel] = useState(false);
+  const [showGroupOrderModal, setShowGroupOrderModal] = useState(false);
   const [cateringName, setCateringName] = useState('');
   const [cateringEmail, setCateringEmail] = useState('');
   const [cateringPhone, setCateringPhone] = useState('');

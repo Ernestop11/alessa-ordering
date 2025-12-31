@@ -281,7 +281,8 @@ export default function Cart() {
       setTaxQuoteError(null);
       try {
         const normalizedItems = items.map((item) => ({
-          menuItemId: item.id,
+          // Use menuItemId if available, otherwise extract UUID from cart id (which has timestamp suffix)
+          menuItemId: item.menuItemId || item.id.replace(/-\d{13}$/, ''),
           quantity: item.quantity,
           price: roundCurrency(item.price),
           notes: item.note ?? undefined,
@@ -401,7 +402,8 @@ export default function Cart() {
     if (items.length === 0) return null;
 
     const normalizedItems = items.map((item) => ({
-      menuItemId: item.id,
+      // Use menuItemId if available, otherwise extract UUID from cart id (which has timestamp suffix)
+      menuItemId: item.menuItemId || item.id.replace(/-\d{13}$/, ''),
       quantity: item.quantity,
       price: roundCurrency(item.price),
       notes: item.note ?? undefined,

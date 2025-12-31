@@ -1,0 +1,394 @@
+"use client";
+
+import { useState, useEffect } from "react";
+import { createPortal } from "react-dom";
+import { X, Users, Copy, Check, Share2, Clock, MapPin, Calendar } from "lucide-react";
+
+interface GroupOrderModalProps {
+  open: boolean;
+  onClose: () => void;
+  tenantSlug: string;
+  customDomain?: string | null;
+}
+
+type Step = 'form' | 'success';
+
+export default function GroupOrderModal({
+  open,
+  onClose,
+  tenantSlug,
+  customDomain,
+}: GroupOrderModalProps) {
+  const [mounted, setMounted] = useState(false);
+  const [step, setStep] = useState<Step>('form');
+  const [loading, setLoading] = useState(false);
+  const [error, setError] = useState<string | null>(null);
+  const [copied, setCopied] = useState(false);
+
+  // Form state
+  const [name, setName] = useState("");
+  const [organizerName, setOrganizerName] = useState("");
+  const [organizerPhone, setOrganizerPhone] = useState("");
+  const [fulfillmentMethod, setFulfillmentMethod] = useState<'pickup' | 'delivery'>('pickup');
+  const [expiresInHours, setExpiresInHours] = useState(2);
+
+  // Success state
+  const [groupOrderData, setGroupOrderData] = useState<{
+    sessionCode: string;
+    shareableLink: string;
+    expiresAt: string;
+  } | null>(null);
+
+  useEffect(() => {
+    setMounted(true);
+  }, []);
+
+  // Reset form when modal opens
+  useEffect(() => {
+    if (open) {
+      setStep('form');
+      setError(null);
+      setCopied(false);
+    }
+  }, [open]);
+
+  if (!open || !mounted) return null;
+
+  const handleSubmit = async (e: React.FormEvent) => {
+    e.preventDefault();
+
+    if (!organizerName.trim()) {
+      setError("Please enter your name");
+      return;
+    }
+
+    setLoading(true);
+    setError(null);
+
+    try {
+      const response = await fetch("/api/group-orders/create", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({
+          name: name.trim() || "Group Order",
+          organizerName: organizerName.trim(),
+          organizerPhone: organizerPhone.trim() || null,
+          fulfillmentMethod,
+          expiresInHours,
+        }),
+      });
+
+      const data = await response.json();
+
+      if (!response.ok) {
+        throw new Error(data.error || "Failed to create group order");
+      }
+
+      setGroupOrderData({
+        sessionCode: data.sessionCode,
+        shareableLink: data.shareableLink,
+        expiresAt: data.expiresAt,
+      });
+      setStep('success');
+    } catch (err) {
+      setError(err instanceof Error ? err.message : "Failed to create group order");
+    } finally {
+      setLoading(false);
+    }
+  };
+
+  const handleCopyLink = async () => {
+    if (!groupOrderData) return;
+
+    try {
+      await navigator.clipboard.writeText(groupOrderData.shareableLink);
+      setCopied(true);
+      setTimeout(() => setCopied(false), 2000);
+    } catch {
+      // Fallback for older browsers
+      const input = document.createElement('input');
+      input.value = groupOrderData.shareableLink;
+      document.body.appendChild(input);
+      input.select();
+      document.execCommand('copy');
+      document.body.removeChild(input);
+      setCopied(true);
+      setTimeout(() => setCopied(false), 2000);
+    }
+  };
+
+  const handleShare = async () => {
+    if (!groupOrderData) return;
+
+    const shareText = `Join my group order at ${name || 'Las Reinas'}! Order before it closes.\n\n${groupOrderData.shareableLink}`;
+
+    if (navigator.share) {
+      try {
+        await navigator.share({
+          title: `Group Order - ${name || 'Group Order'}`,
+          text: shareText,
+          url: groupOrderData.shareableLink,
+        });
+      } catch (err) {
+        // User cancelled or share failed, fallback to copy
+        handleCopyLink();
+      }
+    } else {
+      // Fallback to copy
+      handleCopyLink();
+    }
+  };
+
+  const formatExpiryTime = (expiresAt: string) => {
+    const date = new Date(expiresAt);
+    return date.toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' });
+  };
+
+  return createPortal(
+    <div
+      style={{ position: 'fixed', inset: 0, zIndex: 9998 }}
+      className="flex items-end sm:items-center justify-center bg-black/80 backdrop-blur-md"
+      onClick={onClose}
+    >
+      <div
+        style={{ zIndex: 9999 }}
+        className="w-full max-w-md rounded-t-3xl sm:rounded-3xl bg-gradient-to-b from-[#1a1a1a] to-[#0d0d0d] border border-white/10 shadow-2xl overflow-hidden"
+        onClick={(e) => e.stopPropagation()}
+      >
+        {/* Header */}
+        <div className="relative p-5 border-b border-white/10">
+          <button
+            onClick={onClose}
+            className="absolute top-4 right-4 p-2 rounded-full bg-white/5 hover:bg-white/10 transition-colors"
+          >
+            <X className="w-5 h-5 text-white/70" />
+          </button>
+          <div className="flex items-center gap-3">
+            <div className="w-12 h-12 rounded-xl bg-gradient-to-br from-amber-500 to-orange-600 flex items-center justify-center">
+              <Users className="w-6 h-6 text-white" />
+            </div>
+            <div>
+              <h2 className="text-xl font-bold text-white">
+                {step === 'form' ? 'Start Group Order' : 'Share Your Link'}
+              </h2>
+              <p className="text-sm text-white/50">
+                {step === 'form'
+                  ? 'Create a link for your team to order together'
+                  : 'Send this link to your group'}
+              </p>
+            </div>
+          </div>
+        </div>
+
+        {/* Content */}
+        <div className="p-5">
+          {step === 'form' ? (
+            <form onSubmit={handleSubmit} className="space-y-4">
+              {/* Group Name */}
+              <div>
+                <label className="block text-sm font-medium text-white/70 mb-1.5">
+                  Group Name <span className="text-white/40">(optional)</span>
+                </label>
+                <input
+                  type="text"
+                  value={name}
+                  onChange={(e) => setName(e.target.value)}
+                  placeholder="e.g., Team Lunch, Birthday Party"
+                  className="w-full px-4 py-3 rounded-xl bg-white/5 border border-white/10 text-white placeholder-white/30 focus:border-amber-500/50 focus:outline-none focus:ring-1 focus:ring-amber-500/30"
+                />
+              </div>
+
+              {/* Organizer Name */}
+              <div>
+                <label className="block text-sm font-medium text-white/70 mb-1.5">
+                  Your Name <span className="text-red-400">*</span>
+                </label>
+                <input
+                  type="text"
+                  value={organizerName}
+                  onChange={(e) => setOrganizerName(e.target.value)}
+                  placeholder="Enter your name"
+                  required
+                  className="w-full px-4 py-3 rounded-xl bg-white/5 border border-white/10 text-white placeholder-white/30 focus:border-amber-500/50 focus:outline-none focus:ring-1 focus:ring-amber-500/30"
+                />
+              </div>
+
+              {/* Phone */}
+              <div>
+                <label className="block text-sm font-medium text-white/70 mb-1.5">
+                  Phone Number <span className="text-white/40">(optional)</span>
+                </label>
+                <input
+                  type="tel"
+                  value={organizerPhone}
+                  onChange={(e) => setOrganizerPhone(e.target.value)}
+                  placeholder="For order updates"
+                  className="w-full px-4 py-3 rounded-xl bg-white/5 border border-white/10 text-white placeholder-white/30 focus:border-amber-500/50 focus:outline-none focus:ring-1 focus:ring-amber-500/30"
+                />
+              </div>
+
+              {/* Fulfillment Method */}
+              <div>
+                <label className="block text-sm font-medium text-white/70 mb-1.5">
+                  How will everyone get their food?
+                </label>
+                <div className="grid grid-cols-2 gap-3">
+                  <button
+                    type="button"
+                    onClick={() => setFulfillmentMethod('pickup')}
+                    className={`flex items-center justify-center gap-2 px-4 py-3 rounded-xl border transition-all ${
+                      fulfillmentMethod === 'pickup'
+                        ? 'bg-amber-500/20 border-amber-500/50 text-amber-400'
+                        : 'bg-white/5 border-white/10 text-white/70 hover:bg-white/10'
+                    }`}
+                  >
+                    <MapPin className="w-4 h-4" />
+                    <span className="font-medium">Pickup</span>
+                  </button>
+                  <button
+                    type="button"
+                    onClick={() => setFulfillmentMethod('delivery')}
+                    className={`flex items-center justify-center gap-2 px-4 py-3 rounded-xl border transition-all ${
+                      fulfillmentMethod === 'delivery'
+                        ? 'bg-amber-500/20 border-amber-500/50 text-amber-400'
+                        : 'bg-white/5 border-white/10 text-white/70 hover:bg-white/10'
+                    }`}
+                  >
+                    <Calendar className="w-4 h-4" />
+                    <span className="font-medium">Delivery</span>
+                  </button>
+                </div>
+              </div>
+
+              {/* Expiration */}
+              <div>
+                <label className="block text-sm font-medium text-white/70 mb-1.5">
+                  <Clock className="w-4 h-4 inline-block mr-1" />
+                  Order window closes in
+                </label>
+                <div className="grid grid-cols-4 gap-2">
+                  {[1, 2, 3, 4].map((hours) => (
+                    <button
+                      key={hours}
+                      type="button"
+                      onClick={() => setExpiresInHours(hours)}
+                      className={`px-3 py-2 rounded-lg border text-sm font-medium transition-all ${
+                        expiresInHours === hours
+                          ? 'bg-amber-500/20 border-amber-500/50 text-amber-400'
+                          : 'bg-white/5 border-white/10 text-white/70 hover:bg-white/10'
+                      }`}
+                    >
+                      {hours}h
+                    </button>
+                  ))}
+                </div>
+              </div>
+
+              {/* Error */}
+              {error && (
+                <div className="p-3 rounded-xl bg-red-500/10 border border-red-500/20 text-red-400 text-sm">
+                  {error}
+                </div>
+              )}
+
+              {/* Submit */}
+              <button
+                type="submit"
+                disabled={loading}
+                className="w-full py-4 rounded-xl font-bold text-black/90 bg-gradient-to-r from-amber-400 via-amber-500 to-yellow-500 hover:from-amber-300 hover:via-amber-400 hover:to-yellow-400 shadow-lg shadow-amber-500/30 transition-all disabled:opacity-50 disabled:cursor-not-allowed"
+              >
+                {loading ? (
+                  <span className="flex items-center justify-center gap-2">
+                    <div className="w-5 h-5 border-2 border-black/30 border-t-black rounded-full animate-spin" />
+                    Creating...
+                  </span>
+                ) : (
+                  "Create Group Order Link"
+                )}
+              </button>
+            </form>
+          ) : (
+            /* Success Step */
+            <div className="space-y-5">
+              {/* Success Message */}
+              <div className="text-center py-4">
+                <div className="w-16 h-16 mx-auto mb-4 rounded-full bg-green-500/20 flex items-center justify-center">
+                  <Check className="w-8 h-8 text-green-400" />
+                </div>
+                <h3 className="text-lg font-bold text-white mb-1">
+                  Group Order Created!
+                </h3>
+                <p className="text-white/50 text-sm">
+                  Share the link below with your group
+                </p>
+              </div>
+
+              {/* Session Code Badge */}
+              <div className="flex items-center justify-center">
+                <div className="px-4 py-2 rounded-full bg-amber-500/20 border border-amber-500/30">
+                  <span className="text-amber-400 font-mono font-bold text-lg">
+                    {groupOrderData?.sessionCode}
+                  </span>
+                </div>
+              </div>
+
+              {/* Link Box */}
+              <div className="p-4 rounded-xl bg-white/5 border border-white/10">
+                <p className="text-xs text-white/50 mb-2">Shareable Link</p>
+                <div className="flex items-center gap-2">
+                  <input
+                    type="text"
+                    readOnly
+                    value={groupOrderData?.shareableLink || ''}
+                    className="flex-1 px-3 py-2 rounded-lg bg-black/30 border border-white/10 text-white text-sm font-mono"
+                  />
+                  <button
+                    onClick={handleCopyLink}
+                    className={`p-2 rounded-lg transition-all ${
+                      copied
+                        ? 'bg-green-500/20 text-green-400'
+                        : 'bg-white/10 text-white hover:bg-white/20'
+                    }`}
+                  >
+                    {copied ? <Check className="w-5 h-5" /> : <Copy className="w-5 h-5" />}
+                  </button>
+                </div>
+              </div>
+
+              {/* Expiry Info */}
+              <div className="flex items-center justify-center gap-2 text-white/50 text-sm">
+                <Clock className="w-4 h-4" />
+                <span>
+                  Closes at {groupOrderData ? formatExpiryTime(groupOrderData.expiresAt) : ''}
+                </span>
+              </div>
+
+              {/* Action Buttons */}
+              <div className="grid grid-cols-2 gap-3">
+                <button
+                  onClick={handleShare}
+                  className="flex items-center justify-center gap-2 py-3 rounded-xl font-bold text-black/90 bg-gradient-to-r from-amber-400 via-amber-500 to-yellow-500 hover:from-amber-300 hover:via-amber-400 hover:to-yellow-400 shadow-lg shadow-amber-500/30 transition-all"
+                >
+                  <Share2 className="w-5 h-5" />
+                  Share
+                </button>
+                <button
+                  onClick={onClose}
+                  className="py-3 rounded-xl font-medium text-white bg-white/10 hover:bg-white/20 border border-white/10 transition-all"
+                >
+                  Done
+                </button>
+              </div>
+
+              {/* Tip */}
+              <p className="text-center text-xs text-white/40">
+                Everyone pays for their own order. All orders are grouped for pickup/delivery.
+              </p>
+            </div>
+          )}
+        </div>
+      </div>
+    </div>,
+    document.body
+  );
+}

@@ -175,6 +175,10 @@ model Order {
   customer             Customer?     @relation(fields: [customerId], references: [id], onDelete: SetNull)
   items                OrderItem[]
   selfDelivery         SelfDelivery?
+  // Group order support
+  groupOrderId         String?
+  participantName      String?       // Who this order is for (for labeling in group orders)
+  groupOrder           GroupOrder?   @relation(fields: [groupOrderId], references: [id], onDelete: SetNull)
 }
 
 model CateringInquiry {
@@ -397,6 +401,7 @@ model Tenant {
   accountantAccess       AccountantTenantAccess[]
   template               TenantTemplate?
   drivers                Driver[]
+  groupOrders            GroupOrder[]
 
   @@index([status])
 }
@@ -555,6 +560,43 @@ model SelfDelivery {
 
   @@index([tenantId, status])
   @@index([driverId])
+}
+
+// Group Order - Allows multiple people to order together with individual payments
+model GroupOrder {
+  id                    String      @id @default(uuid())
+  tenantId              String
+  sessionCode           String      @unique   // Short shareable code (e.g., "LR-ABC123")
+
+  // Group info
+  name                  String?               // "Office Lunch", "Birthday Party"
+  organizerName         String
+  organizerEmail        String?
+  organizerPhone        String?
+
+  // Fulfillment (shared by all orders in the group)
+  fulfillmentMethod     String      @default("pickup")
+  deliveryAddress       Json?
+  scheduledPickupTime   DateTime?
+
+  // Status tracking
+  status                String      @default("open")  // open, closed, fulfilled, cancelled
+  expiresAt             DateTime              // Auto-close after expiration
+  closedAt              DateTime?
+
+  // Aggregates (updated as orders are added)
+  orderCount            Int         @default(0)
+  totalAmount           Float       @default(0)
+
+  createdAt             DateTime    @default(now())
+  updatedAt             DateTime    @updatedAt
+
+  tenant                Tenant      @relation(fields: [tenantId], references: [id], onDelete: Cascade)
+  orders                Order[]
+
+  @@index([tenantId])
+  @@index([sessionCode])
+  @@index([status])
 }
 
 model MenuSection {
