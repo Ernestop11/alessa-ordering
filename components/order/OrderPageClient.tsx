@@ -46,6 +46,7 @@ import RewardsModal from './RewardsModal';
 import JoinRewardsModal from './JoinRewardsModal';
 import ReorderModal from './ReorderModal';
 import GroupOrderModal from './GroupOrderModal';
+import GroupOrderBanner from './GroupOrderBanner';
 import MenuSectionGrid from './MenuSectionGrid';
 import MobileNavDrawer from './MobileNavDrawer';
 import { isTimeSpecificActive, getTimeSpecificPrice, getTimeSpecificLabel, shouldShowItem } from '../../lib/menu-time-specific';
@@ -2755,6 +2756,9 @@ export default function OrderPageClient({
       {patternStyles && (
         <div style={patternStyles} />
       )}
+
+      {/* Group Order Banner - Shows when user is ordering as part of a group */}
+      <GroupOrderBanner primaryColor={tenant.primaryColor || '#f59e0b'} />
 
       {/* Ambient LED Glow Effects */}
       <div className="fixed inset-0 pointer-events-none z-0">

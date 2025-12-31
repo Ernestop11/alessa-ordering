@@ -51,6 +51,9 @@ export interface OrderPayload {
     joinRewards?: boolean;
     [key: string]: any;
   };
+  // Group order context
+  groupSessionCode?: string;
+  participantName?: string;
 }
 
 interface TenantWithRelations {
@@ -348,6 +351,44 @@ export async function createOrderFromPayload({
           }
         }
       }
+    }
+  }
+
+  // Link order to group order if applicable
+  if (payload.groupSessionCode) {
+    const groupOrder = await prisma.groupOrder.findFirst({
+      where: {
+        sessionCode: payload.groupSessionCode,
+        tenantId: tenant.id,
+        status: 'open',
+      },
+    });
+
+    if (groupOrder) {
+      // Update order with group order reference and participant name
+      await prisma.order.update({
+        where: { id: order.id },
+        data: {
+          groupOrderId: groupOrder.id,
+          participantName: payload.participantName || payload.customerName || null,
+        },
+      });
+
+      // Update group order aggregates
+      await prisma.groupOrder.update({
+        where: { id: groupOrder.id },
+        data: {
+          orderCount: { increment: 1 },
+          totalAmount: { increment: totalAmount },
+        },
+      });
+
+      console.log('[order-service] Order linked to group order', {
+        orderId: order.id,
+        groupOrderId: groupOrder.id,
+        sessionCode: payload.groupSessionCode,
+        participantName: payload.participantName,
+      });
     }
   }
 

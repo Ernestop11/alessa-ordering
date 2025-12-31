@@ -30,6 +30,9 @@ export interface CartItem {
 interface CartStore {
   items: CartItem[];
   _hasHydrated: boolean;
+  // Group order context
+  groupSessionCode: string | null;
+  participantName: string | null;
   setHasHydrated: (state: boolean) => void;
   addToCart: (item: CartItem) => void;
   removeFromCart: (itemId: string) => void;
@@ -37,6 +40,10 @@ interface CartStore {
   updateItem: (itemId: string, updates: Partial<CartItem>) => void;
   clearCart: () => void;
   total: () => number;
+  // Group order methods
+  setGroupOrder: (sessionCode: string, participantName: string) => void;
+  clearGroupOrder: () => void;
+  isGroupOrder: () => boolean;
 }
 
 export const useCart = create<CartStore>()(
@@ -44,9 +51,24 @@ export const useCart = create<CartStore>()(
     (set, get) => ({
       items: [],
       _hasHydrated: false,
+      groupSessionCode: null,
+      participantName: null,
 
       setHasHydrated: (state) => {
         set({ _hasHydrated: state });
+      },
+
+      setGroupOrder: (sessionCode, participantName) => {
+        set({ groupSessionCode: sessionCode, participantName });
+      },
+
+      clearGroupOrder: () => {
+        set({ groupSessionCode: null, participantName: null });
+      },
+
+      isGroupOrder: () => {
+        const state = get();
+        return state.groupSessionCode !== null;
       },
 
       addToCart: (item) => {
@@ -125,8 +147,12 @@ export const useCart = create<CartStore>()(
           removeItem: () => {},
         };
       }),
-      // Only persist items, not computed values or hydration state
-      partialize: (state) => ({ items: state.items }),
+      // Persist items and group order context
+      partialize: (state) => ({
+        items: state.items,
+        groupSessionCode: state.groupSessionCode,
+        participantName: state.participantName,
+      }),
       onRehydrateStorage: () => (state) => {
         state?.setHasHydrated(true);
       },

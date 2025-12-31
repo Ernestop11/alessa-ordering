@@ -4,7 +4,7 @@ import { useState, useEffect, useMemo } from 'react';
 import { useRouter, useSearchParams } from 'next/navigation';
 import { useCart } from '@/lib/store/cart';
 import { useTenantTheme } from '@/components/TenantThemeProvider';
-import { ArrowLeft, CreditCard, Trash2, Check } from 'lucide-react';
+import { ArrowLeft, CreditCard, Trash2, Check, Users } from 'lucide-react';
 import { loadStripe } from '@stripe/stripe-js';
 import {
   Elements,
@@ -69,6 +69,8 @@ interface PaymentFormProps {
   savedCards: SavedPaymentMethod[];
   onRefreshCards: () => void;
   isLoggedIn: boolean;
+  groupSessionCode?: string | null;
+  participantName?: string | null;
 }
 
 function PaymentForm({
@@ -83,6 +85,8 @@ function PaymentForm({
   savedCards,
   onRefreshCards,
   isLoggedIn,
+  groupSessionCode,
+  participantName,
 }: PaymentFormProps) {
   const stripe = useStripe();
   const elements = useElements();
@@ -114,6 +118,9 @@ function PaymentForm({
       customerPhone: customerInfo.phone,
       fulfillmentMethod: orderType,
       deliveryAddress: orderType === 'delivery' ? customerInfo.address : undefined,
+      // Group order context
+      groupSessionCode: groupSessionCode || undefined,
+      participantName: participantName || undefined,
     };
 
     const response = await fetch('/api/payments/intent', {
@@ -532,7 +539,7 @@ function PaymentForm({
 }
 
 export default function CheckoutPage() {
-  const { items, total, clearCart } = useCart();
+  const { items, total, clearCart, groupSessionCode, participantName, clearGroupOrder } = useCart();
   const tenant = useTenantTheme();
   const router = useRouter();
   const searchParams = useSearchParams();
@@ -609,7 +616,13 @@ export default function CheckoutPage() {
     }
 
     clearCart();
-    router.push(`/order/success${tenantSlug ? `?tenant=${tenantSlug}` : ''}`);
+    clearGroupOrder(); // Clear group order context after successful payment
+
+    // Redirect with group context if applicable
+    const successUrl = groupSessionCode
+      ? `/order/success?tenant=${tenantSlug}&group=${groupSessionCode}`
+      : `/order/success${tenantSlug ? `?tenant=${tenantSlug}` : ''}`
+    router.push(successUrl);
   };
 
   // Empty cart state
@@ -649,6 +662,21 @@ export default function CheckoutPage() {
           )}
         </div>
       </header>
+
+      {/* Group Order Banner */}
+      {groupSessionCode && participantName && (
+        <div className="bg-amber-500 px-4 py-2">
+          <div className="max-w-lg mx-auto flex items-center gap-3">
+            <Users className="w-5 h-5 text-black/70" />
+            <div className="flex-1">
+              <p className="text-sm font-medium text-black/90">
+                Group Order for <span className="font-bold">{participantName}</span>
+              </p>
+              <p className="text-xs text-black/60">Your order will be grouped with others</p>
+            </div>
+          </div>
+        </div>
+      )}
 
       <main className="max-w-lg mx-auto px-4 py-4 pb-8">
         {/* Order Summary - Compact */}
@@ -760,6 +788,8 @@ export default function CheckoutPage() {
                 savedCards={savedCards}
                 onRefreshCards={refreshCards}
                 isLoggedIn={isLoggedIn}
+                groupSessionCode={groupSessionCode}
+                participantName={participantName}
               />
             </Elements>
           ) : (
