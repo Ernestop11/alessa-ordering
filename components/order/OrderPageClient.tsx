@@ -2049,29 +2049,17 @@ export default function OrderPageClient({
 
           {/* Use same card structure as menu items */}
           <article className={`group relative overflow-hidden rounded-xl sm:rounded-2xl bg-white/[0.03] backdrop-blur-sm border transition-all duration-300 hover:shadow-xl ${isInCart ? 'border-amber-400/60 ring-1 ring-amber-400/30 hover:border-amber-400/80' : 'border-white/[0.08] hover:border-white/20 hover:shadow-white/5'}`}>
-            {/* Image container */}
+            {/* Image container - use img tag for all images to enable fallback on error */}
             <div className="relative aspect-square w-full overflow-hidden bg-[#1a1a1a]">
-              {foundItem.displayImage?.startsWith('http') ? (
-                <img
-                  src={foundItem.displayImage}
-                  alt={foundItem.name}
-                  className="h-full w-full object-cover transition-transform duration-500 group-hover:scale-105"
-                  onError={(e) => {
-                    const target = e.target as HTMLImageElement;
-                    target.src = getStockImageForCategory(sectionType, 0);
-                  }}
-                />
-              ) : (
-                <Image
-                  src={foundItem.displayImage || getStockImageForCategory(sectionType, 0)}
-                  alt={foundItem.name}
-                  fill
-                  className="object-cover transition-transform duration-500 group-hover:scale-105"
-                  sizes="100vw"
-                  priority
-                  unoptimized={foundItem.displayImage?.startsWith('/tenant/')}
-                />
-              )}
+              <img
+                src={foundItem.displayImage || getStockImageForCategory(sectionType, 0)}
+                alt={foundItem.name}
+                className="h-full w-full object-cover transition-transform duration-500 group-hover:scale-105"
+                onError={(e) => {
+                  const target = e.target as HTMLImageElement;
+                  target.src = getStockImageForCategory(sectionType, 0);
+                }}
+              />
 
               {/* Gradient overlay */}
               <div className="absolute inset-0 bg-gradient-to-t from-black/70 via-black/20 to-transparent" />
