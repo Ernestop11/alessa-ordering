@@ -178,10 +178,7 @@ export default function CartItemEditModal({
           </button>
           <button
             onClick={handleSave}
-            style={{
-              background: `linear-gradient(135deg, ${tenant.primaryColor || '#C41E3A'} 0%, ${tenant.secondaryColor || '#FBBF24'} 100%)`,
-            }}
-            className="flex-1 h-14 rounded-xl font-bold text-white shadow-lg hover:shadow-xl transition-all active:scale-[0.98]"
+            className="flex-1 h-14 rounded-xl font-bold text-black/90 shadow-lg shadow-amber-500/30 hover:shadow-xl transition-all active:scale-[0.98] bg-gradient-to-r from-amber-400 via-amber-500 to-yellow-500 hover:from-amber-300 hover:via-amber-400 hover:to-yellow-400"
           >
             Update Item - ${grandTotal.toFixed(2)}
           </button>

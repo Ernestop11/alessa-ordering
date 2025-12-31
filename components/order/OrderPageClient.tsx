@@ -5484,7 +5484,7 @@ export default function OrderPageClient({
             <div className="mt-6 flex flex-col gap-3 sm:flex-row-reverse">
               <button
                 onClick={handleConfirmCustomization}
-                className="flex-1 rounded-2xl bg-[#C41E3A] px-6 py-4 text-base font-bold text-white shadow-xl shadow-[#C41E3A]/30 transition-all hover:bg-[#A01830] hover:scale-[1.02] active:scale-[0.98]"
+                className="flex-1 rounded-2xl bg-gradient-to-r from-amber-400 via-amber-500 to-yellow-500 px-6 py-4 text-base font-bold text-black/90 shadow-xl shadow-amber-500/30 transition-all hover:from-amber-300 hover:via-amber-400 hover:to-yellow-400 hover:scale-[1.02] active:scale-[0.98]"
               >
                 Add to Cart · ${totalCustomizedPrice.toFixed(2)}
               </button>
