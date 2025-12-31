@@ -50,6 +50,34 @@ export default function GroupOrderModal({
     setMounted(true);
   }, []);
 
+  // Fetch logged-in customer info to auto-fill form
+  useEffect(() => {
+    async function fetchCustomerInfo() {
+      try {
+        const res = await fetch('/api/rewards/customer', {
+          credentials: 'include',
+          cache: 'no-store',
+        });
+        if (res.ok) {
+          const data = await res.json();
+          if (data && data.id) {
+            // Auto-fill organizer info from logged-in customer
+            if (data.name && !organizerName) {
+              setOrganizerName(data.name);
+              setSponsorDisplayName(data.name);
+            }
+            if (data.phone && !organizerPhone) {
+              setOrganizerPhone(data.phone);
+            }
+          }
+        }
+      } catch (err) {
+        console.error('[GroupOrderModal] Failed to fetch customer info:', err);
+      }
+    }
+    fetchCustomerInfo();
+  }, []);
+
   // Reset form when modal opens
   useEffect(() => {
     if (open) {

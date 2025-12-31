@@ -3,6 +3,20 @@ import { Resend } from 'resend';
 
 const resend = process.env.RESEND_API_KEY ? new Resend(process.env.RESEND_API_KEY) : null;
 
+// Las Reinas tenant info
+const TENANT = {
+  name: 'Las Reinas Taqueria y Carniceria',
+  logoUrl: 'https://lasreinascolusa.com/tenant/lasreinas/logo.png',
+  address: '751 Fremont St',
+  city: 'Colusa',
+  state: 'CA',
+  zip: '95932',
+  phone: '(530) 458-7775',
+  email: 'admin@lasreinascolusa.com',
+  primaryColor: '#dc2626', // Red
+  secondaryColor: '#f59e0b', // Gold
+};
+
 export async function POST(request: NextRequest) {
   try {
     if (!resend) {
@@ -12,7 +26,7 @@ export async function POST(request: NextRequest) {
       );
     }
 
-    const { to, tenantName = 'Las Reinas' } = await request.json();
+    const { to, type = 'customer' } = await request.json();
 
     if (!to) {
       return NextResponse.json(
@@ -21,96 +35,200 @@ export async function POST(request: NextRequest) {
       );
     }
 
-    // Test order data
+    // Realistic test order data
     const testOrder = {
-      id: 'TEST-' + Date.now().toString(36).toUpperCase(),
-      customerName: 'Test Customer',
-      totalAmount: 25.99,
+      id: 'LR-' + Date.now().toString(36).toUpperCase(),
+      orderNumber: Math.floor(1000 + Math.random() * 9000),
+      customerName: 'Maria Garcia',
+      customerPhone: '(530) 555-1234',
+      customerEmail: to,
+      fulfillmentMethod: 'pickup',
+      scheduledTime: new Date(Date.now() + 45 * 60 * 1000).toLocaleTimeString('en-US', {
+        hour: 'numeric',
+        minute: '2-digit',
+        hour12: true
+      }),
       items: [
-        { name: 'Breakfast Burrito', quantity: 2, price: 9.99 },
-        { name: 'Horchata', quantity: 1, price: 3.50 },
+        { name: 'Carne Asada Burrito', quantity: 2, price: 12.99, subtotal: 25.98 },
+        { name: 'Street Tacos (3)', quantity: 1, price: 8.99, subtotal: 8.99 },
+        { name: 'Horchata (Large)', quantity: 2, price: 4.50, subtotal: 9.00 },
+        { name: 'Chips & Salsa', quantity: 1, price: 3.99, subtotal: 3.99 },
       ],
+      subtotal: 47.96,
+      tax: 3.84,
+      total: 51.80,
+      paymentMethod: 'Card ending in 4242',
+      createdAt: new Date().toLocaleString('en-US', {
+        weekday: 'long',
+        year: 'numeric',
+        month: 'long',
+        day: 'numeric',
+        hour: 'numeric',
+        minute: '2-digit',
+        hour12: true
+      }),
     };
 
-    const orderItemsList = testOrder.items
-      .map((item) => `  • ${item.quantity}x ${item.name} - $${item.price.toFixed(2)}`)
-      .join('\n');
+    const itemsHtml = testOrder.items
+      .map((item) => `
+        <tr>
+          <td style="padding: 12px 0; border-bottom: 1px solid #e5e7eb;">
+            <span style="font-weight: 500;">${item.quantity}x</span> ${item.name}
+          </td>
+          <td style="padding: 12px 0; border-bottom: 1px solid #e5e7eb; text-align: right; font-weight: 500;">
+            $${item.subtotal.toFixed(2)}
+          </td>
+        </tr>
+      `)
+      .join('');
+
+    const isCustomerEmail = type === 'customer';
+    const subject = isCustomerEmail
+      ? `Order Confirmed! #${testOrder.orderNumber} - ${TENANT.name}`
+      : `New Order #${testOrder.orderNumber} - $${testOrder.total.toFixed(2)}`;
 
     const { error, data } = await resend.emails.send({
-      from: `${tenantName} <orders@lasreinascolusa.com>`,
+      from: `${TENANT.name} <orders@lasreinascolusa.com>`,
       to: [to],
-      replyTo: 'admin@lasreinascolusa.com',
-      subject: `🧪 TEST: New Order #${testOrder.id} - $${testOrder.totalAmount.toFixed(2)}`,
+      replyTo: TENANT.email,
+      subject,
       html: `
         <!DOCTYPE html>
         <html>
         <head>
           <meta charset="utf-8">
           <meta name="viewport" content="width=device-width, initial-scale=1.0">
-          <title>Test Order Notification</title>
+          <title>Order Confirmation</title>
         </head>
-        <body style="font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, 'Helvetica Neue', Arial, sans-serif; line-height: 1.6; color: #333; max-width: 600px; margin: 0 auto; padding: 20px;">
-          <div style="background: linear-gradient(135deg, #dc2626 0%, #f59e0b 100%); padding: 30px; border-radius: 12px 12px 0 0; text-align: center;">
-            <h1 style="color: white; margin: 0; font-size: 28px; font-weight: bold;">🧪 TEST EMAIL</h1>
-            <p style="color: rgba(255,255,255,0.9); margin: 10px 0 0 0;">This is a test of the order notification system</p>
+        <body style="font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, 'Helvetica Neue', Arial, sans-serif; line-height: 1.6; color: #333; max-width: 600px; margin: 0 auto; padding: 0; background-color: #f3f4f6;">
+
+          <!-- Header with Logo -->
+          <div style="background: linear-gradient(135deg, ${TENANT.primaryColor} 0%, ${TENANT.secondaryColor} 100%); padding: 30px; text-align: center;">
+            <img src="${TENANT.logoUrl}" alt="${TENANT.name}" style="max-width: 120px; height: auto; margin-bottom: 15px; border-radius: 12px;">
+            <h1 style="color: white; margin: 0; font-size: 24px; font-weight: bold;">${isCustomerEmail ? 'Thank You for Your Order!' : 'New Order Received!'}</h1>
           </div>
 
-          <div style="background: #f9fafb; padding: 30px; border-radius: 0 0 12px 12px; border: 1px solid #e5e7eb; border-top: none;">
-            <div style="background: white; padding: 20px; border-radius: 8px; margin-bottom: 20px;">
-              <h2 style="margin-top: 0; color: #111827; font-size: 20px;">Order Details</h2>
+          <!-- Order Status Banner -->
+          <div style="background: ${isCustomerEmail ? '#dcfce7' : '#fef3c7'}; padding: 15px 30px; text-align: center; border-bottom: 1px solid ${isCustomerEmail ? '#86efac' : '#fcd34d'};">
+            <p style="margin: 0; color: ${isCustomerEmail ? '#166534' : '#92400e'}; font-weight: 600; font-size: 16px;">
+              ${isCustomerEmail ? '✅ Your order has been confirmed!' : '🔔 Action Required: Prepare this order'}
+            </p>
+          </div>
 
+          <!-- Main Content -->
+          <div style="background: white; padding: 30px;">
+
+            <!-- Order Info -->
+            <div style="background: #f9fafb; padding: 20px; border-radius: 12px; margin-bottom: 25px;">
               <table style="width: 100%; border-collapse: collapse;">
                 <tr>
-                  <td style="padding: 8px 0; color: #6b7280; font-weight: 500;">Order ID:</td>
-                  <td style="padding: 8px 0; color: #111827; font-family: monospace;">${testOrder.id}</td>
+                  <td style="padding: 8px 0; color: #6b7280;">Order Number:</td>
+                  <td style="padding: 8px 0; color: #111827; font-weight: 600; text-align: right;">#${testOrder.orderNumber}</td>
                 </tr>
                 <tr>
-                  <td style="padding: 8px 0; color: #6b7280; font-weight: 500;">Customer:</td>
-                  <td style="padding: 8px 0; color: #111827;">${testOrder.customerName}</td>
+                  <td style="padding: 8px 0; color: #6b7280;">Placed:</td>
+                  <td style="padding: 8px 0; color: #111827; text-align: right;">${testOrder.createdAt}</td>
                 </tr>
                 <tr>
-                  <td style="padding: 8px 0; color: #6b7280; font-weight: 500;">Total:</td>
-                  <td style="padding: 8px 0; color: #111827; font-size: 18px; font-weight: bold;">$${testOrder.totalAmount.toFixed(2)}</td>
+                  <td style="padding: 8px 0; color: #6b7280;">Customer:</td>
+                  <td style="padding: 8px 0; color: #111827; text-align: right;">${testOrder.customerName}</td>
+                </tr>
+                <tr>
+                  <td style="padding: 8px 0; color: #6b7280;">Phone:</td>
+                  <td style="padding: 8px 0; color: #111827; text-align: right;">${testOrder.customerPhone}</td>
                 </tr>
               </table>
             </div>
 
-            <div style="background: white; padding: 20px; border-radius: 8px; margin-bottom: 20px;">
-              <h3 style="margin-top: 0; color: #111827; font-size: 18px;">Items (${testOrder.items.length})</h3>
-              <pre style="background: #f9fafb; padding: 15px; border-radius: 6px; overflow-x: auto; margin: 0; font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif; white-space: pre-wrap;">${orderItemsList}</pre>
+            <!-- Pickup Info -->
+            <div style="background: linear-gradient(135deg, ${TENANT.primaryColor}15 0%, ${TENANT.secondaryColor}15 100%); padding: 20px; border-radius: 12px; margin-bottom: 25px; border-left: 4px solid ${TENANT.primaryColor};">
+              <h3 style="margin: 0 0 10px 0; color: ${TENANT.primaryColor}; font-size: 16px;">📍 Pickup Details</h3>
+              <p style="margin: 0; color: #374151; font-weight: 600; font-size: 18px;">Ready at: ${testOrder.scheduledTime}</p>
+              <p style="margin: 10px 0 0 0; color: #6b7280;">${TENANT.address}, ${TENANT.city}, ${TENANT.state} ${TENANT.zip}</p>
             </div>
 
-            <div style="background: #dcfce7; padding: 15px; border-radius: 8px; text-align: center;">
-              <p style="margin: 0; color: #166534; font-weight: 600;">
-                ✅ Email system is working correctly!
-              </p>
-              <p style="margin: 10px 0 0 0; color: #166534; font-size: 14px;">
-                Sent from: orders@lasreinascolusa.com
+            <!-- Order Items -->
+            <h3 style="margin: 0 0 15px 0; color: #111827; font-size: 18px;">Order Items</h3>
+            <table style="width: 100%; border-collapse: collapse; margin-bottom: 20px;">
+              ${itemsHtml}
+            </table>
+
+            <!-- Totals -->
+            <div style="border-top: 2px solid #e5e7eb; padding-top: 15px;">
+              <table style="width: 100%; border-collapse: collapse;">
+                <tr>
+                  <td style="padding: 8px 0; color: #6b7280;">Subtotal:</td>
+                  <td style="padding: 8px 0; color: #111827; text-align: right;">$${testOrder.subtotal.toFixed(2)}</td>
+                </tr>
+                <tr>
+                  <td style="padding: 8px 0; color: #6b7280;">Tax:</td>
+                  <td style="padding: 8px 0; color: #111827; text-align: right;">$${testOrder.tax.toFixed(2)}</td>
+                </tr>
+                <tr>
+                  <td style="padding: 12px 0; color: #111827; font-size: 20px; font-weight: 700;">Total:</td>
+                  <td style="padding: 12px 0; color: ${TENANT.primaryColor}; font-size: 20px; font-weight: 700; text-align: right;">$${testOrder.total.toFixed(2)}</td>
+                </tr>
+              </table>
+            </div>
+
+            <!-- Payment Info -->
+            <div style="background: #f0fdf4; padding: 15px; border-radius: 8px; margin-top: 20px;">
+              <p style="margin: 0; color: #166534; font-size: 14px;">
+                💳 Paid with: ${testOrder.paymentMethod}
               </p>
             </div>
 
-            <p style="text-align: center; margin-top: 30px; color: #6b7280; font-size: 14px;">
-              This is a test notification from ${tenantName} ordering system.
-            </p>
           </div>
+
+          <!-- Footer -->
+          <div style="background: #1f2937; padding: 30px; text-align: center;">
+            <p style="margin: 0 0 10px 0; color: white; font-weight: 600; font-size: 16px;">${TENANT.name}</p>
+            <p style="margin: 0 0 5px 0; color: #9ca3af; font-size: 14px;">${TENANT.address}</p>
+            <p style="margin: 0 0 15px 0; color: #9ca3af; font-size: 14px;">${TENANT.city}, ${TENANT.state} ${TENANT.zip}</p>
+            <p style="margin: 0; color: #9ca3af; font-size: 14px;">
+              📞 ${TENANT.phone} &nbsp;|&nbsp; ✉️ ${TENANT.email}
+            </p>
+            <div style="margin-top: 20px; padding-top: 20px; border-top: 1px solid #374151;">
+              <p style="margin: 0; color: #6b7280; font-size: 12px;">
+                Questions about your order? Just reply to this email or call us!
+              </p>
+            </div>
+          </div>
+
         </body>
         </html>
       `,
       text: `
-🧪 TEST EMAIL - Order Notification System
+${TENANT.name}
+Order Confirmation
 
-Order ID: ${testOrder.id}
+${isCustomerEmail ? 'Thank you for your order!' : 'New order received!'}
+
+Order #${testOrder.orderNumber}
+Placed: ${testOrder.createdAt}
 Customer: ${testOrder.customerName}
-Total: $${testOrder.totalAmount.toFixed(2)}
+Phone: ${testOrder.customerPhone}
 
-Items (${testOrder.items.length}):
-${orderItemsList}
+PICKUP DETAILS
+Ready at: ${testOrder.scheduledTime}
+Location: ${TENANT.address}, ${TENANT.city}, ${TENANT.state} ${TENANT.zip}
 
-✅ Email system is working correctly!
-Sent from: orders@lasreinascolusa.com
+ORDER ITEMS
+${testOrder.items.map((item) => `${item.quantity}x ${item.name} - $${item.subtotal.toFixed(2)}`).join('\n')}
+
+Subtotal: $${testOrder.subtotal.toFixed(2)}
+Tax: $${testOrder.tax.toFixed(2)}
+TOTAL: $${testOrder.total.toFixed(2)}
+
+Paid with: ${testOrder.paymentMethod}
 
 ---
-This is a test notification from ${tenantName} ordering system.
+${TENANT.name}
+${TENANT.address}, ${TENANT.city}, ${TENANT.state} ${TENANT.zip}
+Phone: ${TENANT.phone}
+Email: ${TENANT.email}
+
+Questions? Reply to this email or call us!
       `.trim(),
     });
 
@@ -122,12 +240,12 @@ This is a test notification from ${tenantName} ordering system.
       );
     }
 
-    console.log('[test-email] Test email sent successfully', { to, messageId: data?.id });
+    console.log('[test-email] Test email sent successfully', { to, type, messageId: data?.id });
 
     return NextResponse.json({
       success: true,
       messageId: data?.id,
-      message: `Test email sent to ${to}`,
+      message: `${type === 'customer' ? 'Customer confirmation' : 'Admin notification'} test email sent to ${to}`,
     });
   } catch (error) {
     console.error('[test-email] Error:', error);
