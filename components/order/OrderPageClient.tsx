@@ -814,10 +814,18 @@ export default function OrderPageClient({
       price: addon.price,
     }));
 
+    // Store available customizations for cart edit modal
+    const availableAddonsPayload = customModal.config.addons.map((addon) => ({
+      id: addon.id,
+      name: addon.label.replace(/\s*\(.*\)$/, ''),
+      price: addon.price,
+    }));
+
     const perItemRounded = Math.round(perItemCustomizedPrice * 100) / 100;
 
     addToCart({
       id: `${customModal.item.id}-${Date.now()}`,
+      menuItemId: customModal.item.id, // Store original menu item ID
       name: customModal.item.name,
       description: customModal.item.description,
       price: perItemRounded,
@@ -825,6 +833,8 @@ export default function OrderPageClient({
       image: customModal.item.displayImage,
       modifiers: customRemovals,
       addons: addonPayload,
+      availableModifiers: customModal.config.removals, // Store available options
+      availableAddons: availableAddonsPayload, // Store available addons
       note: customNote || undefined,
     });
 

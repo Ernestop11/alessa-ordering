@@ -75,16 +75,21 @@ export default function Cart() {
   const [editModifiers, setEditModifiers] = useState<string[]>([]);
   const [editAddons, setEditAddons] = useState<Array<{id: string; name: string; price: number}>>([]);
 
-  // Available customization options (standard menu options)
-  const AVAILABLE_MODIFIERS = ['No cilantro', 'No onions', 'No salsa', 'No rice', 'No beans', 'No crema', 'Less ice', 'No sugar'];
-  const AVAILABLE_ADDONS = [
-    { id: 'side_bacon', name: 'Side of bacon', price: 1.80 },
+  // Default fallback customization options (used if item doesn't have menu-specific options)
+  const DEFAULT_MODIFIERS = ['No cilantro', 'No onions', 'No salsa', 'No rice', 'No beans', 'No crema'];
+  const DEFAULT_ADDONS = [
     { id: 'extra_guac', name: 'Extra guacamole', price: 0.75 },
     { id: 'extra_cheese', name: 'Extra cheese', price: 0.50 },
     { id: 'extra_salsa', name: 'Side of salsa', price: 0.35 },
-    { id: 'extra_tortillas', name: 'Extra tortillas', price: 0.60 },
-    { id: 'cajeta_drizzle', name: 'Cajeta drizzle', price: 0.50 },
   ];
+
+  // Get available modifiers and addons for the editing item (from menu editor or fallback)
+  const availableModifiers = editingItem?.availableModifiers?.length
+    ? editingItem.availableModifiers
+    : DEFAULT_MODIFIERS;
+  const availableAddons = editingItem?.availableAddons?.length
+    ? editingItem.availableAddons
+    : DEFAULT_ADDONS;
 
   // Poll restaurant status every 10 seconds
   useEffect(() => {
@@ -744,7 +749,7 @@ export default function Cart() {
                   <div className="rounded-xl border border-gray-200 bg-gray-50 p-3">
                     <p className="text-xs font-semibold text-gray-600 mb-2">Customizations (tap to toggle):</p>
                     <div className="flex flex-wrap gap-2">
-                      {AVAILABLE_MODIFIERS.map((mod) => {
+                      {availableModifiers.map((mod: string) => {
                         const isActive = editModifiers.includes(mod);
                         return (
                           <button
@@ -773,7 +778,7 @@ export default function Cart() {
                   <div className="rounded-xl border border-amber-200 bg-amber-50 p-3">
                     <p className="text-xs font-semibold text-amber-700 mb-2">Add-ons (tap to toggle):</p>
                     <div className="grid grid-cols-2 gap-2">
-                      {AVAILABLE_ADDONS.map((addon) => {
+                      {availableAddons.map((addon: {id: string; name: string; price: number}) => {
                         const isActive = editAddons.some(a => a.id === addon.id);
                         return (
                           <button

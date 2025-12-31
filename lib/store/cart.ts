@@ -11,6 +11,7 @@ export type CartItemType = 'food' | 'grocery' | 'bakery';
 
 export interface CartItem {
   id: string;
+  menuItemId?: string; // Original menu item ID for fetching customizations
   name: string;
   price: number;
   quantity: number;
@@ -18,6 +19,8 @@ export interface CartItem {
   description?: string | null;
   modifiers?: string[];
   addons?: CartAddon[];
+  availableModifiers?: string[]; // Available customization options from menu
+  availableAddons?: CartAddon[]; // Available addons from menu
   note?: string | null;
   isUpsell?: boolean;
   itemType?: CartItemType; // Track if this is food, grocery, or bakery
