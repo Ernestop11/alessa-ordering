@@ -2,8 +2,16 @@
 
 import { useState, useEffect } from 'react';
 import Link from 'next/link';
-import { ArrowLeft, Save } from 'lucide-react';
+import { ArrowLeft, Save, Mail, CheckCircle, AlertCircle, Loader2 } from 'lucide-react';
 import DashboardLayout from './DashboardLayout';
+
+interface EmailDomainRecord {
+  type: string;
+  name: string;
+  value: string;
+  status: string;
+  priority?: number;
+}
 
 interface SettingsPageProps {
   tenant: {
@@ -11,6 +19,9 @@ interface SettingsPageProps {
     name: string;
     slug: string;
     domain: string | null;
+    customDomain: string | null;
+    emailDomainVerified: boolean;
+    resendDomainId: string | null;
     contactEmail: string | null;
     contactPhone: string | null;
     addressLine1: string | null;
@@ -77,6 +88,99 @@ export default function SettingsPage({ tenant }: SettingsPageProps) {
     licenseKey: tenant.settings?.davo?.licenseKey || '',
     companyCode: tenant.settings?.davo?.companyCode || '',
   });
+
+  // Email domain settings
+  const [emailDomain, setEmailDomain] = useState(tenant.customDomain || '');
+  const [emailDomainVerified, setEmailDomainVerified] = useState(tenant.emailDomainVerified || false);
+  const [emailDomainRecords, setEmailDomainRecords] = useState<EmailDomainRecord[]>([]);
+  const [emailDomainLoading, setEmailDomainLoading] = useState(false);
+  const [emailDomainError, setEmailDomainError] = useState('');
+  const [emailDomainSuccess, setEmailDomainSuccess] = useState('');
+
+  // Fetch email domain status on mount
+  useEffect(() => {
+    if (tenant.resendDomainId) {
+      fetchEmailDomainStatus();
+    }
+  }, [tenant.resendDomainId]);
+
+  const fetchEmailDomainStatus = async () => {
+    try {
+      const res = await fetch(`/api/admin/email-domain/status?tenantId=${tenant.id}`);
+      const data = await res.json();
+      if (data.configured) {
+        setEmailDomain(data.domain || '');
+        setEmailDomainVerified(data.verified || false);
+        setEmailDomainRecords(data.records || []);
+      }
+    } catch (err) {
+      console.error('Failed to fetch email domain status', err);
+    }
+  };
+
+  const handleSetupEmailDomain = async () => {
+    if (!emailDomain.trim()) {
+      setEmailDomainError('Please enter a domain');
+      return;
+    }
+
+    setEmailDomainLoading(true);
+    setEmailDomainError('');
+    setEmailDomainSuccess('');
+
+    try {
+      const res = await fetch('/api/admin/email-domain/setup', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ tenantId: tenant.id, domain: emailDomain.trim() }),
+      });
+      const data = await res.json();
+
+      if (!res.ok) {
+        setEmailDomainError(data.error || 'Failed to setup domain');
+        return;
+      }
+
+      setEmailDomainRecords(data.records || []);
+      setEmailDomainSuccess('Domain added! Add the DNS records below to verify.');
+    } catch (err) {
+      setEmailDomainError('Failed to setup email domain');
+    } finally {
+      setEmailDomainLoading(false);
+    }
+  };
+
+  const handleVerifyEmailDomain = async () => {
+    setEmailDomainLoading(true);
+    setEmailDomainError('');
+    setEmailDomainSuccess('');
+
+    try {
+      const res = await fetch('/api/admin/email-domain/verify', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ tenantId: tenant.id }),
+      });
+      const data = await res.json();
+
+      if (!res.ok) {
+        setEmailDomainError(data.error || 'Failed to verify domain');
+        return;
+      }
+
+      if (data.verified) {
+        setEmailDomainVerified(true);
+        setEmailDomainSuccess('Domain verified! Emails will now send from your custom domain.');
+      } else {
+        setEmailDomainError('Domain not yet verified. Please ensure all DNS records are added correctly.');
+        setEmailDomainRecords(data.records || []);
+      }
+    } catch (err) {
+      setEmailDomainError('Failed to verify email domain');
+    } finally {
+      setEmailDomainLoading(false);
+    }
+  };
 
   const handleSave = async (e: React.FormEvent) => {
     e.preventDefault();
@@ -615,6 +719,134 @@ export default function SettingsPage({ tenant }: SettingsPageProps) {
                     />
                   </div>
                 </div>
+              </div>
+            </div>
+
+            {/* Email Domain Settings */}
+            <div className="bg-white rounded-lg shadow p-6">
+              <div className="flex items-center gap-2 mb-4">
+                <Mail className="h-5 w-5 text-blue-600" />
+                <h2 className="text-lg font-semibold text-gray-900">Email Domain Settings</h2>
+                {emailDomainVerified && (
+                  <span className="inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium bg-green-100 text-green-800">
+                    <CheckCircle className="h-3 w-3 mr-1" />
+                    Verified
+                  </span>
+                )}
+              </div>
+              <p className="text-sm text-gray-600 mb-4">
+                Set up a custom email domain so order confirmations appear from your business email
+                (e.g., <code className="bg-gray-100 px-1 rounded">orders@{emailDomain || 'yourdomain.com'}</code>).
+              </p>
+
+              {emailDomainError && (
+                <div className="mb-4 p-3 bg-red-50 border border-red-200 rounded-md flex items-start gap-2">
+                  <AlertCircle className="h-5 w-5 text-red-500 flex-shrink-0 mt-0.5" />
+                  <p className="text-sm text-red-700">{emailDomainError}</p>
+                </div>
+              )}
+
+              {emailDomainSuccess && (
+                <div className="mb-4 p-3 bg-green-50 border border-green-200 rounded-md flex items-start gap-2">
+                  <CheckCircle className="h-5 w-5 text-green-500 flex-shrink-0 mt-0.5" />
+                  <p className="text-sm text-green-700">{emailDomainSuccess}</p>
+                </div>
+              )}
+
+              <div className="space-y-4">
+                <div>
+                  <label className="block text-sm font-medium text-gray-700">Your Domain</label>
+                  <div className="mt-1 flex gap-2">
+                    <input
+                      type="text"
+                      value={emailDomain}
+                      onChange={(e) => setEmailDomain(e.target.value)}
+                      className="flex-1 border-gray-300 rounded-md shadow-sm focus:ring-blue-500 focus:border-blue-500"
+                      placeholder="yourdomain.com"
+                      disabled={emailDomainVerified || emailDomainLoading}
+                    />
+                    {!emailDomainVerified && emailDomainRecords.length === 0 && (
+                      <button
+                        type="button"
+                        onClick={handleSetupEmailDomain}
+                        disabled={emailDomainLoading}
+                        className="px-4 py-2 bg-blue-600 text-white rounded-md hover:bg-blue-700 disabled:opacity-50 flex items-center gap-2"
+                      >
+                        {emailDomainLoading && <Loader2 className="h-4 w-4 animate-spin" />}
+                        Add Domain
+                      </button>
+                    )}
+                  </div>
+                </div>
+
+                {/* DNS Records */}
+                {emailDomainRecords.length > 0 && (
+                  <div className="border-t pt-4">
+                    <h3 className="text-sm font-medium text-gray-900 mb-2">
+                      DNS Records to Add
+                    </h3>
+                    <p className="text-xs text-gray-500 mb-3">
+                      Add these records to your domain's DNS settings. This usually takes a few minutes to propagate.
+                    </p>
+                    <div className="overflow-x-auto">
+                      <table className="min-w-full divide-y divide-gray-200 text-sm">
+                        <thead className="bg-gray-50">
+                          <tr>
+                            <th className="px-3 py-2 text-left text-xs font-medium text-gray-500 uppercase">Type</th>
+                            <th className="px-3 py-2 text-left text-xs font-medium text-gray-500 uppercase">Name</th>
+                            <th className="px-3 py-2 text-left text-xs font-medium text-gray-500 uppercase">Value</th>
+                            <th className="px-3 py-2 text-left text-xs font-medium text-gray-500 uppercase">Status</th>
+                          </tr>
+                        </thead>
+                        <tbody className="bg-white divide-y divide-gray-200">
+                          {emailDomainRecords.map((record, idx) => (
+                            <tr key={idx}>
+                              <td className="px-3 py-2 font-mono text-xs">{record.type}</td>
+                              <td className="px-3 py-2 font-mono text-xs break-all max-w-xs">{record.name}</td>
+                              <td className="px-3 py-2 font-mono text-xs break-all max-w-md">{record.value}</td>
+                              <td className="px-3 py-2">
+                                {record.status === 'verified' ? (
+                                  <span className="inline-flex items-center text-green-600">
+                                    <CheckCircle className="h-4 w-4 mr-1" />
+                                    OK
+                                  </span>
+                                ) : (
+                                  <span className="inline-flex items-center text-yellow-600">
+                                    <AlertCircle className="h-4 w-4 mr-1" />
+                                    Pending
+                                  </span>
+                                )}
+                              </td>
+                            </tr>
+                          ))}
+                        </tbody>
+                      </table>
+                    </div>
+
+                    {!emailDomainVerified && (
+                      <div className="mt-4">
+                        <button
+                          type="button"
+                          onClick={handleVerifyEmailDomain}
+                          disabled={emailDomainLoading}
+                          className="px-4 py-2 bg-green-600 text-white rounded-md hover:bg-green-700 disabled:opacity-50 flex items-center gap-2"
+                        >
+                          {emailDomainLoading && <Loader2 className="h-4 w-4 animate-spin" />}
+                          Verify Domain
+                        </button>
+                      </div>
+                    )}
+                  </div>
+                )}
+
+                {emailDomainVerified && (
+                  <div className="border-t pt-4">
+                    <p className="text-sm text-green-700">
+                      Order confirmation emails will now be sent from{' '}
+                      <code className="bg-green-50 px-1 rounded font-semibold">orders@{emailDomain}</code>
+                    </p>
+                  </div>
+                )}
               </div>
             </div>
 

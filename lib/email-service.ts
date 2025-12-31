@@ -1,6 +1,24 @@
-import nodemailer from 'nodemailer';
+import { Resend } from 'resend';
 
-let transporter: nodemailer.Transporter | null = null;
+// Initialize Resend client
+let resendClient: Resend | null = null;
+
+function getResend(): Resend | null {
+  if (resendClient) return resendClient;
+
+  const apiKey = process.env.RESEND_API_KEY;
+  if (!apiKey) {
+    console.warn('[email] RESEND_API_KEY not configured, email notifications will be skipped');
+    return null;
+  }
+
+  resendClient = new Resend(apiKey);
+  return resendClient;
+}
+
+// Default sender domain for unverified tenants
+const DEFAULT_FROM_DOMAIN = process.env.RESEND_DEFAULT_DOMAIN || 'resend.dev';
+const DEFAULT_FROM_EMAIL = process.env.RESEND_DEFAULT_FROM || `orders@${DEFAULT_FROM_DOMAIN}`;
 
 // Lazy load Prisma to avoid circular dependencies
 let prismaClient: typeof import('@prisma/client').PrismaClient.prototype | null = null;
@@ -12,30 +30,35 @@ async function getPrisma() {
   return prismaClient;
 }
 
-function getTransporter(): nodemailer.Transporter | null {
-  if (transporter) return transporter;
-
-  const smtpUser = process.env.SMTP_USER;
-  const smtpPass = process.env.SMTP_PASS;
-  const smtpHost = process.env.SMTP_HOST || 'smtp.gmail.com';
-  const smtpPort = parseInt(process.env.SMTP_PORT || '587');
-
-  if (!smtpUser || !smtpPass) {
-    console.warn('[email] SMTP not configured (SMTP_USER or SMTP_PASS not set), email notifications will be skipped');
-    return null;
+// Helper to get the "from" address for a tenant
+function getTenantFromAddress(tenant: {
+  name: string;
+  emailDomainVerified?: boolean;
+  customDomain?: string | null;
+  contactEmail?: string | null;
+}): string {
+  // If tenant has verified email domain, use it
+  if (tenant.emailDomainVerified && tenant.customDomain) {
+    return `${tenant.name} <orders@${tenant.customDomain}>`;
   }
+  // Otherwise use the default Alessa domain
+  return `${tenant.name} <${DEFAULT_FROM_EMAIL}>`;
+}
 
-  transporter = nodemailer.createTransport({
-    host: smtpHost,
-    port: smtpPort,
-    secure: smtpPort === 465, // true for 465, false for other ports
-    auth: {
-      user: smtpUser,
-      pass: smtpPass,
-    },
-  });
-
-  return transporter;
+// Helper to get reply-to address
+function getTenantReplyTo(tenant: {
+  contactEmail?: string | null;
+  customDomain?: string | null;
+}): string | undefined {
+  // If tenant has contact email, use it for reply-to
+  if (tenant.contactEmail) {
+    return tenant.contactEmail;
+  }
+  // If tenant has custom domain but no contact email
+  if (tenant.customDomain) {
+    return `orders@${tenant.customDomain}`;
+  }
+  return undefined;
 }
 
 export interface OrderNotificationEmailParams {
@@ -46,6 +69,8 @@ export interface OrderNotificationEmailParams {
   items: Array<{ name: string; quantity: number; price: number }>;
   tenantName: string;
   fulfillmentUrl?: string;
+  fromAddress?: string;
+  replyTo?: string;
 }
 
 export async function sendOrderNotificationEmail({
@@ -56,11 +81,13 @@ export async function sendOrderNotificationEmail({
   items,
   tenantName,
   fulfillmentUrl,
+  fromAddress,
+  replyTo,
 }: OrderNotificationEmailParams): Promise<void> {
-  const emailTransporter = getTransporter();
-  
-  if (!emailTransporter) {
-    console.warn('[email] Cannot send order notification - SMTP not configured');
+  const resend = getResend();
+
+  if (!resend) {
+    console.warn('[email] Cannot send order notification - Resend not configured');
     return;
   }
 
@@ -68,12 +95,13 @@ export async function sendOrderNotificationEmail({
     .map((item) => `  • ${item.quantity}x ${item.name} - $${item.price.toFixed(2)}`)
     .join('\n');
 
-  const dashboardUrl = fulfillmentUrl || `${process.env.NEXTAUTH_URL || 'https://lasreinas.alessacloud.com'}/admin/fulfillment`;
+  const dashboardUrl = fulfillmentUrl || `${process.env.NEXTAUTH_URL || 'https://lasreinascolusa.com'}/admin/fulfillment`;
 
   try {
-    await emailTransporter.sendMail({
-      from: `"${tenantName} Orders" <${process.env.SMTP_USER}>`,
-      to,
+    const { error } = await resend.emails.send({
+      from: fromAddress || `${tenantName} Orders <${DEFAULT_FROM_EMAIL}>`,
+      to: [to],
+      replyTo: replyTo,
       subject: `🆕 New Order #${orderId.slice(0, 8)} - $${totalAmount.toFixed(2)}`,
       html: `
         <!DOCTYPE html>
@@ -87,11 +115,11 @@ export async function sendOrderNotificationEmail({
           <div style="background: linear-gradient(135deg, #dc2626 0%, #f59e0b 100%); padding: 30px; border-radius: 12px 12px 0 0; text-align: center;">
             <h1 style="color: white; margin: 0; font-size: 28px; font-weight: bold;">🆕 New Order Received!</h1>
           </div>
-          
+
           <div style="background: #f9fafb; padding: 30px; border-radius: 0 0 12px 12px; border: 1px solid #e5e7eb; border-top: none;">
             <div style="background: white; padding: 20px; border-radius: 8px; margin-bottom: 20px;">
               <h2 style="margin-top: 0; color: #111827; font-size: 20px;">Order Details</h2>
-              
+
               <table style="width: 100%; border-collapse: collapse;">
                 <tr>
                   <td style="padding: 8px 0; color: #6b7280; font-weight: 500;">Order ID:</td>
@@ -143,7 +171,11 @@ This is an automated notification from ${tenantName} ordering system.
       `.trim(),
     });
 
-    console.log('[email] Order notification sent successfully', { to, orderId });
+    if (error) {
+      throw new Error(error.message);
+    }
+
+    console.log('[email] Order notification sent successfully via Resend', { to, orderId });
   } catch (error) {
     console.error('[email] Failed to send order notification:', error);
     throw error;
@@ -166,6 +198,8 @@ export interface CustomerConfirmationEmailParams {
   estimatedTime?: string | null;
   orderStatusUrl?: string;
   primaryColor?: string;
+  fromAddress?: string;
+  replyTo?: string;
 }
 
 export async function sendCustomerConfirmationEmail({
@@ -184,11 +218,13 @@ export async function sendCustomerConfirmationEmail({
   estimatedTime,
   orderStatusUrl,
   primaryColor = '#dc2626',
+  fromAddress,
+  replyTo,
 }: CustomerConfirmationEmailParams): Promise<void> {
-  const emailTransporter = getTransporter();
+  const resend = getResend();
 
-  if (!emailTransporter) {
-    console.warn('[email] Cannot send customer confirmation - SMTP not configured');
+  if (!resend) {
+    console.warn('[email] Cannot send customer confirmation - Resend not configured');
     return;
   }
 
@@ -212,9 +248,10 @@ export async function sendCustomerConfirmationEmail({
   const fulfillmentIcon = fulfillmentMethod === 'pickup' ? '🏪' : '🚗';
 
   try {
-    await emailTransporter.sendMail({
-      from: `"${tenantName}" <${process.env.SMTP_USER}>`,
-      to,
+    const { error } = await resend.emails.send({
+      from: fromAddress || `${tenantName} <${DEFAULT_FROM_EMAIL}>`,
+      to: [to],
+      replyTo: replyTo,
       subject: `✅ Order Confirmed - ${tenantName} #${orderId.slice(0, 8)}`,
       html: `
         <!DOCTYPE html>
@@ -330,7 +367,11 @@ This is an automated confirmation. If you have questions, please contact us.
       `.trim(),
     });
 
-    console.log('[email] Customer confirmation sent successfully', { to, orderId });
+    if (error) {
+      throw new Error(error.message);
+    }
+
+    console.log('[email] Customer confirmation sent successfully via Resend', { to, orderId });
   } catch (error) {
     console.error('[email] Failed to send customer confirmation:', error);
     throw error;
@@ -378,6 +419,16 @@ export async function sendOrderEmails(orderId: string): Promise<{ customerSent: 
       order.tenant.postalCode,
     ].filter(Boolean).join(', ');
 
+    // Get the appropriate from address and reply-to for this tenant
+    const tenantForEmail = {
+      name: order.tenant.name,
+      emailDomainVerified: (order.tenant as { emailDomainVerified?: boolean }).emailDomainVerified,
+      customDomain: order.tenant.customDomain,
+      contactEmail: order.tenant.contactEmail,
+    };
+    const fromAddress = getTenantFromAddress(tenantForEmail);
+    const replyTo = getTenantReplyTo(tenantForEmail);
+
     // Send to customer if email exists
     if (order.customerEmail) {
       try {
@@ -396,6 +447,8 @@ export async function sendOrderEmails(orderId: string): Promise<{ customerSent: 
           fulfillmentMethod: order.fulfillmentMethod as 'pickup' | 'delivery',
           orderStatusUrl: `${baseUrl}/customer/orders`,
           primaryColor: order.tenant.primaryColor || '#dc2626',
+          fromAddress,
+          replyTo,
         });
         result.customerSent = true;
       } catch (err) {
@@ -414,6 +467,8 @@ export async function sendOrderEmails(orderId: string): Promise<{ customerSent: 
           items,
           tenantName: order.tenant.name,
           fulfillmentUrl: `${baseUrl}/admin/fulfillment`,
+          fromAddress,
+          replyTo,
         });
         result.tenantSent = true;
       } catch (err) {
@@ -428,3 +483,5 @@ export async function sendOrderEmails(orderId: string): Promise<{ customerSent: 
   }
 }
 
+// Export helper functions for use in domain verification
+export { getTenantFromAddress, getTenantReplyTo };

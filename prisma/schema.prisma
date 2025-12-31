@@ -370,6 +370,9 @@ model Tenant {
   subscriptionAddons     String[]           @default([])
   featureFlags           String[]           @default([])
   stripeCustomerId       String?            // Stripe customer ID for subscriptions
+  // Email domain verification for custom sender addresses (Resend)
+  emailDomainVerified    Boolean            @default(false)
+  resendDomainId         String?            // Resend's domain ID for API calls
   createdAt              DateTime           @default(now())
   updatedAt              DateTime           @updatedAt
   settings               TenantSettings?
