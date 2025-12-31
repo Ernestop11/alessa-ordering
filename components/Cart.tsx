@@ -72,6 +72,19 @@ export default function Cart() {
   const [editingItem, setEditingItem] = useState<CartItem | null>(null);
   const [editQuantity, setEditQuantity] = useState(1);
   const [editNote, setEditNote] = useState("");
+  const [editModifiers, setEditModifiers] = useState<string[]>([]);
+  const [editAddons, setEditAddons] = useState<Array<{id: string; name: string; price: number}>>([]);
+
+  // Available customization options (standard menu options)
+  const AVAILABLE_MODIFIERS = ['No cilantro', 'No onions', 'No salsa', 'No rice', 'No beans', 'No crema', 'Less ice', 'No sugar'];
+  const AVAILABLE_ADDONS = [
+    { id: 'side_bacon', name: 'Side of bacon', price: 1.80 },
+    { id: 'extra_guac', name: 'Extra guacamole', price: 0.75 },
+    { id: 'extra_cheese', name: 'Extra cheese', price: 0.50 },
+    { id: 'extra_salsa', name: 'Side of salsa', price: 0.35 },
+    { id: 'extra_tortillas', name: 'Extra tortillas', price: 0.60 },
+    { id: 'cajeta_drizzle', name: 'Cajeta drizzle', price: 0.50 },
+  ];
 
   // Poll restaurant status every 10 seconds
   useEffect(() => {
@@ -633,6 +646,8 @@ export default function Cart() {
                           setEditingItem(item);
                           setEditQuantity(item.quantity);
                           setEditNote(item.note || "");
+                          setEditModifiers(item.modifiers || []);
+                          setEditAddons(item.addons || []);
                         }}
                         className="flex h-8 w-8 items-center justify-center rounded-lg border border-gray-200 text-gray-500 transition hover:border-amber-400 hover:bg-amber-50 hover:text-amber-600"
                         aria-label={`Edit ${item.name}`}
@@ -725,37 +740,66 @@ export default function Cart() {
                     </div>
                   </div>
 
-                  {/* Current Add-ons (if any) */}
-                  {editingItem.addons && editingItem.addons.length > 0 && (
-                    <div className="rounded-xl border border-amber-200 bg-amber-50 p-3">
-                      <p className="text-xs font-semibold text-amber-700 mb-2">Add-ons included:</p>
-                      <div className="space-y-1">
-                        {editingItem.addons.map((addon) => (
-                          <div key={addon.id} className="flex justify-between text-sm">
-                            <span className="text-gray-700">{addon.name}</span>
-                            <span className="text-amber-600 font-semibold">+{formatCurrency(addon.price)}</span>
-                          </div>
-                        ))}
-                      </div>
-                    </div>
-                  )}
-
-                  {/* Current Modifiers/Customizations (if any) */}
-                  {editingItem.modifiers && editingItem.modifiers.length > 0 && (
-                    <div className="rounded-xl border border-gray-200 bg-gray-50 p-3">
-                      <p className="text-xs font-semibold text-gray-600 mb-2">Customizations:</p>
-                      <div className="flex flex-wrap gap-2">
-                        {editingItem.modifiers.map((mod, i) => (
-                          <span
-                            key={i}
-                            className="px-2 py-1 text-xs rounded-full bg-gray-200 text-gray-700"
+                  {/* Customizations/Removals - Toggleable */}
+                  <div className="rounded-xl border border-gray-200 bg-gray-50 p-3">
+                    <p className="text-xs font-semibold text-gray-600 mb-2">Customizations (tap to toggle):</p>
+                    <div className="flex flex-wrap gap-2">
+                      {AVAILABLE_MODIFIERS.map((mod) => {
+                        const isActive = editModifiers.includes(mod);
+                        return (
+                          <button
+                            key={mod}
+                            onClick={() => {
+                              if (isActive) {
+                                setEditModifiers(editModifiers.filter(m => m !== mod));
+                              } else {
+                                setEditModifiers([...editModifiers, mod]);
+                              }
+                            }}
+                            className={`px-3 py-1.5 text-xs rounded-full font-medium transition-all ${
+                              isActive
+                                ? 'bg-rose-100 text-rose-700 border-2 border-rose-300'
+                                : 'bg-gray-100 text-gray-500 border-2 border-transparent hover:border-gray-300'
+                            }`}
                           >
-                            {mod}
-                          </span>
-                        ))}
-                      </div>
+                            {isActive ? '✓ ' : ''}{mod}
+                          </button>
+                        );
+                      })}
                     </div>
-                  )}
+                  </div>
+
+                  {/* Add-ons - Toggleable */}
+                  <div className="rounded-xl border border-amber-200 bg-amber-50 p-3">
+                    <p className="text-xs font-semibold text-amber-700 mb-2">Add-ons (tap to toggle):</p>
+                    <div className="grid grid-cols-2 gap-2">
+                      {AVAILABLE_ADDONS.map((addon) => {
+                        const isActive = editAddons.some(a => a.id === addon.id);
+                        return (
+                          <button
+                            key={addon.id}
+                            onClick={() => {
+                              if (isActive) {
+                                setEditAddons(editAddons.filter(a => a.id !== addon.id));
+                              } else {
+                                setEditAddons([...editAddons, addon]);
+                              }
+                            }}
+                            className={`flex items-center justify-between px-3 py-2 text-xs rounded-xl font-medium transition-all ${
+                              isActive
+                                ? 'bg-amber-200 text-amber-800 border-2 border-amber-400'
+                                : 'bg-white text-gray-600 border-2 border-gray-200 hover:border-amber-300'
+                            }`}
+                          >
+                            <span className="text-left">{addon.name}</span>
+                            <span className={isActive ? 'text-amber-700' : 'text-amber-600'}>
+                              {isActive ? '✓' : `+${formatCurrency(addon.price)}`}
+                            </span>
+                          </button>
+                        );
+                      })}
+                    </div>
+                  </div>
 
                   {/* Quantity */}
                   <div>
@@ -785,7 +829,7 @@ export default function Cart() {
                         +
                       </button>
                       <span className="ml-auto text-lg font-bold text-gray-900">
-                        {formatCurrency((editingItem.price + (editingItem.addons?.reduce((sum, a) => sum + a.price, 0) || 0)) * editQuantity)}
+                        {formatCurrency((editingItem.price + editAddons.reduce((sum, a) => sum + a.price, 0)) * editQuantity)}
                       </span>
                     </div>
                   </div>
@@ -817,9 +861,17 @@ export default function Cart() {
                   </button>
                   <button
                     onClick={() => {
+                      // Calculate new price including addons
+                      const basePrice = editingItem.price - (editingItem.addons?.reduce((sum, a) => sum + a.price, 0) || 0);
+                      const newAddonTotal = editAddons.reduce((sum, a) => sum + a.price, 0);
+                      const newPrice = Math.round((basePrice + newAddonTotal) * 100) / 100;
+
                       updateItem(editingItem.id, {
                         quantity: editQuantity,
                         note: editNote.trim() || null,
+                        modifiers: editModifiers.length > 0 ? editModifiers : undefined,
+                        addons: editAddons.length > 0 ? editAddons : undefined,
+                        price: newPrice,
                       });
                       setEditingItem(null);
                     }}
