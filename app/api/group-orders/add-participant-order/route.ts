@@ -116,6 +116,7 @@ export async function POST(request: NextRequest) {
             addons?: { id: string; name: string; price: number }[];
             note?: string | null;
           }) => ({
+            tenantId: tenant.id,
             menuItemId: item.menuItemId,
             quantity: item.quantity,
             price: item.price,
