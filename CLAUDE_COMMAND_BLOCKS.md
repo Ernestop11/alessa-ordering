@@ -586,5 +586,64 @@ VPS: root@77.243.85.8
 
 ---
 
+## 🏢 MULTI-TENANT RULES (CRITICAL)
+
+### ⚠️ NEVER DO
+- **NEVER hardcode tenant slugs** (e.g., 'lasreinas', 'lapoblanita')
+- **NEVER hardcode tenant UUIDs**
+- **NEVER use fallback tenant** - fail explicitly if tenant can't be resolved
+- **NEVER expose VPS-specific data** (UUIDs, internal IPs, etc.) in code
+
+### ✅ ALWAYS DO
+- **ALWAYS use `requireTenant()`** or tenant context from session/cookie
+- **ALWAYS filter by `tenantId`** in every database query involving tenant data
+- **ALWAYS parameterize URLs** using tenant's domain or subdomain
+- **ALWAYS use env vars for credentials** - pattern: `TENANT_ADMIN_{SLUG}_*`
+
+### 🔧 Environment Variable Patterns
+```bash
+# Per-tenant admin credentials
+TENANT_ADMIN_LASREINAS_EMAIL=admin@lasreinas.com
+TENANT_ADMIN_LASREINAS_PASSWORD=[secure]
+TENANT_ADMIN_LAPOBLANITA_EMAIL=admin@lapoblanita.com
+TENANT_ADMIN_LAPOBLANITA_PASSWORD=[secure]
+```
+
+### 🛡️ Protected Tenant: Las Reinas
+- Baseline tag: `v1.2.0-mvp-jan1`
+- Production since: January 1, 2026
+- Any changes require explicit approval
+- Monitor for regressions after any deployment
+
+### 📋 Multi-Tenant Checklist
+```
+## 🏢 Multi-Tenant Checklist
+When adding new features or fixing bugs:
+[ ] Does this code use requireTenant() or tenant context?
+[ ] Are all database queries filtered by tenantId?
+[ ] Are URLs dynamically built from tenant domain?
+[ ] Are there NO hardcoded tenant slugs or UUIDs?
+[ ] Is Las Reinas unaffected by this change?
+[ ] Did I test on at least 2 tenants?
+```
+
+### 🆕 New Tenant Setup Checklist
+```
+## 🆕 New Tenant Setup
+To set up a new tenant:
+1. [ ] Create tenant in database (via super admin or script)
+2. [ ] Set tenant status to LIVE
+3. [ ] Add TENANT_ADMIN_{SLUG}_EMAIL and _PASSWORD to VPS .env
+4. [ ] Configure operating hours in TenantSettings
+5. [ ] Set up Stripe Connect (admin → settings → connect)
+6. [ ] Configure custom domain in Nginx (if applicable)
+7. [ ] Set up SSL certificate with certbot
+8. [ ] Upload menu items
+9. [ ] Test order flow end-to-end
+10. [ ] Set up print relay (if physical location)
+```
+
+---
+
 **💡 Pro Tip:** Bookmark this file and keep it open in VS Code for quick access to these command blocks!
 
