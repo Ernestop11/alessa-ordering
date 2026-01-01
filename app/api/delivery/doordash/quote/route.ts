@@ -1,7 +1,7 @@
 import { NextRequest, NextResponse } from 'next/server';
 import { requireTenant } from '@/lib/tenant';
 import prisma from '@/lib/prisma';
-import { getDoorDashAuthToken } from '@/lib/doordash/jwt';
+import { getDoorDashAuthTokenForTenant, getDoorDashAuthToken } from '@/lib/doordash/jwt';
 
 /**
  * DoorDash Drive API - Delivery Quote
@@ -58,9 +58,10 @@ function formatAddress(address: { street: string; city: string; state: string; z
   return `${address.street}, ${address.city}, ${address.state} ${address.zipCode}`;
 }
 
-// Get DoorDash API configuration
-function getDoorDashConfig() {
-  const authToken = getDoorDashAuthToken();
+// Get DoorDash API configuration for a tenant
+async function getDoorDashConfig(tenantId: string) {
+  // Try tenant-specific credentials first
+  const authToken = await getDoorDashAuthTokenForTenant(tenantId);
   const isSandbox = process.env.DOORDASH_SANDBOX === 'true';
 
   if (!authToken) {
@@ -83,7 +84,7 @@ export async function POST(req: NextRequest) {
       );
     }
 
-    const config = getDoorDashConfig();
+    const config = await getDoorDashConfig(tenant.id);
 
     // If DoorDash API is not configured, return mock data
     if (!config.enabled) {

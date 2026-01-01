@@ -1,18 +1,18 @@
 /**
  * DoorDash Drive API JWT Authentication Helper
- * 
- * DoorDash Drive API requires JWT tokens signed with RS256 using:
+ *
+ * DoorDash Drive API requires JWT tokens signed with HS256 using:
  * - Developer ID (iss claim)
- * - Key ID (kid claim)  
- * - Signing Secret (private key for signing)
- * 
+ * - Key ID (kid claim)
+ * - Signing Secret (shared secret for HMAC)
+ *
  * Documentation: https://developer.doordash.com/en-US/api/drive
  */
 
 import jwt from 'jsonwebtoken';
-import crypto from 'crypto';
+import prisma from '@/lib/prisma';
 
-interface DoorDashCredentials {
+export interface DoorDashCredentials {
   developerId: string;
   keyId: string;
   signingSecret: string;
@@ -20,11 +20,12 @@ interface DoorDashCredentials {
 
 /**
  * Generate a JWT token for DoorDash Drive API authentication
- * 
- * The token is valid for 1 hour and includes:
+ *
+ * The token is valid for 30 minutes (DoorDash requirement) and includes:
+ * - aud: "doordash" (required)
  * - iss: Developer ID
  * - kid: Key ID
- * - exp: Expiration time (1 hour from now)
+ * - exp: Expiration time (30 minutes max)
  * - iat: Issued at time
  */
 export function generateDoorDashJWT(credentials: DoorDashCredentials): string {
@@ -34,27 +35,23 @@ export function generateDoorDashJWT(credentials: DoorDashCredentials): string {
     throw new Error('Missing DoorDash credentials: developerId, keyId, and signingSecret are required');
   }
 
-  // DoorDash expects RS256 signing, but they provide a signing secret (not a full RSA key)
-  // Based on DoorDash docs, we need to convert the signing secret to a format suitable for JWT signing
-  // The signing secret is actually a base64-encoded key that we use directly
-  
   const now = Math.floor(Date.now() / 1000);
   const payload = {
+    aud: 'doordash',
     iss: developerId,
     kid: keyId,
-    exp: now + 3600, // 1 hour expiration
+    exp: now + 1800, // 30 minutes (DoorDash max)
     iat: now,
   };
 
-  // DoorDash uses HS256 with the signing secret, not RS256
-  // The "signing secret" is actually a shared secret for HMAC
+  // DoorDash uses HS256 with the signing secret
   try {
     const token = jwt.sign(payload, signingSecret, {
       algorithm: 'HS256',
       header: {
         alg: 'HS256',
-        kid: keyId,
         typ: 'JWT',
+        'dd-ver': 'DD-JWT-V1',
       },
     });
 
@@ -66,9 +63,9 @@ export function generateDoorDashJWT(credentials: DoorDashCredentials): string {
 }
 
 /**
- * Get DoorDash credentials from environment variables
+ * Get DoorDash credentials from environment variables (fallback)
  */
-export function getDoorDashCredentials(): DoorDashCredentials | null {
+export function getDoorDashCredentialsFromEnv(): DoorDashCredentials | null {
   const developerId = process.env.DOORDASH_DEVELOPER_ID;
   const keyId = process.env.DOORDASH_KEY_ID;
   const signingSecret = process.env.DOORDASH_SIGNING_SECRET;
@@ -85,7 +82,50 @@ export function getDoorDashCredentials(): DoorDashCredentials | null {
 }
 
 /**
- * Generate a fresh JWT token for DoorDash API calls
+ * Get DoorDash credentials for a specific tenant from database
+ */
+export async function getDoorDashCredentialsForTenant(tenantId: string): Promise<DoorDashCredentials | null> {
+  try {
+    const integration = await prisma.tenantIntegration.findUnique({
+      where: { tenantId },
+      select: { paymentConfig: true, doordashOnboardingStatus: true },
+    });
+
+    if (!integration || integration.doordashOnboardingStatus !== 'connected') {
+      return null;
+    }
+
+    const config = integration.paymentConfig as { doordash?: { developerId?: string; keyId?: string; signingSecretEncrypted?: string } } | null;
+    if (!config?.doordash) {
+      return null;
+    }
+
+    const { developerId, keyId, signingSecretEncrypted } = config.doordash;
+    if (!developerId || !keyId || !signingSecretEncrypted) {
+      return null;
+    }
+
+    return {
+      developerId,
+      keyId,
+      signingSecret: signingSecretEncrypted, // TODO: Decrypt in production
+    };
+  } catch (error) {
+    console.error('[DoorDash JWT] Failed to get credentials from DB:', error);
+    return null;
+  }
+}
+
+/**
+ * Get DoorDash credentials (tries env vars first, then falls back to nothing)
+ * For per-tenant credentials, use getDoorDashCredentialsForTenant
+ */
+export function getDoorDashCredentials(): DoorDashCredentials | null {
+  return getDoorDashCredentialsFromEnv();
+}
+
+/**
+ * Generate a fresh JWT token for DoorDash API calls using env credentials
  * This should be called for each API request to ensure the token is not expired
  */
 export function getDoorDashAuthToken(): string | null {
@@ -98,6 +138,24 @@ export function getDoorDashAuthToken(): string | null {
     return generateDoorDashJWT(credentials);
   } catch (error) {
     console.error('[DoorDash JWT] Failed to get auth token:', error);
+    return null;
+  }
+}
+
+/**
+ * Generate a fresh JWT token for a specific tenant
+ */
+export async function getDoorDashAuthTokenForTenant(tenantId: string): Promise<string | null> {
+  const credentials = await getDoorDashCredentialsForTenant(tenantId);
+  if (!credentials) {
+    // Fall back to env credentials
+    return getDoorDashAuthToken();
+  }
+
+  try {
+    return generateDoorDashJWT(credentials);
+  } catch (error) {
+    console.error('[DoorDash JWT] Failed to get auth token for tenant:', error);
     return null;
   }
 }

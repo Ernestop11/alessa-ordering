@@ -4,6 +4,7 @@ import { useState, useEffect } from 'react';
 import { useSearchParams } from 'next/navigation';
 import DeliveryPartnerCard from './DeliveryPartnerCard';
 import TestDeliveryModal from './TestDeliveryModal';
+import DoorDashSetupModal from './DoorDashSetupModal';
 import { Zap, Check, X } from 'lucide-react';
 
 interface DeliverySetupClientProps {
@@ -26,6 +27,7 @@ export default function DeliverySetupClient({
   const searchParams = useSearchParams();
   const [showUberModal, setShowUberModal] = useState(false);
   const [showDoorDashModal, setShowDoorDashModal] = useState(false);
+  const [showDoorDashSetupModal, setShowDoorDashSetupModal] = useState(false);
   const [message, setMessage] = useState<{ type: 'success' | 'error'; text: string } | null>(null);
   const [smartEnabled, setSmartEnabled] = useState(smartDispatchEnabled);
   const [strategy, setStrategy] = useState<'cheapest' | 'fastest'>(smartDispatchStrategy);
@@ -59,9 +61,18 @@ export default function DeliverySetupClient({
   };
 
   const handleDoorDashConnect = () => {
-    // DoorDash uses a different flow - show a form or redirect to setup
-    // For now, redirect to a setup page or show modal
-    alert('DoorDash setup: Enter your developer credentials in the admin panel or contact support.');
+    // Show the DoorDash credential setup modal
+    setShowDoorDashSetupModal(true);
+  };
+
+  const handleDoorDashSetupSuccess = () => {
+    setShowDoorDashSetupModal(false);
+    setMessage({
+      type: 'success',
+      text: 'DoorDash Drive connected successfully!',
+    });
+    // Reload to get updated status
+    window.location.reload();
   };
 
   const handleUberDisconnect = async () => {
@@ -329,6 +340,12 @@ export default function DeliverySetupClient({
           partner="doordash"
           isOpen={showDoorDashModal}
           onClose={() => setShowDoorDashModal(false)}
+        />
+
+        <DoorDashSetupModal
+          isOpen={showDoorDashSetupModal}
+          onClose={() => setShowDoorDashSetupModal(false)}
+          onSuccess={handleDoorDashSetupSuccess}
         />
       </div>
     </div>
