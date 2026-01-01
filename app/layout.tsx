@@ -187,9 +187,16 @@ export default async function RootLayout({
     accessibilityDefaults: (tenant.settings?.accessibilityDefaults ?? null) as unknown as AccessibilityDefaults | null,
     branding: (tenant.settings?.branding ?? null) as unknown as TenantBranding | null,
     templateType: tenant.settings?.templateType || 'restaurant',
-    gradientFrom: tenant.settings?.gradientFrom || null,
-    gradientVia: tenant.settings?.gradientVia || null,
-    gradientTo: tenant.settings?.gradientTo || null,
+    gradientFrom: tenant.settings?.gradientFrom || undefined,
+    gradientVia: tenant.settings?.gradientVia || undefined,
+    gradientTo: tenant.settings?.gradientTo || undefined,
+    // Delivery is enabled if either Uber or DoorDash is connected
+    deliveryEnabled:
+      tenant.integrations?.uberOnboardingStatus === 'connected' ||
+      tenant.integrations?.doordashOnboardingStatus === 'connected',
+    deliveryPartner:
+      tenant.integrations?.uberOnboardingStatus === 'connected' ? 'uber' :
+      tenant.integrations?.doordashOnboardingStatus === 'connected' ? 'doordash' : null,
   } : {
     id: 'root',
     name: 'Alessa Cloud',
@@ -232,6 +239,8 @@ export default async function RootLayout({
     gradientFrom: undefined,
     gradientVia: undefined,
     gradientTo: undefined,
+    deliveryEnabled: false,
+    deliveryPartner: null,
   }
 
   const themeVars = {

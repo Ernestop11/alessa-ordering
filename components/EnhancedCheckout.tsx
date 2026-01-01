@@ -24,6 +24,7 @@ interface EnhancedCheckoutProps {
   onSubmit: (data: CheckoutFormData) => void;
   onBack: () => void;
   loading?: boolean;
+  deliveryEnabled?: boolean;
 }
 
 export default function EnhancedCheckout({
@@ -31,6 +32,7 @@ export default function EnhancedCheckout({
   onSubmit,
   onBack,
   loading = false,
+  deliveryEnabled = false,
 }: EnhancedCheckoutProps) {
   const [formData, setFormData] = useState<CheckoutFormData>({
     customerName: "",
@@ -88,14 +90,22 @@ export default function EnhancedCheckout({
           </button>
           <button
             type="button"
-            onClick={() => updateField("fulfillmentMethod", "delivery")}
-            className={`p-3 border-2 rounded-lg text-sm font-medium transition ${
-              formData.fulfillmentMethod === "delivery"
-                ? "border-blue-500 bg-blue-50 text-blue-700"
-                : "border-gray-200 hover:border-gray-300"
+            onClick={() => deliveryEnabled && updateField("fulfillmentMethod", "delivery")}
+            disabled={!deliveryEnabled}
+            className={`p-3 border-2 rounded-lg text-sm font-medium transition relative ${
+              !deliveryEnabled
+                ? "border-gray-200 text-gray-400 cursor-not-allowed opacity-50"
+                : formData.fulfillmentMethod === "delivery"
+                  ? "border-blue-500 bg-blue-50 text-blue-700"
+                  : "border-gray-200 hover:border-gray-300"
             }`}
           >
             🚚 Delivery
+            {!deliveryEnabled && (
+              <span className="absolute -top-2 -right-2 text-[10px] bg-gray-100 text-gray-500 px-1.5 py-0.5 rounded-full">
+                Coming soon
+              </span>
+            )}
           </button>
         </div>
       </div>

@@ -1030,13 +1030,16 @@ export default function Cart() {
                     🏃 Pickup
                   </button>
                   <button
-                    onClick={() => setFulfillmentMethod("delivery")}
-                    className={`flex-1 rounded-lg sm:rounded-xl border-2 px-3 sm:px-4 py-2.5 sm:py-3 text-xs sm:text-sm font-bold transition ${
-                      fulfillmentMethod === "delivery"
-                        ? "shadow-md"
-                        : "border-gray-200 bg-white text-gray-700 hover:border-gray-300"
+                    onClick={() => tenant.deliveryEnabled && setFulfillmentMethod("delivery")}
+                    disabled={!tenant.deliveryEnabled}
+                    className={`flex-1 rounded-lg sm:rounded-xl border-2 px-3 sm:px-4 py-2.5 sm:py-3 text-xs sm:text-sm font-bold transition relative ${
+                      !tenant.deliveryEnabled
+                        ? "border-gray-200 bg-gray-50 text-gray-400 cursor-not-allowed opacity-60"
+                        : fulfillmentMethod === "delivery"
+                          ? "shadow-md"
+                          : "border-gray-200 bg-white text-gray-700 hover:border-gray-300"
                     }`}
-                    style={fulfillmentMethod === "delivery" ? {
+                    style={tenant.deliveryEnabled && fulfillmentMethod === "delivery" ? {
                       borderColor: primaryColor,
                       backgroundColor: `${primaryColor}15`,
                       color: primaryColor,
@@ -1044,6 +1047,11 @@ export default function Cart() {
                     type="button"
                   >
                     🚗 Delivery
+                    {!tenant.deliveryEnabled && (
+                      <span className="absolute -top-2 -right-2 text-[9px] bg-gray-100 text-gray-500 px-1.5 py-0.5 rounded-full whitespace-nowrap">
+                        Coming soon
+                      </span>
+                    )}
                   </button>
                 </div>
               {fulfillmentMethod === "delivery" && (

@@ -807,15 +807,23 @@ export default function CheckoutPage() {
               <span className="ml-2 font-medium">Pickup</span>
             </button>
             <button
-              onClick={() => setOrderType('delivery')}
-              className={`rounded-xl border p-3 transition-all ${
-                orderType === 'delivery'
-                  ? 'border-[#DC2626] bg-[#DC2626]/10'
-                  : 'border-white/10 bg-white/5'
+              onClick={() => tenant.deliveryEnabled && setOrderType('delivery')}
+              disabled={!tenant.deliveryEnabled}
+              className={`rounded-xl border p-3 transition-all relative ${
+                !tenant.deliveryEnabled
+                  ? 'border-white/10 bg-white/5 opacity-50 cursor-not-allowed'
+                  : orderType === 'delivery'
+                    ? 'border-[#DC2626] bg-[#DC2626]/10'
+                    : 'border-white/10 bg-white/5'
               }`}
             >
               <span className="text-lg">🚗</span>
               <span className="ml-2 font-medium">Delivery</span>
+              {!tenant.deliveryEnabled && (
+                <span className="absolute -top-2 -right-2 text-[10px] bg-white/10 text-white/50 px-1.5 py-0.5 rounded-full">
+                  Coming soon
+                </span>
+              )}
             </button>
           </div>
         </section>

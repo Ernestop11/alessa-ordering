@@ -35,6 +35,9 @@ export interface TenantTheme {
   defaultTaxRate?: number | null;
   deliveryBaseFee?: number | null;
   taxProvider?: string | null;
+  // Delivery configuration status
+  deliveryEnabled?: boolean;
+  deliveryPartner?: 'doordash' | 'uber' | 'self' | null;
   socials?: {
     instagram?: string | null;
     facebook?: string | null;
@@ -114,6 +117,8 @@ const DEFAULT_THEME: TenantTheme = {
   defaultTaxRate: 0.0825,
   deliveryBaseFee: 4.99,
   taxProvider: 'builtin',
+  deliveryEnabled: false,
+  deliveryPartner: null,
   membershipProgram: null,
   upsellBundles: [],
   accessibilityDefaults: null,

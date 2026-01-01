@@ -4,6 +4,7 @@ import { useState, useEffect } from "react";
 import { createPortal } from "react-dom";
 import { X, Users, Copy, Check, Share2, Clock, MapPin, Calendar, Eye, CreditCard, ChevronRight, ChevronLeft, Building2, Mail } from "lucide-react";
 import ContactSelector from "./ContactSelector";
+import { useTenantTheme } from "@/components/TenantThemeProvider";
 
 interface Contact {
   id: string;
@@ -29,6 +30,8 @@ export default function GroupOrderModal({
   customDomain,
   onViewOrders,
 }: GroupOrderModalProps) {
+  const tenant = useTenantTheme();
+  const deliveryEnabled = tenant.deliveryEnabled ?? false;
   const [mounted, setMounted] = useState(false);
   const [step, setStep] = useState<Step>('info');
   const [loading, setLoading] = useState(false);
@@ -384,15 +387,23 @@ export default function GroupOrderModal({
                   </button>
                   <button
                     type="button"
-                    onClick={() => setFulfillmentMethod('delivery')}
-                    className={`flex items-center justify-center gap-2 px-4 py-3 rounded-xl border transition-all ${
-                      fulfillmentMethod === 'delivery'
-                        ? 'bg-amber-500/20 border-amber-500/50 text-amber-400'
-                        : 'bg-white/5 border-white/10 text-white/70 hover:bg-white/10'
+                    onClick={() => deliveryEnabled && setFulfillmentMethod('delivery')}
+                    disabled={!deliveryEnabled}
+                    className={`flex items-center justify-center gap-2 px-4 py-3 rounded-xl border transition-all relative ${
+                      !deliveryEnabled
+                        ? 'bg-white/5 border-white/10 text-white/30 cursor-not-allowed opacity-60'
+                        : fulfillmentMethod === 'delivery'
+                          ? 'bg-amber-500/20 border-amber-500/50 text-amber-400'
+                          : 'bg-white/5 border-white/10 text-white/70 hover:bg-white/10'
                     }`}
                   >
                     <Calendar className="w-4 h-4" />
                     <span className="font-medium">Delivery</span>
+                    {!deliveryEnabled && (
+                      <span className="absolute -top-2 -right-2 text-[10px] bg-white/10 text-white/50 px-1.5 py-0.5 rounded-full">
+                        Coming soon
+                      </span>
+                    )}
                   </button>
                 </div>
               </div>
