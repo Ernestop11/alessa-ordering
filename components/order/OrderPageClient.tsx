@@ -2152,8 +2152,8 @@ export default function OrderPageClient({
 
     return (
       <section key="hero-section" className="relative overflow-hidden hidden md:block min-h-[500px] md:min-h-[600px]">
-        {/* Rich Holiday Red Background */}
-        <div className="absolute inset-0 bg-gradient-to-br from-[#8B0000] via-[#B22222] to-[#6B0F0F]" />
+        {/* Dynamic Tenant Gradient Background */}
+        <div className="absolute inset-0" style={{ background: `linear-gradient(to bottom right, var(--tenant-gradient-from), var(--tenant-gradient-via), var(--tenant-gradient-to))` }} />
 
         {/* Animated Fire/Glow Texture Overlay */}
         <div className="absolute inset-0 opacity-30" style={{
@@ -2161,11 +2161,11 @@ export default function OrderPageClient({
           mixBlendMode: 'overlay'
         }} />
 
-        {/* LED Glow Effects */}
+        {/* LED Glow Effects - using tenant secondary color for glow */}
         <div className="absolute inset-0 pointer-events-none">
-          <div className="absolute top-1/2 left-1/2 -translate-x-1/2 -translate-y-1/2 w-[150%] h-[150%] bg-[radial-gradient(ellipse_at_center,rgba(255,215,0,0.15)_0%,transparent_50%)]" />
-          <div className="absolute top-0 left-0 right-0 h-40 bg-gradient-to-b from-[#FF4444]/50 via-[#FF1744]/30 to-transparent" />
-          <div className="absolute bottom-0 left-0 right-0 h-40 bg-gradient-to-t from-[#FF4444]/50 via-[#FF1744]/30 to-transparent" />
+          <div className="absolute top-1/2 left-1/2 -translate-x-1/2 -translate-y-1/2 w-[150%] h-[150%]" style={{ background: `radial-gradient(ellipse at center, var(--tenant-secondary-soft) 0%, transparent 50%)` }} />
+          <div className="absolute top-0 left-0 right-0 h-40" style={{ background: `linear-gradient(to bottom, var(--tenant-primary-soft), transparent)` }} />
+          <div className="absolute bottom-0 left-0 right-0 h-40" style={{ background: `linear-gradient(to top, var(--tenant-primary-soft), transparent)` }} />
         </div>
 
         {/* Content */}
@@ -2173,7 +2173,10 @@ export default function OrderPageClient({
           <div className="grid md:grid-cols-2 gap-8 items-center">
             <div className="flex flex-col justify-center text-center md:text-left">
               <div className="inline-flex items-center gap-2 mb-6 justify-center md:justify-start">
-                <span className="relative px-5 py-2 rounded-full bg-gradient-to-r from-[#FFD700] to-[#FFA500] text-[#8B0000] text-xs font-black uppercase tracking-wide shadow-xl overflow-hidden">
+                <span
+                  className="relative px-5 py-2 rounded-full text-xs font-black uppercase tracking-wide shadow-xl overflow-hidden"
+                  style={{ background: `linear-gradient(to right, var(--tenant-secondary), var(--tenant-primary))`, color: 'white' }}
+                >
                   <span className="relative z-10">✨ Holiday Special ✨</span>
                 </span>
               </div>
@@ -2196,7 +2199,8 @@ export default function OrderPageClient({
                       }
                     }
                   }}
-                  className="group relative inline-flex items-center gap-3 rounded-full bg-gradient-to-r from-[#FFD700] to-[#FFA500] px-10 py-5 text-lg font-black text-[#8B0000] shadow-2xl shadow-[#FFD700]/40 hover:shadow-[#FFD700]/60 transition-all hover:scale-105 overflow-hidden"
+                  className="group relative inline-flex items-center gap-3 rounded-full px-10 py-5 text-lg font-black text-white shadow-2xl transition-all hover:scale-105 overflow-hidden"
+                  style={{ background: `linear-gradient(to right, var(--tenant-secondary), var(--tenant-primary))`, boxShadow: `0 25px 50px -12px var(--tenant-secondary-soft)` }}
                 >
                   <span className="relative z-10">ORDER NOW</span>
                   <svg className="w-6 h-6 group-hover:translate-x-1 transition-transform relative z-10" fill="none" viewBox="0 0 24 24" stroke="currentColor">
