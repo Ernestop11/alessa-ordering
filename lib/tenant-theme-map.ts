@@ -16,10 +16,10 @@ const DEFAULT_THEME_KEY = 'lapoblanita';
 const TENANT_THEME_MAP: Record<string, StaticTenantTheme> = {
   lapoblanita: {
     slug: 'lapoblanita',
-    name: 'La Poblanita Deli & Catering',
-    primaryColor: '#38c4ff',
-    secondaryColor: '#071836',
-    themeColor: '#38c4ff',
+    name: 'La Poblanita Mexican Food',
+    primaryColor: '#1e3a5f', // Puebla/Talavera navy blue
+    secondaryColor: '#3b82f6', // Bright blue accent
+    themeColor: '#0f172a', // Dark navy for status bar
     assets: {
       hero: '/tenant/lapoblanita/hero.jpg',
       membership: '/tenant/lapoblanita/membership.jpg',
