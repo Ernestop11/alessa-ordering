@@ -35,7 +35,9 @@ export async function GET() {
 
     // Determine icon paths - check for tenant-specific icons
     const iconSlug = tenant?.slug || 'default';
-    const hasCustomIcons = tenant?.slug === 'lasreinas'; // Can expand this check
+    // Tenants with custom PWA icons in /public/tenant/{slug}/icons/
+    const tenantsWithCustomIcons = ['lasreinas', 'lapoblanita'];
+    const hasCustomIcons = tenant?.slug ? tenantsWithCustomIcons.includes(tenant.slug) : false;
 
     const icons = hasCustomIcons
       ? [

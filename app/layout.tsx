@@ -49,7 +49,8 @@ export async function generateMetadata(): Promise<Metadata> {
     const theme = getStaticTenantTheme(slug);
 
     // Determine icon paths based on tenant
-    const hasCustomIcons = slug === 'lasreinas';
+    const tenantsWithCustomIcons = ['lasreinas', 'lapoblanita'];
+    const hasCustomIcons = tenantsWithCustomIcons.includes(slug);
     const iconPath = hasCustomIcons
       ? `/tenant/${slug}/icons/icon-192.png`
       : '/icons/alessa-cloud-icon-192.png';
