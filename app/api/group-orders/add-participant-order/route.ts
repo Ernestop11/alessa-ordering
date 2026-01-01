@@ -121,8 +121,6 @@ export async function POST(request: NextRequest) {
             quantity: item.quantity,
             price: item.price,
             menuItemName: item.name,
-            modifiers: item.modifiers || [],
-            addons: item.addons ? JSON.stringify(item.addons) : null,
             notes: item.note || null,
           })),
         },
