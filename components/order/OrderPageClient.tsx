@@ -5585,6 +5585,8 @@ export default function OrderPageClient({
           });
         }}
         onReorderAll={handleReorder}
+        restaurantIsOpen={restaurantIsOpen}
+        closedMessage={restaurantClosedMessage}
       />
       <GroupOrderModal
         open={showGroupOrderModal}

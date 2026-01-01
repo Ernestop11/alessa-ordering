@@ -81,6 +81,8 @@ interface ReorderModalProps {
   customerData: CustomerRewardsData | null;
   onAddToCart: (item: CartItem) => void;
   onReorderAll: (order: CustomerOrder) => void;
+  restaurantIsOpen?: boolean;
+  closedMessage?: string;
 }
 
 export default function ReorderModal({
@@ -89,6 +91,8 @@ export default function ReorderModal({
   customerData,
   onAddToCart,
   onReorderAll,
+  restaurantIsOpen = true,
+  closedMessage = "We're currently closed",
 }: ReorderModalProps) {
   const tenant = useTenantTheme();
   const [mounted, setMounted] = useState(false);
@@ -98,6 +102,7 @@ export default function ReorderModal({
   const [sweets, setSweets] = useState<UpsellItem[]>([]);
   const [addedItems, setAddedItems] = useState<Set<string>>(new Set());
   const [reorderedOrders, setReorderedOrders] = useState<Set<string>>(new Set());
+  const [showClosedNotice, setShowClosedNotice] = useState(false);
 
   // Set mounted on client-side for portal hydration
   useEffect(() => {
@@ -124,6 +129,7 @@ export default function ReorderModal({
     if (!open) {
       setAddedItems(new Set());
       setReorderedOrders(new Set());
+      setShowClosedNotice(false);
     }
   }, [open]);
 
@@ -161,6 +167,13 @@ export default function ReorderModal({
   }, [customerData?.orders]);
 
   const handleAddItem = (item: QuickPickItem) => {
+    // Check if restaurant is open
+    if (!restaurantIsOpen) {
+      setShowClosedNotice(true);
+      setTimeout(() => setShowClosedNotice(false), 3000);
+      return;
+    }
+
     onAddToCart({
       id: item.id,
       name: item.name,
@@ -180,6 +193,13 @@ export default function ReorderModal({
   };
 
   const handleAddBundle = (bundle: UpsellBundle) => {
+    // Check if restaurant is open
+    if (!restaurantIsOpen) {
+      setShowClosedNotice(true);
+      setTimeout(() => setShowClosedNotice(false), 3000);
+      return;
+    }
+
     onAddToCart({
       id: `bundle-${bundle.id}`,
       name: bundle.name,
@@ -199,6 +219,13 @@ export default function ReorderModal({
   };
 
   const handleAddUpsellItem = (item: UpsellItem) => {
+    // Check if restaurant is open
+    if (!restaurantIsOpen) {
+      setShowClosedNotice(true);
+      setTimeout(() => setShowClosedNotice(false), 3000);
+      return;
+    }
+
     onAddToCart({
       id: item.id,
       name: item.name,
@@ -218,6 +245,13 @@ export default function ReorderModal({
   };
 
   const handleReorderOrder = (order: CustomerOrder) => {
+    // Check if restaurant is open
+    if (!restaurantIsOpen) {
+      setShowClosedNotice(true);
+      setTimeout(() => setShowClosedNotice(false), 3000);
+      return;
+    }
+
     onReorderAll(order);
     setReorderedOrders((prev) => new Set(prev).add(order.id));
     setTimeout(() => {
@@ -263,6 +297,29 @@ export default function ReorderModal({
             )}
           </div>
         </div>
+
+        {/* Closed Notice */}
+        {showClosedNotice && (
+          <div className="mx-6 mt-4 p-4 rounded-xl bg-red-500/20 border border-red-500/40 animate-pulse">
+            <div className="flex items-center gap-3">
+              <span className="text-2xl">🔒</span>
+              <div>
+                <p className="text-white font-semibold">Restaurant is Closed</p>
+                <p className="text-white/70 text-sm">{closedMessage}</p>
+              </div>
+            </div>
+          </div>
+        )}
+
+        {/* Closed Banner (persistent when closed) */}
+        {!restaurantIsOpen && !showClosedNotice && (
+          <div className="mx-6 mt-4 p-3 rounded-xl bg-amber-500/20 border border-amber-500/40">
+            <div className="flex items-center gap-2 text-center justify-center">
+              <span className="text-lg">⏰</span>
+              <p className="text-amber-300 text-sm font-medium">{closedMessage} - Browse the menu and order when we open!</p>
+            </div>
+          </div>
+        )}
 
         {/* Scrollable Content */}
         <div className="flex-1 overflow-y-auto p-6 space-y-8 bg-gradient-to-b from-transparent via-[#1a0505]/50 to-[#0d0303]">

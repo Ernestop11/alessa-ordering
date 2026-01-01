@@ -95,8 +95,8 @@ export async function POST(request: NextRequest) {
     // Create the order with pending_sponsor_payment status
     const order = await prisma.order.create({
       data: {
-        tenantId: tenant.id,
-        groupOrderId: groupOrder.id,
+        tenant: { connect: { id: tenant.id } },
+        groupOrder: { connect: { id: groupOrder.id } },
         participantName,
         customerName,
         customerEmail,
