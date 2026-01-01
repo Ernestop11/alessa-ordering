@@ -1,7 +1,26 @@
 "use client";
 
-import { useState } from "react";
-import { Search, Plus, Check, Users, X, UserPlus } from "lucide-react";
+import { useState, useEffect } from "react";
+import { Search, Plus, Check, Users, X, UserPlus, Smartphone } from "lucide-react";
+
+// Type definitions for Contact Picker API
+interface ContactPickerContact {
+  name?: string[];
+  email?: string[];
+  tel?: string[];
+}
+
+declare global {
+  interface Navigator {
+    contacts?: {
+      select: (
+        properties: string[],
+        options?: { multiple?: boolean }
+      ) => Promise<ContactPickerContact[]>;
+      getProperties: () => Promise<string[]>;
+    };
+  }
+}
 
 interface Contact {
   id: string;
@@ -30,6 +49,13 @@ export default function ContactSelector({
   const [newContact, setNewContact] = useState({ name: "", email: "", phone: "" });
   const [addingContact, setAddingContact] = useState(false);
   const [addError, setAddError] = useState<string | null>(null);
+  const [hasContactPicker, setHasContactPicker] = useState(false);
+  const [importingContact, setImportingContact] = useState(false);
+
+  // Check if Contact Picker API is available
+  useEffect(() => {
+    setHasContactPicker("contacts" in navigator && "select" in (navigator.contacts || {}));
+  }, []);
 
   const filteredContacts = contacts.filter((contact) => {
     const query = searchQuery.toLowerCase();
@@ -57,6 +83,51 @@ export default function ContactSelector({
 
   const deselectAll = () => {
     onSelectionChange(new Set());
+  };
+
+  // Import contact from device
+  const handleImportFromPhone = async () => {
+    if (!navigator.contacts) {
+      setAddError("Contact picker not available");
+      return;
+    }
+
+    setImportingContact(true);
+    setAddError(null);
+
+    try {
+      const contacts = await navigator.contacts.select(
+        ["name", "email", "tel"],
+        { multiple: false }
+      );
+
+      if (contacts.length > 0) {
+        const contact = contacts[0];
+        const name = contact.name?.[0] || "";
+        const email = contact.email?.[0] || "";
+        const phone = contact.tel?.[0] || "";
+
+        // Populate form with imported data
+        setNewContact({
+          name,
+          email,
+          phone,
+        });
+        setShowAddForm(true);
+
+        // If we have enough info, show success message
+        if (!email) {
+          setAddError("No email found for this contact. Please enter manually.");
+        }
+      }
+    } catch (err) {
+      // User cancelled or error
+      if (err instanceof Error && err.name !== "AbortError") {
+        setAddError("Failed to import contact");
+      }
+    } finally {
+      setImportingContact(false);
+    }
   };
 
   const handleAddContact = async () => {
@@ -201,6 +272,19 @@ export default function ContactSelector({
             </button>
           </div>
 
+          {/* Import from Phone button (shown inside form on supported devices) */}
+          {hasContactPicker && (
+            <button
+              type="button"
+              onClick={handleImportFromPhone}
+              disabled={importingContact}
+              className="w-full flex items-center justify-center gap-2 py-2.5 rounded-lg bg-blue-500/20 text-blue-400 font-medium text-sm hover:bg-blue-500/30 disabled:opacity-50 transition-all border border-blue-500/30"
+            >
+              <Smartphone className="w-4 h-4" />
+              {importingContact ? "Opening contacts..." : "Import from Phone"}
+            </button>
+          )}
+
           <input
             type="text"
             value={newContact.name}
@@ -237,14 +321,32 @@ export default function ContactSelector({
           </button>
         </div>
       ) : (
-        <button
-          type="button"
-          onClick={() => setShowAddForm(true)}
-          className="w-full flex items-center justify-center gap-2 py-3 rounded-xl border-2 border-dashed border-white/20 text-white/50 hover:text-white/70 hover:border-white/30 transition-all"
-        >
-          <UserPlus className="w-4 h-4" />
-          <span className="text-sm font-medium">Add New Contact</span>
-        </button>
+        <div className="space-y-2">
+          {/* Import from Phone - Primary action on supported devices */}
+          {hasContactPicker && (
+            <button
+              type="button"
+              onClick={handleImportFromPhone}
+              disabled={importingContact}
+              className="w-full flex items-center justify-center gap-2 py-3 rounded-xl bg-gradient-to-r from-blue-600/30 to-blue-500/20 border border-blue-500/40 text-blue-300 hover:from-blue-600/40 hover:to-blue-500/30 disabled:opacity-50 transition-all"
+            >
+              <Smartphone className="w-4 h-4" />
+              <span className="text-sm font-medium">
+                {importingContact ? "Opening contacts..." : "Import from Phone"}
+              </span>
+            </button>
+          )}
+
+          {/* Manual add button */}
+          <button
+            type="button"
+            onClick={() => setShowAddForm(true)}
+            className="w-full flex items-center justify-center gap-2 py-3 rounded-xl border-2 border-dashed border-white/20 text-white/50 hover:text-white/70 hover:border-white/30 transition-all"
+          >
+            <UserPlus className="w-4 h-4" />
+            <span className="text-sm font-medium">Add Manually</span>
+          </button>
+        </div>
       )}
     </div>
   );
