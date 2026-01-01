@@ -30,7 +30,7 @@ export default async function GroupOrderPage({ params }: PageProps) {
         { customDomain: host },
         { slug: host.split('.')[0] },
       ],
-      status: 'ACTIVE',
+      status: { in: ['LIVE', 'APPROVED'] },
     },
     select: {
       id: true,
