@@ -1,4 +1,40 @@
 const { PrismaClient } = require('@prisma/client')
+
+/**
+ * Demo Seed Script - Multi-Tenant Isolation
+ *
+ * IMPORTANT: This script seeds demo/test tenants for development only.
+ * It is DISABLED by default to prevent accidental contamination of production databases.
+ *
+ * To run this seed:
+ *   SEED_DEMO=true npx prisma db seed
+ *
+ * For production tenant setup, use the dedicated scripts:
+ *   - scripts/seed-tenant.mjs (create new tenant)
+ *   - Admin dashboard (manage existing tenants)
+ */
+
+// Safety guard - prevent accidental seeding of production databases
+if (process.env.SEED_DEMO !== 'true') {
+  console.log('');
+  console.log('╔══════════════════════════════════════════════════════════════════╗');
+  console.log('║  Demo seed is DISABLED (multi-tenant safety)                     ║');
+  console.log('║                                                                  ║');
+  console.log('║  This prevents accidental contamination of production databases. ║');
+  console.log('║                                                                  ║');
+  console.log('║  To seed demo tenants, run:                                      ║');
+  console.log('║    SEED_DEMO=true npx prisma db seed                             ║');
+  console.log('║                                                                  ║');
+  console.log('║  For production, use:                                            ║');
+  console.log('║    - scripts/seed-tenant.mjs (new tenant)                        ║');
+  console.log('║    - Admin dashboard (manage existing)                           ║');
+  console.log('╚══════════════════════════════════════════════════════════════════╝');
+  console.log('');
+  process.exit(0);
+}
+
+console.log('[Seed] SEED_DEMO=true - proceeding with demo tenant seeding...');
+
 const prisma = new PrismaClient()
 
 const STOCK = {

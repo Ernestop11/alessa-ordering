@@ -85,18 +85,45 @@ export async function GET(request: Request) {
       },
     });
 
-    const origin = request.headers.get('origin') || request.headers.get('host') || 'lasreinas.alessacloud.com';
-    const protocol = origin.includes('localhost') ? 'http' : 'https';
-    const baseUrl = origin.includes('localhost') ? origin : `https://${origin.split('://')[1] || origin}`;
+    // Use tenant's custom domain or subdomain - no hardcoded fallbacks
+    const rootDomain = process.env.ROOT_DOMAIN || 'alessacloud.com';
+    const tenantDomain = tenant.customDomain
+      ? `https://${tenant.customDomain}`
+      : `https://${tenantSlug}.${rootDomain}`;
 
-    // Redirect to /admin/payments?tenant=lasreinas
+    const origin = request.headers.get('origin') || request.headers.get('host');
+    const isLocalhost = origin?.includes('localhost');
+    const baseUrl = isLocalhost ? `http://${origin}` : tenantDomain;
+
+    // Redirect to /admin/payments
     return NextResponse.redirect(`${baseUrl}/admin/payments?tenant=${tenantSlug}`);
   } catch (error: any) {
     console.error('[stripe-callback] Error:', error);
-    const tenantSlug = new URL(request.url).searchParams.get('tenant') || 'lasreinas';
-    const origin = request.headers.get('origin') || request.headers.get('host') || 'lasreinas.alessacloud.com';
-    const baseUrl = origin.includes('localhost') ? origin : `https://${origin.split('://')[1] || origin}`;
-    
+    const tenantSlug = new URL(request.url).searchParams.get('tenant');
+
+    // Cannot redirect without tenant slug - return error
+    if (!tenantSlug) {
+      return NextResponse.json(
+        { error: 'Stripe callback failed: tenant parameter is required' },
+        { status: 400 }
+      );
+    }
+
+    // Try to get tenant domain from DB for error redirect
+    const tenant = await prisma.tenant.findUnique({
+      where: { slug: tenantSlug },
+      select: { customDomain: true },
+    });
+
+    const rootDomain = process.env.ROOT_DOMAIN || 'alessacloud.com';
+    const tenantDomain = tenant?.customDomain
+      ? `https://${tenant.customDomain}`
+      : `https://${tenantSlug}.${rootDomain}`;
+
+    const origin = request.headers.get('origin') || request.headers.get('host');
+    const isLocalhost = origin?.includes('localhost');
+    const baseUrl = isLocalhost ? `http://${origin}` : tenantDomain;
+
     // Redirect to admin even on error
     return NextResponse.redirect(`${baseUrl}/admin/payments?tenant=${tenantSlug}&error=${encodeURIComponent(error.message || 'Unknown error')}`);
   }

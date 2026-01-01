@@ -1,24 +1,30 @@
 #!/usr/bin/env node
 /**
- * Local Print Relay Service for Las Reinas
+ * Local Print Relay Service - Multi-Tenant Version
  *
  * This script runs on your local network (Mac, Raspberry Pi, etc.) and acts as a bridge
  * between the VPS order events and your local WiFi/network thermal printer.
+ *
+ * IMPORTANT: All configuration must be provided via environment variables.
+ * No hardcoded tenant slugs or URLs - this script works for ANY tenant.
  *
  * HOW IT WORKS:
  * 1. AUTO-DISCOVERS the printer on any network (scans for port 9100)
  * 2. Polls the VPS API for new orders (no SSE dependency)
  * 3. When a new order is detected, generates an ESC/POS receipt
- * 4. Sends the receipt directly to your Munbyn WiFi printer via TCP port 9100
+ * 4. Sends the receipt directly to your WiFi printer via TCP port 9100
  *
  * Usage:
- *   node scripts/local-print-relay.mjs           # Auto-discover printer
- *   PRINTER_HOST=192.168.1.108 node scripts/local-print-relay.mjs  # Manual IP
+ *   VPS_URL=https://yourtenant.com TENANT_SLUG=yourtenant node scripts/local-print-relay.mjs
  *
- * Configuration (via environment variables):
- *   PRINTER_HOST=auto            # Set to 'auto' or omit to auto-discover (default)
+ * REQUIRED Configuration (via environment variables):
+ *   VPS_URL=https://...          # Your tenant's VPS URL (REQUIRED)
+ *   TENANT_SLUG=...              # Your tenant slug (REQUIRED)
+ *   PRINT_RELAY_API_KEY=...      # API key for authentication (REQUIRED)
+ *
+ * OPTIONAL Configuration:
+ *   PRINTER_HOST=auto            # Set to 'auto' or IP address (default: auto)
  *   PRINTER_PORT=9100            # Printer port (default: 9100)
- *   VPS_URL=https://lasreinascolusa.com  # Your VPS URL
  *   POLL_INTERVAL=5000           # How often to check for new orders (ms)
  */
 
@@ -27,13 +33,35 @@ import https from 'https';
 import http from 'http';
 import os from 'os';
 
-// Configuration
+// REQUIRED Configuration - fail explicitly if not provided
+const VPS_URL = process.env.VPS_URL;
+const TENANT_SLUG = process.env.TENANT_SLUG;
+const PRINT_RELAY_API_KEY = process.env.PRINT_RELAY_API_KEY;
+
+// Validate required configuration - no hardcoded defaults
+if (!VPS_URL) {
+  console.error('ERROR: VPS_URL environment variable is required');
+  console.error('Example: VPS_URL=https://lasreinascolusa.com');
+  process.exit(1);
+}
+if (!TENANT_SLUG) {
+  console.error('ERROR: TENANT_SLUG environment variable is required');
+  console.error('Example: TENANT_SLUG=lasreinas');
+  process.exit(1);
+}
+if (!PRINT_RELAY_API_KEY) {
+  console.error('ERROR: PRINT_RELAY_API_KEY environment variable is required');
+  console.error('Get your API key from the admin dashboard');
+  process.exit(1);
+}
+
+// Optional configuration
 let PRINTER_HOST = process.env.PRINTER_HOST || 'auto';
 const PRINTER_PORT = parseInt(process.env.PRINTER_PORT || '9100');
-const VPS_URL = process.env.VPS_URL || 'https://lasreinascolusa.com';
 const POLL_INTERVAL = parseInt(process.env.POLL_INTERVAL || '5000'); // 5 seconds
-const PRINT_RELAY_API_KEY = process.env.PRINT_RELAY_API_KEY || '';
-const TENANT_SLUG = process.env.TENANT_SLUG || 'lasreinas';
+
+console.log(`[Print Relay] Starting for tenant: ${TENANT_SLUG}`);
+console.log(`[Print Relay] VPS URL: ${VPS_URL}`);
 
 // Track printed orders to avoid duplicates
 const printedOrders = new Set();

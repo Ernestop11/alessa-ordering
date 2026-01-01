@@ -9,18 +9,33 @@ const SUPER_ADMIN_PASSWORD = process.env.SUPER_ADMIN_PASSWORD;
 
 // Tenant-specific admin credentials (from env)
 // Format: TENANT_ADMIN_{SLUG}_EMAIL and TENANT_ADMIN_{SLUG}_PASSWORD
-const TENANT_ADMINS: Record<string, { email: string; password: string; name: string }> = {
-  lasreinas: {
-    email: process.env.TENANT_ADMIN_LASREINAS_EMAIL || 'admin@lasreinas.com',
-    password: process.env.TENANT_ADMIN_LASREINAS_PASSWORD || 'LasReinas2024!',
-    name: 'Las Reinas Admin',
-  },
-  lapoblanita: {
-    email: process.env.TENANT_ADMIN_LAPOBLANITA_EMAIL || 'admin@lapoblanita.com',
-    password: process.env.TENANT_ADMIN_LAPOBLANITA_PASSWORD || 'LaPoblanita2024!',
-    name: 'La Poblanita Admin',
-  },
-};
+// IMPORTANT: No fallback defaults - credentials MUST be set in environment
+function getTenantAdmins(): Record<string, { email: string; password: string; name: string }> {
+  const admins: Record<string, { email: string; password: string; name: string }> = {};
+
+  // Dynamically load tenant admins from environment variables
+  // Pattern: TENANT_ADMIN_{SLUG}_EMAIL and TENANT_ADMIN_{SLUG}_PASSWORD
+  const knownTenants = ['LASREINAS', 'LAPOBLANITA', 'VILLACORONA', 'TAQUERIAROSITA'];
+
+  for (const tenantKey of knownTenants) {
+    const email = process.env[`TENANT_ADMIN_${tenantKey}_EMAIL`];
+    const password = process.env[`TENANT_ADMIN_${tenantKey}_PASSWORD`];
+
+    // Only add if BOTH email and password are configured (no fallbacks)
+    if (email && password) {
+      const slug = tenantKey.toLowerCase();
+      admins[slug] = {
+        email,
+        password,
+        name: `${slug.charAt(0).toUpperCase() + slug.slice(1)} Admin`,
+      };
+    }
+  }
+
+  return admins;
+}
+
+const TENANT_ADMINS = getTenantAdmins();
 
 // Legacy single admin (backwards compatible)
 const LEGACY_ADMIN_EMAIL = process.env.ADMIN_EMAIL;

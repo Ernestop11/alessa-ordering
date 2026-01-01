@@ -11,17 +11,12 @@ import prisma from '@/lib/prisma';
  * This allows SMP to use its own tenant ID format while Alessa uses UUIDs
  */
 
-// Mapping of SMP tenant IDs to Alessa tenant slugs/IDs
-// Both local dev and VPS IDs resolve to the same slug
-const TENANT_ALIAS_MAP: Record<string, string> = {
-  'lasreinas-tenant-001': 'lasreinas',
-  'lasreinas': 'lasreinas',
-  // Local dev UUID
-  '79bd3027-5520-480b-8979-2e37b21e58d0': 'lasreinas',
-  // VPS UUID
-  'f941ea79-5af8-4c33-bb17-9a98a992a232': 'lasreinas',
-  // Add more mappings as needed
-};
+// Tenant resolution is now fully database-driven
+// No hardcoded UUIDs or tenant slugs - prevents contamination and security leaks
+// Tenants are resolved by:
+// 1. UUID lookup (if smpTenantId is a valid UUID)
+// 2. Slug lookup (if smpTenantId matches a tenant slug)
+// 3. TenantSync lookup (if tenant has a sync record with that smpTenantId)
 
 export async function GET(req: NextRequest) {
   try {
@@ -90,16 +85,10 @@ export async function GET(req: NextRequest) {
       });
     }
 
-    // Look up alias
-    const slugOrAlias = TENANT_ALIAS_MAP[smpTenantId] || smpTenantId;
-
-    // Find tenant by slug
+    // Find tenant by slug (direct database lookup - no hardcoded mappings)
     const tenant = await prisma.tenant.findFirst({
       where: {
-        OR: [
-          { slug: slugOrAlias },
-          { slug: smpTenantId },
-        ],
+        slug: smpTenantId,
       },
       select: {
         id: true,
@@ -112,11 +101,68 @@ export async function GET(req: NextRequest) {
     });
 
     if (!tenant) {
+      // Try to find via TenantSync record (for SMP-specific IDs)
+      const tenantSync = await prisma.tenantSync.findFirst({
+        where: {
+          productType: 'SMP',
+          syncConfig: {
+            path: ['smpTenantId'],
+            equals: smpTenantId,
+          },
+        },
+        include: {
+          tenant: {
+            select: {
+              id: true,
+              slug: true,
+              name: true,
+              primaryColor: true,
+              secondaryColor: true,
+              logoUrl: true,
+            },
+          },
+        },
+      });
+
+      if (!tenantSync?.tenant) {
+        return NextResponse.json({
+          error: 'Tenant not found',
+          hint: 'Use a valid tenant slug or UUID. Tenant must exist in database.',
+        }, { status: 404 });
+      }
+
+      // Use tenant from TenantSync
+      const syncedTenant = tenantSync.tenant;
+
+      // Verify SMP subscription
+      const subscription = await prisma.tenantProduct.findFirst({
+        where: {
+          tenantId: syncedTenant.id,
+          product: { slug: 'switchmenu-pro' },
+          status: { in: ['active', 'prepaid'] },
+        },
+      });
+
       return NextResponse.json({
-        error: 'Tenant not found',
-        hint: 'Check the smpTenantId or add a mapping in TENANT_ALIAS_MAP',
-        availableAliases: Object.keys(TENANT_ALIAS_MAP),
-      }, { status: 404 });
+        success: true,
+        resolved: true,
+        smpTenantId,
+        alessaTenantId: syncedTenant.id,
+        slug: syncedTenant.slug,
+        name: syncedTenant.name,
+        branding: {
+          primaryColor: syncedTenant.primaryColor,
+          secondaryColor: syncedTenant.secondaryColor,
+          logoUrl: syncedTenant.logoUrl,
+        },
+        smpSubscriptionActive: !!subscription,
+        endpoints: {
+          products: `/api/sync/ordering/${syncedTenant.id}/products`,
+          categories: `/api/sync/ordering/${syncedTenant.id}/categories`,
+          ordersReady: `/api/sync/smp/orders-ready?tenantId=${syncedTenant.id}`,
+          promos: `/api/sync/smp/promos?tenantId=${syncedTenant.id}`,
+        },
+      });
     }
 
     // Verify SMP subscription

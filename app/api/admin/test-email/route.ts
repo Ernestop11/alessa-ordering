@@ -1,21 +1,17 @@
 import { NextRequest, NextResponse } from 'next/server';
 import { Resend } from 'resend';
+import { requireTenant } from '@/lib/tenant';
 
 const resend = process.env.RESEND_API_KEY ? new Resend(process.env.RESEND_API_KEY) : null;
 
-// Las Reinas tenant info
-const TENANT = {
-  name: 'Las Reinas Taqueria y Carniceria',
-  logoUrl: 'https://lasreinascolusa.com/tenant/lasreinas/logo.png',
-  address: '751 Fremont St',
-  city: 'Colusa',
-  state: 'CA',
-  zip: '95932',
-  phone: '(530) 458-7775',
-  email: 'admin@lasreinascolusa.com',
-  primaryColor: '#dc2626', // Red
-  secondaryColor: '#f59e0b', // Gold
-};
+// Helper to get tenant's public URL
+function getTenantUrl(tenant: { customDomain?: string | null; slug: string }): string {
+  if (tenant.customDomain) {
+    return `https://${tenant.customDomain}`;
+  }
+  const rootDomain = process.env.ROOT_DOMAIN || 'alessacloud.com';
+  return `https://${tenant.slug}.${rootDomain}`;
+}
 
 export async function POST(request: NextRequest) {
   try {
@@ -25,6 +21,24 @@ export async function POST(request: NextRequest) {
         { status: 500 }
       );
     }
+
+    // Get current tenant dynamically - no hardcoded tenant info
+    const tenant = await requireTenant();
+    const tenantUrl = getTenantUrl(tenant);
+
+    // Build tenant info from database
+    const TENANT = {
+      name: tenant.name,
+      logoUrl: tenant.logoUrl || `${tenantUrl}/tenant/${tenant.slug}/logo.png`,
+      address: tenant.addressLine1 || '',
+      city: tenant.city || '',
+      state: tenant.state || '',
+      zip: tenant.postalCode || '',
+      phone: tenant.contactPhone || '',
+      email: tenant.contactEmail || `orders@${tenant.customDomain || `${tenant.slug}.alessacloud.com`}`,
+      primaryColor: tenant.primaryColor || '#dc2626',
+      secondaryColor: tenant.secondaryColor || '#f59e0b',
+    };
 
     const { to, type = 'customer' } = await request.json();
 
@@ -87,8 +101,12 @@ export async function POST(request: NextRequest) {
       ? `Order Confirmed! #${testOrder.orderNumber} - ${TENANT.name}`
       : `New Order #${testOrder.orderNumber} - $${testOrder.total.toFixed(2)}`;
 
+    // Determine sender email based on tenant's domain
+    const senderDomain = tenant.customDomain || `${tenant.slug}.alessacloud.com`;
+    const fromEmail = `${TENANT.name} <orders@${senderDomain}>`;
+
     const { error, data } = await resend.emails.send({
-      from: `${TENANT.name} <orders@lasreinascolusa.com>`,
+      from: fromEmail,
       to: [to],
       replyTo: TENANT.email,
       subject,

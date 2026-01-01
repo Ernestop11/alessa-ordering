@@ -68,6 +68,8 @@ export interface OrderNotificationEmailParams {
   totalAmount: number;
   items: Array<{ name: string; quantity: number; price: number }>;
   tenantName: string;
+  tenantSlug: string; // Added for dynamic URL generation
+  tenantCustomDomain?: string | null; // Added for dynamic URL generation
   fulfillmentUrl?: string;
   fromAddress?: string;
   replyTo?: string;
@@ -80,6 +82,8 @@ export async function sendOrderNotificationEmail({
   totalAmount,
   items,
   tenantName,
+  tenantSlug,
+  tenantCustomDomain,
   fulfillmentUrl,
   fromAddress,
   replyTo,
@@ -95,7 +99,12 @@ export async function sendOrderNotificationEmail({
     .map((item) => `  • ${item.quantity}x ${item.name} - $${item.price.toFixed(2)}`)
     .join('\n');
 
-  const dashboardUrl = fulfillmentUrl || `${process.env.NEXTAUTH_URL || 'https://lasreinascolusa.com'}/admin/fulfillment`;
+  // Build tenant URL dynamically - no hardcoded fallbacks
+  const rootDomain = process.env.ROOT_DOMAIN || 'alessacloud.com';
+  const tenantBaseUrl = tenantCustomDomain
+    ? `https://${tenantCustomDomain}`
+    : `https://${tenantSlug}.${rootDomain}`;
+  const dashboardUrl = fulfillmentUrl || `${tenantBaseUrl}/admin/fulfillment`;
 
   try {
     const { error } = await resend.emails.send({
@@ -412,7 +421,11 @@ export async function sendOrderEmails(orderId: string): Promise<{ customerSent: 
       price: item.price,
     }));
 
-    const baseUrl = process.env.NEXTAUTH_URL || 'https://lasreinascolusa.com';
+    // Build tenant URL dynamically from database - no hardcoded fallbacks
+    const rootDomain = process.env.ROOT_DOMAIN || 'alessacloud.com';
+    const baseUrl = order.tenant.customDomain
+      ? `https://${order.tenant.customDomain}`
+      : `https://${order.tenant.slug}.${rootDomain}`;
 
     // Build tenant address from components
     const tenantAddress = [
@@ -469,6 +482,8 @@ export async function sendOrderEmails(orderId: string): Promise<{ customerSent: 
           totalAmount: order.totalAmount,
           items,
           tenantName: order.tenant.name,
+          tenantSlug: order.tenant.slug,
+          tenantCustomDomain: order.tenant.customDomain,
           fulfillmentUrl: `${baseUrl}/admin/fulfillment`,
           fromAddress,
           replyTo,
@@ -489,6 +504,8 @@ export async function sendOrderEmails(orderId: string): Promise<{ customerSent: 
           totalAmount: order.totalAmount,
           items,
           tenantName: order.tenant.name,
+          tenantSlug: order.tenant.slug,
+          tenantCustomDomain: order.tenant.customDomain,
           fulfillmentUrl: `${baseUrl}/admin/fulfillment`,
           fromAddress,
           replyTo,

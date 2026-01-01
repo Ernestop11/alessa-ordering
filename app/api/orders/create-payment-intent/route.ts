@@ -176,7 +176,11 @@ export async function POST(req: NextRequest) {
       paymentIntentOptions.payment_method = paymentMethodId;
       paymentIntentOptions.confirm = true;
       paymentIntentOptions.off_session = true;
-      paymentIntentOptions.return_url = `${process.env.NEXT_PUBLIC_APP_URL || 'https://lasreinascolusa.com'}/order-confirmation`;
+      // Use tenant's custom domain or subdomain for return URL - no hardcoded fallbacks
+      const tenantDomain = tenant.customDomain
+        ? `https://${tenant.customDomain}`
+        : `https://${tenant.slug}.${process.env.ROOT_DOMAIN || 'alessacloud.com'}`;
+      paymentIntentOptions.return_url = `${tenantDomain}/order-confirmation`;
     }
 
     // Create payment intent with Stripe
