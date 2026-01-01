@@ -405,6 +405,7 @@ model Tenant {
   template               TenantTemplate?
   drivers                Driver[]
   groupOrders            GroupOrder[]
+  customerContacts       CustomerContact[]
 
   @@index([status])
 }
@@ -572,10 +573,12 @@ model GroupOrder {
   sessionCode           String      @unique   // Short shareable code (e.g., "LR-ABC123")
 
   // Group info
-  name                  String?               // "Office Lunch", "Birthday Party"
+  name                  String?               // Legacy field (use companyName)
+  companyName           String?               // Company/Office name for the group order
   organizerName         String
   organizerEmail        String?
   organizerPhone        String?
+  organizerCustomerId   String?               // Link to Customer who created the order
 
   // Fulfillment (shared by all orders in the group)
   fulfillmentMethod     String      @default("pickup")
@@ -602,10 +605,13 @@ model GroupOrder {
 
   tenant                Tenant      @relation(fields: [tenantId], references: [id], onDelete: Cascade)
   orders                Order[]
+  invitations           GroupOrderInvitation[]
+  organizerCustomer     Customer?   @relation("OrganizerGroupOrders", fields: [organizerCustomerId], references: [id], onDelete: SetNull)
 
   @@index([tenantId])
   @@index([sessionCode])
   @@index([status])
+  @@index([organizerCustomerId])
 }
 
 model MenuSection {
@@ -667,11 +673,14 @@ model Customer {
   membershipTier           String?
   accessibilityPreferences Json?
   stripeCustomerId         String?           // Stripe Customer ID for saved payment methods
+  companyName              String?           // Last used company/office name for group orders
   createdAt                DateTime          @default(now())
   updatedAt                DateTime          @updatedAt
   tenant                   Tenant            @relation(fields: [tenantId], references: [id], onDelete: Cascade)
   orders                   Order[]
   sessions                 CustomerSession[]
+  contacts                 CustomerContact[] // Saved contacts for group orders
+  organizedGroupOrders     GroupOrder[]      @relation("OrganizerGroupOrders")
 
   @@index([tenantId, email])
   @@index([tenantId, phone])
@@ -1409,4 +1418,46 @@ model TenantTemplateSettings {
   tagline             String?
 
   updatedAt           DateTime @updatedAt
+}
+
+// Customer Contacts - for storing coworkers/contacts for group orders
+model CustomerContact {
+  id          String   @id @default(uuid())
+  customerId  String
+  tenantId    String
+  name        String
+  email       String
+  phone       String?
+  createdAt   DateTime @default(now())
+  updatedAt   DateTime @updatedAt
+
+  customer    Customer @relation(fields: [customerId], references: [id], onDelete: Cascade)
+  tenant      Tenant   @relation(fields: [tenantId], references: [id], onDelete: Cascade)
+  invitations GroupOrderInvitation[]
+
+  @@unique([customerId, email]) // One contact per email per customer
+  @@index([customerId])
+  @@index([tenantId])
+}
+
+// Group Order Invitations - tracks who was invited and their status
+model GroupOrderInvitation {
+  id              String   @id @default(uuid())
+  groupOrderId    String
+  contactId       String?  // Optional - may be invited by email only
+  email           String
+  name            String
+  token           String   @unique @default(uuid()) // For auto-fill on join link
+  status          String   @default("pending") // pending, sent, ordered
+  invitedAt       DateTime @default(now())
+  orderedAt       DateTime?
+  orderId         String?  // Links to the order once placed
+
+  groupOrder      GroupOrder       @relation(fields: [groupOrderId], references: [id], onDelete: Cascade)
+  contact         CustomerContact? @relation(fields: [contactId], references: [id], onDelete: SetNull)
+
+  @@unique([groupOrderId, email]) // One invitation per email per group order
+  @@index([groupOrderId])
+  @@index([token])
+  @@index([status])
 }

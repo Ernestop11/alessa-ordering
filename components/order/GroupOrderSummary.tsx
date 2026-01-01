@@ -17,6 +17,9 @@ import {
   ChevronUp,
   CreditCard,
   PartyPopper,
+  Mail,
+  Send,
+  Hourglass,
 } from "lucide-react";
 
 interface GroupOrderSummaryProps {
@@ -44,10 +47,26 @@ interface ParticipantOrder {
   items: OrderItem[];
 }
 
+interface Invitation {
+  id: string;
+  name: string;
+  email: string;
+  status: string;
+  invitedAt: string;
+  orderedAt: string | null;
+}
+
+interface InvitationStats {
+  total: number;
+  ordered: number;
+  pending: number;
+}
+
 interface GroupOrderData {
   id: string;
   sessionCode: string;
   name: string | null;
+  companyName: string | null;
   organizerName: string;
   organizerEmail: string | null;
   organizerPhone: string | null;
@@ -66,6 +85,9 @@ interface GroupOrderData {
   sponsorName?: string | null;
   sponsorPaidAt?: string | null;
   awaitingPayment?: boolean;
+  // Invitation tracking
+  invitations?: Invitation[];
+  invitationStats?: InvitationStats;
 }
 
 export default function GroupOrderSummary({
@@ -165,12 +187,14 @@ export default function GroupOrderSummary({
   const handlePrint = () => {
     if (!data) return;
 
+    const displayName = data.companyName || data.name || "Group Order";
+
     // Create printable content
     const printContent = `
       <!DOCTYPE html>
       <html>
       <head>
-        <title>Group Order - ${data.name || data.sessionCode}</title>
+        <title>Group Order - ${displayName}</title>
         <style>
           body { font-family: sans-serif; padding: 20px; }
           h1 { font-size: 24px; margin-bottom: 5px; }
@@ -188,7 +212,7 @@ export default function GroupOrderSummary({
         </style>
       </head>
       <body>
-        <h1>GROUP ORDER: ${data.name || "Group Order"}</h1>
+        <h1>GROUP ORDER: ${displayName}</h1>
         <div class="meta">
           <div>Session: ${data.sessionCode}</div>
           <div>Organizer: ${data.organizerName}</div>
@@ -355,7 +379,7 @@ export default function GroupOrderSummary({
               <div className="p-4 rounded-xl bg-white/5 border border-white/10 space-y-3">
                 <div className="flex items-center justify-between">
                   <h3 className="text-lg font-bold text-white">
-                    {data.name || "Group Order"}
+                    {data.companyName || data.name || "Group Order"}
                   </h3>
                   {getStatusBadge(data.status)}
                 </div>
@@ -489,6 +513,93 @@ export default function GroupOrderSummary({
                   <Printer className="w-4 h-4" />
                 </button>
               </div>
+
+              {/* Invitation Tracking - Visual Dashboard */}
+              {data.invitations && data.invitations.length > 0 && data.invitationStats && (
+                <div className="p-4 rounded-xl bg-white/5 border border-white/10 space-y-4">
+                  <div className="flex items-center justify-between">
+                    <h4 className="text-sm font-medium text-white flex items-center gap-2">
+                      <Mail className="w-4 h-4" />
+                      Invited Team Members
+                    </h4>
+                    <span className="text-xs text-white/50">
+                      {data.invitationStats.ordered} of {data.invitationStats.total} ordered
+                    </span>
+                  </div>
+
+                  {/* Progress Bar */}
+                  <div className="relative">
+                    <div className="h-3 rounded-full bg-white/10 overflow-hidden">
+                      <div
+                        className="h-full rounded-full transition-all duration-500"
+                        style={{
+                          width: `${data.invitationStats.total > 0
+                            ? (data.invitationStats.ordered / data.invitationStats.total) * 100
+                            : 0}%`,
+                          background: `linear-gradient(90deg, ${primaryColor} 0%, #22c55e 100%)`,
+                        }}
+                      />
+                    </div>
+                  </div>
+
+                  {/* Status Cards */}
+                  <div className="grid grid-cols-2 gap-2">
+                    {/* Ordered Section */}
+                    {data.invitations.filter((i) => i.status === "ordered").length > 0 && (
+                      <div className="space-y-2">
+                        <div className="flex items-center gap-1.5 text-green-400 text-xs font-medium">
+                          <CheckCircle className="w-3.5 h-3.5" />
+                          ORDERED
+                        </div>
+                        {data.invitations
+                          .filter((i) => i.status === "ordered")
+                          .map((inv) => (
+                            <div
+                              key={inv.id}
+                              className="flex items-center gap-2 p-2 rounded-lg bg-green-500/10 border border-green-500/20"
+                            >
+                              <div className="w-6 h-6 rounded-full bg-green-500/20 flex items-center justify-center">
+                                <CheckCircle className="w-3.5 h-3.5 text-green-400" />
+                              </div>
+                              <span className="text-sm text-white truncate">{inv.name}</span>
+                            </div>
+                          ))}
+                      </div>
+                    )}
+
+                    {/* Waiting Section */}
+                    {data.invitations.filter((i) => i.status === "pending").length > 0 && (
+                      <div className="space-y-2">
+                        <div className="flex items-center gap-1.5 text-amber-400 text-xs font-medium">
+                          <Hourglass className="w-3.5 h-3.5" />
+                          WAITING
+                        </div>
+                        {data.invitations
+                          .filter((i) => i.status === "pending")
+                          .map((inv) => (
+                            <div
+                              key={inv.id}
+                              className="flex items-center gap-2 p-2 rounded-lg bg-amber-500/10 border border-amber-500/20"
+                            >
+                              <div className="w-6 h-6 rounded-full bg-amber-500/20 flex items-center justify-center">
+                                <Hourglass className="w-3.5 h-3.5 text-amber-400" />
+                              </div>
+                              <span className="text-sm text-white/70 truncate">{inv.name}</span>
+                            </div>
+                          ))}
+                      </div>
+                    )}
+                  </div>
+
+                  {/* All ordered celebration */}
+                  {data.invitationStats.ordered === data.invitationStats.total && data.invitationStats.total > 0 && (
+                    <div className="flex items-center justify-center gap-2 py-3 rounded-xl bg-green-500/20 border border-green-500/30">
+                      <PartyPopper className="w-5 h-5 text-green-400" />
+                      <span className="text-green-400 font-medium">Everyone has ordered!</span>
+                    </div>
+                  )}
+                </div>
+              )}
 
               {/* Orders List */}
               <div>

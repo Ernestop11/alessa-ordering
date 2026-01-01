@@ -696,11 +696,17 @@ export default function MobileNavDrawer({
                   onClose();
                   onGroupOrderClick();
                 }}
-                className="w-full flex items-center gap-4 px-4 py-3 rounded-xl text-left text-white border border-transparent hover:bg-white/5 hover:border-[#DC2626]/30 transition-all"
+                className="w-full flex items-center gap-4 px-4 py-3 rounded-xl text-left text-white border border-amber-500/30 bg-gradient-to-r from-amber-500/10 to-transparent hover:from-amber-500/20 hover:border-amber-500/50 transition-all relative overflow-hidden group"
               >
-                <span className="text-xl">👥</span>
-                <div>
-                  <span className="font-medium">Group Order</span>
+                <div className="absolute inset-0 bg-gradient-to-r from-amber-500/5 to-transparent opacity-0 group-hover:opacity-100 transition-opacity" />
+                <div className="relative w-10 h-10 rounded-xl bg-gradient-to-br from-amber-500/30 to-amber-600/20 flex items-center justify-center">
+                  <span className="text-xl">👥</span>
+                </div>
+                <div className="relative flex-1">
+                  <div className="flex items-center gap-2">
+                    <span className="font-medium">Group Order</span>
+                    <span className="px-1.5 py-0.5 text-[10px] font-bold uppercase tracking-wider bg-amber-500/20 text-amber-400 rounded">Team</span>
+                  </div>
                   <p className="text-xs text-white/50">Office & team orders</p>
                 </div>
               </button>

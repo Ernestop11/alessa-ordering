@@ -43,6 +43,19 @@ export async function GET(request: NextRequest, { params }: RouteParams) {
             createdAt: 'asc',
           },
         },
+        invitations: {
+          select: {
+            id: true,
+            name: true,
+            email: true,
+            status: true,
+            invitedAt: true,
+            orderedAt: true,
+          },
+          orderBy: {
+            invitedAt: 'asc',
+          },
+        },
       },
     });
 
@@ -77,10 +90,16 @@ export async function GET(request: NextRequest, { params }: RouteParams) {
     // Check if sponsor has paid (for sponsored orders)
     const awaitingPayment = groupOrder.isSponsoredOrder && !groupOrder.sponsorPaidAt;
 
+    // Calculate invitation stats
+    const invitations = groupOrder.invitations || [];
+    const orderedCount = invitations.filter((i) => i.status === 'ordered').length;
+    const pendingCount = invitations.filter((i) => i.status === 'pending').length;
+
     return NextResponse.json({
       id: groupOrder.id,
       sessionCode: groupOrder.sessionCode,
       name: groupOrder.name,
+      companyName: groupOrder.companyName,
       organizerName: groupOrder.organizerName,
       organizerEmail: groupOrder.organizerEmail,
       organizerPhone: groupOrder.organizerPhone,
@@ -107,6 +126,20 @@ export async function GET(request: NextRequest, { params }: RouteParams) {
         itemCount: order.items.reduce((sum, item) => sum + item.quantity, 0),
         items: order.items,
       })),
+      // Invitation tracking
+      invitations: invitations.map((inv) => ({
+        id: inv.id,
+        name: inv.name,
+        email: inv.email,
+        status: inv.status,
+        invitedAt: inv.invitedAt,
+        orderedAt: inv.orderedAt,
+      })),
+      invitationStats: {
+        total: invitations.length,
+        ordered: orderedCount,
+        pending: pendingCount,
+      },
       createdAt: groupOrder.createdAt,
     });
   } catch (error) {

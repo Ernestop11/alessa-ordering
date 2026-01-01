@@ -2,7 +2,15 @@
 
 import { useState, useEffect } from "react";
 import { createPortal } from "react-dom";
-import { X, Users, Copy, Check, Share2, Clock, MapPin, Calendar, Eye, CreditCard } from "lucide-react";
+import { X, Users, Copy, Check, Share2, Clock, MapPin, Calendar, Eye, CreditCard, ChevronRight, ChevronLeft, Building2, Mail } from "lucide-react";
+import ContactSelector from "./ContactSelector";
+
+interface Contact {
+  id: string;
+  name: string;
+  email: string;
+  phone?: string | null;
+}
 
 interface GroupOrderModalProps {
   open: boolean;
@@ -12,7 +20,7 @@ interface GroupOrderModalProps {
   onViewOrders?: (sessionCode: string) => void;
 }
 
-type Step = 'form' | 'success';
+type Step = 'info' | 'contacts' | 'success';
 
 export default function GroupOrderModal({
   open,
@@ -22,13 +30,19 @@ export default function GroupOrderModal({
   onViewOrders,
 }: GroupOrderModalProps) {
   const [mounted, setMounted] = useState(false);
-  const [step, setStep] = useState<Step>('form');
+  const [step, setStep] = useState<Step>('info');
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState<string | null>(null);
   const [copied, setCopied] = useState(false);
 
+  // Customer state
+  const [isLoggedIn, setIsLoggedIn] = useState(false);
+  const [contacts, setContacts] = useState<Contact[]>([]);
+  const [contactsLoading, setContactsLoading] = useState(false);
+  const [selectedContactIds, setSelectedContactIds] = useState<Set<string>>(new Set());
+
   // Form state
-  const [name, setName] = useState("");
+  const [companyName, setCompanyName] = useState("");
   const [organizerName, setOrganizerName] = useState("");
   const [organizerPhone, setOrganizerPhone] = useState("");
   const [fulfillmentMethod, setFulfillmentMethod] = useState<'pickup' | 'delivery'>('pickup');
@@ -44,15 +58,16 @@ export default function GroupOrderModal({
     expiresAt: string;
     isSponsoredOrder?: boolean;
     sponsorName?: string;
+    invitationsCreated?: number;
   } | null>(null);
 
   useEffect(() => {
     setMounted(true);
   }, []);
 
-  // Fetch logged-in customer info to auto-fill form
+  // Fetch logged-in customer info and contacts
   useEffect(() => {
-    async function fetchCustomerInfo() {
+    async function fetchCustomerData() {
       try {
         const res = await fetch('/api/rewards/customer', {
           credentials: 'include',
@@ -61,6 +76,7 @@ export default function GroupOrderModal({
         if (res.ok) {
           const data = await res.json();
           if (data && data.id) {
+            setIsLoggedIn(true);
             // Auto-fill organizer info from logged-in customer
             if (data.name && !organizerName) {
               setOrganizerName(data.name);
@@ -69,50 +85,114 @@ export default function GroupOrderModal({
             if (data.phone && !organizerPhone) {
               setOrganizerPhone(data.phone);
             }
+            // Auto-fill company name if saved
+            if (data.companyName && !companyName) {
+              setCompanyName(data.companyName);
+            }
+            // Fetch contacts
+            fetchContacts();
           }
         }
       } catch (err) {
         console.error('[GroupOrderModal] Failed to fetch customer info:', err);
       }
     }
-    fetchCustomerInfo();
+    fetchCustomerData();
   }, []);
+
+  const fetchContacts = async () => {
+    setContactsLoading(true);
+    try {
+      const res = await fetch('/api/customer/contacts', {
+        credentials: 'include',
+      });
+      if (res.ok) {
+        const data = await res.json();
+        setContacts(data.contacts || []);
+      }
+    } catch (err) {
+      console.error('[GroupOrderModal] Failed to fetch contacts:', err);
+    } finally {
+      setContactsLoading(false);
+    }
+  };
 
   // Reset form when modal opens
   useEffect(() => {
     if (open) {
-      setStep('form');
+      setStep('info');
       setError(null);
       setCopied(false);
+      setSelectedContactIds(new Set());
     }
   }, [open]);
 
   if (!open || !mounted) return null;
 
-  const handleSubmit = async (e: React.FormEvent) => {
-    e.preventDefault();
+  const handleAddContact = async (contact: { name: string; email: string; phone?: string }): Promise<Contact | null> => {
+    try {
+      const res = await fetch('/api/customer/contacts', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        credentials: 'include',
+        body: JSON.stringify(contact),
+      });
+      const data = await res.json();
+      if (!res.ok) {
+        throw new Error(data.error || 'Failed to add contact');
+      }
+      // Add to local contacts list
+      setContacts(prev => [...prev, data.contact]);
+      return data.contact;
+    } catch (err) {
+      throw err;
+    }
+  };
 
+  const handleInfoSubmit = () => {
     if (!organizerName.trim()) {
       setError("Please enter your name");
       return;
     }
+    setError(null);
 
+    // If logged in and has contacts, show contacts step
+    // Otherwise skip to create
+    if (isLoggedIn) {
+      setStep('contacts');
+    } else {
+      handleCreateGroupOrder();
+    }
+  };
+
+  const handleCreateGroupOrder = async () => {
     setLoading(true);
     setError(null);
 
     try {
+      // Build invitees array from selected contacts
+      const invitees = Array.from(selectedContactIds).map(id => {
+        const contact = contacts.find(c => c.id === id);
+        return contact ? {
+          contactId: contact.id,
+          name: contact.name,
+          email: contact.email,
+        } : null;
+      }).filter(Boolean);
+
       const response = await fetch("/api/group-orders/create", {
         method: "POST",
         headers: { "Content-Type": "application/json" },
+        credentials: 'include',
         body: JSON.stringify({
-          name: name.trim() || "Group Order",
+          companyName: companyName.trim() || null,
           organizerName: organizerName.trim(),
           organizerPhone: organizerPhone.trim() || null,
           fulfillmentMethod,
           expiresInHours,
-          // "I'm Buying" feature
           isSponsoredOrder: isBuying,
           sponsorName: isBuying ? (sponsorDisplayName.trim() || organizerName.trim()) : null,
+          invitees,
         }),
       });
 
@@ -128,6 +208,7 @@ export default function GroupOrderModal({
         expiresAt: data.expiresAt,
         isSponsoredOrder: data.isSponsoredOrder,
         sponsorName: data.sponsorName,
+        invitationsCreated: data.invitationsCreated,
       });
       setStep('success');
     } catch (err) {
@@ -145,7 +226,6 @@ export default function GroupOrderModal({
       setCopied(true);
       setTimeout(() => setCopied(false), 2000);
     } catch {
-      // Fallback for older browsers
       const input = document.createElement('input');
       input.value = groupOrderData.shareableLink;
       document.body.appendChild(input);
@@ -160,21 +240,19 @@ export default function GroupOrderModal({
   const handleShare = async () => {
     if (!groupOrderData) return;
 
-    const shareText = `Join my group order at ${name || 'Las Reinas'}! Order before it closes.\n\n${groupOrderData.shareableLink}`;
+    const shareText = `Join my group order at ${companyName || 'our team'}! Order before it closes.\n\n${groupOrderData.shareableLink}`;
 
     if (navigator.share) {
       try {
         await navigator.share({
-          title: `Group Order - ${name || 'Group Order'}`,
+          title: `Group Order - ${companyName || 'Group Order'}`,
           text: shareText,
           url: groupOrderData.shareableLink,
         });
-      } catch (err) {
-        // User cancelled or share failed, fallback to copy
+      } catch {
         handleCopyLink();
       }
     } else {
-      // Fallback to copy
       handleCopyLink();
     }
   };
@@ -182,6 +260,22 @@ export default function GroupOrderModal({
   const formatExpiryTime = (expiresAt: string) => {
     const date = new Date(expiresAt);
     return date.toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' });
+  };
+
+  const getStepTitle = () => {
+    switch (step) {
+      case 'info': return 'Start Group Order';
+      case 'contacts': return 'Invite Team';
+      case 'success': return 'Share Your Link';
+    }
+  };
+
+  const getStepSubtitle = () => {
+    switch (step) {
+      case 'info': return 'Create a link for your team to order together';
+      case 'contacts': return 'Select contacts to invite (optional)';
+      case 'success': return 'Send this link to your group';
+    }
   };
 
   return createPortal(
@@ -208,32 +302,35 @@ export default function GroupOrderModal({
               <Users className="w-6 h-6 text-white" />
             </div>
             <div>
-              <h2 className="text-xl font-bold text-white">
-                {step === 'form' ? 'Start Group Order' : 'Share Your Link'}
-              </h2>
-              <p className="text-sm text-white/50">
-                {step === 'form'
-                  ? 'Create a link for your team to order together'
-                  : 'Send this link to your group'}
-              </p>
+              <h2 className="text-xl font-bold text-white">{getStepTitle()}</h2>
+              <p className="text-sm text-white/50">{getStepSubtitle()}</p>
             </div>
           </div>
+
+          {/* Step Indicator */}
+          {step !== 'success' && isLoggedIn && (
+            <div className="flex items-center gap-2 mt-4">
+              <div className={`h-1 flex-1 rounded-full ${step === 'info' ? 'bg-amber-500' : 'bg-white/20'}`} />
+              <div className={`h-1 flex-1 rounded-full ${step === 'contacts' ? 'bg-amber-500' : 'bg-white/20'}`} />
+            </div>
+          )}
         </div>
 
         {/* Content - Scrollable */}
         <div className="p-5 overflow-y-auto flex-1">
-          {step === 'form' ? (
-            <form onSubmit={handleSubmit} className="space-y-4">
-              {/* Group Name */}
+          {step === 'info' && (
+            <div className="space-y-4">
+              {/* Company/Office Name */}
               <div>
                 <label className="block text-sm font-medium text-white/70 mb-1.5">
-                  Group Name <span className="text-white/40">(optional)</span>
+                  <Building2 className="w-4 h-4 inline-block mr-1" />
+                  Company / Office Name <span className="text-white/40">(optional)</span>
                 </label>
                 <input
                   type="text"
-                  value={name}
-                  onChange={(e) => setName(e.target.value)}
-                  placeholder="e.g., Team Lunch, Birthday Party"
+                  value={companyName}
+                  onChange={(e) => setCompanyName(e.target.value)}
+                  placeholder="e.g., Acme Corp, Marketing Team"
                   className="w-full px-4 py-3 rounded-xl bg-white/5 border border-white/10 text-white placeholder-white/30 focus:border-amber-500/50 focus:outline-none focus:ring-1 focus:ring-amber-500/30"
                 />
               </div>
@@ -373,22 +470,83 @@ export default function GroupOrderModal({
 
               {/* Submit */}
               <button
-                type="submit"
+                type="button"
+                onClick={handleInfoSubmit}
                 disabled={loading}
-                className="w-full py-4 rounded-xl font-bold text-black/90 bg-gradient-to-r from-amber-400 via-amber-500 to-yellow-500 hover:from-amber-300 hover:via-amber-400 hover:to-yellow-400 shadow-lg shadow-amber-500/30 transition-all disabled:opacity-50 disabled:cursor-not-allowed"
+                className="w-full py-4 rounded-xl font-bold text-black/90 bg-gradient-to-r from-amber-400 via-amber-500 to-yellow-500 hover:from-amber-300 hover:via-amber-400 hover:to-yellow-400 shadow-lg shadow-amber-500/30 transition-all disabled:opacity-50 disabled:cursor-not-allowed flex items-center justify-center gap-2"
               >
-                {loading ? (
-                  <span className="flex items-center justify-center gap-2">
-                    <div className="w-5 h-5 border-2 border-black/30 border-t-black rounded-full animate-spin" />
-                    Creating...
-                  </span>
+                {isLoggedIn ? (
+                  <>
+                    Next: Invite Team
+                    <ChevronRight className="w-5 h-5" />
+                  </>
                 ) : (
                   "Create Group Order Link"
                 )}
               </button>
-            </form>
-          ) : (
-            /* Success Step */
+            </div>
+          )}
+
+          {step === 'contacts' && (
+            <div className="space-y-4">
+              {/* Contact Selector */}
+              <ContactSelector
+                contacts={contacts}
+                selectedIds={selectedContactIds}
+                onSelectionChange={setSelectedContactIds}
+                onAddContact={handleAddContact}
+                loading={contactsLoading}
+              />
+
+              {/* Info about invitations */}
+              {selectedContactIds.size > 0 && (
+                <div className="p-3 rounded-xl bg-amber-500/10 border border-amber-500/20 flex items-start gap-2">
+                  <Mail className="w-4 h-4 text-amber-400 mt-0.5 flex-shrink-0" />
+                  <p className="text-xs text-amber-400/80">
+                    {selectedContactIds.size} contact{selectedContactIds.size > 1 ? 's' : ''} will receive an email invitation with a personalized link.
+                  </p>
+                </div>
+              )}
+
+              {/* Error */}
+              {error && (
+                <div className="p-3 rounded-xl bg-red-500/10 border border-red-500/20 text-red-400 text-sm">
+                  {error}
+                </div>
+              )}
+
+              {/* Actions */}
+              <div className="flex gap-3">
+                <button
+                  type="button"
+                  onClick={() => setStep('info')}
+                  className="flex-1 py-3 rounded-xl font-medium text-white bg-white/10 hover:bg-white/20 border border-white/10 transition-all flex items-center justify-center gap-2"
+                >
+                  <ChevronLeft className="w-4 h-4" />
+                  Back
+                </button>
+                <button
+                  type="button"
+                  onClick={handleCreateGroupOrder}
+                  disabled={loading}
+                  className="flex-[2] py-3 rounded-xl font-bold text-black/90 bg-gradient-to-r from-amber-400 via-amber-500 to-yellow-500 hover:from-amber-300 hover:via-amber-400 hover:to-yellow-400 shadow-lg shadow-amber-500/30 transition-all disabled:opacity-50 disabled:cursor-not-allowed"
+                >
+                  {loading ? (
+                    <span className="flex items-center justify-center gap-2">
+                      <div className="w-5 h-5 border-2 border-black/30 border-t-black rounded-full animate-spin" />
+                      Creating...
+                    </span>
+                  ) : selectedContactIds.size > 0 ? (
+                    `Create & Send ${selectedContactIds.size} Invite${selectedContactIds.size > 1 ? 's' : ''}`
+                  ) : (
+                    "Skip & Create Link"
+                  )}
+                </button>
+              </div>
+            </div>
+          )}
+
+          {step === 'success' && (
             <div className="space-y-5">
               {/* Success Message */}
               <div className="text-center py-4">
@@ -399,7 +557,9 @@ export default function GroupOrderModal({
                   Group Order Created!
                 </h3>
                 <p className="text-white/50 text-sm">
-                  Share the link below with your group
+                  {groupOrderData?.invitationsCreated && groupOrderData.invitationsCreated > 0
+                    ? `${groupOrderData.invitationsCreated} invitation${groupOrderData.invitationsCreated > 1 ? 's' : ''} sent!`
+                    : 'Share the link below with your group'}
                 </p>
               </div>
 

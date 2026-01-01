@@ -57,6 +57,7 @@ export async function GET() {
       name: session.customer.name,
       email: session.customer.email,
       phone: session.customer.phone,
+      companyName: session.customer.companyName, // For group order auto-seeding
       loyaltyPoints: session.customer.loyaltyPoints ?? 0,
       membershipTier: session.customer.membershipTier,
       orders: session.customer.orders.map((order) => ({

@@ -1,6 +1,7 @@
 import { NextRequest, NextResponse } from 'next/server';
 import { prisma } from '@/lib/prisma';
 import { getTenantByRequest } from '@/lib/tenant';
+import { sendGroupOrderParticipantConfirmationEmail, getTenantFromAddress, getTenantReplyTo } from '@/lib/email-service';
 
 export async function POST(request: NextRequest) {
   try {
@@ -138,6 +139,72 @@ export async function POST(request: NextRequest) {
         totalAmount: { increment: totalAmount },
       },
     });
+
+    // Update invitation status if this participant was invited via email
+    const invitationToken = request.nextUrl.searchParams.get('t') || body.invitationToken;
+    if (invitationToken) {
+      await prisma.groupOrderInvitation.updateMany({
+        where: {
+          groupOrderId: groupOrder.id,
+          token: invitationToken,
+        },
+        data: {
+          status: 'ordered',
+          orderedAt: new Date(),
+          orderId: order.id,
+        },
+      });
+    } else if (customerEmail) {
+      // Try to match by email if no token
+      await prisma.groupOrderInvitation.updateMany({
+        where: {
+          groupOrderId: groupOrder.id,
+          email: customerEmail.toLowerCase(),
+        },
+        data: {
+          status: 'ordered',
+          orderedAt: new Date(),
+          orderId: order.id,
+        },
+      });
+    }
+
+    // Send participant confirmation email (fire and forget)
+    if (customerEmail) {
+      const tenantForEmail = {
+        name: tenant.name,
+        emailDomainVerified: (tenant as { emailDomainVerified?: boolean }).emailDomainVerified,
+        customDomain: tenant.customDomain,
+        contactEmail: tenant.contactEmail,
+      };
+      const fromAddress = getTenantFromAddress(tenantForEmail);
+      const replyTo = getTenantReplyTo(tenantForEmail);
+
+      sendGroupOrderParticipantConfirmationEmail({
+        to: customerEmail,
+        participantName: participantName || customerName,
+        companyName: groupOrder.companyName || groupOrder.name || 'Team',
+        tenantName: tenant.name,
+        tenantLogo: tenant.logoUrl,
+        items: items.map((item: { name: string; quantity: number; price: number }) => ({
+          name: item.name,
+          quantity: item.quantity,
+          price: item.price,
+        })),
+        totalAmount,
+        isSponsored: groupOrder.isSponsoredOrder,
+        organizerName: groupOrder.organizerName,
+        primaryColor: tenant.primaryColor || '#dc2626',
+        fromAddress,
+        replyTo,
+      })
+        .then(() => {
+          console.log(`[Group Orders] Participant confirmation email sent to ${customerEmail}`);
+        })
+        .catch((err) => {
+          console.error(`[Group Orders] Failed to send participant confirmation email to ${customerEmail}:`, err);
+        });
+    }
 
     return NextResponse.json({
       success: true,
