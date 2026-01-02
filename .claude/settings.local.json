@@ -109,7 +109,8 @@
       "Bash(/tmp/scp-agent.exp)",
       "Bash(/tmp/ssh-install.exp:*)",
       "Bash(timeout 60 npx tsc:*)",
-      "Bash(timeout 120 npx tsc:*)"
+      "Bash(timeout 120 npx tsc:*)",
+      "Bash(git revert:*)"
     ],
     "deny": [],
     "ask": []

@@ -2787,7 +2787,7 @@ export default function OrderPageClient({
       <div
         className={`fixed left-0 right-0 sm:hidden border-b shadow-lg transition-all duration-300 ease-out border-white/10`}
         style={{
-          top: isScrolled ? 'calc(env(safe-area-inset-top, 0px) + 52px)' : 'calc(env(safe-area-inset-top, 0px) + 64px)',
+          top: isScrolled ? 'calc(env(safe-area-inset-top, 0px) + 60px)' : 'calc(env(safe-area-inset-top, 0px) + 72px)',
           zIndex: 35,
           background: restaurantIsOpen
             ? 'var(--tenant-gradient-via)'
@@ -2835,7 +2835,7 @@ export default function OrderPageClient({
       >
         <div className="mx-auto max-w-7xl px-4">
           {/* Top Row - Logo & Actions */}
-          <div className={`relative flex items-center justify-between transition-all duration-300 ${isScrolled ? 'py-1.5' : 'py-2'}`}>
+          <div className={`relative flex items-center justify-between transition-all duration-300 ${isScrolled ? 'py-2' : 'py-3'}`}>
             {/* Left Side - Hamburger Menu (Mobile) / Logo + Nav (Desktop) */}
             <div className="flex items-center gap-3">
               {/* Hamburger Menu - Mobile Only */}
