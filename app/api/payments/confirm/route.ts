@@ -151,6 +151,21 @@ export async function POST(req: Request) {
         },
       });
 
+      // Send confirmation emails (to customer and tenant)
+      try {
+        const { sendOrderEmails } = await import('@/lib/email-service');
+        const emailResult = await sendOrderEmails(order.id);
+        console.log('[confirm] Order emails sent', {
+          orderId: order.id,
+          customerSent: emailResult.customerSent,
+          tenantSent: emailResult.tenantSent,
+          platformSent: emailResult.platformSent,
+        });
+      } catch (emailError) {
+        console.error('[confirm] Failed to send order emails:', emailError);
+        // Don't fail the confirmation if email fails
+      }
+
       // If customer signed up as new member, set session cookie
       if (order.newMemberSessionToken) {
         const cookieStore = await cookies();

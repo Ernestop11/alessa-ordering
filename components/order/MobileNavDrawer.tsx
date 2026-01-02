@@ -61,6 +61,8 @@ interface MobileNavDrawerProps {
   } | null;
   isAccessibilityOpen: boolean;
   menuSections?: MenuSection[];
+  restaurantIsOpen?: boolean;
+  closedMessage?: string;
 }
 
 export default function MobileNavDrawer({
@@ -78,6 +80,8 @@ export default function MobileNavDrawer({
   customerData,
   isAccessibilityOpen,
   menuSections = [],
+  restaurantIsOpen = true,
+  closedMessage,
 }: MobileNavDrawerProps) {
   const tenant = useTenantTheme();
   const router = useRouter();
@@ -94,6 +98,8 @@ export default function MobileNavDrawer({
   const [reorderQuantities, setReorderQuantities] = useState<Record<string, number>>({});
   // Track "added to cart" visual feedback (key: menuItemId)
   const [addedToCartItems, setAddedToCartItems] = useState<Set<string>>(new Set());
+  // Track closed notification
+  const [closedNotification, setClosedNotification] = useState<string | null>(null);
 
   // PWA Install state
   const [deferredPrompt, setDeferredPrompt] = useState<any>(null);
@@ -234,9 +240,22 @@ export default function MobileNavDrawer({
     setReorderQuantities(prev => ({ ...prev, [menuItemId]: newQty }));
   };
 
+  // Show closed notification helper
+  const showClosedNotification = () => {
+    const message = closedMessage || 'We are currently closed. Please check back during our operating hours.';
+    setClosedNotification(message);
+    setTimeout(() => setClosedNotification(null), 3000);
+  };
+
   // Add a single item to cart (stays on modal, shows feedback)
   const handleAddSingleItem = (item: OrderItem) => {
     if (!item.menuItem || !item.menuItem.available) return;
+
+    // Block adding to cart if restaurant is closed
+    if (!restaurantIsOpen) {
+      showClosedNotification();
+      return;
+    }
 
     const quantity = getReorderQuantity(item.menuItem.id, item.quantity);
 
@@ -264,6 +283,12 @@ export default function MobileNavDrawer({
 
   // Quick reorder function - adds all items from a past order to cart
   const handleQuickReorder = async (order: PastOrder) => {
+    // Block adding to cart if restaurant is closed
+    if (!restaurantIsOpen) {
+      showClosedNotification();
+      return;
+    }
+
     setReorderingOrderId(order.id);
 
     // Add each item from the order to cart
@@ -541,6 +566,22 @@ export default function MobileNavDrawer({
                 </div>
               )}
 
+              {/* Closed Notification */}
+              {closedNotification && (
+                <div className="mb-3 rounded-lg border border-red-500/30 bg-red-500/20 px-3 py-2 text-xs text-red-300 flex items-center gap-2">
+                  <span>🚫</span>
+                  <span>{closedNotification}</span>
+                </div>
+              )}
+
+              {/* Restaurant Closed Banner */}
+              {!restaurantIsOpen && (
+                <div className="mb-3 rounded-lg border border-amber-500/30 bg-amber-500/10 px-3 py-2 text-xs text-amber-300 flex items-center gap-2">
+                  <span>⏰</span>
+                  <span>Ordering is currently unavailable</span>
+                </div>
+              )}
+
               {/* Individual items from past orders - Cart style */}
               <div className="space-y-3">
                 {/* Get unique items from all orders */}
@@ -617,17 +658,20 @@ export default function MobileNavDrawer({
                       {/* Add to Cart button - Yellow gradient matching page buttons */}
                       <button
                         onClick={() => handleAddSingleItem(item)}
+                        disabled={!restaurantIsOpen}
                         className={`mt-2 w-full py-2 rounded-lg text-xs font-bold transition-all ${
-                          addedToCartItems.has(item.menuItem!.id)
+                          !restaurantIsOpen
+                            ? 'bg-gray-600 text-gray-400 cursor-not-allowed'
+                            : addedToCartItems.has(item.menuItem!.id)
                             ? 'bg-green-500 text-white'
                             : 'text-black hover:scale-[1.02]'
                         }`}
-                        style={addedToCartItems.has(item.menuItem!.id) ? {} : {
+                        style={!restaurantIsOpen || addedToCartItems.has(item.menuItem!.id) ? {} : {
                           background: 'linear-gradient(135deg, #FBBF24 0%, #F59E0B 50%, #FBBF24 100%)',
                           boxShadow: '0 4px 12px rgba(251, 191, 36, 0.4)',
                         }}
                       >
-                        {addedToCartItems.has(item.menuItem!.id) ? '✓ Added!' : '+ Add to Cart'}
+                        {!restaurantIsOpen ? 'Closed' : addedToCartItems.has(item.menuItem!.id) ? '✓ Added!' : '+ Add to Cart'}
                       </button>
                     </div>
                   </article>
@@ -637,14 +681,20 @@ export default function MobileNavDrawer({
                 {customerData.orders[0]?.items.filter(i => i.menuItem?.available).length > 0 && (
                   <button
                     onClick={() => handleQuickReorder(customerData.orders![0])}
-                    disabled={reorderingOrderId === customerData.orders![0].id}
-                    className="w-full py-3 rounded-xl text-black text-sm font-bold hover:scale-[1.02] transition-all disabled:opacity-50 flex items-center justify-center gap-2"
-                    style={{
+                    disabled={!restaurantIsOpen || reorderingOrderId === customerData.orders![0].id}
+                    className={`w-full py-3 rounded-xl text-sm font-bold transition-all flex items-center justify-center gap-2 ${
+                      !restaurantIsOpen
+                        ? 'bg-gray-600 text-gray-400 cursor-not-allowed'
+                        : 'text-black hover:scale-[1.02] disabled:opacity-50'
+                    }`}
+                    style={!restaurantIsOpen ? {} : {
                       background: 'linear-gradient(135deg, #FBBF24 0%, #F59E0B 50%, #FBBF24 100%)',
                       boxShadow: '0 4px 12px rgba(251, 191, 36, 0.4)',
                     }}
                   >
-                    {reorderingOrderId === customerData.orders![0].id ? (
+                    {!restaurantIsOpen ? (
+                      <>🚫 Ordering Closed</>
+                    ) : reorderingOrderId === customerData.orders![0].id ? (
                       <>
                         <span className="w-4 h-4 border-2 border-black/30 border-t-black rounded-full animate-spin" />
                         Adding all...
