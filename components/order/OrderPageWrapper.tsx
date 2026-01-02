@@ -5,22 +5,49 @@ import dynamic from 'next/dynamic';
 import type { OrderMenuSection, OrderMenuItem } from './OrderPageClient';
 import type { TemplateSettings } from '@/lib/template-renderer';
 
-// Dynamic import with SSR disabled to prevent hydration mismatches
-// The OrderPageClient uses window/localStorage during render which causes glitches
+/**
+ * TENANT-SPECIFIC COMPONENT ROUTING
+ *
+ * Each tenant can have their own OrderPageClient component.
+ * This allows customizing one tenant without affecting others.
+ *
+ * To add a new tenant-specific component:
+ * 1. Copy OrderPageClient.tsx to OrderPageClient{TenantName}.tsx
+ * 2. Update the export function name in the new file
+ * 3. Add a dynamic import below with the tenant slug as key
+ * 4. Add the tenant slug to TENANT_SPECIFIC_COMPONENTS
+ */
+
+// Loading spinner component
+const LoadingSpinner = () => (
+  <div className="min-h-screen flex items-center justify-center bg-gradient-to-br from-neutral-950 via-neutral-900 to-neutral-950">
+    <div className="text-center">
+      <div className="animate-spin rounded-full h-10 w-10 border-2 border-white/20 border-t-white mx-auto mb-4"></div>
+      <p className="text-white/70 text-sm">Loading menu...</p>
+    </div>
+  </div>
+);
+
+// DEFAULT component (used by Las Reinas and any tenant without a specific component)
 const OrderPageClient = dynamic(
   () => import('./OrderPageClient').then(mod => mod.default),
-  {
-    ssr: false,
-    loading: () => (
-      <div className="min-h-screen flex items-center justify-center bg-gradient-to-br from-neutral-950 via-neutral-900 to-neutral-950">
-        <div className="text-center">
-          <div className="animate-spin rounded-full h-10 w-10 border-2 border-white/20 border-t-white mx-auto mb-4"></div>
-          <p className="text-white/70 text-sm">Loading menu...</p>
-        </div>
-      </div>
-    )
-  }
+  { ssr: false, loading: LoadingSpinner }
 );
+
+// TENANT-SPECIFIC components
+const OrderPageClientLaPoblanita = dynamic(
+  () => import('./OrderPageClientLaPoblanita').then(mod => mod.default),
+  { ssr: false, loading: LoadingSpinner }
+);
+
+// Map of tenant slugs to their specific components
+// Tenants NOT listed here will use the default OrderPageClient
+const TENANT_SPECIFIC_COMPONENTS: Record<string, React.ComponentType<any>> = {
+  'lapoblanita': OrderPageClientLaPoblanita,
+  // Add more tenants as needed:
+  // 'villacorona': OrderPageClientVillaCorona,
+  // 'taqueriarosita': OrderPageClientTaqueriaRosita,
+};
 
 const PolishedOrderPage = dynamic(
   () => import('./PolishedOrderPage'),
@@ -142,6 +169,13 @@ export default function OrderPageWrapper(props: OrderPageWrapperProps) {
     return <PolishedOrderPage {...props} />;
   }
 
+  // Check if this tenant has a specific component
+  const TenantComponent = TENANT_SPECIFIC_COMPONENTS[props.tenantSlug];
+  if (TenantComponent) {
+    return <TenantComponent {...props} />;
+  }
+
+  // Default to the standard OrderPageClient (Las Reinas and others)
   return <OrderPageClient {...props} />;
 }
 
