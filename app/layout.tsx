@@ -394,17 +394,17 @@ export default async function RootLayout({
         <link
           rel="apple-touch-icon"
           sizes="180x180"
-          href={tenantTheme.slug ? `/tenant/${tenantTheme.slug}/icons/icon-192.png?v4` : '/icons/alessa-cloud-icon-192.png'}
+          href={tenantTheme.slug ? `/tenant/${tenantTheme.slug}/icons/icon-192.png?v5` : '/icons/alessa-cloud-icon-192.png'}
         />
         <link
           rel="apple-touch-icon"
           sizes="152x152"
-          href={tenantTheme.slug ? `/tenant/${tenantTheme.slug}/icons/icon-192.png?v4` : '/icons/alessa-cloud-icon-192.png'}
+          href={tenantTheme.slug ? `/tenant/${tenantTheme.slug}/icons/icon-192.png?v5` : '/icons/alessa-cloud-icon-192.png'}
         />
         <link
           rel="apple-touch-icon"
           sizes="120x120"
-          href={tenantTheme.slug ? `/tenant/${tenantTheme.slug}/icons/icon-192.png?v4` : '/icons/alessa-cloud-icon-192.png'}
+          href={tenantTheme.slug ? `/tenant/${tenantTheme.slug}/icons/icon-192.png?v5` : '/icons/alessa-cloud-icon-192.png'}
         />
       </head>
       <body className="font-sans antialiased" style={themeVars}>

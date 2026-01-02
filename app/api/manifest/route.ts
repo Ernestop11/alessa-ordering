@@ -39,7 +39,7 @@ export async function GET() {
     const tenantsWithCustomIcons = ['lasreinas', 'lapoblanita'];
     const hasCustomIcons = tenant?.slug ? tenantsWithCustomIcons.includes(tenant.slug) : false;
     // Cache buster for icon updates (increment when icons change)
-    const iconVersion = 'v4';
+    const iconVersion = 'v5';
 
     const icons = hasCustomIcons
       ? [
