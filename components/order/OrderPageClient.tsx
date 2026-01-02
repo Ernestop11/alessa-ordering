@@ -2836,7 +2836,7 @@ export default function OrderPageClient({
         className={`fixed top-0 left-0 right-0 z-40 shadow-lg transition-all duration-300`}
         style={{
           paddingTop: 'env(safe-area-inset-top, 0px)',
-          background: `linear-gradient(to bottom, var(--tenant-gradient-from) 0%, var(--tenant-gradient-via) 50%, var(--tenant-gradient-to) 100%)`
+          background: `linear-gradient(to bottom, var(--tenant-gradient-from) 0%, var(--tenant-gradient-via) 100%)`
         }}
       >
         <div className="mx-auto max-w-7xl px-4">
