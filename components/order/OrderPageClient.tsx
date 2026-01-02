@@ -2792,8 +2792,8 @@ export default function OrderPageClient({
         }`}
         style={{
           top: isScrolled
-            ? 'calc(env(safe-area-inset-top, 0px) + var(--layout-nav-scrolled-top, 64px))'
-            : 'calc(env(safe-area-inset-top, 0px) + var(--layout-nav-expanded-top, 88px))',
+            ? 'calc(env(safe-area-inset-top, 0px) + var(--layout-nav-scrolled-top, 52px))'
+            : 'calc(env(safe-area-inset-top, 0px) + var(--layout-nav-expanded-top, 68px))',
           zIndex: 35,
           background: restaurantIsOpen
             ? 'var(--tenant-gradient-via)'

@@ -84,9 +84,9 @@ export const CARD_GAP_MAP: Record<SpacingSize, string> = {
 };
 
 export const HEADER_HEIGHT_MAP: Record<HeaderStyle, { scrolled: string; expanded: string }> = {
-  minimal: { scrolled: '48px', expanded: '64px' },
-  standard: { scrolled: '64px', expanded: '88px' },  // current default
-  large: { scrolled: '72px', expanded: '100px' },
+  minimal: { scrolled: '40px', expanded: '52px' },
+  standard: { scrolled: '52px', expanded: '68px' },  // Matches actual header: py-1.5/py-2 + logo 36/44px + ring padding
+  large: { scrolled: '60px', expanded: '80px' },
 };
 
 // Preset configurations
