@@ -2788,16 +2788,11 @@ export default function OrderPageClient({
         className={`fixed left-0 right-0 sm:hidden backdrop-blur-sm border-b shadow-lg transition-all duration-300 ease-out ${
           restaurantIsOpen
             ? 'bg-[#0d0d0d]/95 border-white/10'
-            : 'border-white/20'
+            : 'bg-gradient-to-r from-red-900/95 to-[#0d0d0d]/95 border-red-700/30'
         }`}
         style={{
-          top: isScrolled
-            ? 'calc(env(safe-area-inset-top, 0px) + var(--layout-nav-scrolled-top, 64px))'
-            : 'calc(env(safe-area-inset-top, 0px) + var(--layout-nav-expanded-top, 88px))',
-          zIndex: 35,
-          ...(!restaurantIsOpen && {
-            background: `linear-gradient(to right, var(--tenant-gradient-from), rgba(13,13,13,0.95))`
-          })
+          top: isScrolled ? 'calc(env(safe-area-inset-top, 0px) + 64px)' : 'calc(env(safe-area-inset-top, 0px) + 88px)',
+          zIndex: 35
         }}
       >
         {/* Closed status indicator - integrated into nav bar */}
@@ -3106,9 +3101,7 @@ export default function OrderPageClient({
       <div
         className="w-full"
         style={{
-          height: isScrolled
-            ? 'calc(env(safe-area-inset-top, 0px) + var(--layout-nav-scrolled-top, 64px))'
-            : 'calc(env(safe-area-inset-top, 0px) + var(--layout-nav-expanded-top, 88px))',
+          height: isScrolled ? 'calc(env(safe-area-inset-top, 0px) + 64px)' : 'calc(env(safe-area-inset-top, 0px) + 88px)',
           transition: 'height 0.3s ease'
         }}
       />
