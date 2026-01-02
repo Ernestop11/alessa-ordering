@@ -2795,15 +2795,12 @@ export default function OrderPageClientLaPoblanita({
       <div
         className={`fixed left-0 right-0 sm:hidden backdrop-blur-sm border-b shadow-lg transition-all duration-300 ease-out ${
           restaurantIsOpen
-            ? 'border-white/10'
-            : 'border-red-700/30'
+            ? 'bg-[#0d0d0d]/95 border-white/10'
+            : 'bg-gradient-to-r from-red-900/95 to-[#0d0d0d]/95 border-red-700/30'
         }`}
         style={{
           top: isScrolled ? 'calc(env(safe-area-inset-top, 0px) + 64px)' : 'calc(env(safe-area-inset-top, 0px) + 88px)',
-          zIndex: 35,
-          background: restaurantIsOpen
-            ? `linear-gradient(to right, var(--tenant-gradient-from), var(--tenant-gradient-via))`
-            : 'linear-gradient(to right, #7f1d1d, var(--tenant-gradient-from))'
+          zIndex: 35
         }}
       >
         {/* Closed status indicator - integrated into nav bar */}
