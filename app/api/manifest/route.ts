@@ -38,23 +38,25 @@ export async function GET() {
     // Tenants with custom PWA icons in /public/tenant/{slug}/icons/
     const tenantsWithCustomIcons = ['lasreinas', 'lapoblanita'];
     const hasCustomIcons = tenant?.slug ? tenantsWithCustomIcons.includes(tenant.slug) : false;
+    // Cache buster for icon updates (increment when icons change)
+    const iconVersion = 'v2';
 
     const icons = hasCustomIcons
       ? [
           {
-            src: `/tenant/${iconSlug}/icons/icon-192.png`,
+            src: `/tenant/${iconSlug}/icons/icon-192.png?${iconVersion}`,
             sizes: '192x192',
             type: 'image/png',
             purpose: 'any',
           },
           {
-            src: `/tenant/${iconSlug}/icons/icon-512.png`,
+            src: `/tenant/${iconSlug}/icons/icon-512.png?${iconVersion}`,
             sizes: '512x512',
             type: 'image/png',
             purpose: 'any',
           },
           {
-            src: `/tenant/${iconSlug}/logo.png`,
+            src: `/tenant/${iconSlug}/logo.png?${iconVersion}`,
             sizes: '500x500',
             type: 'image/png',
             purpose: 'maskable',
