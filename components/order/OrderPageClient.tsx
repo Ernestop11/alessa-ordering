@@ -2832,10 +2832,10 @@ export default function OrderPageClient({
         style={{
           paddingTop: 'env(safe-area-inset-top, 0px)',
           background: `linear-gradient(to bottom,
-            color-mix(in srgb, var(--tenant-gradient-from) 100%, black 15%) 0%,
-            var(--tenant-gradient-from) 30%,
-            color-mix(in srgb, var(--tenant-gradient-from) 70%, var(--tenant-gradient-via) 30%) 70%,
-            color-mix(in srgb, var(--tenant-gradient-from) 50%, var(--tenant-gradient-via) 50%) 100%)`
+            color-mix(in srgb, var(--tenant-gradient-from) 100%, black 20%) 0%,
+            color-mix(in srgb, var(--tenant-gradient-from) 100%, black 10%) 40%,
+            var(--tenant-gradient-from) 70%,
+            color-mix(in srgb, var(--tenant-gradient-from) 100%, white 10%) 100%)`
         }}
       >
         <div className="mx-auto max-w-7xl px-4">
