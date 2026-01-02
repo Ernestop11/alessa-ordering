@@ -906,7 +906,7 @@ export default function MobileNavDrawer({
                 </div>
 
                 <h3 className="text-xl font-bold text-white mb-1">{tenant.name}</h3>
-                <p className="text-sm text-gray-400">Taqueria y Carniceria</p>
+                {tenant.tagline && <p className="text-sm text-gray-400">{tenant.tagline}</p>}
               </div>
 
               {/* Content based on step */}

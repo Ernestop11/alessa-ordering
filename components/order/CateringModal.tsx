@@ -98,12 +98,12 @@ export function CateringModal({ open, onClose }: CateringModalProps) {
           </div>
         )}
 
-        <div className="flex items-center justify-between border-b border-[#ff0000]/20 px-6 py-4">
+        <div className="flex items-center justify-between border-b px-6 py-4" style={{ borderColor: `${tenant.primaryColor}33` }}>
           <div className="mx-auto space-y-1">
-            <p className="text-xs font-semibold uppercase tracking-[0.4em] text-[#cc0000]">Las Reinas Catering</p>
-            <h2 className="text-2xl font-black text-[#cc0000]">Full-service events, delivered.</h2>
+            <p className="text-xs font-semibold uppercase tracking-[0.4em]" style={{ color: tenant.primaryColor }}>{tenant.name} Catering</p>
+            <h2 className="text-2xl font-black" style={{ color: tenant.primaryColor }}>Full-service events, delivered.</h2>
           </div>
-          <button onClick={onClose} className="rounded-full border border-[#ff0000]/30 px-3 py-1 text-sm text-[#cc0000] transition hover:bg-[#ff0000]/10">
+          <button onClick={onClose} className="rounded-full border px-3 py-1 text-sm transition" style={{ borderColor: `${tenant.primaryColor}4D`, color: tenant.primaryColor }}>
             Close
           </button>
         </div>

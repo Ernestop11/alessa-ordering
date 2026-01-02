@@ -14,7 +14,7 @@ interface CateringTabConfig {
 
 export default function CateringTabEditor() {
   const [config, setConfig] = useState<CateringTabConfig>({
-    enabled: true,
+    enabled: false, // Default to disabled - must be explicitly enabled
     label: 'Catering',
     icon: 'ChefHat',
     description: 'Full-service events, delivered',
@@ -31,8 +31,9 @@ export default function CateringTabEditor() {
     try {
       const res = await fetch('/api/admin/tenant-settings');
       const data = await res.json();
-      if (data.cateringTabConfig) {
-        setConfig(data.cateringTabConfig);
+      // API returns cateringTabConfig under settings object
+      if (data.settings?.cateringTabConfig) {
+        setConfig(data.settings.cateringTabConfig);
       }
     } catch (err) {
       console.error('Failed to fetch catering tab config', err);

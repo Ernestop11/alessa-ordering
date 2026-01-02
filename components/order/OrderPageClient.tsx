@@ -2892,10 +2892,10 @@ export default function OrderPageClient({
             {/* Center - Tenant Name + Tagline (Mobile Only) */}
             <div className="md:hidden flex-1 flex flex-col items-center justify-center">
               <span className={`font-bold text-white leading-tight transition-all duration-300 text-center ${isScrolled ? 'text-sm' : 'text-base'}`}>
-                Las Reinas
+                {tenant.name?.split(' ').slice(0, 2).join(' ') || tenant.name}
               </span>
-              <span className={`text-[#FBBF24] font-medium leading-tight transition-all duration-300 text-center ${isScrolled ? 'text-[10px]' : 'text-xs'}`}>
-                Taqueria y Carniceria
+              <span className={`font-medium leading-tight transition-all duration-300 text-center ${isScrolled ? 'text-[10px]' : 'text-xs'}`} style={{ color: tenant.secondaryColor || '#FBBF24' }}>
+                {tenant.tagline || tenant.name?.split(' ').slice(2).join(' ') || ''}
               </span>
             </div>
 

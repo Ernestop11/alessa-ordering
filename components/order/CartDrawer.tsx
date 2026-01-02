@@ -53,7 +53,7 @@ export function CartDrawer({ open, onClose }: CartDrawerProps) {
                 <span className="text-4xl">🛒</span>
               </div>
               <p className="text-white font-medium mb-1">Your cart is empty</p>
-              <p className="text-white/50 text-sm">Tap any + button to add Las Reinas favorites</p>
+              <p className="text-white/50 text-sm">Tap any + button to add your favorites</p>
             </div>
           )}
           <div className="space-y-3">

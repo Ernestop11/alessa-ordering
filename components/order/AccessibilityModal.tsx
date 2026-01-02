@@ -1,5 +1,7 @@
 "use client";
 
+import { useTenantTheme } from '../TenantThemeProvider';
+
 interface AccessibilityModalProps {
   open: boolean;
   onClose: () => void;
@@ -39,6 +41,8 @@ export function AccessibilityModal({
   onToggleLargeText,
   onToggleReducedMotion,
 }: AccessibilityModalProps) {
+  const tenant = useTenantTheme();
+
   if (!open) return null;
 
   const toggleMap: Record<string, () => void> = {
@@ -81,7 +85,7 @@ export function AccessibilityModal({
         </div>
 
         <div className="border-t border-white/10 px-6 py-4 text-xs text-white/50">
-          Preferences save locally. Sign in to sync across devices. Need help? Email hola@lasreinas.com
+          Preferences save locally. Sign in to sync across devices.{tenant.contactEmail && ` Need help? Email ${tenant.contactEmail}`}
         </div>
       </div>
     </div>
