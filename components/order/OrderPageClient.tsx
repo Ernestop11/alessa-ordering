@@ -2785,11 +2785,12 @@ export default function OrderPageClient({
 
       {/* Mobile Section Navigation - Fixed below header (OUTSIDE z-10 wrapper for proper stacking) */}
       <div
-        className={`fixed left-0 right-0 sm:hidden backdrop-blur-sm border-b shadow-lg transition-all duration-300 ease-out border-white/10`}
+        className={`fixed left-0 right-0 sm:hidden border-b shadow-lg transition-all duration-300 ease-out border-white/10`}
         style={{
-          top: isScrolled ? 'calc(env(safe-area-inset-top, 0px) + 56px)' : 'calc(env(safe-area-inset-top, 0px) + 72px)',
+          top: isScrolled ? 'calc(env(safe-area-inset-top, 0px) + 52px)' : 'calc(env(safe-area-inset-top, 0px) + 68px)',
           zIndex: 35,
-          background: 'var(--tenant-gradient-to)'
+          background: 'var(--tenant-gradient-to)',
+          paddingTop: '4px'
         }}
       >
         {/* Closed status indicator - integrated into nav bar */}
