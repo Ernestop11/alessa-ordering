@@ -191,6 +191,7 @@ export default async function RootLayout({
     gradientFrom: tenant.settings?.gradientFrom || undefined,
     gradientVia: tenant.settings?.gradientVia || undefined,
     gradientTo: tenant.settings?.gradientTo || undefined,
+    layoutConfig: (tenant.settings?.frontendConfig as any)?.layoutConfig || undefined,
     // Delivery is enabled if either Uber or DoorDash is connected
     deliveryEnabled:
       tenant.integrations?.uberOnboardingStatus === 'connected' ||
@@ -240,6 +241,7 @@ export default async function RootLayout({
     gradientFrom: undefined,
     gradientVia: undefined,
     gradientTo: undefined,
+    layoutConfig: undefined,
     deliveryEnabled: false,
     deliveryPartner: null,
   }
