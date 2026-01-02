@@ -2831,7 +2831,11 @@ export default function OrderPageClient({
         className={`fixed top-0 left-0 right-0 z-40 shadow-lg transition-all duration-300`}
         style={{
           paddingTop: 'env(safe-area-inset-top, 0px)',
-          background: `linear-gradient(to bottom, var(--tenant-gradient-from) 0%, var(--tenant-gradient-via) 100%)`
+          background: `linear-gradient(to bottom,
+            color-mix(in srgb, var(--tenant-gradient-from) 100%, black 15%) 0%,
+            var(--tenant-gradient-from) 30%,
+            color-mix(in srgb, var(--tenant-gradient-from) 70%, var(--tenant-gradient-via) 30%) 70%,
+            color-mix(in srgb, var(--tenant-gradient-from) 50%, var(--tenant-gradient-via) 50%) 100%)`
         }}
       >
         <div className="mx-auto max-w-7xl px-4">
@@ -3101,13 +3105,13 @@ export default function OrderPageClient({
       <div
         className="w-full"
         style={{
-          height: isScrolled ? 'calc(env(safe-area-inset-top, 0px) + 56px)' : 'calc(env(safe-area-inset-top, 0px) + 72px)',
+          height: isScrolled ? 'calc(env(safe-area-inset-top, 0px) + 64px)' : 'calc(env(safe-area-inset-top, 0px) + 88px)',
           transition: 'height 0.3s ease'
         }}
       />
 
       {/* Spacer for fixed category nav on mobile - taller when closed to account for status message */}
-      <div className={`sm:hidden ${restaurantIsOpen ? 'h-[52px]' : 'h-[88px]'}`} />
+      <div className={`sm:hidden transition-all duration-300 ${restaurantIsOpen ? 'h-[52px]' : 'h-[88px]'}`} />
 
       {/* Position-based sections BEFORE menu (hero, quickInfo, featuredCarousel, and early banners) */}
       <div className="relative z-20">
