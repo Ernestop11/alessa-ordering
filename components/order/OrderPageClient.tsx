@@ -2785,13 +2785,14 @@ export default function OrderPageClient({
 
       {/* Mobile Section Navigation - Fixed below header (OUTSIDE z-10 wrapper for proper stacking) */}
       <div
-        className={`fixed left-0 right-0 sm:hidden border-b shadow-lg transition-all duration-300 ease-out border-white/10`}
+        className={`fixed left-0 right-0 sm:hidden backdrop-blur-sm border-b shadow-lg transition-all duration-300 ease-out ${
+          restaurantIsOpen
+            ? 'bg-[#0d0d0d]/95 border-white/10'
+            : 'bg-gradient-to-r from-red-900/95 to-[#0d0d0d]/95 border-red-700/30'
+        }`}
         style={{
-          top: isScrolled ? 'calc(env(safe-area-inset-top, 0px) + 60px)' : 'calc(env(safe-area-inset-top, 0px) + 72px)',
-          zIndex: 35,
-          background: restaurantIsOpen
-            ? 'var(--tenant-gradient-via)'
-            : `linear-gradient(to right, #7f1d1d, var(--tenant-gradient-via))`
+          top: isScrolled ? 'calc(env(safe-area-inset-top, 0px) + 64px)' : 'calc(env(safe-area-inset-top, 0px) + 88px)',
+          zIndex: 35
         }}
       >
         {/* Closed status indicator - integrated into nav bar */}
@@ -2835,7 +2836,7 @@ export default function OrderPageClient({
       >
         <div className="mx-auto max-w-7xl px-4">
           {/* Top Row - Logo & Actions */}
-          <div className={`relative flex items-center justify-between transition-all duration-300 ${isScrolled ? 'py-2' : 'py-3'}`}>
+          <div className={`relative flex items-center justify-between transition-all duration-300 ${isScrolled ? 'py-1.5' : 'py-2'}`}>
             {/* Left Side - Hamburger Menu (Mobile) / Logo + Nav (Desktop) */}
             <div className="flex items-center gap-3">
               {/* Hamburger Menu - Mobile Only */}
