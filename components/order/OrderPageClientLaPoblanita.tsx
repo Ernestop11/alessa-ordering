@@ -5649,6 +5649,8 @@ export default function OrderPageClientLaPoblanita({
         customerData={customerData}
         isAccessibilityOpen={isAccessibilityOpen}
         menuSections={navSections.map(s => ({ id: s.id, name: s.name }))}
+        restaurantIsOpen={restaurantIsOpen}
+        closedMessage={restaurantClosedMessage}
       />
       </div>{/* End main content wrapper */}
     </div>
