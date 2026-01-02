@@ -2795,12 +2795,15 @@ export default function OrderPageClientLaPoblanita({
       <div
         className={`fixed left-0 right-0 sm:hidden backdrop-blur-sm border-b shadow-lg transition-all duration-300 ease-out ${
           restaurantIsOpen
-            ? 'bg-[#0d0d0d]/95 border-white/10'
-            : 'bg-gradient-to-r from-red-900/95 to-[#0d0d0d]/95 border-red-700/30'
+            ? 'border-white/10'
+            : 'border-red-700/30'
         }`}
         style={{
           top: isScrolled ? 'calc(env(safe-area-inset-top, 0px) + 64px)' : 'calc(env(safe-area-inset-top, 0px) + 88px)',
-          zIndex: 35
+          zIndex: 35,
+          background: restaurantIsOpen
+            ? `linear-gradient(to right, var(--tenant-gradient-from), var(--tenant-gradient-via))`
+            : 'linear-gradient(to right, #7f1d1d, var(--tenant-gradient-from))'
         }}
       >
         {/* Closed status indicator - integrated into nav bar */}
@@ -2824,7 +2827,10 @@ export default function OrderPageClientLaPoblanita({
                   window.scrollTo({ top: y, behavior: 'smooth' });
                 }
               }}
-              className="flex-shrink-0 px-4 py-2 rounded-full text-xs font-semibold bg-white/10 text-white/90 border border-white/20 active:bg-[#DC2626] active:border-[#DC2626] active:text-white active:scale-95 transition-all whitespace-nowrap touch-manipulation"
+              className="flex-shrink-0 px-4 py-2 rounded-full text-xs font-semibold bg-white/10 text-white/90 border border-white/20 active:scale-95 transition-all whitespace-nowrap touch-manipulation"
+              style={{
+                // Use tenant gradient color for active state via CSS
+              }}
             >
               {section.name}
             </button>
@@ -3085,7 +3091,7 @@ export default function OrderPageClientLaPoblanita({
           <div className="mx-auto max-w-7xl px-4 py-2 flex items-center justify-center gap-4">
             {restaurantIsOpen ? (
               <>
-                <span className="text-amber-300 font-semibold text-sm">🎉 Order online for pickup or delivery</span>
+                <span className="font-semibold text-sm" style={{ color: tenant.secondaryColor }}>🎉 Order online for pickup or delivery</span>
                 <span className="text-white/50">•</span>
                 <span className="text-white/80 text-sm">{hoursDisplay || 'Open Daily'}</span>
               </>
