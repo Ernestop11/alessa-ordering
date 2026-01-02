@@ -2785,12 +2785,17 @@ export default function OrderPageClient({
 
       {/* Mobile Section Navigation - Fixed below header (OUTSIDE z-10 wrapper for proper stacking) */}
       <div
-        className={`fixed left-0 right-0 sm:hidden border-b shadow-lg transition-all duration-300 ease-out border-white/10`}
+        className={`fixed left-0 right-0 sm:hidden backdrop-blur-sm border-b shadow-lg transition-all duration-300 ease-out ${
+          restaurantIsOpen
+            ? 'border-white/10'
+            : 'border-red-700/30'
+        }`}
         style={{
-          top: isScrolled ? 'calc(env(safe-area-inset-top, 0px) + 52px)' : 'calc(env(safe-area-inset-top, 0px) + 68px)',
+          top: isScrolled ? 'calc(env(safe-area-inset-top, 0px) + 64px)' : 'calc(env(safe-area-inset-top, 0px) + 88px)',
           zIndex: 35,
-          background: 'var(--tenant-gradient-to)',
-          paddingTop: '4px'
+          background: restaurantIsOpen
+            ? 'var(--tenant-gradient-to)'
+            : `linear-gradient(to right, #7f1d1d, var(--tenant-gradient-to))`
         }}
       >
         {/* Closed status indicator - integrated into nav bar */}
@@ -2892,7 +2897,7 @@ export default function OrderPageClient({
               <span className={`font-bold text-white leading-tight transition-all duration-300 text-center ${isScrolled ? 'text-sm' : 'text-base'}`}>
                 {tenant.name?.split(' ').slice(0, 2).join(' ') || tenant.name}
               </span>
-              <span className={`font-medium leading-tight transition-all duration-300 text-center text-white/80 ${isScrolled ? 'text-[10px]' : 'text-xs'}`}>
+              <span className={`font-medium leading-tight transition-all duration-300 text-center ${isScrolled ? 'text-[10px]' : 'text-xs'}`} style={{ color: tenant.secondaryColor || '#FBBF24' }}>
                 {tenant.tagline || tenant.name?.split(' ').slice(2).join(' ') || ''}
               </span>
             </div>
