@@ -2,6 +2,7 @@
 
 import { createContext, useContext, useEffect, useMemo } from 'react';
 import { getTemplateGradient, type TemplateType } from '@/lib/templates/registry';
+import { getLayoutCSSValues, type TenantLayoutConfig } from '@/lib/tenant-layout';
 
 export interface TenantTheme {
   id: string;
@@ -48,6 +49,7 @@ export interface TenantTheme {
   upsellBundles?: UpsellBundleConfig[];
   accessibilityDefaults?: AccessibilityDefaults | null;
   branding?: TenantBranding | null;
+  layoutConfig?: TenantLayoutConfig | null;
 }
 
 export interface MembershipTierConfig {
@@ -187,7 +189,13 @@ export function TenantThemeProvider({ tenant, children }: TenantThemeProviderPro
     root.style.setProperty('--tenant-gradient-via', gradientVia);
     root.style.setProperty('--tenant-gradient-to', gradientTo);
     root.style.setProperty('--tenant-gradient', `linear-gradient(135deg, ${gradientFrom}, ${gradientVia}, ${gradientTo})`);
-  }, [theme.primaryColor, theme.secondaryColor, theme.themeColor, theme.templateType, theme.gradientFrom, theme.gradientVia, theme.gradientTo]);
+
+    // Layout CSS variables (per-tenant spacing, sizing, etc.)
+    const layoutVars = getLayoutCSSValues(theme.layoutConfig || undefined);
+    Object.entries(layoutVars).forEach(([key, value]) => {
+      root.style.setProperty(key, value);
+    });
+  }, [theme.primaryColor, theme.secondaryColor, theme.themeColor, theme.templateType, theme.gradientFrom, theme.gradientVia, theme.gradientTo, theme.layoutConfig]);
 
   return <TenantThemeContext.Provider value={theme}>{children}</TenantThemeContext.Provider>;
 }
