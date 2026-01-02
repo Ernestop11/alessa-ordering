@@ -2785,19 +2785,13 @@ export default function OrderPageClient({
 
       {/* Mobile Section Navigation - Fixed below header (OUTSIDE z-10 wrapper for proper stacking) */}
       <div
-        className={`fixed left-0 right-0 sm:hidden backdrop-blur-sm border-b shadow-lg transition-all duration-300 ease-out ${
-          restaurantIsOpen
-            ? 'border-white/10'
-            : 'border-red-700/30'
-        }`}
+        className={`fixed left-0 right-0 sm:hidden backdrop-blur-sm border-b shadow-lg transition-all duration-300 ease-out border-white/10`}
         style={{
-          top: isScrolled
-            ? 'calc(env(safe-area-inset-top, 0px) + var(--layout-nav-scrolled-top, 52px))'
-            : 'calc(env(safe-area-inset-top, 0px) + var(--layout-nav-expanded-top, 68px))',
+          top: isScrolled ? 'calc(env(safe-area-inset-top, 0px) + 64px)' : 'calc(env(safe-area-inset-top, 0px) + 88px)',
           zIndex: 35,
           background: restaurantIsOpen
-            ? 'var(--tenant-gradient-via)'
-            : `linear-gradient(to right, #7f1d1d, var(--tenant-gradient-via))`
+            ? 'var(--tenant-gradient-to)'
+            : `linear-gradient(to right, #7f1d1d, var(--tenant-gradient-to))`
         }}
       >
         {/* Closed status indicator - integrated into nav bar */}
@@ -2836,7 +2830,7 @@ export default function OrderPageClient({
         className={`fixed top-0 left-0 right-0 z-40 shadow-lg transition-all duration-300`}
         style={{
           paddingTop: 'env(safe-area-inset-top, 0px)',
-          background: `linear-gradient(to bottom, var(--tenant-gradient-from) 0%, var(--tenant-gradient-via) 100%)`
+          background: `linear-gradient(to bottom, var(--tenant-gradient-from) 0%, var(--tenant-gradient-via) 50%, var(--tenant-gradient-to) 100%)`
         }}
       >
         <div className="mx-auto max-w-7xl px-4">
@@ -2899,7 +2893,7 @@ export default function OrderPageClient({
               <span className={`font-bold text-white leading-tight transition-all duration-300 text-center ${isScrolled ? 'text-sm' : 'text-base'}`}>
                 {tenant.name?.split(' ').slice(0, 2).join(' ') || tenant.name}
               </span>
-              <span className={`font-medium leading-tight transition-all duration-300 text-center text-white/90 ${isScrolled ? 'text-[10px]' : 'text-xs'}`}>
+              <span className={`font-medium leading-tight transition-all duration-300 text-center ${isScrolled ? 'text-[10px]' : 'text-xs'}`} style={{ color: tenant.secondaryColor || '#FBBF24' }}>
                 {tenant.tagline || tenant.name?.split(' ').slice(2).join(' ') || ''}
               </span>
             </div>
