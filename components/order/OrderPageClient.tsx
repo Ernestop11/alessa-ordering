@@ -2767,32 +2767,31 @@ export default function OrderPageClient({
       {/* Group Order Banner - Shows when user is ordering as part of a group */}
       <GroupOrderBanner primaryColor={tenant.primaryColor || '#f59e0b'} />
 
-      {/* Ambient LED Glow Effects */}
+      {/* Ambient LED Glow Effects - Uses tenant gradient colors */}
       <div className="fixed inset-0 pointer-events-none z-0">
-        {/* Top-left red glow */}
-        <div className="absolute -top-32 -left-32 w-96 h-96 bg-[#C41E3A] rounded-full opacity-20 blur-[120px] animate-pulse" style={{ animationDuration: '4s' }} />
-        {/* Top-right amber glow */}
-        <div className="absolute -top-20 -right-20 w-80 h-80 bg-[#8B2323] rounded-full opacity-15 blur-[100px] animate-pulse" style={{ animationDuration: '5s', animationDelay: '1s' }} />
+        {/* Top-left glow */}
+        <div className="absolute -top-32 -left-32 w-96 h-96 rounded-full opacity-20 blur-[120px] animate-pulse" style={{ backgroundColor: 'var(--tenant-gradient-from)', animationDuration: '4s' }} />
+        {/* Top-right glow */}
+        <div className="absolute -top-20 -right-20 w-80 h-80 rounded-full opacity-15 blur-[100px] animate-pulse" style={{ backgroundColor: 'var(--tenant-gradient-via)', animationDuration: '5s', animationDelay: '1s' }} />
         {/* Bottom-left glow */}
-        <div className="absolute bottom-0 left-1/4 w-96 h-64 bg-[#C41E3A] rounded-full opacity-10 blur-[150px] animate-pulse" style={{ animationDuration: '6s', animationDelay: '2s' }} />
+        <div className="absolute bottom-0 left-1/4 w-96 h-64 rounded-full opacity-10 blur-[150px] animate-pulse" style={{ backgroundColor: 'var(--tenant-gradient-from)', animationDuration: '6s', animationDelay: '2s' }} />
         {/* Center subtle glow */}
-        <div className="absolute top-1/2 left-1/2 -translate-x-1/2 -translate-y-1/2 w-[800px] h-[600px] bg-gradient-radial from-[#C41E3A]/5 to-transparent rounded-full blur-[100px]" />
+        <div className="absolute top-1/2 left-1/2 -translate-x-1/2 -translate-y-1/2 w-[800px] h-[600px] rounded-full blur-[100px]" style={{ background: `radial-gradient(ellipse, ${tenant.primaryColor}0D, transparent)` }} />
         {/* Bottom-right glow */}
-        <div className="absolute -bottom-20 -right-20 w-72 h-72 bg-[#8B2323] rounded-full opacity-15 blur-[80px] animate-pulse" style={{ animationDuration: '7s', animationDelay: '3s' }} />
+        <div className="absolute -bottom-20 -right-20 w-72 h-72 rounded-full opacity-15 blur-[80px] animate-pulse" style={{ backgroundColor: 'var(--tenant-gradient-via)', animationDuration: '7s', animationDelay: '3s' }} />
         {/* Subtle texture overlay */}
         <div className="absolute inset-0 bg-[url('data:image/svg+xml;base64,PHN2ZyB4bWxucz0iaHR0cDovL3d3dy53My5vcmcvMjAwMC9zdmciIHdpZHRoPSI0IiBoZWlnaHQ9IjQiPjxyZWN0IHdpZHRoPSI0IiBoZWlnaHQ9IjQiIGZpbGw9IiMwMDAiLz48cmVjdCB3aWR0aD0iMSIgaGVpZ2h0PSIxIiBmaWxsPSIjMTExIi8+PC9zdmc+')] opacity-30" />
       </div>
 
       {/* Mobile Section Navigation - Fixed below header (OUTSIDE z-10 wrapper for proper stacking) */}
       <div
-        className={`fixed left-0 right-0 sm:hidden backdrop-blur-sm border-b shadow-lg transition-all duration-300 ease-out ${
-          restaurantIsOpen
-            ? 'bg-[#0d0d0d]/95 border-white/10'
-            : 'bg-gradient-to-r from-red-900/95 to-[#0d0d0d]/95 border-red-700/30'
-        }`}
+        className={`fixed left-0 right-0 sm:hidden backdrop-blur-sm border-b shadow-lg transition-all duration-300 ease-out border-white/10`}
         style={{
           top: isScrolled ? 'calc(env(safe-area-inset-top, 0px) + 64px)' : 'calc(env(safe-area-inset-top, 0px) + 88px)',
-          zIndex: 35
+          zIndex: 35,
+          background: restaurantIsOpen
+            ? 'var(--tenant-gradient-to)'
+            : `linear-gradient(to right, #7f1d1d, var(--tenant-gradient-to))`
         }}
       >
         {/* Closed status indicator - integrated into nav bar */}
@@ -2831,7 +2830,7 @@ export default function OrderPageClient({
         className={`fixed top-0 left-0 right-0 z-40 shadow-lg transition-all duration-300`}
         style={{
           paddingTop: 'env(safe-area-inset-top, 0px)',
-          background: 'linear-gradient(to bottom, #5C1515 0%, #7A1E1E 30%, #8B2323 60%, #9A2828 100%)'
+          background: `linear-gradient(to bottom, var(--tenant-gradient-from) 0%, var(--tenant-gradient-via) 50%, var(--tenant-gradient-to) 100%)`
         }}
       >
         <div className="mx-auto max-w-7xl px-4">
@@ -2923,7 +2922,7 @@ export default function OrderPageClient({
                 </div>
               </button>
               {/* Location Selector */}
-              <div className="hidden sm:flex items-center gap-2 rounded-lg bg-[#6B1C1C] px-3 py-2">
+              <div className="hidden sm:flex items-center gap-2 rounded-lg px-3 py-2" style={{ backgroundColor: `${tenant.primaryColor}33` }}>
                 <span className="text-xs text-white/60">Pickup at</span>
                 <span className="text-sm font-semibold text-white">{locationDisplay || 'Select Location'}</span>
                 <svg className="w-4 h-4 text-white/60" fill="none" viewBox="0 0 24 24" stroke="currentColor">
@@ -3027,7 +3026,7 @@ export default function OrderPageClient({
                         /* Non-Member Onboarding View */
                         <div className="p-4">
                           <div className="text-center mb-4">
-                            <div className="w-16 h-16 mx-auto mb-3 rounded-full bg-gradient-to-br from-[#C41E3A] to-[#8B2323] flex items-center justify-center">
+                            <div className="w-16 h-16 mx-auto mb-3 rounded-full flex items-center justify-center" style={{ background: `linear-gradient(to bottom right, var(--tenant-gradient-from), var(--tenant-gradient-to))` }}>
                               <span className="text-3xl">🎁</span>
                             </div>
                             <h3 className="text-lg font-bold text-white">Join Our Rewards!</h3>
@@ -3073,7 +3072,7 @@ export default function OrderPageClient({
         </div>
 
         {/* Promotional Banner - Desktop Only */}
-        <div className={`hidden sm:block border-t border-white/10 ${restaurantIsOpen ? 'bg-[#6B1C1C]' : 'bg-red-900'}`}>
+        <div className={`hidden sm:block border-t border-white/10`} style={{ backgroundColor: restaurantIsOpen ? `${tenant.primaryColor}4D` : '#7f1d1d' }}>
           <div className="mx-auto max-w-7xl px-4 py-2 flex items-center justify-center gap-4">
             {restaurantIsOpen ? (
               <>
