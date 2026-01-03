@@ -1259,7 +1259,7 @@ export default function MenuEditorPage() {
                   </button>
                 )}
                 <button
-                  onClick={() => { setActiveTab('cartUpsells'); fetchCartUpsells(); }}
+                  onClick={() => { setActiveTab('cartUpsells'); fetchCartUpsells(); fetchItems(); }}
                   className={`whitespace-nowrap py-4 px-1 border-b-2 font-medium text-sm ${
                     activeTab === 'cartUpsells'
                       ? 'border-orange-500 text-orange-600'
@@ -2547,6 +2547,51 @@ export default function MenuEditorPage() {
                       </h3>
                     </div>
                     <div className="p-6 space-y-4">
+                      {/* Select from Menu Items */}
+                      <div>
+                        <label className="block text-sm font-medium text-gray-700 mb-1">
+                          Select from Menu <span className="text-gray-400 font-normal">(or create custom below)</span>
+                        </label>
+                        <select
+                          value={editingCartUpsell.menuItemId || ''}
+                          onChange={(e) => {
+                            const selectedItem = items.find(item => item.id === e.target.value);
+                            if (selectedItem) {
+                              setEditingCartUpsell({
+                                ...editingCartUpsell,
+                                menuItemId: selectedItem.id,
+                                name: selectedItem.name,
+                                description: selectedItem.description || '',
+                                price: Number(selectedItem.price) || 0,
+                                image: selectedItem.image || '',
+                              });
+                            } else {
+                              setEditingCartUpsell({
+                                ...editingCartUpsell,
+                                menuItemId: undefined,
+                              });
+                            }
+                          }}
+                          className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-orange-500 focus:border-orange-500"
+                        >
+                          <option value="">-- Create Custom Upsell --</option>
+                          {items.filter(item => item.available).map((item) => (
+                            <option key={item.id} value={item.id}>
+                              {item.name} - ${Number(item.price).toFixed(2)}
+                            </option>
+                          ))}
+                        </select>
+                        {editingCartUpsell.menuItemId && (
+                          <p className="text-xs text-green-600 mt-1">
+                            ✓ Linked to menu item - fields auto-filled
+                          </p>
+                        )}
+                      </div>
+
+                      <div className="border-t border-gray-200 pt-4">
+                        <p className="text-xs text-gray-500 mb-3">Customize the upsell display (edits won&apos;t affect original menu item)</p>
+                      </div>
+
                       <div>
                         <label className="block text-sm font-medium text-gray-700 mb-1">Name *</label>
                         <input
