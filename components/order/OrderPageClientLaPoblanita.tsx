@@ -2791,22 +2791,19 @@ export default function OrderPageClientLaPoblanita({
         <div className="absolute inset-0 bg-[url('data:image/svg+xml;base64,PHN2ZyB4bWxucz0iaHR0cDovL3d3dy53My5vcmcvMjAwMC9zdmciIHdpZHRoPSI0IiBoZWlnaHQ9IjQiPjxyZWN0IHdpZHRoPSI0IiBoZWlnaHQ9IjQiIGZpbGw9IiMwMDAiLz48cmVjdCB3aWR0aD0iMSIgaGVpZ2h0PSIxIiBmaWxsPSIjMTExIi8+PC9zdmc+')] opacity-30" />
       </div>
 
-      {/* Mobile Section Navigation - Fixed below header (OUTSIDE z-10 wrapper for proper stacking) */}
+      {/* Mobile Section Navigation - Fixed below header, uses tenant gradient for seamless look */}
       <div
-        className={`fixed left-0 right-0 sm:hidden backdrop-blur-sm border-b shadow-lg transition-all duration-300 ease-out ${
-          restaurantIsOpen
-            ? 'bg-[#0d0d0d]/95 border-white/10'
-            : 'bg-gradient-to-r from-red-900/95 to-[#0d0d0d]/95 border-red-700/30'
-        }`}
+        className="fixed left-0 right-0 sm:hidden border-b border-white/10 shadow-lg transition-all duration-300 ease-out"
         style={{
           top: isScrolled ? 'calc(env(safe-area-inset-top, 0px) + 64px)' : 'calc(env(safe-area-inset-top, 0px) + 88px)',
-          zIndex: 35
+          zIndex: 35,
+          background: `linear-gradient(to bottom, var(--tenant-gradient-to) 0%, var(--tenant-gradient-to) 100%)`
         }}
       >
         {/* Closed status indicator - integrated into nav bar */}
         {!restaurantIsOpen && (
           <div className="px-4 pt-2 pb-1 flex items-center justify-center">
-            <span className="text-red-300 font-semibold text-xs">{restaurantClosedMessage || 'Currently closed'}</span>
+            <span className="text-amber-300 font-semibold text-xs">{restaurantClosedMessage || 'Currently closed'}</span>
           </div>
         )}
         <div className={`flex gap-2 overflow-x-auto px-4 scrollbar-hide ${restaurantIsOpen ? 'py-2.5' : 'pb-2.5 pt-1'}`}>
@@ -2824,10 +2821,7 @@ export default function OrderPageClientLaPoblanita({
                   window.scrollTo({ top: y, behavior: 'smooth' });
                 }
               }}
-              className="flex-shrink-0 px-4 py-2 rounded-full text-xs font-semibold bg-white/10 text-white/90 border border-white/20 active:scale-95 transition-all whitespace-nowrap touch-manipulation"
-              style={{
-                // Use tenant gradient color for active state via CSS
-              }}
+              className="flex-shrink-0 px-4 py-2 rounded-full text-xs font-semibold bg-white/15 text-white border border-white/25 active:scale-95 transition-all whitespace-nowrap touch-manipulation"
             >
               {section.name}
             </button>
