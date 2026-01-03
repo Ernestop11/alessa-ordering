@@ -138,6 +138,53 @@ export default function MenuEditorPage() {
   const [editingCartUpsell, setEditingCartUpsell] = useState<CartUpsell | null>(null);
   const [savingCartUpsell, setSavingCartUpsell] = useState(false);
 
+  // El Hornito (Panaderia) sub-tenant state - separate from grocery
+  interface ElHornitoItem {
+    id: string;
+    name: string;
+    description: string;
+    price: number;
+    category: string;
+    available: boolean;
+    image: string | null;
+    sectionId?: string;
+    sectionName?: string;
+  }
+  interface ElHornitoSection {
+    id: string;
+    name: string;
+    description?: string | null;
+    type: string;
+    itemCount: number;
+  }
+  const [elHornitoTenant, setElHornitoTenant] = useState<{id: string; name: string; logoUrl?: string | null} | null>(null);
+  const [elHornitoSections, setElHornitoSections] = useState<ElHornitoSection[]>([]);
+  const [elHornitoItems, setElHornitoItems] = useState<ElHornitoItem[]>([]);
+  const [elHornitoLoading, setElHornitoLoading] = useState(false);
+  const [selectedElHornitoSection, setSelectedElHornitoSection] = useState<string | null>(null);
+  const [editingElHornitoItem, setEditingElHornitoItem] = useState<ElHornitoItem | null>(null);
+
+  const fetchElHornitoMenu = async () => {
+    if (!enabledAddOns.includes('panaderia')) return;
+    setElHornitoLoading(true);
+    try {
+      const res = await fetch('/api/sub-tenant/menu?slug=elhornito');
+      const data = await res.json();
+      if (data.tenant) {
+        setElHornitoTenant(data.tenant);
+        setElHornitoSections(data.sections || []);
+        setElHornitoItems(data.items || []);
+        if (data.sections?.length > 0 && !selectedElHornitoSection) {
+          setSelectedElHornitoSection(data.sections[0].id);
+        }
+      }
+    } catch (err) {
+      console.error('Failed to fetch El Hornito menu:', err);
+    } finally {
+      setElHornitoLoading(false);
+    }
+  };
+
   const fetchSections = async () => {
     try {
       const res = await fetch('/api/admin/menu-sections');
@@ -1236,14 +1283,14 @@ export default function MenuEditorPage() {
                 )}
                 {enabledAddOns.includes('panaderia') && (
                   <button
-                    onClick={() => setActiveTab('panaderia')}
+                    onClick={() => { setActiveTab('panaderia'); fetchElHornitoMenu(); }}
                     className={`whitespace-nowrap py-4 px-1 border-b-2 font-medium text-sm ${
                       activeTab === 'panaderia'
                         ? 'border-amber-500 text-amber-600'
                         : 'border-transparent text-gray-500 hover:text-gray-700 hover:border-gray-300'
                     }`}
                   >
-                    🥐 Panaderia Items
+                    🥐 El Hornito Bakery
                   </button>
                 )}
                 {enabledAddOns.includes('smp') && (
@@ -1982,75 +2029,99 @@ export default function MenuEditorPage() {
               )}
             </div>
           ) : activeTab === 'panaderia' ? (
-            /* Panaderia View - Similar structure to Grocery but with bakery theming */
+            /* El Hornito Bakery View - Sub-tenant management */
             <div className="space-y-6">
-              <div className="flex justify-between items-center mb-4">
-                <h2 className="text-2xl font-semibold text-gray-900">🥐 Panaderia Management</h2>
+              {/* Header with El Hornito branding */}
+              <div className="bg-gradient-to-r from-amber-600 via-amber-500 to-yellow-500 rounded-xl p-6 text-white">
+                <div className="flex items-center justify-between">
+                  <div className="flex items-center gap-4">
+                    <div className="w-16 h-16 rounded-2xl bg-white/20 backdrop-blur flex items-center justify-center text-3xl">
+                      🥐
+                    </div>
+                    <div>
+                      <h2 className="text-2xl font-bold flex items-center gap-3">
+                        El Hornito Bakery
+                      </h2>
+                      <p className="text-amber-100 mt-1">
+                        Sub-tenant menu management • Authentic Mexican breads & pastries
+                      </p>
+                    </div>
+                  </div>
+                  <div className="flex items-center gap-3">
+                    <span className="px-3 py-1 rounded-full bg-white/20 text-sm font-medium">
+                      📍 Inside La Poblanita
+                    </span>
+                    {elHornitoTenant && (
+                      <span className="px-3 py-1 rounded-full bg-green-500/30 text-sm font-medium flex items-center gap-1">
+                        <span className="w-2 h-2 rounded-full bg-green-300 animate-pulse"></span>
+                        Linked
+                      </span>
+                    )}
+                  </div>
+                </div>
               </div>
 
-              {/* Sub-tabs */}
-              <div className="border-b border-gray-200 mb-6">
-                <nav className="-mb-px flex space-x-8">
-                  <button
-                    onClick={() => setGrocerySubTab('items')}
-                    className={`${
-                      grocerySubTab === 'items'
-                        ? 'border-amber-500 text-amber-600'
-                        : 'border-transparent text-gray-500 hover:text-gray-700 hover:border-gray-300'
-                    } whitespace-nowrap py-4 px-1 border-b-2 font-medium text-sm`}
-                  >
-                    Bakery Items
-                  </button>
-                  <button
-                    onClick={() => setGrocerySubTab('bundles')}
-                    className={`${
-                      grocerySubTab === 'bundles'
-                        ? 'border-amber-500 text-amber-600'
-                        : 'border-transparent text-gray-500 hover:text-gray-700 hover:border-gray-300'
-                    } whitespace-nowrap py-4 px-1 border-b-2 font-medium text-sm`}
-                  >
-                    Box Bundles
-                  </button>
-                  <button
-                    onClick={() => setGrocerySubTab('weekend')}
-                    className={`${
-                      grocerySubTab === 'weekend'
-                        ? 'border-orange-500 text-orange-600'
-                        : 'border-transparent text-gray-500 hover:text-gray-700 hover:border-gray-300'
-                    } whitespace-nowrap py-4 px-1 border-b-2 font-medium text-sm`}
-                  >
-                    🌟 Daily Specials
-                  </button>
-                </nav>
-              </div>
+              {/* Loading State */}
+              {elHornitoLoading && (
+                <div className="flex items-center justify-center py-12">
+                  <div className="animate-spin rounded-full h-12 w-12 border-4 border-amber-500 border-t-transparent"></div>
+                </div>
+              )}
 
-              {/* Bakery Items Sub-tab */}
-              {grocerySubTab === 'items' && (
+              {/* Menu Management Grid */}
+              {!elHornitoLoading && (
                 <div className="grid grid-cols-1 lg:grid-cols-4 gap-6">
-                  {/* Categories List */}
+                  {/* Sections List */}
                   <div className="lg:col-span-1">
                     <div className="bg-white rounded-lg shadow p-4">
-                      <h2 className="text-lg font-semibold text-gray-900 mb-4">Categories</h2>
+                      <div className="flex items-center justify-between mb-4">
+                        <h2 className="text-lg font-semibold text-gray-900">Menu Sections</h2>
+                        <span className="text-xs bg-amber-100 text-amber-700 px-2 py-1 rounded-full">
+                          {elHornitoSections.length} sections
+                        </span>
+                      </div>
                       <div className="space-y-2">
-                        {Array.from(new Set(groceryItems.map(item => item.category))).sort().map((category) => {
-                          const itemsInCategory = groceryItems.filter(item => item.category === category).length;
-                          return (
-                            <div
-                              key={category}
-                              className={`p-3 rounded-lg cursor-pointer transition-colors ${
-                                selectedGroceryCategory === category
-                                  ? 'bg-amber-50 border-2 border-amber-500'
-                                  : 'bg-gray-50 border-2 border-transparent hover:bg-gray-100'
-                              }`}
-                              onClick={() => setSelectedGroceryCategory(category)}
-                            >
-                              <div className="flex items-center justify-between">
-                                <span className="font-medium text-gray-900 capitalize">{category}</span>
-                                <span className="text-xs bg-gray-200 px-2 py-1 rounded-full">{itemsInCategory}</span>
-                              </div>
+                        <div
+                          className={`p-3 rounded-lg cursor-pointer transition-colors ${
+                            selectedElHornitoSection === null
+                              ? 'bg-amber-50 border-2 border-amber-500'
+                              : 'bg-gray-50 border-2 border-transparent hover:bg-gray-100'
+                          }`}
+                          onClick={() => setSelectedElHornitoSection(null)}
+                        >
+                          <div className="flex items-center justify-between">
+                            <span className="font-medium text-gray-900">All Items</span>
+                            <span className="text-xs bg-gray-200 px-2 py-1 rounded-full">
+                              {elHornitoItems.length}
+                            </span>
+                          </div>
+                        </div>
+                        {elHornitoSections.map((section) => (
+                          <div
+                            key={section.id}
+                            className={`p-3 rounded-lg cursor-pointer transition-colors ${
+                              selectedElHornitoSection === section.id
+                                ? 'bg-amber-50 border-2 border-amber-500'
+                                : 'bg-gray-50 border-2 border-transparent hover:bg-gray-100'
+                            }`}
+                            onClick={() => setSelectedElHornitoSection(section.id)}
+                          >
+                            <div className="flex items-center justify-between">
+                              <span className="font-medium text-gray-900">{section.name}</span>
+                              <span className="text-xs bg-gray-200 px-2 py-1 rounded-full">
+                                {section.itemCount}
+                              </span>
                             </div>
-                          );
-                        })}
+                            {section.description && (
+                              <p className="text-xs text-gray-500 mt-1">{section.description}</p>
+                            )}
+                          </div>
+                        ))}
+                      </div>
+                      <div className="mt-4 pt-4 border-t">
+                        <p className="text-xs text-gray-500">
+                          💡 Manage sections via the sub-tenant admin
+                        </p>
                       </div>
                     </div>
                   </div>
@@ -2060,227 +2131,86 @@ export default function MenuEditorPage() {
                     <div className="bg-white rounded-lg shadow p-6">
                       <div className="flex justify-between items-center mb-4">
                         <h3 className="text-lg font-semibold">
-                          {selectedGroceryCategory ? `${selectedGroceryCategory} Items` : 'All Bakery Items'}
+                          {selectedElHornitoSection
+                            ? elHornitoSections.find(s => s.id === selectedElHornitoSection)?.name || 'Items'
+                            : 'All Bakery Items'}
                         </h3>
-                        <button
-                          onClick={() => setEditingGroceryItem({
-                            id: '',
-                            name: '',
-                            description: '',
-                            price: 0,
-                            category: selectedGroceryCategory || 'bread',
-                            image: null,
-                            available: true,
-                            isWeekendSpecial: false,
-                            weekendPrice: null,
-                          })}
-                          className="inline-flex items-center px-4 py-2 border border-transparent rounded-md shadow-sm text-sm font-medium text-white bg-amber-600 hover:bg-amber-700"
-                        >
-                          <Plus className="h-4 w-4 mr-2" />
-                          Add Bakery Item
-                        </button>
-                      </div>
-
-                      <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
-                        {groceryItems
-                          .filter(item => !selectedGroceryCategory || item.category === selectedGroceryCategory)
-                          .map((item) => (
-                            <div
-                              key={item.id}
-                              className={`p-4 rounded-lg border-2 transition-all ${
-                                item.available
-                                  ? 'bg-white border-gray-200 hover:border-amber-300'
-                                  : 'bg-gray-50 border-gray-200 opacity-60'
-                              }`}
-                            >
-                              {item.image && (
-                                <img
-                                  src={item.image}
-                                  alt={item.name}
-                                  className="w-full h-32 object-cover rounded-lg mb-3"
-                                />
-                              )}
-                              <h4 className="font-semibold text-gray-900">{item.name}</h4>
-                              <p className="text-sm text-gray-500 line-clamp-2 mb-2">{item.description}</p>
-                              <div className="flex items-center justify-between">
-                                <span className="text-lg font-bold text-amber-600">${item.price.toFixed(2)}</span>
-                                <div className="flex gap-2">
-                                  <button
-                                    onClick={() => setEditingGroceryItem(item)}
-                                    className="p-2 text-gray-400 hover:text-amber-600"
-                                  >
-                                    <Edit2 className="h-4 w-4" />
-                                  </button>
-                                  <button
-                                    onClick={() => handleDeleteGroceryItem(item.id)}
-                                    className="p-2 text-gray-400 hover:text-red-600"
-                                  >
-                                    <Trash2 className="h-4 w-4" />
-                                  </button>
-                                </div>
-                              </div>
-                              {item.isWeekendSpecial && (
-                                <div className="mt-2 text-xs text-orange-600 font-semibold">
-                                  🌟 Daily Special: ${item.weekendPrice?.toFixed(2)}
-                                </div>
-                              )}
-                            </div>
-                          ))}
-                      </div>
-                    </div>
-                  </div>
-                </div>
-              )}
-
-              {/* Box Bundles Sub-tab */}
-              {grocerySubTab === 'bundles' && (
-                <div className="bg-white rounded-lg shadow p-6">
-                  <div className="flex justify-between items-center mb-4">
-                    <h3 className="text-lg font-semibold">Box Bundles & Combos</h3>
-                    <button
-                      onClick={() => setEditingGroceryBundle({
-                        id: '',
-                        name: '',
-                        description: '',
-                        price: 0,
-                        items: [],
-                        image: null,
-                        available: true,
-                      })}
-                      className="inline-flex items-center px-4 py-2 border border-transparent rounded-md shadow-sm text-sm font-medium text-white bg-amber-600 hover:bg-amber-700"
-                    >
-                      <Plus className="h-4 w-4 mr-2" />
-                      Add Box Bundle
-                    </button>
-                  </div>
-
-                  <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
-                    {groceryBundles.map((bundle) => (
-                      <div
-                        key={bundle.id}
-                        className="p-4 rounded-lg border-2 border-gray-200 hover:border-amber-300 bg-white"
-                      >
-                        {bundle.image && (
-                          <img
-                            src={bundle.image}
-                            alt={bundle.name}
-                            className="w-full h-32 object-cover rounded-lg mb-3"
-                          />
-                        )}
-                        <h4 className="font-semibold text-gray-900">{bundle.name}</h4>
-                        <p className="text-sm text-gray-500 mb-2">{bundle.description}</p>
-                        <p className="text-xs text-gray-400 mb-2">{bundle.items?.length || 0} items</p>
-                        <div className="flex items-center justify-between">
-                          <span className="text-lg font-bold text-amber-600">${bundle.price.toFixed(2)}</span>
-                          <div className="flex gap-2">
-                            <button
-                              onClick={() => setEditingGroceryBundle(bundle)}
-                              className="p-2 text-gray-400 hover:text-amber-600"
-                            >
-                              <Edit2 className="h-4 w-4" />
-                            </button>
-                            <button
-                              onClick={() => handleDeleteGroceryBundle(bundle.id)}
-                              className="p-2 text-gray-400 hover:text-red-600"
-                            >
-                              <Trash2 className="h-4 w-4" />
-                            </button>
-                          </div>
+                        <div className="flex gap-2">
+                          <button
+                            onClick={fetchElHornitoMenu}
+                            className="inline-flex items-center px-3 py-2 border border-gray-300 rounded-md shadow-sm text-sm font-medium text-gray-700 bg-white hover:bg-gray-50"
+                          >
+                            🔄 Refresh
+                          </button>
                         </div>
                       </div>
-                    ))}
-                  </div>
-                </div>
-              )}
 
-              {/* Daily Specials Sub-tab */}
-              {grocerySubTab === 'weekend' && (
-                <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
-                  {/* Current Specials */}
-                  <div className="bg-gradient-to-br from-orange-50 to-amber-50 rounded-lg shadow p-6 border border-orange-200">
-                    <h3 className="text-lg font-semibold mb-4 text-orange-800">🌟 Active Daily Specials</h3>
-                    <div className="space-y-3">
-                      {groceryItems
-                        .filter(item => item.isWeekendSpecial)
-                        .map((item) => (
-                          <div
-                            key={item.id}
-                            className="flex items-center justify-between p-3 bg-white rounded-lg border border-orange-200"
-                          >
-                            <div className="flex items-center gap-3">
-                              {item.image && (
-                                <img src={item.image} alt={item.name} className="w-12 h-12 rounded object-cover" />
-                              )}
-                              <div>
-                                <h4 className="font-medium text-gray-900">{item.name}</h4>
-                                <div className="text-sm">
-                                  <span className="text-gray-400 line-through">${item.price.toFixed(2)}</span>
-                                  <span className="ml-2 font-bold text-orange-600">${item.weekendPrice?.toFixed(2)}</span>
+                      {elHornitoItems.length === 0 ? (
+                        <div className="text-center py-12">
+                          <span className="text-6xl mb-4 block">🥖</span>
+                          <h3 className="text-xl font-bold text-gray-700 mb-2">No Bakery Items Yet</h3>
+                          <p className="text-gray-500 mb-4">
+                            Add menu items to El Hornito to see them here.
+                          </p>
+                          <p className="text-sm text-gray-400">
+                            Items added here will appear in the Panaderia panel on the ordering page.
+                          </p>
+                        </div>
+                      ) : (
+                        <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
+                          {elHornitoItems
+                            .filter(item => !selectedElHornitoSection || item.sectionId === selectedElHornitoSection)
+                            .map((item) => (
+                              <div
+                                key={item.id}
+                                className={`p-4 rounded-lg border-2 transition-all ${
+                                  item.available
+                                    ? 'bg-white border-gray-200 hover:border-amber-300'
+                                    : 'bg-gray-50 border-gray-200 opacity-60'
+                                }`}
+                              >
+                                {item.image && (
+                                  <img
+                                    src={item.image}
+                                    alt={item.name}
+                                    className="w-full h-32 object-cover rounded-lg mb-3"
+                                  />
+                                )}
+                                <h4 className="font-semibold text-gray-900">{item.name}</h4>
+                                <p className="text-sm text-gray-500 line-clamp-2 mb-2">{item.description}</p>
+                                <div className="flex items-center justify-between">
+                                  <span className="text-lg font-bold text-amber-600">
+                                    ${Number(item.price).toFixed(2)}
+                                  </span>
+                                  <span className={`px-2 py-1 rounded-full text-xs ${
+                                    item.available ? 'bg-green-100 text-green-700' : 'bg-red-100 text-red-700'
+                                  }`}>
+                                    {item.available ? 'Available' : 'Unavailable'}
+                                  </span>
                                 </div>
+                                {item.sectionName && (
+                                  <div className="mt-2 text-xs text-gray-400">
+                                    📂 {item.sectionName}
+                                  </div>
+                                )}
                               </div>
-                            </div>
-                            <button
-                              onClick={() => handleRemoveWeekendSpecial(item.id)}
-                              className="text-red-500 hover:text-red-700 text-sm"
-                            >
-                              Remove
-                            </button>
-                          </div>
-                        ))}
-                      {groceryItems.filter(item => item.isWeekendSpecial).length === 0 && (
-                        <p className="text-center text-gray-500 py-4">No daily specials set. Add items from the list.</p>
+                            ))}
+                        </div>
                       )}
                     </div>
                   </div>
-
-                  {/* Add to Specials */}
-                  <div className="bg-white rounded-lg shadow p-6">
-                    <h3 className="text-lg font-semibold mb-4">Add Items to Daily Specials</h3>
-                    <p className="text-sm text-gray-500 mb-4">Click an item to set a special price</p>
-                    <div className="space-y-2 max-h-96 overflow-y-auto">
-                      {groceryItems
-                        .filter(item => !item.isWeekendSpecial)
-                        .map((item) => (
-                          <div
-                            key={item.id}
-                            onClick={async () => {
-                              const price = prompt(`Set special price for ${item.name}:\nCurrent price: $${item.price.toFixed(2)}`, item.price.toFixed(2));
-                              if (price === null) return;
-                              const numPrice = parseFloat(price);
-                              if (isNaN(numPrice) || numPrice < 0) {
-                                alert('Invalid price');
-                                return;
-                              }
-                              try {
-                                const res = await fetch(`/api/admin/grocery-items/${item.id}`, {
-                                  method: 'PATCH',
-                                  headers: { 'Content-Type': 'application/json' },
-                                  body: JSON.stringify({ isWeekendSpecial: true, weekendPrice: numPrice }),
-                                });
-                                if (!res.ok) throw new Error('Failed to add to daily specials');
-                                await fetchGroceryItems();
-                              } catch (e) {
-                                console.error('Failed to add daily special', e);
-                                alert('Failed to add daily special');
-                              }
-                            }}
-                            className="flex items-center gap-3 p-3 rounded-lg hover:bg-amber-50 cursor-pointer border border-transparent hover:border-amber-200 transition group"
-                          >
-                            {item.image && (
-                              <img src={item.image} alt={item.name} className="w-12 h-12 rounded object-cover" />
-                            )}
-                            <div className="flex-1 min-w-0">
-                              <h5 className="font-medium text-gray-900 text-sm truncate">{item.name}</h5>
-                              <p className="text-xs text-gray-500 capitalize">{item.category}</p>
-                              <p className="text-sm font-bold text-amber-600">${item.price.toFixed(2)}</p>
-                            </div>
-                            <Plus className="h-5 w-5 text-gray-400 group-hover:text-amber-600 transition" />
-                          </div>
-                        ))}
-                    </div>
-                  </div>
                 </div>
               )}
+
+              {/* Info Box */}
+              <div className="bg-amber-50 border border-amber-200 rounded-lg p-4">
+                <h4 className="font-semibold text-amber-800 mb-2">💡 About El Hornito Management</h4>
+                <p className="text-sm text-amber-700">
+                  El Hornito is a linked sub-tenant of La Poblanita. Items shown here are managed separately
+                  and appear in the &quot;Panaderia&quot; panel on the customer ordering page. This separation
+                  allows for independent menu management while maintaining the parent-child business relationship.
+                </p>
+              </div>
             </div>
           ) : (activeTab as string) === 'smp' ? (
             <div className="space-y-6">

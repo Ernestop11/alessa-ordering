@@ -348,6 +348,10 @@ model Tenant {
   slug                   String             @unique
   domain                 String?
   customDomain           String?
+  // Sub-tenant relationship (e.g., El Hornito is a sub-tenant of La Poblanita)
+  parentTenantId         String?
+  parentTenant           Tenant?            @relation("SubTenants", fields: [parentTenantId], references: [id], onDelete: SetNull)
+  subTenants             Tenant[]           @relation("SubTenants")
   contactEmail           String?
   contactPhone           String?
   addressLine1           String?

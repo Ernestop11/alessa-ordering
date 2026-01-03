@@ -1080,6 +1080,9 @@ export default function OrderPageClientLaPoblanita({
   const [joinModalMode, setJoinModalMode] = useState<'join' | 'login'>('join');
   const [showMobileNav, setShowMobileNav] = useState(false);
   const [showCateringPanel, setShowCateringPanel] = useState(false);
+  const [showPanaderiaPanel, setShowPanaderiaPanel] = useState(false);
+  const [panaderiaMenuItems, setPanaderiaMenuItems] = useState<OrderMenuItem[]>([]);
+  const [panaderiaLoading, setPanaderiaLoading] = useState(false);
   const [showGroupOrderModal, setShowGroupOrderModal] = useState(false);
   const [showGroupOrderSummary, setShowGroupOrderSummary] = useState(false);
   const [groupOrderSummaryCode, setGroupOrderSummaryCode] = useState<string | null>(null);
@@ -1643,6 +1646,26 @@ export default function OrderPageClientLaPoblanita({
       (tenant.featureFlags?.includes('catering') ?? false) &&
       cateringTabConfig?.enabled !== false
     );
+
+  // Panaderia (El Hornito Bakery) is enabled via enabledAddOns
+  // Only La Poblanita has this feature - isolated from other tenants
+  const panaderiaEnabled = enabledAddOns.includes('panaderia');
+
+  // Fetch El Hornito bakery menu items when panaderia panel opens
+  useEffect(() => {
+    if (showPanaderiaPanel && panaderiaMenuItems.length === 0 && !panaderiaLoading) {
+      setPanaderiaLoading(true);
+      fetch('/api/sub-tenant/menu?slug=elhornito')
+        .then(res => res.json())
+        .then(data => {
+          if (data.items) {
+            setPanaderiaMenuItems(data.items);
+          }
+        })
+        .catch(err => console.error('Failed to load bakery menu:', err))
+        .finally(() => setPanaderiaLoading(false));
+    }
+  }, [showPanaderiaPanel, panaderiaMenuItems.length, panaderiaLoading]);
 
   const handleCateringSubmit = useCallback(async (e: React.FormEvent) => {
     e.preventDefault();
@@ -4713,6 +4736,161 @@ export default function OrderPageClientLaPoblanita({
         document.body
       )}
 
+      {/* El Hornito Bakery (Panaderia) Slide-In Panel - Portal for z-index fix */}
+      {portalMounted && showPanaderiaPanel && createPortal(
+        <>
+          {/* Backdrop */}
+          <div
+            style={{ position: 'fixed', inset: 0, zIndex: 9998 }}
+            className="bg-black/60 backdrop-blur-sm transition-opacity"
+            onClick={() => setShowPanaderiaPanel(false)}
+          />
+          {/* Side Panel */}
+          <div
+            style={{ position: 'fixed', right: 0, top: 0, bottom: 0, zIndex: 9999, maxWidth: '672px', width: '100%' }}
+            className="overflow-y-auto bg-gradient-to-br from-[#451a03] via-[#1c0a00] to-black p-8 shadow-2xl transform transition-transform duration-300 ease-out animate-in slide-in-from-right">
+
+            {/* Header */}
+            <div className="mb-6 flex items-center justify-between">
+              <div className="flex items-center gap-3">
+                <div className="w-12 h-12 rounded-full bg-gradient-to-br from-amber-500 to-amber-700 flex items-center justify-center text-2xl shadow-lg ring-2 ring-amber-400/30">
+                  🥐
+                </div>
+                <div>
+                  <h2 className="text-2xl font-black text-amber-100">El Hornito Bakery</h2>
+                  <p className="text-sm text-amber-300/70">Authentic Mexican Breads & Pastries</p>
+                </div>
+              </div>
+              <button
+                onClick={() => setShowPanaderiaPanel(false)}
+                className="rounded-full border-2 border-white/30 bg-white/10 p-2 text-white transition hover:border-white hover:bg-white/20"
+              >
+                ✕
+              </button>
+            </div>
+
+            {/* Hero Banner */}
+            <div className="relative mb-8 overflow-hidden rounded-3xl border-2 border-amber-500/30 bg-gradient-to-r from-amber-900/50 to-amber-700/30 p-6">
+              <div className="flex items-center gap-4">
+                <span className="text-5xl">🍞</span>
+                <div>
+                  <p className="text-sm font-semibold uppercase tracking-wide text-amber-300">
+                    Fresh Daily
+                  </p>
+                  <h3 className="text-2xl font-black text-white">
+                    Traditional Pan Dulce & More
+                  </h3>
+                  <p className="text-sm text-amber-100/70 mt-1">
+                    Baked fresh every morning with love
+                  </p>
+                </div>
+              </div>
+            </div>
+
+            {/* Loading State */}
+            {panaderiaLoading && (
+              <div className="flex items-center justify-center py-12">
+                <div className="animate-spin rounded-full h-12 w-12 border-4 border-amber-500 border-t-transparent" />
+              </div>
+            )}
+
+            {/* Menu Items Grid */}
+            {!panaderiaLoading && panaderiaMenuItems.length > 0 && (
+              <div className="grid grid-cols-1 sm:grid-cols-2 gap-4 mb-8">
+                {panaderiaMenuItems.map((item) => (
+                  <div
+                    key={item.id}
+                    className="group relative overflow-hidden rounded-2xl border border-amber-500/20 bg-gradient-to-br from-amber-900/30 to-amber-800/10 p-4 transition-all hover:border-amber-400/40 hover:shadow-lg hover:shadow-amber-500/10"
+                  >
+                    {item.image && (
+                      <div className="relative h-32 w-full overflow-hidden rounded-xl mb-3">
+                        <Image
+                          src={item.image}
+                          alt={item.name}
+                          fill
+                          className="object-cover transition-transform group-hover:scale-110"
+                          sizes="(max-width: 768px) 50vw, 300px"
+                        />
+                      </div>
+                    )}
+                    <h4 className="font-bold text-white text-lg">{item.name}</h4>
+                    {item.description && (
+                      <p className="text-sm text-amber-100/60 line-clamp-2 mt-1">{item.description}</p>
+                    )}
+                    <div className="flex items-center justify-between mt-3">
+                      <span className="text-lg font-bold text-amber-400">${Number(item.price).toFixed(2)}</span>
+                      <button
+                        onClick={() => {
+                          // Cast item to OrderMenuItem for handleAddToCart
+                          handleAddToCart(item as OrderMenuItem, item.image);
+                        }}
+                        disabled={!restaurantIsOpen}
+                        className={`px-4 py-2 rounded-xl text-sm font-bold transition-all ${
+                          !restaurantIsOpen
+                            ? 'bg-gray-600 text-gray-400 cursor-not-allowed'
+                            : 'bg-gradient-to-r from-amber-500 to-amber-600 text-black hover:scale-105 shadow-lg shadow-amber-500/30'
+                        }`}
+                      >
+                        {!restaurantIsOpen ? 'Closed' : '+ Add'}
+                      </button>
+                    </div>
+                  </div>
+                ))}
+              </div>
+            )}
+
+            {/* Empty State */}
+            {!panaderiaLoading && panaderiaMenuItems.length === 0 && (
+              <div className="text-center py-12">
+                <span className="text-6xl mb-4 block">🥖</span>
+                <h3 className="text-xl font-bold text-white mb-2">Coming Soon!</h3>
+                <p className="text-amber-100/60">
+                  Our bakery menu is being prepared. Check back soon for fresh pan dulce!
+                </p>
+              </div>
+            )}
+
+            {/* Info Section */}
+            <div className="border-t border-amber-500/20 pt-6 mt-6">
+              <h4 className="text-lg font-bold text-amber-100 mb-3">🏪 About El Hornito</h4>
+              <p className="text-sm text-amber-100/70 leading-relaxed">
+                El Hornito Bakery brings authentic Mexican baking traditions to our community.
+                Every morning, our bakers prepare fresh pan dulce, conchas, cuernos, and other
+                traditional Mexican breads using time-honored family recipes.
+              </p>
+              <div className="mt-4 flex items-center gap-4 text-sm text-amber-300/60">
+                <span>📍 Inside La Poblanita</span>
+                <span>🕐 Fresh Daily</span>
+              </div>
+            </div>
+
+            {/* Catering CTA */}
+            <div className="mt-6 p-4 rounded-2xl bg-gradient-to-r from-amber-600/20 to-amber-500/10 border border-amber-500/30">
+              <h4 className="font-bold text-amber-100 mb-2">🎂 Need Bakery Catering?</h4>
+              <p className="text-sm text-amber-100/70 mb-3">
+                Perfect for parties, events, and celebrations! We offer custom orders for:
+              </p>
+              <ul className="text-sm text-amber-100/60 space-y-1 mb-4">
+                <li>• Tres Leches Cakes</li>
+                <li>• Pan Dulce Platters</li>
+                <li>• Custom Birthday Cakes</li>
+                <li>• Rosca de Reyes (seasonal)</li>
+              </ul>
+              <button
+                onClick={() => {
+                  setShowPanaderiaPanel(false);
+                  setShowCateringPanel(true);
+                }}
+                className="w-full py-3 rounded-xl bg-gradient-to-r from-amber-500 to-amber-600 text-black font-bold hover:scale-[1.02] transition-all shadow-lg shadow-amber-500/30"
+              >
+                Request Bakery Catering Quote
+              </button>
+            </div>
+          </div>
+        </>,
+        document.body
+      )}
+
       {/* Membership Slide-In Panel (Costco Style) - Portal for z-index fix */}
       {portalMounted && showMembershipPanel && createPortal(
         <>
@@ -5466,6 +5644,8 @@ export default function OrderPageClientLaPoblanita({
           }
         } : undefined}
         cateringEnabled={cateringEnabled}
+        panaderiaEnabled={panaderiaEnabled}
+        onPanaderiaClick={() => setShowPanaderiaPanel(true)}
         customerData={customerData}
         isAccessibilityOpen={isAccessibilityOpen}
         menuSections={navSections.map(s => ({ id: s.id, name: s.name }))}
