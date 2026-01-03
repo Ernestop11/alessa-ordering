@@ -4,7 +4,7 @@ import type { Metadata } from 'next';
 import { Suspense } from 'react';
 import { cookies } from 'next/headers';
 import { validateOperatingHours } from '@/lib/hours-validator';
-import OrderPageClientElHornito from '@/components/order/OrderPageClientElHornito';
+import OrderPageClientElHornitoBakery from '@/components/order/OrderPageClientElHornitoBakery';
 
 // Force dynamic rendering to ensure data is always fresh
 export const dynamic = 'force-dynamic';
@@ -282,11 +282,11 @@ export default async function BakeryPage() {
       <div className="min-h-screen flex items-center justify-center bg-gradient-to-br from-amber-950/50 via-neutral-900 to-neutral-950">
         <div className="text-center">
           <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-amber-400 mx-auto mb-4"></div>
-          <p className="text-amber-100 text-lg">Loading bakery menu...</p>
+          <p className="text-amber-100 text-lg">Cargando panaderia...</p>
         </div>
       </div>
     }>
-      <OrderPageClientElHornito
+      <OrderPageClientElHornitoBakery
         sections={sections}
         featuredItems={featuredItems}
         tenantSlug={parentTenant.slug}
