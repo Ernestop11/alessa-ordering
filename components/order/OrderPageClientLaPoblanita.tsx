@@ -2791,13 +2791,13 @@ export default function OrderPageClientLaPoblanita({
         <div className="absolute inset-0 bg-[url('data:image/svg+xml;base64,PHN2ZyB4bWxucz0iaHR0cDovL3d3dy53My5vcmcvMjAwMC9zdmciIHdpZHRoPSI0IiBoZWlnaHQ9IjQiPjxyZWN0IHdpZHRoPSI0IiBoZWlnaHQ9IjQiIGZpbGw9IiMwMDAiLz48cmVjdCB3aWR0aD0iMSIgaGVpZ2h0PSIxIiBmaWxsPSIjMTExIi8+PC9zdmc+')] opacity-30" />
       </div>
 
-      {/* Mobile Section Navigation - Fixed below header, uses tenant gradient for seamless look */}
+      {/* Mobile Section Navigation - Fixed below header (matches Las Reinas pattern) */}
       <div
-        className="fixed left-0 right-0 sm:hidden border-b border-white/10 shadow-lg transition-all duration-300 ease-out"
+        className="fixed left-0 right-0 sm:hidden backdrop-blur-sm border-b border-white/10 shadow-lg transition-all duration-300 ease-out"
         style={{
           top: isScrolled ? 'calc(env(safe-area-inset-top, 0px) + 64px)' : 'calc(env(safe-area-inset-top, 0px) + 88px)',
           zIndex: 35,
-          background: `linear-gradient(to bottom, var(--tenant-gradient-to) 0%, var(--tenant-gradient-to) 100%)`
+          backgroundColor: 'var(--tenant-gradient-to)',
         }}
       >
         {/* Closed status indicator - integrated into nav bar */}
