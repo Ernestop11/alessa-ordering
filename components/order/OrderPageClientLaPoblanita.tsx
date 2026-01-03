@@ -2793,11 +2793,11 @@ export default function OrderPageClientLaPoblanita({
 
       {/* Mobile Section Navigation - Fixed below header (matches Las Reinas pattern) */}
       <div
-        className="fixed left-0 right-0 sm:hidden backdrop-blur-sm border-b border-white/10 shadow-lg transition-all duration-300 ease-out"
+        className="fixed left-0 right-0 sm:hidden backdrop-blur-md border-b border-white/10 shadow-lg transition-all duration-300 ease-out"
         style={{
           top: isScrolled ? 'calc(env(safe-area-inset-top, 0px) + 64px)' : 'calc(env(safe-area-inset-top, 0px) + 88px)',
           zIndex: 35,
-          backgroundColor: 'var(--tenant-gradient-to)',
+          background: 'linear-gradient(to bottom, var(--tenant-gradient-to), rgba(13, 13, 13, 0.95))',
         }}
       >
         {/* Closed status indicator - integrated into nav bar */}
@@ -2821,7 +2821,7 @@ export default function OrderPageClientLaPoblanita({
                   window.scrollTo({ top: y, behavior: 'smooth' });
                 }
               }}
-              className="flex-shrink-0 px-4 py-2 rounded-full text-xs font-semibold bg-white/15 text-white border border-white/25 active:scale-95 transition-all whitespace-nowrap touch-manipulation"
+              className="flex-shrink-0 px-4 py-2 rounded-full text-xs font-semibold bg-white/10 text-white/90 border border-white/20 active:bg-blue-600 active:border-blue-600 active:text-white active:scale-95 transition-all whitespace-nowrap touch-manipulation"
             >
               {section.name}
             </button>
