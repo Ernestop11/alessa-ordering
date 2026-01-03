@@ -1,14 +1,16 @@
 /**
- * OrderPageClientElHornitoBakery - El Hornito Bakery Dedicated Page
+ * OrderPageClientElHornitoBakery - El Hornito Bakery Wonderland Experience
  *
- * A glamorous Mexican panaderia experience with:
- * - Warm amber/gold/brown color scheme
- * - Bakery-specific sections (Pan Dulce, Pasteles, etc.)
- * - Cake customization tools
- * - Shared cart with La Poblanita parent tenant
+ * A stunning Mexican panaderia wonderland with:
+ * - Rich warm gradients (amber, gold, rose, burgundy)
+ * - Floating particles and ambient animations
+ * - Large welcoming logo and community-focused messaging
+ * - Cake ordering with scheduling, deposits, and full customization
+ * - Per-piece bundle ordering
+ * - Integrated cart with La Poblanita
  *
- * This is a STANDALONE component, not a wrapper.
- * Design shares DNA with La Poblanita but is bakery-focused.
+ * Design inspired by premium bakery sites like Milk Bar, Carlos Bakery, and
+ * authentic Mexican panaderias like Alejandra's Panaderia.
  */
 "use client";
 
@@ -72,14 +74,22 @@ interface CustomerRewardsData {
   orders: any[];
 }
 
-interface CakeCustomization {
-  size: 'small' | 'medium' | 'large' | 'xl';
+// Cake scheduling order
+interface CakeOrder {
+  size: string;
   layers: number;
   flavor: string;
   filling: string;
   frosting: string;
-  message?: string;
+  message: string;
   decorations: string[];
+  pickupDate: string;
+  pickupTime: string;
+  customerName: string;
+  customerPhone: string;
+  customerEmail: string;
+  specialInstructions: string;
+  depositPaid: boolean;
 }
 
 interface OrderPageClientElHornitoBakeryProps {
@@ -93,47 +103,72 @@ interface OrderPageClientElHornitoBakeryProps {
   closedMessage?: string;
 }
 
-// Cake size options
+// Cake configuration options
 const CAKE_SIZES = [
-  { id: 'small', name: '6" Round', serves: '6-8', price: 0 },
-  { id: 'medium', name: '8" Round', serves: '10-12', price: 15 },
-  { id: 'large', name: '10" Round', serves: '16-20', price: 30 },
-  { id: 'xl', name: '12" Round', serves: '24-30', price: 50 },
+  { id: 'small', name: '6" Redondo', serves: '6-8', price: 35, icon: '🎂' },
+  { id: 'medium', name: '8" Redondo', serves: '10-12', price: 45, icon: '🎂' },
+  { id: 'large', name: '10" Redondo', serves: '16-20', price: 60, icon: '🎂' },
+  { id: 'xl', name: '12" Redondo', serves: '24-30', price: 80, icon: '🎂' },
+  { id: 'sheet-half', name: '1/2 Sheet', serves: '20-25', price: 55, icon: '🍰' },
+  { id: 'sheet-full', name: 'Full Sheet', serves: '40-50', price: 95, icon: '🍰' },
 ];
 
 const CAKE_FLAVORS = [
-  { id: 'vanilla', name: 'Vainilla', price: 0 },
-  { id: 'chocolate', name: 'Chocolate', price: 0 },
-  { id: 'tres-leches', name: 'Tres Leches', price: 5 },
-  { id: 'red-velvet', name: 'Red Velvet', price: 5 },
-  { id: 'strawberry', name: 'Fresa', price: 3 },
-  { id: 'coconut', name: 'Coco', price: 3 },
+  { id: 'vanilla', name: 'Vainilla Clasica', price: 0, color: '#FEF3C7' },
+  { id: 'chocolate', name: 'Chocolate Mexicano', price: 0, color: '#78350F' },
+  { id: 'tres-leches', name: 'Tres Leches', price: 8, color: '#FEF9C3' },
+  { id: 'red-velvet', name: 'Red Velvet', price: 8, color: '#DC2626' },
+  { id: 'strawberry', name: 'Fresa Natural', price: 5, color: '#FDA4AF' },
+  { id: 'coconut', name: 'Coco Tropical', price: 5, color: '#ECFDF5' },
+  { id: 'dulce-leche', name: 'Dulce de Leche', price: 8, color: '#D97706' },
+  { id: 'horchata', name: 'Horchata', price: 10, color: '#FEF3C7' },
 ];
 
 const CAKE_FILLINGS = [
   { id: 'none', name: 'Sin Relleno', price: 0 },
-  { id: 'strawberry', name: 'Fresas con Crema', price: 8 },
-  { id: 'peach', name: 'Duraznos con Crema', price: 8 },
-  { id: 'cajeta', name: 'Cajeta', price: 6 },
-  { id: 'nutella', name: 'Nutella', price: 10 },
-  { id: 'dulce-leche', name: 'Dulce de Leche', price: 8 },
+  { id: 'strawberry-cream', name: 'Fresas con Crema', price: 12 },
+  { id: 'peach-cream', name: 'Duraznos con Crema', price: 12 },
+  { id: 'mixed-fruit', name: 'Frutas Mixtas', price: 15 },
+  { id: 'cajeta', name: 'Cajeta Artesanal', price: 10 },
+  { id: 'nutella', name: 'Nutella', price: 12 },
+  { id: 'dulce-leche', name: 'Dulce de Leche', price: 10 },
+  { id: 'bavarian', name: 'Crema Bavaresa', price: 8 },
 ];
 
 const CAKE_FROSTINGS = [
-  { id: 'buttercream', name: 'Buttercream', price: 0 },
-  { id: 'whipped', name: 'Crema Batida', price: 0 },
-  { id: 'cream-cheese', name: 'Cream Cheese', price: 5 },
-  { id: 'chocolate', name: 'Chocolate Ganache', price: 8 },
-  { id: 'fondant', name: 'Fondant', price: 20 },
+  { id: 'buttercream', name: 'Buttercream Clasico', price: 0 },
+  { id: 'whipped', name: 'Crema Batida Fresca', price: 0 },
+  { id: 'cream-cheese', name: 'Queso Crema', price: 8 },
+  { id: 'chocolate-ganache', name: 'Ganache de Chocolate', price: 12 },
+  { id: 'fondant', name: 'Fondant Profesional', price: 25 },
+  { id: 'naked', name: 'Naked Cake (Sin Cobertura)', price: 0 },
 ];
 
 const CAKE_DECORATIONS = [
-  { id: 'flowers', name: 'Flores de Azucar', price: 15 },
-  { id: 'fruit', name: 'Fruta Fresca', price: 12 },
-  { id: 'sprinkles', name: 'Chispas de Colores', price: 3 },
-  { id: 'gold-leaf', name: 'Hoja de Oro', price: 25 },
-  { id: 'figurine', name: 'Figurita', price: 20 },
-  { id: 'candles', name: 'Velitas', price: 5 },
+  { id: 'fresh-flowers', name: 'Flores Frescas', price: 20, icon: '🌸' },
+  { id: 'sugar-flowers', name: 'Flores de Azucar', price: 18, icon: '🌺' },
+  { id: 'fresh-fruit', name: 'Fruta Fresca', price: 15, icon: '🍓' },
+  { id: 'gold-leaf', name: 'Hoja de Oro', price: 30, icon: '✨' },
+  { id: 'sprinkles', name: 'Chispas de Colores', price: 5, icon: '🎨' },
+  { id: 'macarons', name: 'Macarons', price: 25, icon: '🍬' },
+  { id: 'figurine', name: 'Figurita Personalizada', price: 25, icon: '🎭' },
+  { id: 'photo', name: 'Foto Comestible', price: 15, icon: '📸' },
+  { id: 'candles', name: 'Set de Velitas', price: 5, icon: '🕯️' },
+  { id: 'topper', name: 'Cake Topper', price: 12, icon: '🎀' },
+];
+
+// Bundle configurations
+const BUNDLES = [
+  { id: 'half-dozen', name: 'Media Docena', count: 6, discount: 0.10, icon: '🧺' },
+  { id: 'dozen', name: 'Docena Completa', count: 12, discount: 0.15, icon: '📦' },
+  { id: 'party-pack', name: 'Pack Fiesta', count: 24, discount: 0.20, icon: '🎉' },
+  { id: 'catering', name: 'Catering (50+)', count: 50, discount: 0.25, icon: '🏪' },
+];
+
+// Pickup time slots
+const TIME_SLOTS = [
+  '7:00 AM', '8:00 AM', '9:00 AM', '10:00 AM', '11:00 AM', '12:00 PM',
+  '1:00 PM', '2:00 PM', '3:00 PM', '4:00 PM', '5:00 PM', '6:00 PM',
 ];
 
 export default function OrderPageClientElHornitoBakery({
@@ -147,70 +182,118 @@ export default function OrderPageClientElHornitoBakery({
   closedMessage,
 }: OrderPageClientElHornitoBakeryProps) {
   const [mounted, setMounted] = useState(false);
+  const [activeView, setActiveView] = useState<'menu' | 'cakes' | 'bundles'>('menu');
   const [selectedSection, setSelectedSection] = useState<string | null>(null);
   const [selectedItem, setSelectedItem] = useState<BakeryMenuItem | null>(null);
   const [showItemModal, setShowItemModal] = useState(false);
+  const [itemQuantity, setItemQuantity] = useState(1);
+
+  // Cake builder state
   const [showCakeBuilder, setShowCakeBuilder] = useState(false);
-  const [cakeCustomization, setCakeCustomization] = useState<CakeCustomization>({
+  const [cakeStep, setCakeStep] = useState(0);
+  const [cakeOrder, setCakeOrder] = useState<CakeOrder>({
     size: 'medium',
     layers: 2,
     flavor: 'vanilla',
-    filling: 'strawberry',
-    frosting: 'buttercream',
+    filling: 'strawberry-cream',
+    frosting: 'whipped',
     message: '',
     decorations: [],
+    pickupDate: '',
+    pickupTime: '',
+    customerName: '',
+    customerPhone: '',
+    customerEmail: '',
+    specialInstructions: '',
+    depositPaid: false,
   });
+
+  // Bundle builder state
+  const [showBundleBuilder, setShowBundleBuilder] = useState(false);
+  const [selectedBundle, setSelectedBundle] = useState<typeof BUNDLES[0] | null>(null);
+  const [bundleItems, setBundleItems] = useState<{ item: BakeryMenuItem; quantity: number }[]>([]);
+
   const [isHeaderScrolled, setIsHeaderScrolled] = useState(false);
-  const [showMobileNav, setShowMobileNav] = useState(false);
 
   const cart = useCart();
   const sectionRefs = useRef<{ [key: string]: HTMLElement | null }>({});
+  const heroRef = useRef<HTMLElement | null>(null);
 
-  // Theme colors
-  const primaryColor = elHornitoTenant.primaryColor || '#d97706';
-  const secondaryColor = elHornitoTenant.secondaryColor || '#fbbf24';
+  // Get all pan dulce items for bundles
+  const panDulceItems = useMemo(() => {
+    return sections
+      .filter(s => s.name.toLowerCase().includes('pan dulce') || s.type === 'BAKERY')
+      .flatMap(s => s.items.filter(i => i.available && i.price < 5));
+  }, [sections]);
+
+  // Get cake items
+  const cakeItems = useMemo(() => {
+    return sections
+      .filter(s => s.name.toLowerCase().includes('pastel') || s.type === 'SPECIAL')
+      .flatMap(s => s.items.filter(i => i.available));
+  }, [sections]);
 
   useEffect(() => {
     setMounted(true);
+    // Set minimum pickup date to tomorrow
+    const tomorrow = new Date();
+    tomorrow.setDate(tomorrow.getDate() + 2); // 2 days advance for cakes
+    setCakeOrder(prev => ({
+      ...prev,
+      pickupDate: tomorrow.toISOString().split('T')[0],
+    }));
   }, []);
 
-  // Scroll handling for header
+  // Scroll handling
   useEffect(() => {
     const handleScroll = () => {
-      setIsHeaderScrolled(window.scrollY > 100);
+      setIsHeaderScrolled(window.scrollY > 150);
     };
     window.addEventListener('scroll', handleScroll, { passive: true });
     return () => window.removeEventListener('scroll', handleScroll);
   }, []);
 
-  // Calculate cake total price
-  const calculateCakePrice = useCallback((basePrice: number) => {
-    let total = basePrice;
-    const size = CAKE_SIZES.find(s => s.id === cakeCustomization.size);
-    const flavor = CAKE_FLAVORS.find(f => f.id === cakeCustomization.flavor);
-    const filling = CAKE_FILLINGS.find(f => f.id === cakeCustomization.filling);
-    const frosting = CAKE_FROSTINGS.find(f => f.id === cakeCustomization.frosting);
+  // Calculate cake total
+  const calculateCakeTotal = useCallback(() => {
+    const size = CAKE_SIZES.find(s => s.id === cakeOrder.size);
+    const flavor = CAKE_FLAVORS.find(f => f.id === cakeOrder.flavor);
+    const filling = CAKE_FILLINGS.find(f => f.id === cakeOrder.filling);
+    const frosting = CAKE_FROSTINGS.find(f => f.id === cakeOrder.frosting);
 
-    if (size) total += size.price;
-    if (flavor) total += flavor.price;
-    if (filling) total += filling.price;
-    if (frosting) total += frosting.price;
-    if (cakeCustomization.layers > 2) total += (cakeCustomization.layers - 2) * 15;
+    let total = size?.price || 0;
+    total += flavor?.price || 0;
+    total += filling?.price || 0;
+    total += frosting?.price || 0;
+    if (cakeOrder.layers > 2) total += (cakeOrder.layers - 2) * 20;
 
-    cakeCustomization.decorations.forEach(decId => {
+    cakeOrder.decorations.forEach(decId => {
       const dec = CAKE_DECORATIONS.find(d => d.id === decId);
       if (dec) total += dec.price;
     });
 
     return total;
-  }, [cakeCustomization]);
+  }, [cakeOrder]);
+
+  // Calculate deposit (50%)
+  const cakeDeposit = useMemo(() => calculateCakeTotal() * 0.5, [calculateCakeTotal]);
+
+  // Calculate bundle total
+  const calculateBundleTotal = useCallback(() => {
+    if (!selectedBundle) return 0;
+    const subtotal = bundleItems.reduce((sum, { item, quantity }) => sum + item.price * quantity, 0);
+    return subtotal * (1 - selectedBundle.discount);
+  }, [bundleItems, selectedBundle]);
+
+  const bundleItemCount = useMemo(() =>
+    bundleItems.reduce((sum, { quantity }) => sum + quantity, 0),
+  [bundleItems]);
 
   // Add item to cart
   const handleAddToCart = useCallback((item: BakeryMenuItem, quantity: number = 1) => {
     if (!isOpen) return;
 
     cart.addItem({
-      id: item.id,
+      id: `${item.id}-${Date.now()}`,
       menuItemId: item.id,
       name: item.name,
       price: item.price,
@@ -221,40 +304,44 @@ export default function OrderPageClientElHornitoBakery({
       itemType: 'bakery',
     });
     setShowItemModal(false);
+    setItemQuantity(1);
   }, [cart, isOpen]);
 
-  // Add custom cake to cart
-  const handleAddCakeToCart = useCallback((baseItem: BakeryMenuItem) => {
+  // Add cake order to cart
+  const handleAddCakeToCart = useCallback(() => {
     if (!isOpen) return;
 
-    const totalPrice = calculateCakePrice(baseItem.price);
-    const size = CAKE_SIZES.find(s => s.id === cakeCustomization.size);
-    const flavor = CAKE_FLAVORS.find(f => f.id === cakeCustomization.flavor);
-    const filling = CAKE_FILLINGS.find(f => f.id === cakeCustomization.filling);
-    const frosting = CAKE_FROSTINGS.find(f => f.id === cakeCustomization.frosting);
+    const size = CAKE_SIZES.find(s => s.id === cakeOrder.size);
+    const flavor = CAKE_FLAVORS.find(f => f.id === cakeOrder.flavor);
+    const filling = CAKE_FILLINGS.find(f => f.id === cakeOrder.filling);
+    const frosting = CAKE_FROSTINGS.find(f => f.id === cakeOrder.frosting);
+    const total = calculateCakeTotal();
 
     const customizations = [
-      `${size?.name} (${size?.serves} personas)`,
-      `${cakeCustomization.layers} capas`,
+      `Tamano: ${size?.name} (${size?.serves} personas)`,
+      `${cakeOrder.layers} capas`,
       `Sabor: ${flavor?.name}`,
       `Relleno: ${filling?.name}`,
       `Cobertura: ${frosting?.name}`,
+      `Fecha: ${new Date(cakeOrder.pickupDate).toLocaleDateString('es-MX', { weekday: 'long', year: 'numeric', month: 'long', day: 'numeric' })}`,
+      `Hora: ${cakeOrder.pickupTime}`,
+      `Cliente: ${cakeOrder.customerName}`,
+      `Tel: ${cakeOrder.customerPhone}`,
     ];
 
-    if (cakeCustomization.message) {
-      customizations.push(`Mensaje: "${cakeCustomization.message}"`);
-    }
+    if (cakeOrder.message) customizations.push(`Mensaje: "${cakeOrder.message}"`);
+    if (cakeOrder.specialInstructions) customizations.push(`Notas: ${cakeOrder.specialInstructions}`);
 
-    cakeCustomization.decorations.forEach(decId => {
+    cakeOrder.decorations.forEach(decId => {
       const dec = CAKE_DECORATIONS.find(d => d.id === decId);
-      if (dec) customizations.push(`+ ${dec.name}`);
+      if (dec) customizations.push(`${dec.icon} ${dec.name}`);
     });
 
     cart.addItem({
-      id: `${baseItem.id}-${Date.now()}`,
-      menuItemId: baseItem.id,
-      name: `${baseItem.name} - Personalizado`,
-      price: totalPrice,
+      id: `cake-custom-${Date.now()}`,
+      menuItemId: 'custom-cake',
+      name: `Pastel Personalizado - ${size?.name}`,
+      price: total,
       quantity: 1,
       customizations,
       removals: [],
@@ -263,23 +350,46 @@ export default function OrderPageClientElHornitoBakery({
     });
 
     setShowCakeBuilder(false);
-    setSelectedItem(null);
-  }, [cart, isOpen, cakeCustomization, calculateCakePrice]);
+    setCakeStep(0);
+  }, [cart, isOpen, cakeOrder, calculateCakeTotal]);
+
+  // Add bundle to cart
+  const handleAddBundleToCart = useCallback(() => {
+    if (!isOpen || !selectedBundle) return;
+
+    const total = calculateBundleTotal();
+    const itemNames = bundleItems.map(({ item, quantity }) => `${quantity}x ${item.name}`).join(', ');
+
+    cart.addItem({
+      id: `bundle-${selectedBundle.id}-${Date.now()}`,
+      menuItemId: 'bundle',
+      name: `${selectedBundle.icon} ${selectedBundle.name}`,
+      price: total,
+      quantity: 1,
+      customizations: [itemNames, `${Math.round(selectedBundle.discount * 100)}% descuento aplicado`],
+      removals: [],
+      addons: [],
+      itemType: 'bakery',
+    });
+
+    setShowBundleBuilder(false);
+    setSelectedBundle(null);
+    setBundleItems([]);
+  }, [cart, isOpen, selectedBundle, bundleItems, calculateBundleTotal]);
 
   // Scroll to section
   const scrollToSection = useCallback((sectionId: string) => {
     const el = sectionRefs.current[sectionId];
     if (el) {
-      const headerOffset = 180;
+      const headerOffset = 200;
       const elementPosition = el.getBoundingClientRect().top;
       const offsetPosition = elementPosition + window.pageYOffset - headerOffset;
       window.scrollTo({ top: offsetPosition, behavior: 'smooth' });
     }
     setSelectedSection(sectionId);
-    setShowMobileNav(false);
   }, []);
 
-  // Check if item is a cake (for showing cake builder)
+  // Check if item is a cake
   const isCakeItem = useCallback((item: BakeryMenuItem) => {
     const cakeKeywords = ['pastel', 'cake', 'torta', 'tres leches'];
     const name = item.name.toLowerCase();
@@ -287,131 +397,274 @@ export default function OrderPageClientElHornitoBakery({
     return cakeKeywords.some(kw => name.includes(kw) || category.includes(kw));
   }, []);
 
+  // Get min date for cake orders (2 days advance)
+  const minCakeDate = useMemo(() => {
+    const date = new Date();
+    date.setDate(date.getDate() + 2);
+    return date.toISOString().split('T')[0];
+  }, []);
+
   if (!mounted) {
     return (
-      <div className="min-h-screen flex items-center justify-center bg-gradient-to-br from-amber-950 via-amber-900 to-amber-950">
+      <div className="min-h-screen flex items-center justify-center" style={{
+        background: 'linear-gradient(135deg, #451a03 0%, #78350f 30%, #92400e 50%, #78350f 70%, #451a03 100%)',
+      }}>
         <div className="text-center">
-          <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-amber-400 mx-auto mb-4"></div>
-          <p className="text-amber-100 text-lg">Cargando panaderia...</p>
+          <div className="relative w-24 h-24 mx-auto mb-6">
+            <div className="absolute inset-0 rounded-full bg-gradient-to-br from-amber-400 to-amber-600 animate-pulse" />
+            <div className="absolute inset-2 rounded-full bg-gradient-to-br from-amber-900 to-amber-950 flex items-center justify-center">
+              <span className="text-4xl animate-bounce">🥐</span>
+            </div>
+          </div>
+          <p className="text-amber-100 text-xl font-medium">Preparando la panaderia...</p>
         </div>
       </div>
     );
   }
 
   return (
-    <div
-      className="min-h-screen text-white relative overflow-x-hidden"
-      style={{
-        '--bakery-primary': primaryColor,
-        '--bakery-secondary': secondaryColor,
-        background: 'linear-gradient(135deg, #1c1917 0%, #292524 25%, #44403c 50%, #292524 75%, #1c1917 100%)',
-      } as React.CSSProperties}
-    >
-      {/* Animated Background */}
-      <div className="fixed inset-0 pointer-events-none z-0">
-        {/* Warm amber glow - top left */}
-        <div
-          className="absolute -top-32 -left-32 w-96 h-96 rounded-full opacity-30 blur-[120px] animate-pulse"
-          style={{ backgroundColor: '#d97706', animationDuration: '4s' }}
-        />
-        {/* Golden glow - top right */}
-        <div
-          className="absolute -top-20 -right-20 w-80 h-80 rounded-full opacity-25 blur-[100px] animate-pulse"
-          style={{ backgroundColor: '#fbbf24', animationDuration: '5s', animationDelay: '1s' }}
-        />
-        {/* Warm brown glow - bottom */}
-        <div
-          className="absolute bottom-0 left-1/4 w-96 h-64 rounded-full opacity-20 blur-[150px] animate-pulse"
-          style={{ backgroundColor: '#92400e', animationDuration: '6s', animationDelay: '2s' }}
-        />
-        {/* Central radial glow */}
-        <div
-          className="absolute top-1/3 left-1/2 -translate-x-1/2 -translate-y-1/2 w-[800px] h-[600px] rounded-full blur-[100px]"
-          style={{ background: 'radial-gradient(ellipse, rgba(217, 119, 6, 0.1), transparent)' }}
-        />
-        {/* Subtle sparkle pattern */}
-        <div className="absolute inset-0 opacity-10" style={{
-          backgroundImage: `radial-gradient(circle at 25% 25%, rgba(251, 191, 36, 0.3) 1px, transparent 1px),
-                           radial-gradient(circle at 75% 75%, rgba(217, 119, 6, 0.3) 1px, transparent 1px)`,
+    <div className="min-h-screen text-white relative overflow-x-hidden" style={{
+      background: 'linear-gradient(180deg, #1c1917 0%, #292524 100%)',
+    }}>
+      {/* Animated Background Elements */}
+      <div className="fixed inset-0 pointer-events-none z-0 overflow-hidden">
+        {/* Warm ambient glows */}
+        <div className="absolute -top-40 -left-40 w-[500px] h-[500px] rounded-full blur-[150px] animate-pulse"
+          style={{ background: 'radial-gradient(circle, rgba(217,119,6,0.4) 0%, transparent 70%)', animationDuration: '4s' }} />
+        <div className="absolute top-1/4 -right-20 w-[400px] h-[400px] rounded-full blur-[120px] animate-pulse"
+          style={{ background: 'radial-gradient(circle, rgba(251,191,36,0.3) 0%, transparent 70%)', animationDuration: '5s', animationDelay: '1s' }} />
+        <div className="absolute bottom-0 left-1/3 w-[600px] h-[400px] rounded-full blur-[180px] animate-pulse"
+          style={{ background: 'radial-gradient(circle, rgba(180,83,9,0.25) 0%, transparent 70%)', animationDuration: '6s', animationDelay: '2s' }} />
+        <div className="absolute top-1/2 left-1/2 -translate-x-1/2 -translate-y-1/2 w-[800px] h-[600px] rounded-full blur-[200px]"
+          style={{ background: 'radial-gradient(ellipse, rgba(245,158,11,0.1) 0%, transparent 60%)' }} />
+
+        {/* Floating particles */}
+        <div className="absolute inset-0" style={{
+          backgroundImage: `radial-gradient(circle at 20% 30%, rgba(251,191,36,0.15) 1px, transparent 1px),
+                           radial-gradient(circle at 80% 70%, rgba(217,119,6,0.15) 1px, transparent 1px),
+                           radial-gradient(circle at 40% 80%, rgba(180,83,9,0.1) 1px, transparent 1px)`,
+          backgroundSize: '100px 100px, 80px 80px, 120px 120px',
+          animation: 'float 20s ease-in-out infinite',
+        }} />
+
+        {/* Decorative bread pattern overlay */}
+        <div className="absolute inset-0 opacity-[0.02]" style={{
+          backgroundImage: `url("data:image/svg+xml,%3Csvg width='60' height='60' viewBox='0 0 60 60' xmlns='http://www.w3.org/2000/svg'%3E%3Cpath d='M30 5c-5.5 0-10 4.5-10 10 0 3.5 1.8 6.5 4.5 8.3C22 25 20 28 20 31.5c0 5.5 4.5 10 10 10s10-4.5 10-10c0-3.5-2-6.5-4.5-8.2 2.7-1.8 4.5-4.8 4.5-8.3 0-5.5-4.5-10-10-10z' fill='%23fbbf24' fill-opacity='1'/%3E%3C/svg%3E")`,
           backgroundSize: '60px 60px',
         }} />
       </div>
 
-      {/* Header */}
-      <header
-        className={`fixed top-0 left-0 right-0 z-50 transition-all duration-300 ${
-          isHeaderScrolled ? 'backdrop-blur-xl shadow-2xl' : ''
-        }`}
-        style={{
-          paddingTop: 'env(safe-area-inset-top, 0px)',
-          background: isHeaderScrolled
-            ? 'linear-gradient(to bottom, rgba(41, 37, 36, 0.98), rgba(28, 25, 23, 0.95))'
-            : 'linear-gradient(to bottom, rgba(41, 37, 36, 0.9), transparent)',
-        }}
-      >
-        <div className="mx-auto max-w-7xl px-4">
-          <div className="flex items-center justify-between py-3">
-            {/* Left - Back to La Poblanita */}
-            <Link
-              href="/order"
-              className="flex items-center gap-2 text-amber-200 hover:text-amber-100 transition-all group"
-            >
-              <svg className="w-5 h-5 group-hover:-translate-x-1 transition-transform" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2}>
-                <path strokeLinecap="round" strokeLinejoin="round" d="M15 19l-7-7 7-7" />
-              </svg>
-              <span className="hidden sm:inline font-medium">La Poblanita</span>
-            </Link>
+      {/* Hero Section */}
+      <section ref={heroRef} className="relative pt-safe-top">
+        {/* Hero Background */}
+        <div className="absolute inset-0 overflow-hidden">
+          <div className="absolute inset-0" style={{
+            background: 'linear-gradient(135deg, #451a03 0%, #78350f 25%, #92400e 50%, #78350f 75%, #451a03 100%)',
+          }} />
+          <div className="absolute inset-0 bg-[url('/patterns/bread-pattern.svg')] bg-repeat opacity-5" />
+          <div className="absolute bottom-0 left-0 right-0 h-32 bg-gradient-to-t from-stone-900 to-transparent" />
+        </div>
 
-            {/* Center - Logo & Name */}
-            <div className="flex items-center gap-3">
+        {/* Hero Content */}
+        <div className="relative z-10 px-4 pt-8 pb-16">
+          {/* Back to La Poblanita */}
+          <Link
+            href="/order"
+            className="inline-flex items-center gap-2 text-amber-200/80 hover:text-amber-100 transition-colors mb-8 group"
+          >
+            <svg className="w-5 h-5 group-hover:-translate-x-1 transition-transform" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2}>
+              <path strokeLinecap="round" strokeLinejoin="round" d="M15 19l-7-7 7-7" />
+            </svg>
+            <span className="text-sm font-medium">Volver a La Poblanita</span>
+          </Link>
+
+          {/* Logo and Title */}
+          <div className="text-center max-w-3xl mx-auto">
+            {/* Large Logo */}
+            <div className="relative inline-block mb-6">
+              <div className="absolute inset-0 rounded-full bg-gradient-to-br from-amber-400/30 to-amber-600/30 blur-2xl scale-150 animate-pulse" />
               <div className="relative">
                 {elHornitoTenant.logoUrl ? (
-                  <div className="w-12 h-12 rounded-full bg-gradient-to-br from-amber-400 to-amber-600 p-0.5 shadow-lg shadow-amber-500/30">
+                  <div className="w-32 h-32 sm:w-40 sm:h-40 rounded-full bg-gradient-to-br from-amber-400 via-amber-500 to-amber-600 p-1.5 shadow-2xl shadow-amber-500/40 mx-auto">
                     <Image
                       src={elHornitoTenant.logoUrl}
                       alt={elHornitoTenant.name}
-                      width={44}
-                      height={44}
-                      className="rounded-full object-cover"
+                      width={160}
+                      height={160}
+                      className="rounded-full object-cover w-full h-full"
                       unoptimized
                     />
                   </div>
                 ) : (
-                  <div className="w-12 h-12 rounded-full bg-gradient-to-br from-amber-400 via-amber-500 to-amber-600 flex items-center justify-center shadow-lg shadow-amber-500/30 text-2xl">
-                    🥐
+                  <div className="w-32 h-32 sm:w-40 sm:h-40 rounded-full bg-gradient-to-br from-amber-400 via-amber-500 to-amber-600 flex items-center justify-center shadow-2xl shadow-amber-500/40 mx-auto">
+                    <span className="text-6xl sm:text-7xl">🥐</span>
                   </div>
                 )}
-                {/* Sparkle */}
-                <div className="absolute -top-1 -right-1 w-4 h-4 text-amber-300 animate-pulse">✨</div>
+                {/* Sparkle decorations */}
+                <div className="absolute -top-2 -right-2 text-2xl animate-pulse">✨</div>
+                <div className="absolute -bottom-1 -left-3 text-xl animate-pulse" style={{ animationDelay: '0.5s' }}>✨</div>
               </div>
-              <div className="text-center">
-                <h1 className="text-xl font-bold bg-gradient-to-r from-amber-200 via-amber-100 to-amber-200 bg-clip-text text-transparent">
-                  El Hornito
-                </h1>
-                <p className="text-xs text-amber-300/80 font-medium tracking-wider">PANADERIA MEXICANA</p>
+            </div>
+
+            {/* Title */}
+            <h1 className="text-4xl sm:text-5xl md:text-6xl font-bold mb-3">
+              <span className="bg-gradient-to-r from-amber-200 via-yellow-100 to-amber-200 bg-clip-text text-transparent drop-shadow-lg">
+                El Hornito
+              </span>
+            </h1>
+            <p className="text-amber-300/90 text-lg sm:text-xl font-medium tracking-widest uppercase mb-4">
+              Panaderia Mexicana Artesanal
+            </p>
+
+            {/* Tagline */}
+            <p className="text-amber-100/70 text-base sm:text-lg max-w-xl mx-auto leading-relaxed">
+              Tradicion familiar horneada con amor desde hace generaciones.
+              Pan dulce autentico, pasteles personalizados y el sabor de Mexico en cada bocado.
+            </p>
+
+            {/* Community badge */}
+            <div className="inline-flex items-center gap-2 mt-6 px-5 py-2.5 bg-white/10 backdrop-blur-sm rounded-full border border-amber-400/30">
+              <span className="text-lg">🏆</span>
+              <span className="text-amber-100 text-sm font-medium">Orgullo de nuestra comunidad desde 1995</span>
+            </div>
+          </div>
+
+          {/* Quick Action Cards */}
+          <div className="grid grid-cols-1 sm:grid-cols-3 gap-4 max-w-4xl mx-auto mt-10">
+            {/* Pan Dulce Card */}
+            <button
+              onClick={() => { setActiveView('menu'); scrollToSection(sections[0]?.id || ''); }}
+              className="group relative p-6 rounded-2xl bg-gradient-to-br from-amber-900/80 to-amber-950/80 border border-amber-700/30 hover:border-amber-500/50 transition-all hover:scale-[1.02] hover:shadow-xl hover:shadow-amber-500/20"
+            >
+              <div className="absolute inset-0 bg-gradient-to-br from-amber-500/10 to-transparent rounded-2xl opacity-0 group-hover:opacity-100 transition-opacity" />
+              <span className="text-4xl mb-3 block">🥐</span>
+              <h3 className="text-xl font-bold text-white mb-1">Pan Dulce</h3>
+              <p className="text-amber-200/70 text-sm">Conchas, cuernos, orejas y mas favoritos</p>
+              <div className="mt-3 text-amber-400 text-sm font-medium group-hover:translate-x-1 transition-transform inline-flex items-center gap-1">
+                Ver menu <span>→</span>
               </div>
+            </button>
+
+            {/* Custom Cakes Card */}
+            <button
+              onClick={() => { setActiveView('cakes'); setShowCakeBuilder(true); }}
+              className="group relative p-6 rounded-2xl bg-gradient-to-br from-pink-900/80 to-rose-950/80 border border-pink-700/30 hover:border-pink-500/50 transition-all hover:scale-[1.02] hover:shadow-xl hover:shadow-pink-500/20"
+            >
+              <div className="absolute inset-0 bg-gradient-to-br from-pink-500/10 to-transparent rounded-2xl opacity-0 group-hover:opacity-100 transition-opacity" />
+              <span className="text-4xl mb-3 block">🎂</span>
+              <h3 className="text-xl font-bold text-white mb-1">Pasteles</h3>
+              <p className="text-pink-200/70 text-sm">Disena tu pastel perfecto con nuestro creador</p>
+              <div className="mt-3 text-pink-400 text-sm font-medium group-hover:translate-x-1 transition-transform inline-flex items-center gap-1">
+                Crear pastel <span>→</span>
+              </div>
+            </button>
+
+            {/* Bundles Card */}
+            <button
+              onClick={() => { setActiveView('bundles'); setShowBundleBuilder(true); }}
+              className="group relative p-6 rounded-2xl bg-gradient-to-br from-emerald-900/80 to-teal-950/80 border border-emerald-700/30 hover:border-emerald-500/50 transition-all hover:scale-[1.02] hover:shadow-xl hover:shadow-emerald-500/20"
+            >
+              <div className="absolute inset-0 bg-gradient-to-br from-emerald-500/10 to-transparent rounded-2xl opacity-0 group-hover:opacity-100 transition-opacity" />
+              <span className="text-4xl mb-3 block">📦</span>
+              <h3 className="text-xl font-bold text-white mb-1">Por Docena</h3>
+              <p className="text-emerald-200/70 text-sm">Arma tu caja con descuentos especiales</p>
+              <div className="mt-3 text-emerald-400 text-sm font-medium group-hover:translate-x-1 transition-transform inline-flex items-center gap-1">
+                Crear paquete <span>→</span>
+              </div>
+            </button>
+          </div>
+        </div>
+      </section>
+
+      {/* Sticky Header */}
+      <header
+        className={`sticky top-0 left-0 right-0 z-50 transition-all duration-300 ${
+          isHeaderScrolled ? 'backdrop-blur-xl shadow-2xl shadow-black/20' : ''
+        }`}
+        style={{
+          paddingTop: isHeaderScrolled ? '0' : 'env(safe-area-inset-top, 0px)',
+          background: isHeaderScrolled
+            ? 'linear-gradient(to bottom, rgba(28, 25, 23, 0.98), rgba(41, 37, 36, 0.95))'
+            : 'transparent',
+        }}
+      >
+        <div className="mx-auto max-w-7xl px-4">
+          <div className={`flex items-center justify-between transition-all ${isHeaderScrolled ? 'py-3' : 'py-2'}`}>
+            {/* Left - Logo (shows when scrolled) */}
+            <div className={`flex items-center gap-3 transition-all ${isHeaderScrolled ? 'opacity-100' : 'opacity-0 pointer-events-none'}`}>
+              {elHornitoTenant.logoUrl ? (
+                <Image
+                  src={elHornitoTenant.logoUrl}
+                  alt={elHornitoTenant.name}
+                  width={40}
+                  height={40}
+                  className="rounded-full"
+                  unoptimized
+                />
+              ) : (
+                <div className="w-10 h-10 rounded-full bg-gradient-to-br from-amber-400 to-amber-600 flex items-center justify-center text-xl">
+                  🥐
+                </div>
+              )}
+              <span className="font-bold text-lg text-white hidden sm:block">El Hornito</span>
+            </div>
+
+            {/* Center - View Tabs */}
+            <div className="flex gap-1 bg-white/10 backdrop-blur-sm rounded-full p-1">
+              <button
+                onClick={() => setActiveView('menu')}
+                className={`px-4 py-2 rounded-full text-sm font-medium transition-all ${
+                  activeView === 'menu'
+                    ? 'bg-gradient-to-r from-amber-500 to-amber-600 text-white shadow-lg'
+                    : 'text-amber-100 hover:text-white hover:bg-white/10'
+                }`}
+              >
+                🥐 Menu
+              </button>
+              <button
+                onClick={() => { setActiveView('cakes'); setShowCakeBuilder(true); }}
+                className={`px-4 py-2 rounded-full text-sm font-medium transition-all ${
+                  activeView === 'cakes'
+                    ? 'bg-gradient-to-r from-pink-500 to-rose-500 text-white shadow-lg'
+                    : 'text-amber-100 hover:text-white hover:bg-white/10'
+                }`}
+              >
+                🎂 Pasteles
+              </button>
+              <button
+                onClick={() => { setActiveView('bundles'); setShowBundleBuilder(true); }}
+                className={`px-4 py-2 rounded-full text-sm font-medium transition-all ${
+                  activeView === 'bundles'
+                    ? 'bg-gradient-to-r from-emerald-500 to-teal-500 text-white shadow-lg'
+                    : 'text-amber-100 hover:text-white hover:bg-white/10'
+                }`}
+              >
+                📦 Docenas
+              </button>
             </div>
 
             {/* Right - Cart */}
             <CartLauncher />
           </div>
 
-          {/* Section Navigation */}
-          <div className="flex gap-2 overflow-x-auto pb-3 scrollbar-hide -mx-4 px-4">
-            {sections.map((section) => (
-              <button
-                key={section.id}
-                onClick={() => scrollToSection(section.id)}
-                className={`flex-shrink-0 px-4 py-2 rounded-full text-sm font-medium transition-all ${
-                  selectedSection === section.id
-                    ? 'bg-gradient-to-r from-amber-500 to-amber-600 text-white shadow-lg shadow-amber-500/30'
-                    : 'bg-white/10 text-amber-100 hover:bg-white/20'
-                }`}
-              >
-                {section.name}
-              </button>
-            ))}
-          </div>
+          {/* Section Pills (only show for menu view) */}
+          {activeView === 'menu' && sections.length > 0 && (
+            <div className="flex gap-2 overflow-x-auto pb-3 scrollbar-hide -mx-4 px-4">
+              {sections.map((section) => (
+                <button
+                  key={section.id}
+                  onClick={() => scrollToSection(section.id)}
+                  className={`flex-shrink-0 px-4 py-2 rounded-full text-sm font-medium transition-all ${
+                    selectedSection === section.id
+                      ? 'bg-gradient-to-r from-amber-500 to-amber-600 text-white shadow-lg shadow-amber-500/30'
+                      : 'bg-white/10 text-amber-100 hover:bg-white/20'
+                  }`}
+                >
+                  {section.name}
+                </button>
+              ))}
+            </div>
+          )}
         </div>
 
         {/* Closed Banner */}
@@ -419,71 +672,76 @@ export default function OrderPageClientElHornitoBakery({
           <div className="bg-gradient-to-r from-red-900/90 to-red-800/90 backdrop-blur-sm">
             <div className="mx-auto max-w-7xl px-4 py-2 text-center">
               <span className="text-red-100 font-medium text-sm">
-                🚫 {closedMessage || 'La panaderia esta cerrada'}
+                🚫 {closedMessage || 'La panaderia esta cerrada en este momento'}
               </span>
             </div>
           </div>
         )}
       </header>
 
-      {/* Header Spacer */}
-      <div className="h-[140px]" style={{ paddingTop: 'env(safe-area-inset-top, 0px)' }} />
+      {/* Main Content */}
+      <main className="relative z-10 mx-auto max-w-7xl px-4 pb-32">
+        {/* Featured Items Banner */}
+        {featuredItems.length > 0 && activeView === 'menu' && (
+          <section className="mb-12">
+            <div className="flex items-center justify-between mb-6">
+              <div>
+                <h2 className="text-2xl font-bold text-white flex items-center gap-2">
+                  <span className="text-amber-400">⭐</span> Lo Mas Pedido
+                </h2>
+                <p className="text-amber-200/60 text-sm mt-1">Los favoritos de nuestros clientes</p>
+              </div>
+            </div>
 
-      {/* Hero Banner */}
-      <section className="relative mx-4 mb-8 rounded-3xl overflow-hidden">
-        <div className="absolute inset-0 bg-gradient-to-r from-amber-900/90 via-amber-800/80 to-amber-900/90" />
-        <div
-          className="absolute inset-0 opacity-20"
-          style={{
-            backgroundImage: 'url("data:image/svg+xml,%3Csvg width="60" height="60" viewBox="0 0 60 60" xmlns="http://www.w3.org/2000/svg"%3E%3Cg fill="none" fill-rule="evenodd"%3E%3Cg fill="%23fbbf24" fill-opacity="0.4"%3E%3Cpath d="M36 34v-4h-2v4h-4v2h4v4h2v-4h4v-2h-4zm0-30V0h-2v4h-4v2h4v4h2V6h4V4h-4zM6 34v-4H4v4H0v2h4v4h2v-4h4v-2H6zM6 4V0H4v4H0v2h4v4h2V6h4V4H6z"/%3E%3C/g%3E%3C/g%3E%3C/svg%3E")',
-          }}
-        />
-        <div className="relative px-6 py-10 text-center">
-          <div className="inline-flex items-center gap-2 bg-white/20 backdrop-blur-sm rounded-full px-4 py-1.5 mb-4">
-            <span className="text-lg">🔥</span>
-            <span className="text-amber-100 text-sm font-medium">Horneado Fresco Diario</span>
-          </div>
-          <h2 className="text-3xl sm:text-4xl font-bold text-white mb-3">
-            Pan Dulce Autentico
-          </h2>
-          <p className="text-amber-200/90 max-w-md mx-auto">
-            Conchas, cuernos, orejas y mas. Tradicion mexicana horneada con amor cada manana.
-          </p>
-          {featuredItems.length > 0 && (
-            <div className="mt-6 flex justify-center gap-3 flex-wrap">
-              {featuredItems.slice(0, 3).map((item) => (
-                <button
+            <div className="flex gap-4 overflow-x-auto pb-4 scrollbar-hide -mx-4 px-4">
+              {featuredItems.slice(0, 6).map((item) => (
+                <div
                   key={item.id}
                   onClick={() => { setSelectedItem(item); setShowItemModal(true); }}
-                  className="flex items-center gap-2 bg-white/20 hover:bg-white/30 backdrop-blur-sm rounded-full px-4 py-2 transition-all"
+                  className="flex-shrink-0 w-44 group cursor-pointer"
                 >
-                  <span className="text-white font-medium text-sm">{item.name}</span>
-                  <span className="text-amber-200 text-sm">${item.price.toFixed(2)}</span>
-                </button>
+                  <div className="relative aspect-square rounded-2xl overflow-hidden mb-3 bg-gradient-to-br from-amber-900/50 to-stone-900">
+                    {item.image ? (
+                      <Image
+                        src={item.image}
+                        alt={item.name}
+                        fill
+                        className="object-cover group-hover:scale-110 transition-transform duration-500"
+                        unoptimized
+                      />
+                    ) : (
+                      <div className="w-full h-full flex items-center justify-center text-5xl">🥐</div>
+                    )}
+                    <div className="absolute inset-0 bg-gradient-to-t from-black/60 via-transparent to-transparent" />
+                    <div className="absolute bottom-2 right-2 px-2 py-1 bg-amber-500 text-white text-sm font-bold rounded-lg">
+                      ${item.price.toFixed(2)}
+                    </div>
+                  </div>
+                  <h3 className="font-semibold text-white text-sm line-clamp-1">{item.name}</h3>
+                </div>
               ))}
             </div>
-          )}
-        </div>
-      </section>
+          </section>
+        )}
 
-      {/* Menu Sections */}
-      <main className="mx-auto max-w-7xl px-4 pb-32">
-        {sections.map((section) => (
+        {/* Menu Sections */}
+        {activeView === 'menu' && sections.map((section) => (
           <section
             key={section.id}
             ref={(el) => { sectionRefs.current[section.id] = el; }}
-            className="mb-12"
+            className="mb-16"
           >
             {/* Section Header */}
-            <div className="mb-6">
-              <h2 className="text-2xl font-bold text-white mb-1">{section.name}</h2>
+            <div className="mb-8">
+              <h2 className="text-3xl font-bold text-white mb-2">{section.name}</h2>
               {section.description && (
-                <p className="text-amber-200/70">{section.description}</p>
+                <p className="text-amber-200/60 text-lg">{section.description}</p>
               )}
+              <div className="mt-4 h-1 w-24 bg-gradient-to-r from-amber-500 to-amber-600 rounded-full" />
             </div>
 
             {/* Items Grid */}
-            <div className="grid grid-cols-2 sm:grid-cols-3 lg:grid-cols-4 gap-4">
+            <div className="grid grid-cols-2 sm:grid-cols-3 lg:grid-cols-4 xl:grid-cols-5 gap-4">
               {section.items.filter(item => item.available).map((item) => (
                 <div
                   key={item.id}
@@ -491,11 +749,12 @@ export default function OrderPageClientElHornitoBakery({
                     setSelectedItem(item);
                     if (isCakeItem(item)) {
                       setShowCakeBuilder(true);
+                      setActiveView('cakes');
                     } else {
                       setShowItemModal(true);
                     }
                   }}
-                  className="group relative bg-gradient-to-br from-stone-800/80 to-stone-900/80 rounded-2xl overflow-hidden cursor-pointer hover:scale-[1.02] transition-all duration-300 hover:shadow-xl hover:shadow-amber-500/20"
+                  className="group relative bg-gradient-to-br from-stone-800/90 to-stone-900/90 rounded-2xl overflow-hidden cursor-pointer hover:scale-[1.03] transition-all duration-300 hover:shadow-2xl hover:shadow-amber-500/20 border border-stone-700/50 hover:border-amber-500/50"
                 >
                   {/* Image */}
                   <div className="aspect-square relative overflow-hidden">
@@ -508,49 +767,49 @@ export default function OrderPageClientElHornitoBakery({
                         unoptimized
                       />
                     ) : (
-                      <div className="w-full h-full bg-gradient-to-br from-amber-800/50 to-amber-900/50 flex items-center justify-center text-5xl">
-                        🥐
+                      <div className="w-full h-full bg-gradient-to-br from-amber-800/30 to-amber-900/30 flex items-center justify-center">
+                        <span className="text-5xl group-hover:scale-110 transition-transform">🥐</span>
                       </div>
                     )}
-                    {/* Overlay */}
                     <div className="absolute inset-0 bg-gradient-to-t from-black/80 via-black/20 to-transparent" />
 
-                    {/* Featured Badge */}
+                    {/* Badges */}
                     {item.isFeatured && (
-                      <div className="absolute top-2 left-2 bg-gradient-to-r from-amber-500 to-amber-600 text-white text-xs font-bold px-2 py-1 rounded-full shadow-lg">
+                      <div className="absolute top-2 left-2 px-2 py-1 bg-gradient-to-r from-amber-500 to-amber-600 text-white text-xs font-bold rounded-full shadow-lg">
                         ⭐ Popular
                       </div>
                     )}
-
-                    {/* Cake Badge */}
                     {isCakeItem(item) && (
-                      <div className="absolute top-2 right-2 bg-gradient-to-r from-pink-500 to-rose-500 text-white text-xs font-bold px-2 py-1 rounded-full shadow-lg">
-                        🎂 Personalizable
+                      <div className="absolute top-2 right-2 px-2 py-1 bg-gradient-to-r from-pink-500 to-rose-500 text-white text-xs font-bold rounded-full shadow-lg">
+                        🎂 Personaliza
                       </div>
                     )}
+
+                    {/* Quick Add */}
+                    <button
+                      onClick={(e) => {
+                        e.stopPropagation();
+                        if (!isCakeItem(item)) handleAddToCart(item, 1);
+                      }}
+                      disabled={!isOpen}
+                      className={`absolute bottom-2 right-2 w-10 h-10 rounded-full flex items-center justify-center text-xl shadow-lg transition-all ${
+                        isOpen
+                          ? 'bg-gradient-to-r from-amber-500 to-amber-600 text-white hover:scale-110 hover:shadow-amber-500/50'
+                          : 'bg-stone-700 text-stone-500 cursor-not-allowed'
+                      }`}
+                    >
+                      +
+                    </button>
                   </div>
 
                   {/* Content */}
                   <div className="p-3">
                     <h3 className="font-semibold text-white text-sm mb-1 line-clamp-1">{item.name}</h3>
+                    <p className="text-amber-200/50 text-xs line-clamp-2 mb-2 min-h-[2rem]">{item.description}</p>
                     <div className="flex items-center justify-between">
-                      <span className="text-amber-400 font-bold">${item.price.toFixed(2)}</span>
-                      <button
-                        onClick={(e) => {
-                          e.stopPropagation();
-                          if (!isCakeItem(item)) {
-                            handleAddToCart(item, 1);
-                          }
-                        }}
-                        disabled={!isOpen}
-                        className={`w-8 h-8 rounded-full flex items-center justify-center text-lg transition-all ${
-                          isOpen
-                            ? 'bg-gradient-to-r from-amber-500 to-amber-600 text-white hover:shadow-lg hover:shadow-amber-500/40'
-                            : 'bg-stone-700 text-stone-500 cursor-not-allowed'
-                        }`}
-                      >
-                        +
-                      </button>
+                      <span className="text-lg font-bold bg-gradient-to-r from-amber-400 to-amber-500 bg-clip-text text-transparent">
+                        ${item.price.toFixed(2)}
+                      </span>
                     </div>
                   </div>
                 </div>
@@ -559,27 +818,27 @@ export default function OrderPageClientElHornitoBakery({
 
             {/* Empty State */}
             {section.items.filter(item => item.available).length === 0 && (
-              <div className="text-center py-12 bg-white/5 rounded-2xl">
-                <span className="text-4xl mb-4 block">🥐</span>
-                <p className="text-amber-200/60">Proximamente mas productos...</p>
+              <div className="text-center py-16 bg-white/5 rounded-2xl border border-white/10">
+                <span className="text-5xl mb-4 block">🥐</span>
+                <p className="text-amber-200/60 text-lg">Proximamente mas productos...</p>
               </div>
             )}
           </section>
         ))}
 
         {/* Empty Menu State */}
-        {sections.length === 0 && (
-          <div className="text-center py-20">
-            <div className="w-24 h-24 mx-auto mb-6 rounded-full bg-gradient-to-br from-amber-500/20 to-amber-600/20 flex items-center justify-center">
-              <span className="text-5xl">🥐</span>
+        {sections.length === 0 && activeView === 'menu' && (
+          <div className="text-center py-24">
+            <div className="w-32 h-32 mx-auto mb-8 rounded-full bg-gradient-to-br from-amber-500/20 to-amber-600/20 flex items-center justify-center">
+              <span className="text-6xl">🥐</span>
             </div>
-            <h2 className="text-2xl font-bold text-white mb-3">Preparando el Menu</h2>
-            <p className="text-amber-200/70 max-w-md mx-auto">
+            <h2 className="text-3xl font-bold text-white mb-4">Preparando el Menu</h2>
+            <p className="text-amber-200/70 max-w-md mx-auto text-lg">
               Estamos horneando nuestros productos frescos. Vuelve pronto para ver nuestro menu completo.
             </p>
             <Link
               href="/order"
-              className="inline-flex items-center gap-2 mt-6 px-6 py-3 bg-gradient-to-r from-amber-500 to-amber-600 text-white font-semibold rounded-full hover:shadow-lg hover:shadow-amber-500/30 transition-all"
+              className="inline-flex items-center gap-2 mt-8 px-8 py-4 bg-gradient-to-r from-amber-500 to-amber-600 text-white font-semibold rounded-full hover:shadow-lg hover:shadow-amber-500/30 transition-all text-lg"
             >
               <svg className="w-5 h-5" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2}>
                 <path strokeLinecap="round" strokeLinejoin="round" d="M15 19l-7-7 7-7" />
@@ -591,15 +850,29 @@ export default function OrderPageClientElHornitoBakery({
       </main>
 
       {/* Footer */}
-      <footer className="border-t border-amber-900/30 bg-stone-950/80 py-8">
+      <footer className="relative z-10 border-t border-amber-900/30 bg-gradient-to-b from-stone-900/80 to-stone-950 py-12">
         <div className="mx-auto max-w-6xl px-6 text-center">
-          <div className="flex items-center justify-center gap-2 mb-3">
-            <span className="text-2xl">🥐</span>
-            <span className="text-xl font-bold bg-gradient-to-r from-amber-200 to-amber-400 bg-clip-text text-transparent">
+          <div className="flex items-center justify-center gap-3 mb-4">
+            {elHornitoTenant.logoUrl ? (
+              <Image
+                src={elHornitoTenant.logoUrl}
+                alt={elHornitoTenant.name}
+                width={48}
+                height={48}
+                className="rounded-full"
+                unoptimized
+              />
+            ) : (
+              <span className="text-3xl">🥐</span>
+            )}
+            <span className="text-2xl font-bold bg-gradient-to-r from-amber-200 to-amber-400 bg-clip-text text-transparent">
               El Hornito
             </span>
           </div>
-          <p className="text-amber-200/50 text-sm mb-4">
+          <p className="text-amber-200/50 text-sm mb-2">
+            Panaderia Mexicana Artesanal
+          </p>
+          <p className="text-amber-200/30 text-xs mb-6">
             Parte de La Poblanita Mexican Food
           </p>
           <Link href="/order" className="text-amber-400 hover:text-amber-300 text-sm font-medium">
@@ -612,15 +885,15 @@ export default function OrderPageClientElHornitoBakery({
       {showItemModal && selectedItem && mounted && createPortal(
         <div
           className="fixed inset-0 z-[200] flex items-end sm:items-center justify-center"
-          onClick={() => setShowItemModal(false)}
+          onClick={() => { setShowItemModal(false); setItemQuantity(1); }}
         >
-          <div className="absolute inset-0 bg-black/70 backdrop-blur-sm" />
+          <div className="absolute inset-0 bg-black/80 backdrop-blur-sm" />
           <div
-            className="relative w-full max-w-lg max-h-[90vh] bg-gradient-to-br from-stone-800 to-stone-900 rounded-t-3xl sm:rounded-3xl overflow-hidden shadow-2xl"
+            className="relative w-full max-w-lg max-h-[90vh] bg-gradient-to-br from-stone-800 to-stone-900 rounded-t-3xl sm:rounded-3xl overflow-hidden shadow-2xl border border-stone-700/50"
             onClick={e => e.stopPropagation()}
           >
             {/* Image */}
-            <div className="relative h-48 sm:h-64">
+            <div className="relative h-56 sm:h-72">
               {selectedItem.image ? (
                 <Image
                   src={selectedItem.image}
@@ -630,35 +903,67 @@ export default function OrderPageClientElHornitoBakery({
                   unoptimized
                 />
               ) : (
-                <div className="w-full h-full bg-gradient-to-br from-amber-800/50 to-amber-900/50 flex items-center justify-center text-7xl">
+                <div className="w-full h-full bg-gradient-to-br from-amber-800/50 to-amber-900/50 flex items-center justify-center text-8xl">
                   🥐
                 </div>
               )}
-              <div className="absolute inset-0 bg-gradient-to-t from-stone-900 via-transparent to-transparent" />
+              <div className="absolute inset-0 bg-gradient-to-t from-stone-900 via-stone-900/50 to-transparent" />
               <button
-                onClick={() => setShowItemModal(false)}
+                onClick={() => { setShowItemModal(false); setItemQuantity(1); }}
                 className="absolute top-4 right-4 w-10 h-10 rounded-full bg-black/50 backdrop-blur-sm flex items-center justify-center text-white hover:bg-black/70 transition-all"
               >
                 ✕
               </button>
+              {selectedItem.isFeatured && (
+                <div className="absolute top-4 left-4 px-3 py-1.5 bg-gradient-to-r from-amber-500 to-amber-600 text-white text-sm font-bold rounded-full shadow-lg">
+                  ⭐ Popular
+                </div>
+              )}
             </div>
 
             {/* Content */}
             <div className="p-6">
               <h3 className="text-2xl font-bold text-white mb-2">{selectedItem.name}</h3>
-              <p className="text-amber-200/70 mb-4">{selectedItem.description}</p>
+              <p className="text-amber-200/70 mb-6">{selectedItem.description}</p>
+
+              {/* Quantity Selector */}
+              <div className="flex items-center justify-between mb-6">
+                <span className="text-amber-200/60">Cantidad:</span>
+                <div className="flex items-center gap-4 bg-white/10 rounded-full px-2 py-1">
+                  <button
+                    onClick={() => setItemQuantity(Math.max(1, itemQuantity - 1))}
+                    className="w-10 h-10 rounded-full hover:bg-white/10 flex items-center justify-center text-xl text-white transition-colors"
+                  >
+                    -
+                  </button>
+                  <span className="text-xl font-bold text-white w-8 text-center">{itemQuantity}</span>
+                  <button
+                    onClick={() => setItemQuantity(itemQuantity + 1)}
+                    className="w-10 h-10 rounded-full hover:bg-white/10 flex items-center justify-center text-xl text-white transition-colors"
+                  >
+                    +
+                  </button>
+                </div>
+              </div>
+
+              {/* Add to Cart */}
               <div className="flex items-center justify-between">
-                <span className="text-3xl font-bold text-amber-400">${selectedItem.price.toFixed(2)}</span>
+                <div>
+                  <span className="text-amber-200/60 text-sm">Total:</span>
+                  <span className="text-3xl font-bold text-amber-400 ml-2">
+                    ${(selectedItem.price * itemQuantity).toFixed(2)}
+                  </span>
+                </div>
                 <button
-                  onClick={() => handleAddToCart(selectedItem, 1)}
+                  onClick={() => handleAddToCart(selectedItem, itemQuantity)}
                   disabled={!isOpen}
-                  className={`px-6 py-3 rounded-full font-semibold transition-all ${
+                  className={`px-8 py-4 rounded-full font-bold text-lg transition-all ${
                     isOpen
-                      ? 'bg-gradient-to-r from-amber-500 to-amber-600 text-white hover:shadow-lg hover:shadow-amber-500/40'
+                      ? 'bg-gradient-to-r from-amber-500 to-amber-600 text-white hover:shadow-lg hover:shadow-amber-500/40 hover:scale-105'
                       : 'bg-stone-700 text-stone-500 cursor-not-allowed'
                   }`}
                 >
-                  {isOpen ? 'Agregar al Carrito' : 'Cerrado'}
+                  {isOpen ? 'Agregar' : 'Cerrado'}
                 </button>
               </div>
             </div>
@@ -668,197 +973,521 @@ export default function OrderPageClientElHornitoBakery({
       )}
 
       {/* Cake Builder Modal */}
-      {showCakeBuilder && selectedItem && mounted && createPortal(
+      {showCakeBuilder && mounted && createPortal(
         <div
-          className="fixed inset-0 z-[200] flex items-end sm:items-center justify-center"
-          onClick={() => setShowCakeBuilder(false)}
+          className="fixed inset-0 z-[200] flex items-center justify-center overflow-y-auto py-4"
+          onClick={() => { setShowCakeBuilder(false); setCakeStep(0); }}
         >
-          <div className="absolute inset-0 bg-black/70 backdrop-blur-sm" />
+          <div className="absolute inset-0 bg-black/90 backdrop-blur-md" />
           <div
-            className="relative w-full max-w-2xl max-h-[95vh] bg-gradient-to-br from-stone-800 to-stone-900 rounded-t-3xl sm:rounded-3xl overflow-hidden shadow-2xl"
+            className="relative w-full max-w-2xl max-h-[95vh] bg-gradient-to-br from-stone-800 via-stone-850 to-stone-900 rounded-3xl overflow-hidden shadow-2xl border border-pink-500/30 mx-4"
             onClick={e => e.stopPropagation()}
           >
             {/* Header */}
-            <div className="relative bg-gradient-to-r from-pink-600 to-rose-600 p-6 text-center">
+            <div className="relative bg-gradient-to-r from-pink-600 via-rose-500 to-pink-600 p-6 text-center">
               <button
-                onClick={() => setShowCakeBuilder(false)}
+                onClick={() => { setShowCakeBuilder(false); setCakeStep(0); }}
                 className="absolute top-4 right-4 w-10 h-10 rounded-full bg-black/30 backdrop-blur-sm flex items-center justify-center text-white hover:bg-black/50 transition-all"
               >
                 ✕
               </button>
-              <span className="text-4xl mb-2 block">🎂</span>
-              <h3 className="text-2xl font-bold text-white">{selectedItem.name}</h3>
-              <p className="text-pink-100/80 text-sm mt-1">Personaliza tu pastel perfecto</p>
-            </div>
+              <span className="text-5xl mb-2 block">🎂</span>
+              <h3 className="text-2xl font-bold text-white">Crea Tu Pastel Perfecto</h3>
+              <p className="text-pink-100/80 text-sm mt-1">Personaliza cada detalle para tu celebracion especial</p>
 
-            {/* Options */}
-            <div className="p-6 overflow-y-auto max-h-[60vh] space-y-6">
-              {/* Size */}
-              <div>
-                <label className="block text-white font-semibold mb-3">Tamano</label>
-                <div className="grid grid-cols-2 gap-3">
-                  {CAKE_SIZES.map((size) => (
-                    <button
-                      key={size.id}
-                      onClick={() => setCakeCustomization(prev => ({ ...prev, size: size.id as any }))}
-                      className={`p-3 rounded-xl text-left transition-all ${
-                        cakeCustomization.size === size.id
-                          ? 'bg-gradient-to-r from-pink-500 to-rose-500 text-white shadow-lg'
-                          : 'bg-white/10 text-amber-100 hover:bg-white/20'
-                      }`}
-                    >
-                      <div className="font-semibold">{size.name}</div>
-                      <div className="text-sm opacity-80">{size.serves} personas</div>
-                      {size.price > 0 && <div className="text-xs mt-1">+${size.price}</div>}
-                    </button>
-                  ))}
-                </div>
-              </div>
-
-              {/* Layers */}
-              <div>
-                <label className="block text-white font-semibold mb-3">Capas</label>
-                <div className="flex items-center gap-4">
+              {/* Progress Steps */}
+              <div className="flex justify-center gap-2 mt-4">
+                {['Tamano', 'Sabor', 'Decoracion', 'Agenda'].map((step, idx) => (
                   <button
-                    onClick={() => setCakeCustomization(prev => ({ ...prev, layers: Math.max(1, prev.layers - 1) }))}
-                    className="w-10 h-10 rounded-full bg-white/10 text-white hover:bg-white/20 transition-all"
+                    key={step}
+                    onClick={() => setCakeStep(idx)}
+                    className={`px-3 py-1 rounded-full text-xs font-medium transition-all ${
+                      cakeStep === idx
+                        ? 'bg-white text-pink-600'
+                        : cakeStep > idx
+                        ? 'bg-pink-300/30 text-white'
+                        : 'bg-white/20 text-white/60'
+                    }`}
                   >
-                    -
+                    {idx + 1}. {step}
                   </button>
-                  <span className="text-2xl font-bold text-white min-w-[3rem] text-center">{cakeCustomization.layers}</span>
-                  <button
-                    onClick={() => setCakeCustomization(prev => ({ ...prev, layers: Math.min(5, prev.layers + 1) }))}
-                    className="w-10 h-10 rounded-full bg-white/10 text-white hover:bg-white/20 transition-all"
-                  >
-                    +
-                  </button>
-                  {cakeCustomization.layers > 2 && (
-                    <span className="text-amber-400 text-sm">+${(cakeCustomization.layers - 2) * 15}</span>
-                  )}
-                </div>
-              </div>
-
-              {/* Flavor */}
-              <div>
-                <label className="block text-white font-semibold mb-3">Sabor</label>
-                <div className="flex flex-wrap gap-2">
-                  {CAKE_FLAVORS.map((flavor) => (
-                    <button
-                      key={flavor.id}
-                      onClick={() => setCakeCustomization(prev => ({ ...prev, flavor: flavor.id }))}
-                      className={`px-4 py-2 rounded-full text-sm transition-all ${
-                        cakeCustomization.flavor === flavor.id
-                          ? 'bg-gradient-to-r from-amber-500 to-amber-600 text-white'
-                          : 'bg-white/10 text-amber-100 hover:bg-white/20'
-                      }`}
-                    >
-                      {flavor.name} {flavor.price > 0 && `+$${flavor.price}`}
-                    </button>
-                  ))}
-                </div>
-              </div>
-
-              {/* Filling */}
-              <div>
-                <label className="block text-white font-semibold mb-3">Relleno</label>
-                <div className="flex flex-wrap gap-2">
-                  {CAKE_FILLINGS.map((filling) => (
-                    <button
-                      key={filling.id}
-                      onClick={() => setCakeCustomization(prev => ({ ...prev, filling: filling.id }))}
-                      className={`px-4 py-2 rounded-full text-sm transition-all ${
-                        cakeCustomization.filling === filling.id
-                          ? 'bg-gradient-to-r from-amber-500 to-amber-600 text-white'
-                          : 'bg-white/10 text-amber-100 hover:bg-white/20'
-                      }`}
-                    >
-                      {filling.name} {filling.price > 0 && `+$${filling.price}`}
-                    </button>
-                  ))}
-                </div>
-              </div>
-
-              {/* Frosting */}
-              <div>
-                <label className="block text-white font-semibold mb-3">Cobertura</label>
-                <div className="flex flex-wrap gap-2">
-                  {CAKE_FROSTINGS.map((frosting) => (
-                    <button
-                      key={frosting.id}
-                      onClick={() => setCakeCustomization(prev => ({ ...prev, frosting: frosting.id }))}
-                      className={`px-4 py-2 rounded-full text-sm transition-all ${
-                        cakeCustomization.frosting === frosting.id
-                          ? 'bg-gradient-to-r from-amber-500 to-amber-600 text-white'
-                          : 'bg-white/10 text-amber-100 hover:bg-white/20'
-                      }`}
-                    >
-                      {frosting.name} {frosting.price > 0 && `+$${frosting.price}`}
-                    </button>
-                  ))}
-                </div>
-              </div>
-
-              {/* Message */}
-              <div>
-                <label className="block text-white font-semibold mb-3">Mensaje en el Pastel (opcional)</label>
-                <input
-                  type="text"
-                  value={cakeCustomization.message}
-                  onChange={(e) => setCakeCustomization(prev => ({ ...prev, message: e.target.value }))}
-                  placeholder="Feliz Cumpleanos..."
-                  maxLength={50}
-                  className="w-full px-4 py-3 rounded-xl bg-white/10 text-white placeholder-white/40 border border-white/20 focus:border-amber-500 focus:outline-none"
-                />
-              </div>
-
-              {/* Decorations */}
-              <div>
-                <label className="block text-white font-semibold mb-3">Decoraciones Extras</label>
-                <div className="flex flex-wrap gap-2">
-                  {CAKE_DECORATIONS.map((dec) => (
-                    <button
-                      key={dec.id}
-                      onClick={() => {
-                        setCakeCustomization(prev => ({
-                          ...prev,
-                          decorations: prev.decorations.includes(dec.id)
-                            ? prev.decorations.filter(d => d !== dec.id)
-                            : [...prev.decorations, dec.id]
-                        }));
-                      }}
-                      className={`px-4 py-2 rounded-full text-sm transition-all ${
-                        cakeCustomization.decorations.includes(dec.id)
-                          ? 'bg-gradient-to-r from-pink-500 to-rose-500 text-white'
-                          : 'bg-white/10 text-amber-100 hover:bg-white/20'
-                      }`}
-                    >
-                      {dec.name} +${dec.price}
-                    </button>
-                  ))}
-                </div>
+                ))}
               </div>
             </div>
 
-            {/* Footer with Total */}
+            {/* Content */}
+            <div className="p-6 overflow-y-auto max-h-[50vh]">
+              {/* Step 1: Size & Layers */}
+              {cakeStep === 0 && (
+                <div className="space-y-6">
+                  <div>
+                    <label className="block text-white font-semibold mb-3 text-lg">Tamano del Pastel</label>
+                    <div className="grid grid-cols-2 sm:grid-cols-3 gap-3">
+                      {CAKE_SIZES.map((size) => (
+                        <button
+                          key={size.id}
+                          onClick={() => setCakeOrder(prev => ({ ...prev, size: size.id }))}
+                          className={`p-4 rounded-xl text-left transition-all ${
+                            cakeOrder.size === size.id
+                              ? 'bg-gradient-to-r from-pink-500 to-rose-500 text-white shadow-lg shadow-pink-500/30 scale-[1.02]'
+                              : 'bg-white/10 text-amber-100 hover:bg-white/20 border border-white/10'
+                          }`}
+                        >
+                          <div className="text-2xl mb-1">{size.icon}</div>
+                          <div className="font-bold">{size.name}</div>
+                          <div className="text-sm opacity-80">{size.serves} personas</div>
+                          <div className="text-sm font-bold mt-1">${size.price}</div>
+                        </button>
+                      ))}
+                    </div>
+                  </div>
+
+                  <div>
+                    <label className="block text-white font-semibold mb-3 text-lg">Numero de Capas</label>
+                    <div className="flex items-center gap-6 bg-white/10 rounded-2xl p-4">
+                      <button
+                        onClick={() => setCakeOrder(prev => ({ ...prev, layers: Math.max(1, prev.layers - 1) }))}
+                        className="w-12 h-12 rounded-full bg-white/10 hover:bg-white/20 text-white text-2xl transition-colors"
+                      >
+                        -
+                      </button>
+                      <div className="flex-1 text-center">
+                        <span className="text-4xl font-bold text-white">{cakeOrder.layers}</span>
+                        <span className="text-amber-200/60 ml-2">capas</span>
+                      </div>
+                      <button
+                        onClick={() => setCakeOrder(prev => ({ ...prev, layers: Math.min(5, prev.layers + 1) }))}
+                        className="w-12 h-12 rounded-full bg-white/10 hover:bg-white/20 text-white text-2xl transition-colors"
+                      >
+                        +
+                      </button>
+                    </div>
+                    {cakeOrder.layers > 2 && (
+                      <p className="text-pink-400 text-sm mt-2">+${(cakeOrder.layers - 2) * 20} por capas adicionales</p>
+                    )}
+                  </div>
+                </div>
+              )}
+
+              {/* Step 2: Flavor, Filling, Frosting */}
+              {cakeStep === 1 && (
+                <div className="space-y-6">
+                  <div>
+                    <label className="block text-white font-semibold mb-3 text-lg">Sabor del Bizcocho</label>
+                    <div className="grid grid-cols-2 gap-2">
+                      {CAKE_FLAVORS.map((flavor) => (
+                        <button
+                          key={flavor.id}
+                          onClick={() => setCakeOrder(prev => ({ ...prev, flavor: flavor.id }))}
+                          className={`p-3 rounded-xl text-left transition-all flex items-center gap-3 ${
+                            cakeOrder.flavor === flavor.id
+                              ? 'bg-gradient-to-r from-pink-500 to-rose-500 text-white shadow-lg'
+                              : 'bg-white/10 text-amber-100 hover:bg-white/20'
+                          }`}
+                        >
+                          <div className="w-6 h-6 rounded-full border-2 border-white/30" style={{ backgroundColor: flavor.color }} />
+                          <div className="flex-1">
+                            <div className="font-medium">{flavor.name}</div>
+                            {flavor.price > 0 && <div className="text-xs opacity-80">+${flavor.price}</div>}
+                          </div>
+                        </button>
+                      ))}
+                    </div>
+                  </div>
+
+                  <div>
+                    <label className="block text-white font-semibold mb-3 text-lg">Relleno</label>
+                    <div className="grid grid-cols-2 gap-2">
+                      {CAKE_FILLINGS.map((filling) => (
+                        <button
+                          key={filling.id}
+                          onClick={() => setCakeOrder(prev => ({ ...prev, filling: filling.id }))}
+                          className={`p-3 rounded-xl text-left transition-all ${
+                            cakeOrder.filling === filling.id
+                              ? 'bg-gradient-to-r from-amber-500 to-amber-600 text-white shadow-lg'
+                              : 'bg-white/10 text-amber-100 hover:bg-white/20'
+                          }`}
+                        >
+                          <div className="font-medium">{filling.name}</div>
+                          {filling.price > 0 && <div className="text-xs opacity-80">+${filling.price}</div>}
+                        </button>
+                      ))}
+                    </div>
+                  </div>
+
+                  <div>
+                    <label className="block text-white font-semibold mb-3 text-lg">Cobertura</label>
+                    <div className="grid grid-cols-2 gap-2">
+                      {CAKE_FROSTINGS.map((frosting) => (
+                        <button
+                          key={frosting.id}
+                          onClick={() => setCakeOrder(prev => ({ ...prev, frosting: frosting.id }))}
+                          className={`p-3 rounded-xl text-left transition-all ${
+                            cakeOrder.frosting === frosting.id
+                              ? 'bg-gradient-to-r from-amber-500 to-amber-600 text-white shadow-lg'
+                              : 'bg-white/10 text-amber-100 hover:bg-white/20'
+                          }`}
+                        >
+                          <div className="font-medium">{frosting.name}</div>
+                          {frosting.price > 0 && <div className="text-xs opacity-80">+${frosting.price}</div>}
+                        </button>
+                      ))}
+                    </div>
+                  </div>
+                </div>
+              )}
+
+              {/* Step 3: Decorations & Message */}
+              {cakeStep === 2 && (
+                <div className="space-y-6">
+                  <div>
+                    <label className="block text-white font-semibold mb-3 text-lg">Decoraciones (opcional)</label>
+                    <div className="grid grid-cols-2 gap-2">
+                      {CAKE_DECORATIONS.map((dec) => (
+                        <button
+                          key={dec.id}
+                          onClick={() => {
+                            setCakeOrder(prev => ({
+                              ...prev,
+                              decorations: prev.decorations.includes(dec.id)
+                                ? prev.decorations.filter(d => d !== dec.id)
+                                : [...prev.decorations, dec.id]
+                            }));
+                          }}
+                          className={`p-3 rounded-xl text-left transition-all flex items-center gap-2 ${
+                            cakeOrder.decorations.includes(dec.id)
+                              ? 'bg-gradient-to-r from-pink-500 to-rose-500 text-white shadow-lg'
+                              : 'bg-white/10 text-amber-100 hover:bg-white/20'
+                          }`}
+                        >
+                          <span className="text-xl">{dec.icon}</span>
+                          <div className="flex-1">
+                            <div className="font-medium text-sm">{dec.name}</div>
+                            <div className="text-xs opacity-80">+${dec.price}</div>
+                          </div>
+                          {cakeOrder.decorations.includes(dec.id) && <span>✓</span>}
+                        </button>
+                      ))}
+                    </div>
+                  </div>
+
+                  <div>
+                    <label className="block text-white font-semibold mb-3 text-lg">Mensaje en el Pastel</label>
+                    <input
+                      type="text"
+                      value={cakeOrder.message}
+                      onChange={(e) => setCakeOrder(prev => ({ ...prev, message: e.target.value }))}
+                      placeholder="Ej: Feliz Cumpleanos Maria!"
+                      maxLength={50}
+                      className="w-full px-4 py-3 rounded-xl bg-white/10 text-white placeholder-white/40 border border-white/20 focus:border-pink-500 focus:outline-none focus:ring-2 focus:ring-pink-500/20"
+                    />
+                    <p className="text-white/40 text-xs mt-1">{cakeOrder.message.length}/50 caracteres</p>
+                  </div>
+
+                  <div>
+                    <label className="block text-white font-semibold mb-3 text-lg">Instrucciones Especiales</label>
+                    <textarea
+                      value={cakeOrder.specialInstructions}
+                      onChange={(e) => setCakeOrder(prev => ({ ...prev, specialInstructions: e.target.value }))}
+                      placeholder="Alergias, preferencias especiales, etc."
+                      rows={3}
+                      className="w-full px-4 py-3 rounded-xl bg-white/10 text-white placeholder-white/40 border border-white/20 focus:border-pink-500 focus:outline-none focus:ring-2 focus:ring-pink-500/20"
+                    />
+                  </div>
+                </div>
+              )}
+
+              {/* Step 4: Scheduling & Contact */}
+              {cakeStep === 3 && (
+                <div className="space-y-6">
+                  <div className="bg-pink-500/10 border border-pink-500/30 rounded-xl p-4">
+                    <p className="text-pink-200 text-sm">
+                      <strong>Importante:</strong> Los pasteles personalizados requieren minimo 2 dias de anticipacion.
+                      Se requiere un deposito del 50% para confirmar el pedido.
+                    </p>
+                  </div>
+
+                  <div className="grid grid-cols-2 gap-4">
+                    <div>
+                      <label className="block text-white font-semibold mb-2">Fecha de Recogida</label>
+                      <input
+                        type="date"
+                        value={cakeOrder.pickupDate}
+                        min={minCakeDate}
+                        onChange={(e) => setCakeOrder(prev => ({ ...prev, pickupDate: e.target.value }))}
+                        className="w-full px-4 py-3 rounded-xl bg-white/10 text-white border border-white/20 focus:border-pink-500 focus:outline-none"
+                      />
+                    </div>
+                    <div>
+                      <label className="block text-white font-semibold mb-2">Hora de Recogida</label>
+                      <select
+                        value={cakeOrder.pickupTime}
+                        onChange={(e) => setCakeOrder(prev => ({ ...prev, pickupTime: e.target.value }))}
+                        className="w-full px-4 py-3 rounded-xl bg-white/10 text-white border border-white/20 focus:border-pink-500 focus:outline-none"
+                      >
+                        <option value="">Seleccionar hora</option>
+                        {TIME_SLOTS.map(time => (
+                          <option key={time} value={time}>{time}</option>
+                        ))}
+                      </select>
+                    </div>
+                  </div>
+
+                  <div>
+                    <label className="block text-white font-semibold mb-2">Tu Nombre</label>
+                    <input
+                      type="text"
+                      value={cakeOrder.customerName}
+                      onChange={(e) => setCakeOrder(prev => ({ ...prev, customerName: e.target.value }))}
+                      placeholder="Nombre completo"
+                      className="w-full px-4 py-3 rounded-xl bg-white/10 text-white placeholder-white/40 border border-white/20 focus:border-pink-500 focus:outline-none"
+                    />
+                  </div>
+
+                  <div className="grid grid-cols-2 gap-4">
+                    <div>
+                      <label className="block text-white font-semibold mb-2">Telefono</label>
+                      <input
+                        type="tel"
+                        value={cakeOrder.customerPhone}
+                        onChange={(e) => setCakeOrder(prev => ({ ...prev, customerPhone: e.target.value }))}
+                        placeholder="(555) 123-4567"
+                        className="w-full px-4 py-3 rounded-xl bg-white/10 text-white placeholder-white/40 border border-white/20 focus:border-pink-500 focus:outline-none"
+                      />
+                    </div>
+                    <div>
+                      <label className="block text-white font-semibold mb-2">Email</label>
+                      <input
+                        type="email"
+                        value={cakeOrder.customerEmail}
+                        onChange={(e) => setCakeOrder(prev => ({ ...prev, customerEmail: e.target.value }))}
+                        placeholder="tu@email.com"
+                        className="w-full px-4 py-3 rounded-xl bg-white/10 text-white placeholder-white/40 border border-white/20 focus:border-pink-500 focus:outline-none"
+                      />
+                    </div>
+                  </div>
+                </div>
+              )}
+            </div>
+
+            {/* Footer with Total & Actions */}
             <div className="p-6 border-t border-white/10 bg-stone-900/50">
               <div className="flex items-center justify-between mb-4">
-                <span className="text-amber-200">Total:</span>
-                <span className="text-3xl font-bold text-amber-400">
-                  ${calculateCakePrice(selectedItem.price).toFixed(2)}
-                </span>
+                <div>
+                  <span className="text-amber-200/60 text-sm">Total del Pastel:</span>
+                  <div className="text-3xl font-bold text-pink-400">${calculateCakeTotal().toFixed(2)}</div>
+                  <span className="text-pink-300/60 text-sm">Deposito requerido: ${cakeDeposit.toFixed(2)} (50%)</span>
+                </div>
               </div>
-              <button
-                onClick={() => handleAddCakeToCart(selectedItem)}
-                disabled={!isOpen}
-                className={`w-full py-4 rounded-xl font-bold text-lg transition-all ${
-                  isOpen
-                    ? 'bg-gradient-to-r from-pink-500 to-rose-500 text-white hover:shadow-lg hover:shadow-pink-500/40'
-                    : 'bg-stone-700 text-stone-500 cursor-not-allowed'
-                }`}
-              >
-                {isOpen ? '🎂 Ordenar Pastel Personalizado' : 'Cerrado'}
-              </button>
+
+              <div className="flex gap-3">
+                {cakeStep > 0 && (
+                  <button
+                    onClick={() => setCakeStep(prev => prev - 1)}
+                    className="flex-1 py-4 rounded-xl font-bold text-lg bg-white/10 text-white hover:bg-white/20 transition-all"
+                  >
+                    ← Anterior
+                  </button>
+                )}
+                {cakeStep < 3 ? (
+                  <button
+                    onClick={() => setCakeStep(prev => prev + 1)}
+                    className="flex-1 py-4 rounded-xl font-bold text-lg bg-gradient-to-r from-pink-500 to-rose-500 text-white hover:shadow-lg hover:shadow-pink-500/40 transition-all"
+                  >
+                    Siguiente →
+                  </button>
+                ) : (
+                  <button
+                    onClick={handleAddCakeToCart}
+                    disabled={!isOpen || !cakeOrder.pickupDate || !cakeOrder.pickupTime || !cakeOrder.customerName || !cakeOrder.customerPhone}
+                    className={`flex-1 py-4 rounded-xl font-bold text-lg transition-all ${
+                      isOpen && cakeOrder.pickupDate && cakeOrder.pickupTime && cakeOrder.customerName && cakeOrder.customerPhone
+                        ? 'bg-gradient-to-r from-pink-500 to-rose-500 text-white hover:shadow-lg hover:shadow-pink-500/40'
+                        : 'bg-stone-700 text-stone-500 cursor-not-allowed'
+                    }`}
+                  >
+                    🎂 Agregar al Carrito
+                  </button>
+                )}
+              </div>
             </div>
+          </div>
+        </div>,
+        document.body
+      )}
+
+      {/* Bundle Builder Modal */}
+      {showBundleBuilder && mounted && createPortal(
+        <div
+          className="fixed inset-0 z-[200] flex items-center justify-center overflow-y-auto py-4"
+          onClick={() => { setShowBundleBuilder(false); setSelectedBundle(null); setBundleItems([]); }}
+        >
+          <div className="absolute inset-0 bg-black/90 backdrop-blur-md" />
+          <div
+            className="relative w-full max-w-2xl max-h-[95vh] bg-gradient-to-br from-stone-800 to-stone-900 rounded-3xl overflow-hidden shadow-2xl border border-emerald-500/30 mx-4"
+            onClick={e => e.stopPropagation()}
+          >
+            {/* Header */}
+            <div className="relative bg-gradient-to-r from-emerald-600 via-teal-500 to-emerald-600 p-6 text-center">
+              <button
+                onClick={() => { setShowBundleBuilder(false); setSelectedBundle(null); setBundleItems([]); }}
+                className="absolute top-4 right-4 w-10 h-10 rounded-full bg-black/30 backdrop-blur-sm flex items-center justify-center text-white hover:bg-black/50 transition-all"
+              >
+                ✕
+              </button>
+              <span className="text-5xl mb-2 block">📦</span>
+              <h3 className="text-2xl font-bold text-white">Arma Tu Caja</h3>
+              <p className="text-emerald-100/80 text-sm mt-1">Escoge tu paquete y llena con tus favoritos</p>
+            </div>
+
+            <div className="p-6 overflow-y-auto max-h-[55vh]">
+              {/* Bundle Selection */}
+              {!selectedBundle ? (
+                <div className="space-y-4">
+                  <label className="block text-white font-semibold mb-3 text-lg">Selecciona tu Paquete</label>
+                  <div className="grid grid-cols-2 gap-4">
+                    {BUNDLES.map((bundle) => (
+                      <button
+                        key={bundle.id}
+                        onClick={() => setSelectedBundle(bundle)}
+                        className="p-6 rounded-2xl bg-white/10 hover:bg-white/20 border border-white/10 hover:border-emerald-500/50 transition-all text-left group"
+                      >
+                        <span className="text-4xl mb-3 block">{bundle.icon}</span>
+                        <h4 className="text-xl font-bold text-white mb-1">{bundle.name}</h4>
+                        <p className="text-emerald-200/70 text-sm mb-2">{bundle.count} piezas</p>
+                        <div className="inline-block px-3 py-1 bg-emerald-500/20 text-emerald-400 text-sm font-bold rounded-full">
+                          {Math.round(bundle.discount * 100)}% descuento
+                        </div>
+                      </button>
+                    ))}
+                  </div>
+                </div>
+              ) : (
+                <div className="space-y-4">
+                  {/* Selected Bundle Info */}
+                  <div className="flex items-center justify-between bg-emerald-500/10 rounded-xl p-4 border border-emerald-500/30">
+                    <div className="flex items-center gap-3">
+                      <span className="text-3xl">{selectedBundle.icon}</span>
+                      <div>
+                        <h4 className="font-bold text-white">{selectedBundle.name}</h4>
+                        <p className="text-emerald-200/70 text-sm">{bundleItemCount}/{selectedBundle.count} seleccionados</p>
+                      </div>
+                    </div>
+                    <button
+                      onClick={() => { setSelectedBundle(null); setBundleItems([]); }}
+                      className="text-emerald-400 hover:text-emerald-300 text-sm font-medium"
+                    >
+                      Cambiar
+                    </button>
+                  </div>
+
+                  {/* Progress Bar */}
+                  <div className="h-3 bg-white/10 rounded-full overflow-hidden">
+                    <div
+                      className="h-full bg-gradient-to-r from-emerald-500 to-teal-400 transition-all duration-300"
+                      style={{ width: `${Math.min(100, (bundleItemCount / selectedBundle.count) * 100)}%` }}
+                    />
+                  </div>
+
+                  {/* Item Selection Grid */}
+                  <label className="block text-white font-semibold mb-2 text-lg">Escoge tus piezas</label>
+                  <div className="grid grid-cols-3 sm:grid-cols-4 gap-3 max-h-[300px] overflow-y-auto">
+                    {panDulceItems.map((item) => {
+                      const existing = bundleItems.find(b => b.item.id === item.id);
+                      const qty = existing?.quantity || 0;
+
+                      return (
+                        <div key={item.id} className="relative">
+                          <div className="aspect-square rounded-xl overflow-hidden bg-gradient-to-br from-amber-900/50 to-stone-900 mb-2">
+                            {item.image ? (
+                              <Image src={item.image} alt={item.name} fill className="object-cover" unoptimized />
+                            ) : (
+                              <div className="w-full h-full flex items-center justify-center text-3xl">🥐</div>
+                            )}
+                          </div>
+                          <p className="text-white text-xs font-medium line-clamp-1 mb-1">{item.name}</p>
+                          <p className="text-amber-400 text-xs font-bold">${item.price.toFixed(2)}</p>
+
+                          {/* Quantity Controls */}
+                          <div className="flex items-center justify-center gap-1 mt-2">
+                            <button
+                              onClick={() => {
+                                if (qty > 0) {
+                                  if (qty === 1) {
+                                    setBundleItems(prev => prev.filter(b => b.item.id !== item.id));
+                                  } else {
+                                    setBundleItems(prev => prev.map(b =>
+                                      b.item.id === item.id ? { ...b, quantity: b.quantity - 1 } : b
+                                    ));
+                                  }
+                                }
+                              }}
+                              className="w-7 h-7 rounded-full bg-white/10 hover:bg-white/20 text-white text-sm transition-colors"
+                            >
+                              -
+                            </button>
+                            <span className="w-6 text-center text-white font-bold text-sm">{qty}</span>
+                            <button
+                              onClick={() => {
+                                if (bundleItemCount < selectedBundle.count) {
+                                  if (existing) {
+                                    setBundleItems(prev => prev.map(b =>
+                                      b.item.id === item.id ? { ...b, quantity: b.quantity + 1 } : b
+                                    ));
+                                  } else {
+                                    setBundleItems(prev => [...prev, { item, quantity: 1 }]);
+                                  }
+                                }
+                              }}
+                              disabled={bundleItemCount >= selectedBundle.count}
+                              className={`w-7 h-7 rounded-full text-sm transition-colors ${
+                                bundleItemCount >= selectedBundle.count
+                                  ? 'bg-stone-700 text-stone-500 cursor-not-allowed'
+                                  : 'bg-emerald-500 hover:bg-emerald-400 text-white'
+                              }`}
+                            >
+                              +
+                            </button>
+                          </div>
+                        </div>
+                      );
+                    })}
+                  </div>
+                </div>
+              )}
+            </div>
+
+            {/* Footer */}
+            {selectedBundle && (
+              <div className="p-6 border-t border-white/10 bg-stone-900/50">
+                <div className="flex items-center justify-between mb-4">
+                  <div>
+                    <span className="text-amber-200/60 text-sm">Total con {Math.round(selectedBundle.discount * 100)}% desc:</span>
+                    <div className="flex items-center gap-2">
+                      <span className="text-amber-200/40 line-through text-lg">
+                        ${bundleItems.reduce((sum, { item, quantity }) => sum + item.price * quantity, 0).toFixed(2)}
+                      </span>
+                      <span className="text-3xl font-bold text-emerald-400">${calculateBundleTotal().toFixed(2)}</span>
+                    </div>
+                  </div>
+                </div>
+
+                <button
+                  onClick={handleAddBundleToCart}
+                  disabled={!isOpen || bundleItemCount !== selectedBundle.count}
+                  className={`w-full py-4 rounded-xl font-bold text-lg transition-all ${
+                    isOpen && bundleItemCount === selectedBundle.count
+                      ? 'bg-gradient-to-r from-emerald-500 to-teal-500 text-white hover:shadow-lg hover:shadow-emerald-500/40'
+                      : 'bg-stone-700 text-stone-500 cursor-not-allowed'
+                  }`}
+                >
+                  {bundleItemCount !== selectedBundle.count
+                    ? `Faltan ${selectedBundle.count - bundleItemCount} piezas`
+                    : '📦 Agregar al Carrito'
+                  }
+                </button>
+              </div>
+            )}
           </div>
         </div>,
         document.body
@@ -870,15 +1499,29 @@ export default function OrderPageClientElHornitoBakery({
           const cartBtn = document.querySelector('[data-cart-launcher]') as HTMLButtonElement;
           cartBtn?.click();
         }}
-        className="fixed bottom-6 right-4 z-50 sm:hidden w-16 h-16 rounded-full bg-gradient-to-br from-amber-400 via-amber-500 to-amber-600 shadow-xl shadow-amber-500/50 flex items-center justify-center transition-all active:scale-95"
+        className="fixed bottom-6 right-4 z-50 sm:hidden w-16 h-16 rounded-full shadow-2xl flex items-center justify-center transition-all active:scale-95"
+        style={{
+          background: 'linear-gradient(135deg, #f59e0b 0%, #d97706 50%, #b45309 100%)',
+          boxShadow: '0 10px 40px rgba(245, 158, 11, 0.4)',
+        }}
       >
         <span className="text-2xl">🛒</span>
         {cart.items.length > 0 && (
-          <span className="absolute -top-1 -right-1 w-6 h-6 rounded-full bg-rose-500 text-white text-xs font-bold flex items-center justify-center">
+          <span className="absolute -top-1 -right-1 w-7 h-7 rounded-full bg-rose-500 text-white text-sm font-bold flex items-center justify-center shadow-lg">
             {cart.items.length}
           </span>
         )}
       </button>
+
+      {/* CSS Animations */}
+      <style jsx global>{`
+        @keyframes float {
+          0%, 100% { transform: translateY(0px); }
+          50% { transform: translateY(-20px); }
+        }
+        .scrollbar-hide::-webkit-scrollbar { display: none; }
+        .scrollbar-hide { -ms-overflow-style: none; scrollbar-width: none; }
+      `}</style>
     </div>
   );
 }
