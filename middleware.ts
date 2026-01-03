@@ -116,7 +116,8 @@ export const config = {
      * - _next/static (static files)
      * - _next/image (image optimization files)
      * - favicon.ico / assets
+     * - tenant/ (static tenant assets like uploads, images, icons)
      */
-    '/((?!api/auth|_next/static|_next/image|favicon.ico|robots.txt).*)',
+    '/((?!api/auth|_next/static|_next/image|favicon.ico|robots.txt|tenant/).*)',
   ],
 };

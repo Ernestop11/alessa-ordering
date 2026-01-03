@@ -471,6 +471,13 @@ export async function sendOrderEmails(orderId: string): Promise<{ customerSent: 
       order.tenant.postalCode,
     ].filter(Boolean).join(', ');
 
+    // Convert relative logo URL to absolute for email clients
+    const tenantLogoAbsolute = order.tenant.logoUrl
+      ? (order.tenant.logoUrl.startsWith('http')
+          ? order.tenant.logoUrl
+          : `${baseUrl}${order.tenant.logoUrl}`)
+      : null;
+
     // Get the appropriate from address and reply-to for this tenant
     const tenantForEmail = {
       name: order.tenant.name,
@@ -494,7 +501,7 @@ export async function sendOrderEmails(orderId: string): Promise<{ customerSent: 
           tax: order.taxAmount || 0,
           items,
           tenantName: order.tenant.name,
-          tenantLogo: order.tenant.logoUrl,
+          tenantLogo: tenantLogoAbsolute,
           tenantPhone: order.tenant.contactPhone,
           tenantAddress: tenantAddress || null,
           fulfillmentMethod: order.fulfillmentMethod as 'pickup' | 'delivery',
