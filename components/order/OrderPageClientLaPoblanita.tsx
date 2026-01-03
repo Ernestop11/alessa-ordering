@@ -3080,7 +3080,7 @@ export default function OrderPageClientLaPoblanita({
         </div>
 
         {/* Promotional Banner - Desktop Only */}
-        <div className={`hidden sm:block border-t border-white/10`} style={{ backgroundColor: restaurantIsOpen ? `${tenant.primaryColor}4D` : '#7f1d1d' }}>
+        <div className={`hidden sm:block border-t border-white/10`} style={{ backgroundColor: `${tenant.primaryColor}4D` }}>
           <div className="mx-auto max-w-7xl px-4 py-2 flex items-center justify-center gap-4">
             {restaurantIsOpen ? (
               <>
@@ -3090,7 +3090,7 @@ export default function OrderPageClientLaPoblanita({
               </>
             ) : (
               <>
-                <span className="text-red-200 font-semibold text-sm">🚫 {restaurantClosedMessage || 'Ordering is currently closed'}</span>
+                <span className="text-amber-300 font-semibold text-sm">🚫 {restaurantClosedMessage || 'Ordering is currently closed'}</span>
                 {hoursDisplay && (
                   <>
                     <span className="text-white/50">•</span>
