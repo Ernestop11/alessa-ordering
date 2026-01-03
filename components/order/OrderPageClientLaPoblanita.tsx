@@ -2832,8 +2832,9 @@ export default function OrderPageClientLaPoblanita({
       {/* Main content wrapper */}
       <div className="relative z-10">
       {/* Warm Header - Sticky with safe area support for iPhone notch/Dynamic Island */}
+      {/* Added pb-14 on mobile (sm:pb-0) to extend gradient down and eliminate gap with nav bar */}
       <header
-        className={`fixed top-0 left-0 right-0 z-40 shadow-lg transition-all duration-300`}
+        className={`fixed top-0 left-0 right-0 z-40 shadow-lg transition-all duration-300 pb-14 sm:pb-0`}
         style={{
           paddingTop: 'env(safe-area-inset-top, 0px)',
           background: `linear-gradient(to bottom, var(--tenant-gradient-from) 0%, var(--tenant-gradient-via) 40%, var(--tenant-gradient-to) 100%)`
