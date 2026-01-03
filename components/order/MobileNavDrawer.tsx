@@ -744,26 +744,77 @@ export default function MobileNavDrawer({
               </button>
             )}
 
-            {panaderiaEnabled && onPanaderiaClick && (
-              <button
-                onClick={() => {
+            {panaderiaEnabled && (
+              <a
+                href="/bakery"
+                onClick={(e) => {
+                  e.preventDefault();
                   onClose();
-                  onPanaderiaClick();
+                  router.push('/bakery');
                 }}
-                className="w-full flex items-center gap-4 px-4 py-3 rounded-xl text-left text-white border border-amber-500/30 bg-gradient-to-r from-amber-600/10 to-transparent hover:from-amber-600/20 hover:border-amber-500/50 transition-all relative overflow-hidden group"
+                className="block w-full rounded-2xl overflow-hidden border-2 border-cyan-500/40 hover:border-cyan-400/60 transition-all relative group"
+                style={{
+                  background: 'linear-gradient(135deg, rgba(30,58,95,0.9) 0%, rgba(15,23,42,0.95) 50%, rgba(30,58,95,0.9) 100%)',
+                  boxShadow: '0 8px 32px rgba(6,182,212,0.2), inset 0 1px 0 rgba(255,255,255,0.1)',
+                }}
               >
-                <div className="absolute inset-0 bg-gradient-to-r from-amber-500/5 to-transparent opacity-0 group-hover:opacity-100 transition-opacity" />
-                <div className="relative w-10 h-10 rounded-xl bg-gradient-to-br from-amber-500/30 to-amber-600/20 flex items-center justify-center">
-                  <span className="text-xl">🥐</span>
-                </div>
-                <div className="relative flex-1">
-                  <div className="flex items-center gap-2">
-                    <span className="font-medium">El Hornito Bakery</span>
-                    <span className="px-1.5 py-0.5 text-[10px] font-bold uppercase tracking-wider bg-amber-500/20 text-amber-400 rounded">Panaderia</span>
+                {/* Animated sparkle stars */}
+                <div className="absolute top-2 right-2 w-2 h-2 text-yellow-300 animate-pulse">✦</div>
+                <div className="absolute top-4 right-6 w-1.5 h-1.5 text-cyan-300 animate-pulse" style={{ animationDelay: '0.3s' }}>✦</div>
+                <div className="absolute bottom-3 left-3 w-1.5 h-1.5 text-pink-300 animate-pulse" style={{ animationDelay: '0.6s' }}>✦</div>
+
+                {/* Content */}
+                <div className="relative p-4">
+                  <div className="flex items-center gap-4">
+                    {/* Logo Circle */}
+                    <div className="relative flex-shrink-0">
+                      <div className="w-16 h-16 rounded-full bg-gradient-to-br from-cyan-400 via-blue-400 to-cyan-500 p-1 shadow-lg shadow-cyan-500/40">
+                        <div className="w-full h-full rounded-full bg-gradient-to-br from-slate-800 to-slate-900 flex items-center justify-center">
+                          <span className="text-3xl">🥐</span>
+                        </div>
+                      </div>
+                      {/* Badge */}
+                      <div className="absolute -bottom-1 -right-1 px-2 py-0.5 bg-gradient-to-r from-pink-500 to-rose-500 text-white text-[9px] font-bold rounded-full shadow-lg">
+                        FRESH
+                      </div>
+                    </div>
+
+                    {/* Text Content */}
+                    <div className="flex-1 min-w-0">
+                      <div className="flex items-center gap-2 mb-1">
+                        <h3 className="text-lg font-bold bg-gradient-to-r from-cyan-200 via-blue-100 to-cyan-200 bg-clip-text text-transparent">
+                          El Hornito
+                        </h3>
+                        <span className="px-1.5 py-0.5 text-[8px] font-bold uppercase tracking-wider bg-gradient-to-r from-amber-500/30 to-amber-600/30 text-amber-300 rounded border border-amber-500/30">
+                          Panaderia
+                        </span>
+                      </div>
+                      <p className="text-xs text-cyan-200/60 mb-2">Pan dulce, pasteles & mas</p>
+
+                      {/* Feature pills */}
+                      <div className="flex flex-wrap gap-1.5">
+                        <span className="px-2 py-0.5 text-[10px] font-medium bg-pink-500/20 text-pink-300 rounded-full border border-pink-500/30">
+                          🎂 Pasteles
+                        </span>
+                        <span className="px-2 py-0.5 text-[10px] font-medium bg-amber-500/20 text-amber-300 rounded-full border border-amber-500/30">
+                          📦 Docenas
+                        </span>
+                        <span className="px-2 py-0.5 text-[10px] font-medium bg-cyan-500/20 text-cyan-300 rounded-full border border-cyan-500/30">
+                          🛒 Same Cart
+                        </span>
+                      </div>
+                    </div>
+
+                    {/* Arrow */}
+                    <div className="flex-shrink-0 w-8 h-8 rounded-full bg-gradient-to-r from-cyan-500 to-blue-500 flex items-center justify-center text-white group-hover:scale-110 transition-transform shadow-lg shadow-cyan-500/40">
+                      →
+                    </div>
                   </div>
-                  <p className="text-xs text-white/50">Fresh Mexican breads & pastries</p>
                 </div>
-              </button>
+
+                {/* Bottom highlight bar */}
+                <div className="h-1 bg-gradient-to-r from-pink-500 via-cyan-400 to-amber-400" />
+              </a>
             )}
 
             {onGroupOrderClick && (

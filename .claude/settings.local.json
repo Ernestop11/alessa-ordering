@@ -117,7 +117,8 @@
       "Bash(git -C /Users/ernestoponce/alessa-ordering log --oneline --all --grep=\"hornito\\\\|bakery\\\\|sub.*tenant\")",
       "Bash(git -C /Users/ernestoponce/alessa-ordering show cbce1fa --stat)",
       "Bash(git -C /Users/ernestoponce/alessa-ordering show f2b6342 --stat)",
-      "Bash(git -C /Users/ernestoponce/alessa-ordering show:*)"
+      "Bash(git -C /Users/ernestoponce/alessa-ordering show:*)",
+      "Bash(cp:*)"
     ],
     "deny": [],
     "ask": []

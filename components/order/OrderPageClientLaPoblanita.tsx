@@ -2414,43 +2414,99 @@ export default function OrderPageClientLaPoblanita({
       );
     }
 
-    // Panaderia Banner
+    // Panaderia Banner - El Hornito Wonderland Style
     if (type === 'panaderiaBanner') {
       return (
-        <div
+        <Link
+          href="/bakery"
           key={section.id}
-          className="mb-10 relative overflow-hidden rounded-3xl p-1"
-          style={{ background: config.gradientFrom && config.gradientTo ? `linear-gradient(to right, ${config.gradientFrom}, ${config.gradientTo})` : 'linear-gradient(to right, #d97706, #f59e0b, #fbbf24)' }}
+          className="block mb-10 relative overflow-hidden rounded-3xl group"
+          style={{
+            background: 'linear-gradient(135deg, #0f172a 0%, #1e3a5f 25%, #1e40af 50%, #1e3a5f 75%, #0f172a 100%)',
+            boxShadow: '0 20px 50px rgba(59,130,246,0.3), inset 0 1px 0 rgba(255,255,255,0.1)',
+          }}
         >
-          <div className="relative overflow-hidden rounded-[22px] bg-gradient-to-br from-amber-950 to-amber-900 p-6 md:p-8">
-            <div className="relative grid md:grid-cols-2 gap-6 items-center">
-              <div>
-                {config.badge && (
-                  <div className="inline-block px-4 py-1.5 rounded-full bg-amber-400/20 text-amber-300 text-xs font-bold uppercase tracking-wider mb-3">
-                    {config.badge}
+          {/* Animated sparkle stars */}
+          <div className="absolute top-4 left-6 text-yellow-300 text-lg animate-pulse">✦</div>
+          <div className="absolute top-8 right-12 text-cyan-300 text-sm animate-pulse" style={{ animationDelay: '0.3s' }}>✦</div>
+          <div className="absolute bottom-6 left-16 text-pink-300 text-sm animate-pulse" style={{ animationDelay: '0.6s' }}>✦</div>
+          <div className="absolute top-1/2 right-6 text-amber-300 text-xs animate-pulse" style={{ animationDelay: '0.9s' }}>✦</div>
+          <div className="absolute bottom-4 right-20 text-white text-xs animate-pulse" style={{ animationDelay: '1.2s' }}>✦</div>
+
+          {/* Ambient glow */}
+          <div className="absolute -top-20 -left-20 w-40 h-40 rounded-full blur-3xl bg-blue-500/30 animate-pulse" />
+          <div className="absolute -bottom-20 -right-20 w-40 h-40 rounded-full blur-3xl bg-cyan-500/20 animate-pulse" style={{ animationDelay: '1s' }} />
+
+          {/* Pastel border accent */}
+          <div className="absolute inset-0 rounded-3xl border-2 border-transparent pointer-events-none"
+            style={{ borderImage: 'linear-gradient(135deg, rgba(251,207,232,0.4), rgba(165,243,252,0.4), rgba(253,230,138,0.4)) 1' }} />
+
+          {/* Content */}
+          <div className="relative p-6 md:p-8">
+            <div className="flex flex-col md:flex-row items-center gap-6">
+              {/* Logo Section */}
+              <div className="relative flex-shrink-0">
+                <div className="w-24 h-24 md:w-28 md:h-28 rounded-full bg-gradient-to-br from-blue-400 via-cyan-400 to-blue-500 p-1.5 shadow-xl shadow-cyan-500/40 group-hover:scale-105 transition-transform">
+                  <div className="w-full h-full rounded-full bg-gradient-to-br from-slate-800 to-slate-900 flex items-center justify-center">
+                    <span className="text-5xl md:text-6xl">🥐</span>
                   </div>
-                )}
-                <h3 className="text-3xl md:text-4xl font-black text-white mb-3">
-                  {config.title || 'Fresh Bakery'}
-                </h3>
-                <p className="text-white/70 mb-4">{config.subtitle || config.description}</p>
-                {config.buttonText && config.buttonLink && (
-                  <a href={config.buttonLink} className="inline-flex items-center gap-2 px-8 py-4 rounded-full bg-amber-500 text-white font-black text-lg shadow-xl hover:bg-amber-400 transition-colors">
-                    {config.buttonText}
-                    <svg className="w-5 h-5" fill="none" viewBox="0 0 24 24" stroke="currentColor">
-                      <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M13 7l5 5m0 0l-5 5m5-5H6" />
-                    </svg>
-                  </a>
-                )}
+                </div>
+                {/* Sparkle near logo */}
+                <div className="absolute -top-2 -right-2 text-yellow-300 text-xl animate-pulse">✨</div>
               </div>
+
+              {/* Text Content */}
+              <div className="flex-1 text-center md:text-left">
+                <div className="inline-flex items-center gap-2 mb-2">
+                  <span className="px-3 py-1 text-[10px] font-bold uppercase tracking-wider bg-gradient-to-r from-pink-500/20 to-amber-500/20 text-pink-300 rounded-full border border-pink-500/30">
+                    🏆 Orgullo de la Comunidad
+                  </span>
+                </div>
+                <h3 className="text-3xl md:text-4xl font-black mb-2 bg-gradient-to-r from-blue-200 via-cyan-100 to-blue-200 bg-clip-text text-transparent">
+                  El Hornito Bakery
+                </h3>
+                <p className="text-cyan-300/80 text-lg mb-3 font-medium tracking-widest uppercase">
+                  Panaderia Mexicana Artesanal
+                </p>
+                <p className="text-blue-100/60 text-sm mb-4 max-w-md">
+                  Pan dulce fresco, pasteles personalizados para tus celebraciones y el sabor autentico de Mexico.
+                </p>
+
+                {/* Feature tags */}
+                <div className="flex flex-wrap justify-center md:justify-start gap-2 mb-4">
+                  <span className="px-3 py-1.5 text-xs font-medium bg-pink-500/20 text-pink-300 rounded-full border border-pink-500/30 flex items-center gap-1">
+                    <span>🎂</span> Pasteles Custom
+                  </span>
+                  <span className="px-3 py-1.5 text-xs font-medium bg-amber-500/20 text-amber-300 rounded-full border border-amber-500/30 flex items-center gap-1">
+                    <span>📦</span> Por Docena
+                  </span>
+                  <span className="px-3 py-1.5 text-xs font-medium bg-cyan-500/20 text-cyan-300 rounded-full border border-cyan-500/30 flex items-center gap-1">
+                    <span>🛒</span> Mismo Carrito
+                  </span>
+                </div>
+
+                {/* CTA Button */}
+                <div className="inline-flex items-center gap-3 px-6 py-3 bg-gradient-to-r from-pink-500 via-cyan-400 to-amber-400 text-white font-bold rounded-full group-hover:shadow-xl group-hover:shadow-cyan-500/40 transition-all group-hover:scale-105">
+                  <span>Visitar Panaderia</span>
+                  <span className="w-6 h-6 rounded-full bg-white/20 flex items-center justify-center text-sm">→</span>
+                </div>
+              </div>
+
+              {/* Preview images (if available) */}
               {config.image && (
-                <div className="relative h-48 md:h-64 rounded-2xl overflow-hidden">
-                  <img src={config.image} alt={config.title || 'Bakery'} className="w-full h-full object-cover" />
+                <div className="hidden lg:block relative w-48 h-48 flex-shrink-0">
+                  <div className="absolute inset-0 rounded-2xl overflow-hidden border-2 border-white/20 shadow-2xl group-hover:scale-105 transition-transform">
+                    <img src={config.image} alt="El Hornito" className="w-full h-full object-cover" />
+                    <div className="absolute inset-0 bg-gradient-to-t from-black/50 via-transparent to-transparent" />
+                  </div>
                 </div>
               )}
             </div>
           </div>
-        </div>
+
+          {/* Bottom pastel accent bar */}
+          <div className="h-1.5 bg-gradient-to-r from-pink-500 via-cyan-400 to-amber-400" />
+        </Link>
       );
     }
 
