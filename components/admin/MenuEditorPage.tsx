@@ -181,6 +181,65 @@ export default function MenuEditorPage() {
     name: '',
     description: '',
   });
+  const [elHornitoLogoUploading, setElHornitoLogoUploading] = useState(false);
+
+  // El Hornito logo upload handler
+  const handleElHornitoLogoUpload = async (e: React.ChangeEvent<HTMLInputElement>) => {
+    const file = e.target.files?.[0];
+    if (!file) return;
+
+    // Validate file type
+    if (!file.type.startsWith('image/')) {
+      alert('Please select an image file (PNG, JPG, etc.)');
+      return;
+    }
+
+    // Validate file size (10MB max)
+    if (file.size > 10 * 1024 * 1024) {
+      alert('File too large. Please select an image under 10MB.');
+      return;
+    }
+
+    setElHornitoLogoUploading(true);
+    try {
+      // Upload the file
+      const formData = new FormData();
+      formData.append('file', file);
+
+      const uploadRes = await fetch('/api/admin/assets/upload', {
+        method: 'POST',
+        body: formData,
+      });
+
+      if (!uploadRes.ok) {
+        const err = await uploadRes.json();
+        throw new Error(err.message || 'Upload failed');
+      }
+
+      const { url } = await uploadRes.json();
+
+      // Update El Hornito tenant with new logo
+      const updateRes = await fetch('/api/sub-tenant/menu', {
+        method: 'PATCH',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ slug: 'elhornito', logoUrl: url }),
+      });
+
+      if (!updateRes.ok) {
+        throw new Error('Failed to update logo');
+      }
+
+      const { tenant } = await updateRes.json();
+      setElHornitoTenant(tenant);
+    } catch (err: any) {
+      console.error('Logo upload failed:', err);
+      alert('Failed to upload logo: ' + (err.message || 'Unknown error'));
+    } finally {
+      setElHornitoLogoUploading(false);
+      // Reset the file input
+      e.target.value = '';
+    }
+  };
 
   const fetchElHornitoMenu = async () => {
     if (!enabledAddOns.includes('panaderia')) return;
@@ -2202,8 +2261,37 @@ export default function MenuEditorPage() {
               <div className="bg-gradient-to-r from-amber-600 via-amber-500 to-yellow-500 rounded-xl p-6 text-white">
                 <div className="flex items-center justify-between">
                   <div className="flex items-center gap-4">
-                    <div className="w-16 h-16 rounded-2xl bg-white/20 backdrop-blur flex items-center justify-center text-3xl">
-                      🥐
+                    {/* Logo with upload capability */}
+                    <div className="relative group">
+                      <div className="w-20 h-20 rounded-2xl bg-white/20 backdrop-blur flex items-center justify-center overflow-hidden border-2 border-white/30">
+                        {elHornitoTenant?.logoUrl ? (
+                          <img
+                            src={elHornitoTenant.logoUrl}
+                            alt="El Hornito Logo"
+                            className="w-full h-full object-cover"
+                          />
+                        ) : (
+                          <span className="text-4xl">🥐</span>
+                        )}
+                      </div>
+                      {/* Upload overlay */}
+                      <label className="absolute inset-0 flex items-center justify-center bg-black/50 rounded-2xl opacity-0 group-hover:opacity-100 cursor-pointer transition-opacity">
+                        {elHornitoLogoUploading ? (
+                          <div className="animate-spin w-6 h-6 border-2 border-white border-t-transparent rounded-full"></div>
+                        ) : (
+                          <div className="text-center">
+                            <span className="text-lg">📷</span>
+                            <p className="text-xs mt-1">Upload</p>
+                          </div>
+                        )}
+                        <input
+                          type="file"
+                          accept="image/*"
+                          className="hidden"
+                          onChange={handleElHornitoLogoUpload}
+                          disabled={elHornitoLogoUploading}
+                        />
+                      </label>
                     </div>
                     <div>
                       <h2 className="text-2xl font-bold flex items-center gap-3">
@@ -2211,6 +2299,9 @@ export default function MenuEditorPage() {
                       </h2>
                       <p className="text-amber-100 mt-1">
                         Sub-tenant menu management • Authentic Mexican breads & pastries
+                      </p>
+                      <p className="text-xs text-white/70 mt-1">
+                        Hover over logo to upload new image (PNG recommended)
                       </p>
                     </div>
                   </div>

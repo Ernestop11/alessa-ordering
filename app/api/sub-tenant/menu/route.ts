@@ -337,6 +337,57 @@ export async function PUT(req: Request) {
 }
 
 /**
+ * PATCH /api/sub-tenant/menu
+ * Updates sub-tenant branding (logo, colors, name)
+ *
+ * Body: { slug, logoUrl?, primaryColor?, secondaryColor?, name? }
+ */
+export async function PATCH(req: Request) {
+  try {
+    const parentTenant = await requireTenant();
+    const body = await req.json();
+    const { slug, logoUrl, primaryColor, secondaryColor, name } = body;
+
+    if (!slug) {
+      return NextResponse.json({ error: 'Missing slug parameter' }, { status: 400 });
+    }
+
+    const result = await verifySubTenantOwnership(slug, parentTenant.id);
+    if ('error' in result) {
+      return NextResponse.json({ error: result.error }, { status: result.status });
+    }
+
+    const { subTenant } = result;
+
+    const updatedTenant = await prisma.tenant.update({
+      where: { id: subTenant.id },
+      data: {
+        ...(logoUrl !== undefined && { logoUrl }),
+        ...(primaryColor !== undefined && { primaryColor }),
+        ...(secondaryColor !== undefined && { secondaryColor }),
+        ...(name !== undefined && { name }),
+      },
+      select: {
+        id: true,
+        name: true,
+        slug: true,
+        logoUrl: true,
+        primaryColor: true,
+        secondaryColor: true,
+      },
+    });
+
+    return NextResponse.json({ success: true, tenant: updatedTenant });
+  } catch (error) {
+    console.error('[Sub-Tenant Menu API] PATCH Error:', error);
+    return NextResponse.json(
+      { error: 'Failed to update sub-tenant branding' },
+      { status: 500 }
+    );
+  }
+}
+
+/**
  * DELETE /api/sub-tenant/menu
  * Deletes a menu item or section
  *
