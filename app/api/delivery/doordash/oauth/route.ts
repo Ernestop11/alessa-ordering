@@ -6,8 +6,6 @@ import prisma from '@/lib/prisma';
 
 export const dynamic = 'force-dynamic';
 
-const BASE_URL = process.env.NEXTAUTH_URL || process.env.BASE_URL || 'http://localhost:3001';
-
 /**
  * POST /api/delivery/doordash/oauth
  *

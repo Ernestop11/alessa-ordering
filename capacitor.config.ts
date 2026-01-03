@@ -9,7 +9,9 @@ const config: CapacitorConfig = {
     iosScheme: 'https',
     // Load fulfillment dashboard directly for kiosk mode
     // Will redirect to login if not authenticated, then back to fulfillment
-    url: process.env.CAPACITOR_SERVER_URL || 'https://lasreinas.alessacloud.com/admin/fulfillment',
+    // IMPORTANT: Set CAPACITOR_SERVER_URL environment variable for your tenant
+    // Example: CAPACITOR_SERVER_URL=https://lapoblanitamexicanfood.com/admin/fulfillment
+    url: process.env.CAPACITOR_SERVER_URL,
     cleartext: false,
   },
   ios: {

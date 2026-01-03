@@ -8,7 +8,6 @@ export const dynamic = 'force-dynamic';
 
 const UBER_CLIENT_ID = process.env.UBER_CLIENT_ID;
 const UBER_CLIENT_SECRET = process.env.UBER_CLIENT_SECRET;
-const BASE_URL = process.env.NEXTAUTH_URL || process.env.BASE_URL || 'http://localhost:3001';
 
 /**
  * POST /api/delivery/uber/test

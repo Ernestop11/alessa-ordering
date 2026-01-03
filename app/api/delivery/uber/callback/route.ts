@@ -8,7 +8,19 @@ export const dynamic = 'force-dynamic';
 
 const UBER_CLIENT_ID = process.env.UBER_CLIENT_ID;
 const UBER_CLIENT_SECRET = process.env.UBER_CLIENT_SECRET;
-const BASE_URL = process.env.NEXTAUTH_URL || process.env.BASE_URL || 'http://localhost:3001';
+
+// Helper to get base URL - requires NEXTAUTH_URL in production
+function getBaseUrl(request: Request): string {
+  const host = request.headers.get('host') || '';
+  if (host.includes('localhost')) {
+    return `http://${host}`;
+  }
+  // In production, NEXTAUTH_URL must be set
+  if (!process.env.NEXTAUTH_URL) {
+    console.error('[uber-callback] NEXTAUTH_URL not set in production!');
+  }
+  return process.env.NEXTAUTH_URL || `https://${host}`;
+}
 
 /**
  * GET /api/delivery/uber/callback
@@ -20,6 +32,8 @@ const BASE_URL = process.env.NEXTAUTH_URL || process.env.BASE_URL || 'http://loc
  * 4. Redirects to admin delivery setup page
  */
 export async function GET(request: Request) {
+  const BASE_URL = getBaseUrl(request);
+
   try {
     // Verify admin authentication
     const session = await getServerSession(authOptions);

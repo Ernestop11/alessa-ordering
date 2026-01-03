@@ -110,8 +110,9 @@ export async function POST(request: NextRequest) {
       });
     }
 
-    // Build shareable link using custom domain or default
-    const domain = tenant.customDomain || `${tenant.slug}.alessa.app`;
+    // Build shareable link using custom domain or ROOT_DOMAIN
+    const ROOT_DOMAIN = process.env.ROOT_DOMAIN || 'alessacloud.com';
+    const domain = tenant.customDomain || tenant.domain || `${tenant.slug}.${ROOT_DOMAIN}`;
     const baseShareableLink = `https://${domain}/group/${sessionCode}`;
 
     // Create invitations if any invitees provided

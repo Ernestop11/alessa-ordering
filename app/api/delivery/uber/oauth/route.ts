@@ -9,7 +9,18 @@ import crypto from 'crypto';
 export const dynamic = 'force-dynamic';
 
 const UBER_CLIENT_ID = process.env.UBER_CLIENT_ID;
-const BASE_URL = process.env.NEXTAUTH_URL || process.env.BASE_URL || 'http://localhost:3001';
+
+// Helper to get base URL from tenant config
+function getBaseUrl(tenant: { customDomain?: string | null; domain?: string | null; slug: string }): string {
+  const ROOT_DOMAIN = process.env.ROOT_DOMAIN || 'alessacloud.com';
+  if (tenant.customDomain) {
+    return `https://${tenant.customDomain}`;
+  }
+  if (tenant.domain) {
+    return `https://${tenant.domain}`;
+  }
+  return `https://${tenant.slug}.${ROOT_DOMAIN}`;
+}
 
 /**
  * GET /api/delivery/uber/oauth
@@ -33,6 +44,7 @@ export async function GET() {
     }
 
     const tenant = await requireTenant();
+    const BASE_URL = getBaseUrl(tenant);
 
     // Generate state token: base64 encoded JSON with tenantId and nonce
     const stateData = {

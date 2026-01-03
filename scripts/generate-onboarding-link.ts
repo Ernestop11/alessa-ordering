@@ -119,24 +119,39 @@ async function generateOnboardingLink(tenantSlug: string) {
       }
     }
 
-    // Get the base URL from environment or use default
+    // Get the base URL from tenant's configured domain
     // For LIVE keys, Stripe requires HTTPS - use production URL
     const isLiveMode = process.env.STRIPE_SECRET_KEY?.startsWith('sk_live_');
-    let baseUrl = process.env.NEXTAUTH_URL || process.env.ROOT_DOMAIN || 'https://lasreinas.alessacloud.com';
-    
-    // If using live keys, force HTTPS (Stripe requirement)
+    const ROOT_DOMAIN = process.env.ROOT_DOMAIN || 'alessacloud.com';
+
+    // Build URL from tenant's domain config
+    let baseUrl: string;
+    if (tenant.customDomain) {
+      baseUrl = `https://${tenant.customDomain}`;
+    } else if (tenant.domain) {
+      baseUrl = `https://${tenant.domain}`;
+    } else {
+      baseUrl = `https://${tenant.slug}.${ROOT_DOMAIN}`;
+    }
+
+    // Override with env if explicitly set
+    if (process.env.NEXTAUTH_URL && !process.env.NEXTAUTH_URL.includes('localhost')) {
+      baseUrl = process.env.NEXTAUTH_URL;
+    }
+
+    // If using live keys, ensure HTTPS (Stripe requirement)
     if (isLiveMode) {
-      // Remove http:// and ensure https://
-      baseUrl = baseUrl.replace(/^https?:\/\//, '');
-      baseUrl = `https://${baseUrl}`;
-      // Don't use localhost for live mode
+      baseUrl = baseUrl.replace(/^http:\/\//, 'https://');
       if (baseUrl.includes('localhost')) {
-        baseUrl = 'https://lasreinas.alessacloud.com';
-        console.log('⚠️  Using production URL for live Stripe keys (localhost not allowed)');
+        console.error('❌ Cannot use localhost with live Stripe keys!');
+        console.log(`   Use the tenant domain instead: https://${tenant.customDomain || tenant.domain || tenant.slug + '.' + ROOT_DOMAIN}`);
+        process.exit(1);
       }
     } else {
-      // Test mode can use localhost
-      baseUrl = baseUrl.includes('localhost') ? 'http://localhost:3001' : baseUrl;
+      // Test mode can use localhost if explicitly set
+      if (process.env.NEXTAUTH_URL?.includes('localhost')) {
+        baseUrl = 'http://localhost:3001';
+      }
     }
     
     const redirectUrl = baseUrl;

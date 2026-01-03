@@ -112,7 +112,12 @@
       "Bash(timeout 120 npx tsc:*)",
       "Bash(git revert:*)",
       "Bash(nslookup:*)",
-      "Bash(lsof:*)"
+      "Bash(lsof:*)",
+      "Bash(timeout 90 npx tsc:*)",
+      "Bash(git -C /Users/ernestoponce/alessa-ordering log --oneline --all --grep=\"hornito\\\\|bakery\\\\|sub.*tenant\")",
+      "Bash(git -C /Users/ernestoponce/alessa-ordering show cbce1fa --stat)",
+      "Bash(git -C /Users/ernestoponce/alessa-ordering show f2b6342 --stat)",
+      "Bash(git -C /Users/ernestoponce/alessa-ordering show:*)"
     ],
     "deny": [],
     "ask": []

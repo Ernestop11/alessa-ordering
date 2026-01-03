@@ -42,9 +42,23 @@ export async function GET(request: Request) {
     }
 
     const stripe = getStripeClient();
-    const origin = request.headers.get('origin') || request.headers.get('host') || 'https://lasreinas.alessacloud.com';
-    const protocol = origin.includes('localhost') ? 'http' : 'https';
-    const baseUrl = origin.includes('localhost') ? origin : `https://${origin.split('://')[1] || origin}`;
+
+    // Build base URL from tenant's configured domain or ROOT_DOMAIN
+    const ROOT_DOMAIN = process.env.ROOT_DOMAIN || 'alessacloud.com';
+    const host = request.headers.get('host') || '';
+    const isLocalhost = host.includes('localhost');
+
+    // Priority: tenant.customDomain > tenant.domain > subdomain of ROOT_DOMAIN
+    let baseUrl: string;
+    if (isLocalhost) {
+      baseUrl = `http://${host}`;
+    } else if (tenant.customDomain) {
+      baseUrl = `https://${tenant.customDomain}`;
+    } else if (tenant.domain) {
+      baseUrl = `https://${tenant.domain}`;
+    } else {
+      baseUrl = `https://${tenant.slug}.${ROOT_DOMAIN}`;
+    }
 
     let accountId = tenant.integrations?.stripeAccountId;
 
