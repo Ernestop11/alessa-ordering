@@ -110,7 +110,9 @@
       "Bash(/tmp/ssh-install.exp:*)",
       "Bash(timeout 60 npx tsc:*)",
       "Bash(timeout 120 npx tsc:*)",
-      "Bash(git revert:*)"
+      "Bash(git revert:*)",
+      "Bash(nslookup:*)",
+      "Bash(lsof:*)"
     ],
     "deny": [],
     "ask": []
