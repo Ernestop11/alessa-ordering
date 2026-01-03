@@ -50,6 +50,18 @@ const TENANT_THEME_MAP: Record<string, StaticTenantTheme> = {
       logo: '/tenant/villacorona/logo.png',
     },
   },
+  elhornito: {
+    slug: 'elhornito',
+    name: 'El Hornito Bakery',
+    primaryColor: '#d97706', // amber-600
+    secondaryColor: '#f59e0b', // amber-500
+    themeColor: '#78350f', // amber-900 for status bar
+    assets: {
+      hero: '/tenant/elhornito/hero.jpg',
+      membership: '/tenant/lapoblanita/membership.jpg', // Uses parent tenant membership
+      logo: '/tenant/elhornito/logo.png',
+    },
+  },
 };
 
 export function getStaticTenantTheme(slug?: string): StaticTenantTheme {

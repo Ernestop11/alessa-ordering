@@ -149,6 +149,7 @@ export default function MenuEditorPage() {
     image: string | null;
     sectionId?: string;
     sectionName?: string;
+    isFeatured?: boolean;
   }
   interface ElHornitoSection {
     id: string;
@@ -163,12 +164,29 @@ export default function MenuEditorPage() {
   const [elHornitoLoading, setElHornitoLoading] = useState(false);
   const [selectedElHornitoSection, setSelectedElHornitoSection] = useState<string | null>(null);
   const [editingElHornitoItem, setEditingElHornitoItem] = useState<ElHornitoItem | null>(null);
+  const [showElHornitoItemModal, setShowElHornitoItemModal] = useState(false);
+  const [showElHornitoSectionModal, setShowElHornitoSectionModal] = useState(false);
+  const [editingElHornitoSection, setEditingElHornitoSection] = useState<ElHornitoSection | null>(null);
+  const [elHornitoSaving, setElHornitoSaving] = useState(false);
+  const [elHornitoNewItem, setElHornitoNewItem] = useState({
+    name: '',
+    description: '',
+    price: '',
+    category: 'Pan Dulce',
+    image: '',
+    sectionId: '',
+    isFeatured: false,
+  });
+  const [elHornitoNewSection, setElHornitoNewSection] = useState({
+    name: '',
+    description: '',
+  });
 
   const fetchElHornitoMenu = async () => {
     if (!enabledAddOns.includes('panaderia')) return;
     setElHornitoLoading(true);
     try {
-      const res = await fetch('/api/sub-tenant/menu?slug=elhornito');
+      const res = await fetch('/api/sub-tenant/menu?slug=elhornito&includeUnavailable=true');
       const data = await res.json();
       if (data.tenant) {
         setElHornitoTenant(data.tenant);
@@ -183,6 +201,155 @@ export default function MenuEditorPage() {
     } finally {
       setElHornitoLoading(false);
     }
+  };
+
+  // El Hornito CRUD operations
+  const saveElHornitoSection = async () => {
+    setElHornitoSaving(true);
+    try {
+      const isEditing = !!editingElHornitoSection;
+      const res = await fetch('/api/sub-tenant/menu', {
+        method: isEditing ? 'PUT' : 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({
+          slug: 'elhornito',
+          type: 'section',
+          ...(isEditing ? { id: editingElHornitoSection.id } : {}),
+          name: elHornitoNewSection.name,
+          description: elHornitoNewSection.description,
+          sectionType: 'BAKERY',
+        }),
+      });
+      if (res.ok) {
+        await fetchElHornitoMenu();
+        setShowElHornitoSectionModal(false);
+        setEditingElHornitoSection(null);
+        setElHornitoNewSection({ name: '', description: '' });
+      } else {
+        const err = await res.json();
+        alert(err.error || 'Failed to save section');
+      }
+    } catch (err) {
+      console.error('Failed to save section:', err);
+      alert('Failed to save section');
+    } finally {
+      setElHornitoSaving(false);
+    }
+  };
+
+  const deleteElHornitoSection = async (sectionId: string) => {
+    if (!confirm('Delete this section? Items will be unlinked but not deleted.')) return;
+    try {
+      const res = await fetch('/api/sub-tenant/menu', {
+        method: 'DELETE',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ slug: 'elhornito', type: 'section', id: sectionId }),
+      });
+      if (res.ok) {
+        await fetchElHornitoMenu();
+        if (selectedElHornitoSection === sectionId) {
+          setSelectedElHornitoSection(null);
+        }
+      }
+    } catch (err) {
+      console.error('Failed to delete section:', err);
+    }
+  };
+
+  const saveElHornitoItem = async () => {
+    setElHornitoSaving(true);
+    try {
+      const isEditing = !!editingElHornitoItem;
+      const res = await fetch('/api/sub-tenant/menu', {
+        method: isEditing ? 'PUT' : 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({
+          slug: 'elhornito',
+          type: 'item',
+          ...(isEditing ? { id: editingElHornitoItem.id } : {}),
+          name: elHornitoNewItem.name,
+          description: elHornitoNewItem.description,
+          price: elHornitoNewItem.price,
+          category: elHornitoNewItem.category,
+          image: elHornitoNewItem.image || null,
+          sectionId: elHornitoNewItem.sectionId || null,
+          isFeatured: elHornitoNewItem.isFeatured,
+        }),
+      });
+      if (res.ok) {
+        await fetchElHornitoMenu();
+        setShowElHornitoItemModal(false);
+        setEditingElHornitoItem(null);
+        setElHornitoNewItem({ name: '', description: '', price: '', category: 'Pan Dulce', image: '', sectionId: '', isFeatured: false });
+      } else {
+        const err = await res.json();
+        alert(err.error || 'Failed to save item');
+      }
+    } catch (err) {
+      console.error('Failed to save item:', err);
+      alert('Failed to save item');
+    } finally {
+      setElHornitoSaving(false);
+    }
+  };
+
+  const deleteElHornitoItem = async (itemId: string) => {
+    if (!confirm('Delete this item?')) return;
+    try {
+      const res = await fetch('/api/sub-tenant/menu', {
+        method: 'DELETE',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ slug: 'elhornito', type: 'item', id: itemId }),
+      });
+      if (res.ok) {
+        await fetchElHornitoMenu();
+      }
+    } catch (err) {
+      console.error('Failed to delete item:', err);
+    }
+  };
+
+  const toggleElHornitoItemAvailability = async (item: ElHornitoItem) => {
+    try {
+      const res = await fetch('/api/sub-tenant/menu', {
+        method: 'PUT',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({
+          slug: 'elhornito',
+          type: 'item',
+          id: item.id,
+          available: !item.available,
+        }),
+      });
+      if (res.ok) {
+        await fetchElHornitoMenu();
+      }
+    } catch (err) {
+      console.error('Failed to toggle availability:', err);
+    }
+  };
+
+  const openEditElHornitoItem = (item: ElHornitoItem) => {
+    setEditingElHornitoItem(item);
+    setElHornitoNewItem({
+      name: item.name,
+      description: item.description,
+      price: String(item.price),
+      category: item.category,
+      image: item.image || '',
+      sectionId: item.sectionId || '',
+      isFeatured: false,
+    });
+    setShowElHornitoItemModal(true);
+  };
+
+  const openEditElHornitoSection = (section: ElHornitoSection) => {
+    setEditingElHornitoSection(section);
+    setElHornitoNewSection({
+      name: section.name,
+      description: section.description || '',
+    });
+    setShowElHornitoSectionModal(true);
   };
 
   const fetchSections = async () => {
@@ -2048,9 +2215,26 @@ export default function MenuEditorPage() {
                     </div>
                   </div>
                   <div className="flex items-center gap-3">
-                    <span className="px-3 py-1 rounded-full bg-white/20 text-sm font-medium">
-                      📍 Inside La Poblanita
-                    </span>
+                    <button
+                      onClick={() => {
+                        setEditingElHornitoItem(null);
+                        setElHornitoNewItem({ name: '', description: '', price: '', category: 'Pan Dulce', image: '', sectionId: selectedElHornitoSection || '', isFeatured: false });
+                        setShowElHornitoItemModal(true);
+                      }}
+                      className="px-4 py-2 rounded-lg bg-white text-amber-600 font-semibold hover:bg-amber-50 transition-all"
+                    >
+                      + Add Item
+                    </button>
+                    <button
+                      onClick={() => {
+                        setEditingElHornitoSection(null);
+                        setElHornitoNewSection({ name: '', description: '' });
+                        setShowElHornitoSectionModal(true);
+                      }}
+                      className="px-4 py-2 rounded-lg bg-white/20 text-white font-semibold hover:bg-white/30 transition-all"
+                    >
+                      + Add Section
+                    </button>
                     {elHornitoTenant && (
                       <span className="px-3 py-1 rounded-full bg-green-500/30 text-sm font-medium flex items-center gap-1">
                         <span className="w-2 h-2 rounded-full bg-green-300 animate-pulse"></span>
@@ -2099,7 +2283,7 @@ export default function MenuEditorPage() {
                         {elHornitoSections.map((section) => (
                           <div
                             key={section.id}
-                            className={`p-3 rounded-lg cursor-pointer transition-colors ${
+                            className={`p-3 rounded-lg cursor-pointer transition-colors group ${
                               selectedElHornitoSection === section.id
                                 ? 'bg-amber-50 border-2 border-amber-500'
                                 : 'bg-gray-50 border-2 border-transparent hover:bg-gray-100'
@@ -2108,9 +2292,27 @@ export default function MenuEditorPage() {
                           >
                             <div className="flex items-center justify-between">
                               <span className="font-medium text-gray-900">{section.name}</span>
-                              <span className="text-xs bg-gray-200 px-2 py-1 rounded-full">
-                                {section.itemCount}
-                              </span>
+                              <div className="flex items-center gap-2">
+                                <span className="text-xs bg-gray-200 px-2 py-1 rounded-full">
+                                  {section.itemCount}
+                                </span>
+                                <div className="hidden group-hover:flex gap-1">
+                                  <button
+                                    onClick={(e) => { e.stopPropagation(); openEditElHornitoSection(section); }}
+                                    className="p-1 rounded hover:bg-amber-200 text-amber-600"
+                                    title="Edit section"
+                                  >
+                                    ✏️
+                                  </button>
+                                  <button
+                                    onClick={(e) => { e.stopPropagation(); deleteElHornitoSection(section.id); }}
+                                    className="p-1 rounded hover:bg-red-100 text-red-500"
+                                    title="Delete section"
+                                  >
+                                    🗑️
+                                  </button>
+                                </div>
+                              </div>
                             </div>
                             {section.description && (
                               <p className="text-xs text-gray-500 mt-1">{section.description}</p>
@@ -2119,9 +2321,16 @@ export default function MenuEditorPage() {
                         ))}
                       </div>
                       <div className="mt-4 pt-4 border-t">
-                        <p className="text-xs text-gray-500">
-                          💡 Manage sections via the sub-tenant admin
-                        </p>
+                        <button
+                          onClick={() => {
+                            setEditingElHornitoSection(null);
+                            setElHornitoNewSection({ name: '', description: '' });
+                            setShowElHornitoSectionModal(true);
+                          }}
+                          className="w-full py-2 text-sm text-amber-600 hover:bg-amber-50 rounded-lg transition-all font-medium"
+                        >
+                          + Add New Section
+                        </button>
                       </div>
                     </div>
                   </div>
@@ -2137,6 +2346,16 @@ export default function MenuEditorPage() {
                         </h3>
                         <div className="flex gap-2">
                           <button
+                            onClick={() => {
+                              setEditingElHornitoItem(null);
+                              setElHornitoNewItem({ name: '', description: '', price: '', category: 'Pan Dulce', image: '', sectionId: selectedElHornitoSection || '', isFeatured: false });
+                              setShowElHornitoItemModal(true);
+                            }}
+                            className="inline-flex items-center px-4 py-2 bg-amber-500 text-white rounded-md shadow-sm text-sm font-medium hover:bg-amber-600"
+                          >
+                            + Add Item
+                          </button>
+                          <button
                             onClick={fetchElHornitoMenu}
                             className="inline-flex items-center px-3 py-2 border border-gray-300 rounded-md shadow-sm text-sm font-medium text-gray-700 bg-white hover:bg-gray-50"
                           >
@@ -2145,16 +2364,23 @@ export default function MenuEditorPage() {
                         </div>
                       </div>
 
-                      {elHornitoItems.length === 0 ? (
+                      {elHornitoItems.filter(item => !selectedElHornitoSection || item.sectionId === selectedElHornitoSection).length === 0 ? (
                         <div className="text-center py-12">
                           <span className="text-6xl mb-4 block">🥖</span>
                           <h3 className="text-xl font-bold text-gray-700 mb-2">No Bakery Items Yet</h3>
                           <p className="text-gray-500 mb-4">
                             Add menu items to El Hornito to see them here.
                           </p>
-                          <p className="text-sm text-gray-400">
-                            Items added here will appear in the Panaderia panel on the ordering page.
-                          </p>
+                          <button
+                            onClick={() => {
+                              setEditingElHornitoItem(null);
+                              setElHornitoNewItem({ name: '', description: '', price: '', category: 'Pan Dulce', image: '', sectionId: selectedElHornitoSection || '', isFeatured: false });
+                              setShowElHornitoItemModal(true);
+                            }}
+                            className="inline-flex items-center px-6 py-3 bg-amber-500 text-white rounded-lg shadow-sm text-sm font-medium hover:bg-amber-600"
+                          >
+                            + Add Your First Item
+                          </button>
                         </div>
                       ) : (
                         <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
@@ -2163,18 +2389,47 @@ export default function MenuEditorPage() {
                             .map((item) => (
                               <div
                                 key={item.id}
-                                className={`p-4 rounded-lg border-2 transition-all ${
+                                className={`p-4 rounded-lg border-2 transition-all group relative ${
                                   item.available
                                     ? 'bg-white border-gray-200 hover:border-amber-300'
                                     : 'bg-gray-50 border-gray-200 opacity-60'
                                 }`}
                               >
-                                {item.image && (
+                                {/* Action buttons - visible on hover */}
+                                <div className="absolute top-2 right-2 hidden group-hover:flex gap-1 bg-white/90 rounded-lg p-1 shadow-sm">
+                                  <button
+                                    onClick={() => openEditElHornitoItem(item)}
+                                    className="p-1.5 rounded hover:bg-amber-100 text-amber-600"
+                                    title="Edit item"
+                                  >
+                                    ✏️
+                                  </button>
+                                  <button
+                                    onClick={() => toggleElHornitoItemAvailability(item)}
+                                    className={`p-1.5 rounded ${item.available ? 'hover:bg-red-100 text-red-500' : 'hover:bg-green-100 text-green-600'}`}
+                                    title={item.available ? 'Mark unavailable' : 'Mark available'}
+                                  >
+                                    {item.available ? '🚫' : '✅'}
+                                  </button>
+                                  <button
+                                    onClick={() => deleteElHornitoItem(item.id)}
+                                    className="p-1.5 rounded hover:bg-red-100 text-red-500"
+                                    title="Delete item"
+                                  >
+                                    🗑️
+                                  </button>
+                                </div>
+
+                                {item.image ? (
                                   <img
                                     src={item.image}
                                     alt={item.name}
                                     className="w-full h-32 object-cover rounded-lg mb-3"
                                   />
+                                ) : (
+                                  <div className="w-full h-32 bg-amber-50 rounded-lg mb-3 flex items-center justify-center text-4xl">
+                                    🥐
+                                  </div>
                                 )}
                                 <h4 className="font-semibold text-gray-900">{item.name}</h4>
                                 <p className="text-sm text-gray-500 line-clamp-2 mb-2">{item.description}</p>
@@ -2182,9 +2437,9 @@ export default function MenuEditorPage() {
                                   <span className="text-lg font-bold text-amber-600">
                                     ${Number(item.price).toFixed(2)}
                                   </span>
-                                  <span className={`px-2 py-1 rounded-full text-xs ${
-                                    item.available ? 'bg-green-100 text-green-700' : 'bg-red-100 text-red-700'
-                                  }`}>
+                                  <span className={`px-2 py-1 rounded-full text-xs cursor-pointer ${
+                                    item.available ? 'bg-green-100 text-green-700 hover:bg-green-200' : 'bg-red-100 text-red-700 hover:bg-red-200'
+                                  }`} onClick={() => toggleElHornitoItemAvailability(item)}>
                                     {item.available ? 'Available' : 'Unavailable'}
                                   </span>
                                 </div>
@@ -2207,10 +2462,172 @@ export default function MenuEditorPage() {
                 <h4 className="font-semibold text-amber-800 mb-2">💡 About El Hornito Management</h4>
                 <p className="text-sm text-amber-700">
                   El Hornito is a linked sub-tenant of La Poblanita. Items shown here are managed separately
-                  and appear in the &quot;Panaderia&quot; panel on the customer ordering page. This separation
-                  allows for independent menu management while maintaining the parent-child business relationship.
+                  and appear on the <strong>/bakery</strong> page. Customers can add items from both La Poblanita and El Hornito to the same cart.
                 </p>
               </div>
+
+              {/* Section Modal */}
+              {showElHornitoSectionModal && (
+                <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/50">
+                  <div className="bg-white rounded-xl shadow-2xl w-full max-w-md mx-4 p-6">
+                    <h3 className="text-xl font-bold text-gray-900 mb-4">
+                      {editingElHornitoSection ? 'Edit Section' : 'Add New Section'}
+                    </h3>
+                    <div className="space-y-4">
+                      <div>
+                        <label className="block text-sm font-medium text-gray-700 mb-1">Section Name</label>
+                        <input
+                          type="text"
+                          value={elHornitoNewSection.name}
+                          onChange={(e) => setElHornitoNewSection({ ...elHornitoNewSection, name: e.target.value })}
+                          placeholder="e.g., Pan Dulce, Pasteles, Empanadas"
+                          className="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-amber-500 focus:border-amber-500"
+                        />
+                      </div>
+                      <div>
+                        <label className="block text-sm font-medium text-gray-700 mb-1">Description (optional)</label>
+                        <textarea
+                          value={elHornitoNewSection.description}
+                          onChange={(e) => setElHornitoNewSection({ ...elHornitoNewSection, description: e.target.value })}
+                          placeholder="Brief description of this section"
+                          rows={2}
+                          className="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-amber-500 focus:border-amber-500"
+                        />
+                      </div>
+                    </div>
+                    <div className="flex justify-end gap-3 mt-6">
+                      <button
+                        onClick={() => { setShowElHornitoSectionModal(false); setEditingElHornitoSection(null); }}
+                        className="px-4 py-2 text-gray-700 hover:bg-gray-100 rounded-lg"
+                      >
+                        Cancel
+                      </button>
+                      <button
+                        onClick={saveElHornitoSection}
+                        disabled={!elHornitoNewSection.name || elHornitoSaving}
+                        className="px-6 py-2 bg-amber-500 text-white rounded-lg font-medium hover:bg-amber-600 disabled:opacity-50"
+                      >
+                        {elHornitoSaving ? 'Saving...' : (editingElHornitoSection ? 'Update' : 'Create')}
+                      </button>
+                    </div>
+                  </div>
+                </div>
+              )}
+
+              {/* Item Modal */}
+              {showElHornitoItemModal && (
+                <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/50 overflow-y-auto py-8">
+                  <div className="bg-white rounded-xl shadow-2xl w-full max-w-lg mx-4 p-6">
+                    <h3 className="text-xl font-bold text-gray-900 mb-4">
+                      {editingElHornitoItem ? 'Edit Bakery Item' : 'Add New Bakery Item'}
+                    </h3>
+                    <div className="space-y-4">
+                      <div>
+                        <label className="block text-sm font-medium text-gray-700 mb-1">Item Name *</label>
+                        <input
+                          type="text"
+                          value={elHornitoNewItem.name}
+                          onChange={(e) => setElHornitoNewItem({ ...elHornitoNewItem, name: e.target.value })}
+                          placeholder="e.g., Concha de Chocolate"
+                          className="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-amber-500 focus:border-amber-500"
+                        />
+                      </div>
+                      <div>
+                        <label className="block text-sm font-medium text-gray-700 mb-1">Description</label>
+                        <textarea
+                          value={elHornitoNewItem.description}
+                          onChange={(e) => setElHornitoNewItem({ ...elHornitoNewItem, description: e.target.value })}
+                          placeholder="Brief description of this item"
+                          rows={2}
+                          className="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-amber-500 focus:border-amber-500"
+                        />
+                      </div>
+                      <div className="grid grid-cols-2 gap-4">
+                        <div>
+                          <label className="block text-sm font-medium text-gray-700 mb-1">Price *</label>
+                          <input
+                            type="number"
+                            step="0.01"
+                            min="0"
+                            value={elHornitoNewItem.price}
+                            onChange={(e) => setElHornitoNewItem({ ...elHornitoNewItem, price: e.target.value })}
+                            placeholder="0.00"
+                            className="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-amber-500 focus:border-amber-500"
+                          />
+                        </div>
+                        <div>
+                          <label className="block text-sm font-medium text-gray-700 mb-1">Category</label>
+                          <select
+                            value={elHornitoNewItem.category}
+                            onChange={(e) => setElHornitoNewItem({ ...elHornitoNewItem, category: e.target.value })}
+                            className="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-amber-500 focus:border-amber-500"
+                          >
+                            <option value="Pan Dulce">Pan Dulce</option>
+                            <option value="Conchas">Conchas</option>
+                            <option value="Cuernos">Cuernos</option>
+                            <option value="Empanadas">Empanadas</option>
+                            <option value="Pasteles">Pasteles (Cakes)</option>
+                            <option value="Galletas">Galletas (Cookies)</option>
+                            <option value="Pan Salado">Pan Salado (Savory)</option>
+                            <option value="Specialty">Specialty Items</option>
+                          </select>
+                        </div>
+                      </div>
+                      <div>
+                        <label className="block text-sm font-medium text-gray-700 mb-1">Section</label>
+                        <select
+                          value={elHornitoNewItem.sectionId}
+                          onChange={(e) => setElHornitoNewItem({ ...elHornitoNewItem, sectionId: e.target.value })}
+                          className="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-amber-500 focus:border-amber-500"
+                        >
+                          <option value="">No Section</option>
+                          {elHornitoSections.map(section => (
+                            <option key={section.id} value={section.id}>{section.name}</option>
+                          ))}
+                        </select>
+                      </div>
+                      <div>
+                        <label className="block text-sm font-medium text-gray-700 mb-1">Image URL (optional)</label>
+                        <input
+                          type="text"
+                          value={elHornitoNewItem.image}
+                          onChange={(e) => setElHornitoNewItem({ ...elHornitoNewItem, image: e.target.value })}
+                          placeholder="https://..."
+                          className="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-amber-500 focus:border-amber-500"
+                        />
+                        {elHornitoNewItem.image && (
+                          <img src={elHornitoNewItem.image} alt="Preview" className="mt-2 h-24 object-cover rounded-lg" />
+                        )}
+                      </div>
+                      <div className="flex items-center gap-2">
+                        <input
+                          type="checkbox"
+                          id="isFeatured"
+                          checked={elHornitoNewItem.isFeatured}
+                          onChange={(e) => setElHornitoNewItem({ ...elHornitoNewItem, isFeatured: e.target.checked })}
+                          className="w-4 h-4 rounded border-gray-300 text-amber-500 focus:ring-amber-500"
+                        />
+                        <label htmlFor="isFeatured" className="text-sm text-gray-700">Featured item (show in carousel)</label>
+                      </div>
+                    </div>
+                    <div className="flex justify-end gap-3 mt-6">
+                      <button
+                        onClick={() => { setShowElHornitoItemModal(false); setEditingElHornitoItem(null); }}
+                        className="px-4 py-2 text-gray-700 hover:bg-gray-100 rounded-lg"
+                      >
+                        Cancel
+                      </button>
+                      <button
+                        onClick={saveElHornitoItem}
+                        disabled={!elHornitoNewItem.name || !elHornitoNewItem.price || elHornitoSaving}
+                        className="px-6 py-2 bg-amber-500 text-white rounded-lg font-medium hover:bg-amber-600 disabled:opacity-50"
+                      >
+                        {elHornitoSaving ? 'Saving...' : (editingElHornitoItem ? 'Update Item' : 'Add Item')}
+                      </button>
+                    </div>
+                  </div>
+                </div>
+              )}
             </div>
           ) : (activeTab as string) === 'smp' ? (
             <div className="space-y-6">
