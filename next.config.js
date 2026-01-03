@@ -38,6 +38,12 @@ const nextConfig = {
   generateBuildId: async () => {
     return `build-${Date.now()}`;
   },
+  // Allow larger file uploads (25MB) for bakery product images
+  experimental: {
+    serverActions: {
+      bodySizeLimit: '25mb',
+    },
+  },
   eslint: {
     // Ignore ESLint errors during builds to allow server to start
     ignoreDuringBuilds: true,

@@ -187,20 +187,26 @@ export default function MenuEditorPage() {
 
   // El Hornito item image upload handler (drag-and-drop or click)
   const handleElHornitoItemImageUpload = async (itemId: string, file: File) => {
-    // Validate file type
-    if (!file.type.startsWith('image/')) {
-      alert('Please drop an image file (PNG, JPG, etc.)');
+    // Validate file type - support JPG, JPEG, PNG, WEBP
+    const validTypes = ['image/jpeg', 'image/jpg', 'image/png', 'image/webp'];
+    if (!file.type.startsWith('image/') && !validTypes.includes(file.type.toLowerCase())) {
+      alert('Please drop an image file (JPG, PNG, WEBP)');
       return;
     }
 
-    // Validate file size (10MB max)
-    if (file.size > 10 * 1024 * 1024) {
-      alert('File too large. Please use an image under 10MB.');
+    // Validate file size (25MB max for large professional photos)
+    if (file.size > 25 * 1024 * 1024) {
+      alert('File too large. Maximum file size is 25MB.');
       return;
     }
 
     setElHornitoItemImageUploading(itemId);
     try {
+      // For files over 5MB, show a note about upload time
+      if (file.size > 5 * 1024 * 1024) {
+        console.log(`Uploading large file: ${(file.size / 1024 / 1024).toFixed(1)}MB - this may take a moment...`);
+      }
+
       // Upload the file
       const formData = new FormData();
       formData.append('file', file);
@@ -273,15 +279,16 @@ export default function MenuEditorPage() {
     const file = e.target.files?.[0];
     if (!file) return;
 
-    // Validate file type
-    if (!file.type.startsWith('image/')) {
-      alert('Please select an image file (PNG, JPG, etc.)');
+    // Validate file type - support JPG, JPEG, PNG, WEBP
+    const validTypes = ['image/jpeg', 'image/jpg', 'image/png', 'image/webp'];
+    if (!file.type.startsWith('image/') && !validTypes.includes(file.type.toLowerCase())) {
+      alert('Please select an image file (JPG, PNG, WEBP)');
       return;
     }
 
-    // Validate file size (10MB max)
-    if (file.size > 10 * 1024 * 1024) {
-      alert('File too large. Please select an image under 10MB.');
+    // Validate file size (25MB max)
+    if (file.size > 25 * 1024 * 1024) {
+      alert('File too large. Maximum file size is 25MB.');
       return;
     }
 
