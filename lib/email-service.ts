@@ -20,6 +20,42 @@ function getResend(): Resend | null {
 const DEFAULT_FROM_DOMAIN = process.env.RESEND_DEFAULT_DOMAIN || 'resend.dev';
 const DEFAULT_FROM_EMAIL = process.env.RESEND_DEFAULT_FROM || `orders@${DEFAULT_FROM_DOMAIN}`;
 
+// Email validation helper
+const EMAIL_REGEX = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
+function isValidEmail(email: string | null | undefined): email is string {
+  if (!email || typeof email !== 'string') return false;
+  return EMAIL_REGEX.test(email.trim());
+}
+
+// Delay helper for rate limiting (Resend allows 2 requests/second)
+const delay = (ms: number) => new Promise(resolve => setTimeout(resolve, ms));
+
+// Retry helper with exponential backoff for rate-limited requests
+async function sendWithRetry<T>(
+  fn: () => Promise<T>,
+  maxRetries: number = 3,
+  baseDelayMs: number = 600
+): Promise<T> {
+  let lastError: Error | null = null;
+  for (let attempt = 0; attempt < maxRetries; attempt++) {
+    try {
+      return await fn();
+    } catch (error: any) {
+      lastError = error;
+      const isRateLimited = error?.message?.includes('Too many requests') ||
+                            error?.message?.includes('rate limit');
+      if (isRateLimited && attempt < maxRetries - 1) {
+        const waitTime = baseDelayMs * Math.pow(2, attempt);
+        console.log(`[email] Rate limited, retrying in ${waitTime}ms (attempt ${attempt + 1}/${maxRetries})`);
+        await delay(waitTime);
+      } else {
+        throw error;
+      }
+    }
+  }
+  throw lastError;
+}
+
 // Lazy load Prisma to avoid circular dependencies
 let prismaClient: typeof import('@prisma/client').PrismaClient.prototype | null = null;
 async function getPrisma() {
@@ -445,11 +481,12 @@ export async function sendOrderEmails(orderId: string): Promise<{ customerSent: 
     const fromAddress = getTenantFromAddress(tenantForEmail);
     const replyTo = getTenantReplyTo(tenantForEmail);
 
-    // Send to customer if email exists
-    if (order.customerEmail) {
+    // Send to customer if email exists AND is valid
+    // Validate email format to prevent API errors
+    if (isValidEmail(order.customerEmail)) {
       try {
-        await sendCustomerConfirmationEmail({
-          to: order.customerEmail,
+        await sendWithRetry(() => sendCustomerConfirmationEmail({
+          to: order.customerEmail!.trim(),
           orderId: order.id,
           customerName: order.customerName,
           totalAmount: order.totalAmount,
@@ -465,18 +502,23 @@ export async function sendOrderEmails(orderId: string): Promise<{ customerSent: 
           primaryColor: order.tenant.primaryColor || '#dc2626',
           fromAddress,
           replyTo,
-        });
+        }));
         result.customerSent = true;
       } catch (err) {
         console.error('[email] Failed to send customer email:', err);
       }
+    } else if (order.customerEmail) {
+      console.warn('[email] Invalid customer email format, skipping:', order.customerEmail);
     }
 
-    // Send to tenant if contact email exists
-    if (order.tenant.contactEmail) {
+    // Add delay between emails to avoid rate limiting (Resend: 2 req/sec)
+    await delay(600);
+
+    // Send to tenant if contact email exists AND is valid
+    if (isValidEmail(order.tenant.contactEmail)) {
       try {
-        await sendOrderNotificationEmail({
-          to: order.tenant.contactEmail,
+        await sendWithRetry(() => sendOrderNotificationEmail({
+          to: order.tenant.contactEmail!.trim(),
           orderId: order.id,
           customerName: order.customerName,
           totalAmount: order.totalAmount,
@@ -487,18 +529,23 @@ export async function sendOrderEmails(orderId: string): Promise<{ customerSent: 
           fulfillmentUrl: `${baseUrl}/admin/fulfillment`,
           fromAddress,
           replyTo,
-        });
+        }));
         result.tenantSent = true;
       } catch (err) {
         console.error('[email] Failed to send tenant email:', err);
       }
+    } else if (order.tenant.contactEmail) {
+      console.warn('[email] Invalid tenant email format, skipping:', order.tenant.contactEmail);
     }
 
+    // Add delay between emails to avoid rate limiting
+    await delay(600);
+
     // Send to platform admin (you) for all orders
-    if (PLATFORM_ADMIN_EMAIL && PLATFORM_ADMIN_EMAIL !== order.tenant.contactEmail) {
+    if (isValidEmail(PLATFORM_ADMIN_EMAIL) && PLATFORM_ADMIN_EMAIL !== order.tenant.contactEmail) {
       try {
-        await sendOrderNotificationEmail({
-          to: PLATFORM_ADMIN_EMAIL,
+        await sendWithRetry(() => sendOrderNotificationEmail({
+          to: PLATFORM_ADMIN_EMAIL!.trim(),
           orderId: order.id,
           customerName: order.customerName,
           totalAmount: order.totalAmount,
@@ -509,7 +556,7 @@ export async function sendOrderEmails(orderId: string): Promise<{ customerSent: 
           fulfillmentUrl: `${baseUrl}/admin/fulfillment`,
           fromAddress,
           replyTo,
-        });
+        }));
         result.platformSent = true;
       } catch (err) {
         console.error('[email] Failed to send platform admin email:', err);
