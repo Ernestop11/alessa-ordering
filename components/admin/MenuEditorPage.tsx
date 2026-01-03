@@ -182,6 +182,91 @@ export default function MenuEditorPage() {
     description: '',
   });
   const [elHornitoLogoUploading, setElHornitoLogoUploading] = useState(false);
+  const [elHornitoItemImageUploading, setElHornitoItemImageUploading] = useState<string | null>(null); // item ID being uploaded to
+  const [elHornitoDragOverItem, setElHornitoDragOverItem] = useState<string | null>(null); // item ID being dragged over
+
+  // El Hornito item image upload handler (drag-and-drop or click)
+  const handleElHornitoItemImageUpload = async (itemId: string, file: File) => {
+    // Validate file type
+    if (!file.type.startsWith('image/')) {
+      alert('Please drop an image file (PNG, JPG, etc.)');
+      return;
+    }
+
+    // Validate file size (10MB max)
+    if (file.size > 10 * 1024 * 1024) {
+      alert('File too large. Please use an image under 10MB.');
+      return;
+    }
+
+    setElHornitoItemImageUploading(itemId);
+    try {
+      // Upload the file
+      const formData = new FormData();
+      formData.append('file', file);
+
+      const uploadRes = await fetch('/api/admin/assets/upload', {
+        method: 'POST',
+        body: formData,
+      });
+
+      if (!uploadRes.ok) {
+        const err = await uploadRes.json();
+        throw new Error(err.message || 'Upload failed');
+      }
+
+      const { url } = await uploadRes.json();
+
+      // Update the menu item with new image
+      const updateRes = await fetch('/api/sub-tenant/menu', {
+        method: 'PUT',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({
+          slug: 'elhornito',
+          type: 'item',
+          id: itemId,
+          image: url,
+        }),
+      });
+
+      if (!updateRes.ok) {
+        throw new Error('Failed to update item image');
+      }
+
+      // Refresh the menu to show updated image
+      await fetchElHornitoMenu();
+    } catch (err: any) {
+      console.error('Item image upload failed:', err);
+      alert('Failed to upload image: ' + (err.message || 'Unknown error'));
+    } finally {
+      setElHornitoItemImageUploading(null);
+      setElHornitoDragOverItem(null);
+    }
+  };
+
+  // Drag and drop handlers for item cards
+  const handleElHornitoDragOver = (e: React.DragEvent, itemId: string) => {
+    e.preventDefault();
+    e.stopPropagation();
+    setElHornitoDragOverItem(itemId);
+  };
+
+  const handleElHornitoDragLeave = (e: React.DragEvent) => {
+    e.preventDefault();
+    e.stopPropagation();
+    setElHornitoDragOverItem(null);
+  };
+
+  const handleElHornitoDrop = (e: React.DragEvent, itemId: string) => {
+    e.preventDefault();
+    e.stopPropagation();
+    setElHornitoDragOverItem(null);
+
+    const files = e.dataTransfer.files;
+    if (files.length > 0) {
+      handleElHornitoItemImageUpload(itemId, files[0]);
+    }
+  };
 
   // El Hornito logo upload handler
   const handleElHornitoLogoUpload = async (e: React.ChangeEvent<HTMLInputElement>) => {
@@ -2481,13 +2566,18 @@ export default function MenuEditorPage() {
                               <div
                                 key={item.id}
                                 className={`p-4 rounded-lg border-2 transition-all group relative ${
-                                  item.available
+                                  elHornitoDragOverItem === item.id
+                                    ? 'bg-amber-50 border-amber-400 border-dashed scale-[1.02]'
+                                    : item.available
                                     ? 'bg-white border-gray-200 hover:border-amber-300'
                                     : 'bg-gray-50 border-gray-200 opacity-60'
                                 }`}
+                                onDragOver={(e) => handleElHornitoDragOver(e, item.id)}
+                                onDragLeave={handleElHornitoDragLeave}
+                                onDrop={(e) => handleElHornitoDrop(e, item.id)}
                               >
                                 {/* Action buttons - visible on hover */}
-                                <div className="absolute top-2 right-2 hidden group-hover:flex gap-1 bg-white/90 rounded-lg p-1 shadow-sm">
+                                <div className="absolute top-2 right-2 hidden group-hover:flex gap-1 bg-white/90 rounded-lg p-1 shadow-sm z-10">
                                   <button
                                     onClick={() => openEditElHornitoItem(item)}
                                     className="p-1.5 rounded hover:bg-amber-100 text-amber-600"
@@ -2511,17 +2601,57 @@ export default function MenuEditorPage() {
                                   </button>
                                 </div>
 
-                                {item.image ? (
-                                  <img
-                                    src={item.image}
-                                    alt={item.name}
-                                    className="w-full h-32 object-cover rounded-lg mb-3"
-                                  />
-                                ) : (
-                                  <div className="w-full h-32 bg-amber-50 rounded-lg mb-3 flex items-center justify-center text-4xl">
-                                    🥐
-                                  </div>
-                                )}
+                                {/* Image area with drag-and-drop upload */}
+                                <div className="relative w-full h-32 rounded-lg mb-3 overflow-hidden">
+                                  {elHornitoItemImageUploading === item.id ? (
+                                    <div className="w-full h-full bg-amber-100 flex flex-col items-center justify-center">
+                                      <div className="animate-spin w-8 h-8 border-3 border-amber-500 border-t-transparent rounded-full mb-2"></div>
+                                      <span className="text-sm text-amber-700">Uploading...</span>
+                                    </div>
+                                  ) : elHornitoDragOverItem === item.id ? (
+                                    <div className="w-full h-full bg-amber-100 flex flex-col items-center justify-center border-2 border-dashed border-amber-400 rounded-lg">
+                                      <span className="text-3xl mb-1">📷</span>
+                                      <span className="text-sm text-amber-700 font-medium">Drop image here</span>
+                                    </div>
+                                  ) : item.image ? (
+                                    <label className="cursor-pointer block w-full h-full group/img relative">
+                                      <img
+                                        src={item.image}
+                                        alt={item.name}
+                                        className="w-full h-full object-cover"
+                                      />
+                                      <div className="absolute inset-0 bg-black/50 opacity-0 group-hover/img:opacity-100 transition-opacity flex flex-col items-center justify-center">
+                                        <span className="text-2xl mb-1">📷</span>
+                                        <span className="text-xs text-white font-medium">Click or drop to replace</span>
+                                      </div>
+                                      <input
+                                        type="file"
+                                        accept="image/*"
+                                        className="hidden"
+                                        onChange={(e) => {
+                                          const file = e.target.files?.[0];
+                                          if (file) handleElHornitoItemImageUpload(item.id, file);
+                                          e.target.value = '';
+                                        }}
+                                      />
+                                    </label>
+                                  ) : (
+                                    <label className="cursor-pointer w-full h-full bg-amber-50 flex flex-col items-center justify-center hover:bg-amber-100 transition-colors rounded-lg border-2 border-dashed border-amber-200 hover:border-amber-400">
+                                      <span className="text-3xl mb-1">🥐</span>
+                                      <span className="text-xs text-amber-600 font-medium">Drop PNG or click</span>
+                                      <input
+                                        type="file"
+                                        accept="image/*"
+                                        className="hidden"
+                                        onChange={(e) => {
+                                          const file = e.target.files?.[0];
+                                          if (file) handleElHornitoItemImageUpload(item.id, file);
+                                          e.target.value = '';
+                                        }}
+                                      />
+                                    </label>
+                                  )}
+                                </div>
                                 <h4 className="font-semibold text-gray-900">{item.name}</h4>
                                 <p className="text-sm text-gray-500 line-clamp-2 mb-2">{item.description}</p>
                                 <div className="flex items-center justify-between">
