@@ -17,6 +17,7 @@ import Image from 'next/image';
 import Link from 'next/link';
 import { useCallback, useEffect, useMemo, useRef, useState } from 'react';
 import { createPortal } from 'react-dom';
+import { useRouter } from 'next/navigation';
 import { useCart } from '../../lib/store/cart';
 import CartLauncher from '../CartLauncher';
 
@@ -311,7 +312,9 @@ export default function OrderPageClientElHornitoBakery({
   const [bundleItems, setBundleItems] = useState<{ item: BakeryMenuItem; quantity: number }[]>([]);
 
   const [isHeaderScrolled, setIsHeaderScrolled] = useState(false);
+  const [showMobileNav, setShowMobileNav] = useState(false);
 
+  const router = useRouter();
   const cart = useCart();
   const sectionRefs = useRef<{ [key: string]: HTMLElement | null }>({});
   const heroRef = useRef<HTMLElement | null>(null);
@@ -629,17 +632,34 @@ export default function OrderPageClientElHornitoBakery({
         </div>
 
         {/* Hero Content */}
-        <div className="relative z-10 px-4 pt-8 pb-8">
-          {/* Back to La Poblanita */}
-          <Link
-            href="/order"
-            className="inline-flex items-center gap-2 text-blue-200/80 hover:text-blue-100 transition-colors mb-6 group"
-          >
-            <svg className="w-5 h-5 group-hover:-translate-x-1 transition-transform" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2}>
-              <path strokeLinecap="round" strokeLinejoin="round" d="M15 19l-7-7 7-7" />
-            </svg>
-            <span className="text-sm font-medium">Volver a La Poblanita</span>
-          </Link>
+        <div className="relative z-10 px-4 pt-4 sm:pt-8 pb-8">
+          {/* Mobile Header Bar */}
+          <div className="flex items-center justify-between mb-4 sm:mb-6">
+            {/* Hamburger Menu Button */}
+            <button
+              onClick={() => setShowMobileNav(true)}
+              className="w-11 h-11 rounded-xl bg-white/10 backdrop-blur-sm border border-white/20 flex items-center justify-center text-white hover:bg-white/20 transition-all active:scale-95"
+              aria-label="Open menu"
+            >
+              <svg className="w-6 h-6" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2}>
+                <path strokeLinecap="round" strokeLinejoin="round" d="M4 6h16M4 12h16M4 18h16" />
+              </svg>
+            </button>
+
+            {/* Subtle Back Link - Center (hidden on very small screens) */}
+            <Link
+              href="/order"
+              className="hidden xs:flex items-center gap-1.5 px-3 py-1.5 text-blue-200/60 hover:text-blue-100 transition-colors text-xs font-medium bg-white/5 backdrop-blur-sm rounded-full border border-white/10 hover:bg-white/10"
+            >
+              <svg className="w-3.5 h-3.5" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2}>
+                <path strokeLinecap="round" strokeLinejoin="round" d="M15 19l-7-7 7-7" />
+              </svg>
+              <span>La Poblanita</span>
+            </Link>
+
+            {/* Cart Launcher */}
+            <CartLauncher />
+          </div>
 
           {/* Logo and Title with Stars */}
           <div className="text-center max-w-3xl mx-auto relative">
@@ -930,56 +950,75 @@ export default function OrderPageClientElHornitoBakery({
       >
         <div className="mx-auto max-w-7xl px-4">
           <div className={`flex items-center justify-between transition-all ${isHeaderScrolled ? 'py-3' : 'py-2'}`}>
-            {/* Left - Logo (shows when scrolled) */}
-            <div className={`flex items-center gap-3 transition-all ${isHeaderScrolled ? 'opacity-100' : 'opacity-0 pointer-events-none'}`}>
-              {elHornitoTenant.logoUrl ? (
-                <Image
-                  src={elHornitoTenant.logoUrl}
-                  alt={elHornitoTenant.name}
-                  width={40}
-                  height={40}
-                  className="rounded-full ring-2 ring-blue-400/50"
-                  unoptimized
-                />
-              ) : (
-                <div className="w-10 h-10 rounded-full bg-gradient-to-br from-blue-400 to-cyan-400 flex items-center justify-center text-xl">
-                  🥐
-                </div>
+            {/* Left - Hamburger Menu + Logo */}
+            <div className="flex items-center gap-3">
+              <button
+                onClick={() => setShowMobileNav(true)}
+                className={`w-10 h-10 rounded-xl flex items-center justify-center text-white transition-all active:scale-95 ${
+                  isHeaderScrolled
+                    ? 'bg-white/10 border border-white/20 hover:bg-white/20'
+                    : 'bg-transparent'
+                }`}
+                aria-label="Open menu"
+              >
+                <svg className="w-6 h-6" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2}>
+                  <path strokeLinecap="round" strokeLinejoin="round" d="M4 6h16M4 12h16M4 18h16" />
+                </svg>
+              </button>
+              {isHeaderScrolled && (
+                <>
+                  {elHornitoTenant.logoUrl ? (
+                    <Image
+                      src={elHornitoTenant.logoUrl}
+                      alt={elHornitoTenant.name}
+                      width={36}
+                      height={36}
+                      className="rounded-full ring-2 ring-blue-400/50 hidden sm:block"
+                      unoptimized
+                    />
+                  ) : (
+                    <div className="w-9 h-9 rounded-full bg-gradient-to-br from-blue-400 to-cyan-400 items-center justify-center text-lg hidden sm:flex">
+                      🥐
+                    </div>
+                  )}
+                  <span className="font-bold text-white hidden md:block">El Hornito</span>
+                </>
               )}
-              <span className="font-bold text-lg text-white hidden sm:block">El Hornito</span>
             </div>
 
-            {/* Center - View Tabs with Pastel Accents */}
-            <div className="flex gap-1 bg-white/10 backdrop-blur-sm rounded-full p-1 border border-white/10">
+            {/* Center - View Tabs with Pastel Accents (hide on mobile when not scrolled) */}
+            <div className={`flex gap-1 bg-white/10 backdrop-blur-sm rounded-full p-1 border border-white/10 ${
+              !isHeaderScrolled ? 'hidden sm:flex' : 'flex'
+            }`}>
               <button
                 onClick={() => setActiveView('menu')}
-                className={`px-4 py-2 rounded-full text-sm font-medium transition-all ${
+                className={`px-3 sm:px-4 py-1.5 sm:py-2 rounded-full text-xs sm:text-sm font-medium transition-all ${
                   activeView === 'menu'
                     ? 'bg-gradient-to-r from-pink-400 to-pink-500 text-white shadow-lg shadow-pink-500/30'
                     : 'text-blue-100 hover:text-white hover:bg-white/10'
                 }`}
               >
-                🥐 Menu
+                <span className="hidden sm:inline">🥐 </span>Menu
               </button>
               <button
                 onClick={() => { setActiveView('cakes'); setShowCakeBuilder(true); }}
-                className={`px-4 py-2 rounded-full text-sm font-medium transition-all ${
+                className={`px-3 sm:px-4 py-1.5 sm:py-2 rounded-full text-xs sm:text-sm font-medium transition-all ${
                   activeView === 'cakes'
                     ? 'bg-gradient-to-r from-cyan-400 to-cyan-500 text-white shadow-lg shadow-cyan-500/30'
                     : 'text-blue-100 hover:text-white hover:bg-white/10'
                 }`}
               >
-                🎂 Pasteles
+                <span className="hidden sm:inline">🎂 </span>Pasteles
               </button>
               <button
                 onClick={() => { setActiveView('bundles'); setShowBundleBuilder(true); }}
-                className={`px-4 py-2 rounded-full text-sm font-medium transition-all ${
+                className={`px-3 sm:px-4 py-1.5 sm:py-2 rounded-full text-xs sm:text-sm font-medium transition-all ${
                   activeView === 'bundles'
                     ? 'bg-gradient-to-r from-amber-400 to-amber-500 text-white shadow-lg shadow-amber-500/30'
                     : 'text-blue-100 hover:text-white hover:bg-white/10'
                 }`}
               >
-                📦 Docenas
+                <span className="hidden sm:inline">📦 </span>Docenas
               </button>
             </div>
 
@@ -1905,6 +1944,192 @@ export default function OrderPageClientElHornitoBakery({
         )}
       </button>
 
+      {/* === UNIFIED MOBILE NAVIGATION DRAWER === */}
+      {showMobileNav && mounted && createPortal(
+        <>
+          {/* Backdrop */}
+          <div
+            className="fixed inset-0 bg-black/70 backdrop-blur-sm z-[9998] animate-fade-in"
+            onClick={() => setShowMobileNav(false)}
+          />
+
+          {/* Drawer Panel */}
+          <div
+            className="fixed top-0 left-0 bottom-0 w-[300px] max-w-[85vw] bg-gradient-to-b from-slate-900 via-slate-900 to-slate-950 border-r border-white/10 shadow-2xl z-[9999] animate-slide-in-left overflow-y-auto"
+          >
+            {/* Header with Gradient */}
+            <div className="relative p-5 border-b border-white/10" style={{
+              background: 'linear-gradient(135deg, rgba(59,130,246,0.2) 0%, rgba(6,182,212,0.15) 50%, transparent 100%)',
+            }}>
+              {/* Close Button */}
+              <button
+                onClick={() => setShowMobileNav(false)}
+                className="absolute top-4 right-4 w-9 h-9 rounded-full border border-white/20 bg-white/10 flex items-center justify-center text-white/70 hover:bg-white/20 hover:text-white transition-all"
+              >
+                ✕
+              </button>
+
+              {/* Current Business Logo */}
+              <div className="flex items-center gap-3">
+                <div className="w-14 h-14 rounded-full bg-gradient-to-br from-blue-400 via-cyan-400 to-blue-500 p-1 shadow-lg shadow-cyan-500/30">
+                  {elHornitoTenant.logoUrl ? (
+                    <Image
+                      src={elHornitoTenant.logoUrl}
+                      alt={elHornitoTenant.name}
+                      width={52}
+                      height={52}
+                      className="rounded-full object-cover w-full h-full"
+                      unoptimized
+                    />
+                  ) : (
+                    <div className="w-full h-full rounded-full bg-gradient-to-br from-slate-800 to-slate-900 flex items-center justify-center text-2xl">
+                      🥐
+                    </div>
+                  )}
+                </div>
+                <div>
+                  <h2 className="font-bold text-lg text-white">El Hornito</h2>
+                  <p className="text-xs text-cyan-300/70">Panaderia Mexicana</p>
+                </div>
+              </div>
+
+              {/* Sparkle decoration */}
+              <div className="absolute top-3 left-1/2 text-yellow-300 text-sm animate-pulse">✦</div>
+            </div>
+
+            {/* Bakery Navigation */}
+            <div className="p-4 space-y-2">
+              <p className="text-xs uppercase tracking-widest text-cyan-300/50 mb-3 flex items-center gap-2">
+                <span>🥐</span> Panaderia
+              </p>
+
+              <button
+                onClick={() => { setShowMobileNav(false); setActiveView('menu'); window.scrollTo({ top: 0, behavior: 'smooth' }); }}
+                className="w-full flex items-center gap-4 px-4 py-3 rounded-xl text-left text-white border border-transparent hover:bg-white/5 hover:border-pink-500/30 transition-all"
+              >
+                <span className="w-10 h-10 rounded-xl bg-pink-500/20 flex items-center justify-center text-xl">🥐</span>
+                <div>
+                  <span className="font-medium">Pan Dulce</span>
+                  <p className="text-xs text-white/50">Ver todo el menu</p>
+                </div>
+              </button>
+
+              <button
+                onClick={() => { setShowMobileNav(false); setActiveView('cakes'); setShowCakeBuilder(true); }}
+                className="w-full flex items-center gap-4 px-4 py-3 rounded-xl text-left text-white border border-transparent hover:bg-white/5 hover:border-cyan-500/30 transition-all"
+              >
+                <span className="w-10 h-10 rounded-xl bg-cyan-500/20 flex items-center justify-center text-xl">🎂</span>
+                <div>
+                  <span className="font-medium">Pasteles Custom</span>
+                  <p className="text-xs text-white/50">Crea tu pastel perfecto</p>
+                </div>
+              </button>
+
+              <button
+                onClick={() => { setShowMobileNav(false); setActiveView('bundles'); setShowBundleBuilder(true); }}
+                className="w-full flex items-center gap-4 px-4 py-3 rounded-xl text-left text-white border border-transparent hover:bg-white/5 hover:border-amber-500/30 transition-all"
+              >
+                <span className="w-10 h-10 rounded-xl bg-amber-500/20 flex items-center justify-center text-xl">📦</span>
+                <div>
+                  <span className="font-medium">Por Docena</span>
+                  <p className="text-xs text-white/50">Descuentos especiales</p>
+                </div>
+              </button>
+            </div>
+
+            {/* Divider with stars */}
+            <div className="flex items-center gap-3 px-4 py-3">
+              <div className="flex-1 h-px bg-gradient-to-r from-transparent via-white/20 to-transparent" />
+              <span className="text-yellow-300 text-sm animate-pulse">✦</span>
+              <div className="flex-1 h-px bg-gradient-to-r from-transparent via-white/20 to-transparent" />
+            </div>
+
+            {/* La Poblanita Restaurant Link */}
+            <div className="p-4">
+              <p className="text-xs uppercase tracking-widest text-red-400/50 mb-3 flex items-center gap-2">
+                <span>🍽️</span> Restaurante
+              </p>
+
+              <a
+                href="/order"
+                onClick={(e) => {
+                  e.preventDefault();
+                  setShowMobileNav(false);
+                  router.push('/order');
+                }}
+                className="block w-full rounded-2xl overflow-hidden border-2 border-red-500/30 hover:border-red-400/50 transition-all relative group"
+                style={{
+                  background: 'linear-gradient(135deg, rgba(220,38,38,0.15) 0%, rgba(15,23,42,0.95) 50%, rgba(220,38,38,0.1) 100%)',
+                }}
+              >
+                {/* Sparkle */}
+                <div className="absolute top-2 right-3 text-amber-300 text-xs animate-pulse">✦</div>
+
+                <div className="p-4">
+                  <div className="flex items-center gap-4">
+                    <div className="w-14 h-14 rounded-full bg-gradient-to-br from-red-500 via-amber-500 to-red-500 p-1 shadow-lg shadow-red-500/30">
+                      <div className="w-full h-full rounded-full bg-gradient-to-br from-slate-800 to-slate-900 flex items-center justify-center text-2xl">
+                        🍽️
+                      </div>
+                    </div>
+                    <div className="flex-1">
+                      <h3 className="font-bold text-white">La Poblanita</h3>
+                      <p className="text-xs text-red-300/60">Mexican Food</p>
+                      <div className="flex gap-1.5 mt-1.5">
+                        <span className="px-2 py-0.5 text-[9px] font-medium bg-red-500/20 text-red-300 rounded-full">🌮 Tacos</span>
+                        <span className="px-2 py-0.5 text-[9px] font-medium bg-amber-500/20 text-amber-300 rounded-full">🍲 Platos</span>
+                      </div>
+                    </div>
+                    <div className="w-8 h-8 rounded-full bg-gradient-to-r from-red-500 to-amber-500 flex items-center justify-center text-white group-hover:scale-110 transition-transform">
+                      →
+                    </div>
+                  </div>
+                </div>
+                <div className="h-1 bg-gradient-to-r from-red-500 via-amber-400 to-red-500" />
+              </a>
+
+              {/* Shared Cart Indicator */}
+              {cart.items.length > 0 && (
+                <div className="mt-4 p-3 rounded-xl bg-white/5 border border-white/10">
+                  <div className="flex items-center justify-between">
+                    <div className="flex items-center gap-2">
+                      <span className="text-lg">🛒</span>
+                      <span className="text-sm text-white/70">Carrito compartido</span>
+                    </div>
+                    <span className="px-2 py-1 bg-cyan-500/20 text-cyan-300 text-xs font-bold rounded-full">
+                      {cart.items.length} items
+                    </span>
+                  </div>
+                  <p className="text-xs text-white/40 mt-1">El mismo carrito funciona en ambos negocios</p>
+                </div>
+              )}
+            </div>
+
+            {/* Menu Sections Quick Links */}
+            {sections.length > 0 && (
+              <div className="px-4 pb-4">
+                <p className="text-xs uppercase tracking-widest text-white/30 mb-3">Secciones</p>
+                <div className="grid grid-cols-2 gap-2">
+                  {sections.slice(0, 6).map((section) => (
+                    <button
+                      key={section.id}
+                      onClick={() => { setShowMobileNav(false); scrollToSection(section.id); }}
+                      className="px-3 py-2 rounded-lg text-xs font-medium text-white/70 bg-white/5 border border-white/10 hover:bg-white/10 hover:border-cyan-400/30 transition-all text-left truncate"
+                    >
+                      {section.name}
+                    </button>
+                  ))}
+                </div>
+              </div>
+            )}
+
+            {/* Bottom padding */}
+            <div className="h-20" />
+          </div>
+        </>,
+        document.body
+      )}
+
       {/* CSS Animations */}
       <style jsx global>{`
         @keyframes float {
@@ -1919,6 +2144,20 @@ export default function OrderPageClientElHornitoBakery({
         }
         .animate-sparkle {
           animation: sparkle 2s ease-in-out infinite;
+        }
+        @keyframes fade-in {
+          from { opacity: 0; }
+          to { opacity: 1; }
+        }
+        @keyframes slide-in-left {
+          from { transform: translateX(-100%); }
+          to { transform: translateX(0); }
+        }
+        .animate-fade-in {
+          animation: fade-in 0.2s ease-out;
+        }
+        .animate-slide-in-left {
+          animation: slide-in-left 0.3s ease-out;
         }
         .scrollbar-hide::-webkit-scrollbar { display: none; }
         .scrollbar-hide { -ms-overflow-style: none; scrollbar-width: none; }
