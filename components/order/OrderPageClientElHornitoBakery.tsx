@@ -1046,12 +1046,12 @@ export default function OrderPageClientElHornitoBakery({
           )}
         </div>
 
-        {/* Closed Banner */}
+        {/* Closed Banner - Blue theme matching La Poblanita */}
         {!isOpen && (
-          <div className="bg-gradient-to-r from-red-900/90 to-red-800/90 backdrop-blur-sm">
+          <div className="bg-gradient-to-r from-blue-900/90 via-slate-800/90 to-blue-900/90 backdrop-blur-sm border-t border-blue-500/20">
             <div className="mx-auto max-w-7xl px-4 py-2 text-center">
-              <span className="text-red-100 font-medium text-sm">
-                🚫 {closedMessage || 'La panaderia esta cerrada en este momento'}
+              <span className="text-blue-100 font-medium text-sm">
+                🕐 {closedMessage || 'La panaderia esta cerrada en este momento'}
               </span>
             </div>
           </div>

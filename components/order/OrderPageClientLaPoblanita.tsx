@@ -2875,18 +2875,18 @@ export default function OrderPageClientLaPoblanita({
       <div
         className="fixed left-0 right-0 sm:hidden border-b border-white/5 shadow-lg transition-all duration-300 ease-out"
         style={{
-          top: isScrolled ? 'calc(env(safe-area-inset-top, 0px) + 64px)' : 'calc(env(safe-area-inset-top, 0px) + 88px)',
+          top: isScrolled ? 'calc(env(safe-area-inset-top, 0px) + 56px)' : 'calc(env(safe-area-inset-top, 0px) + 72px)',
           zIndex: 35,
-          background: 'linear-gradient(to bottom, var(--tenant-gradient-to) 0%, rgba(20, 40, 65, 0.9) 50%, rgba(13, 13, 13, 0.95) 100%)',
+          background: 'linear-gradient(to bottom, var(--tenant-gradient-to) 0%, rgba(20, 40, 65, 0.95) 100%)',
         }}
       >
         {/* Closed status indicator - integrated into nav bar */}
         {!restaurantIsOpen && (
-          <div className="px-4 pt-2.5 pb-1 flex items-center justify-center">
+          <div className="px-4 pt-2 pb-0.5 flex items-center justify-center">
             <span className="text-amber-300 font-semibold text-xs drop-shadow-sm">{restaurantClosedMessage || 'Currently closed'}</span>
           </div>
         )}
-        <div className={`flex gap-2 overflow-x-auto px-4 scrollbar-hide ${restaurantIsOpen ? 'py-2.5' : 'pb-2.5 pt-1'}`}>
+        <div className={`flex gap-2.5 overflow-x-auto px-4 scrollbar-hide ${restaurantIsOpen ? 'py-3' : 'pb-3 pt-1'}`}>
           {navSections.map((section) => (
             <button
               key={`nav-${section.id}`}
