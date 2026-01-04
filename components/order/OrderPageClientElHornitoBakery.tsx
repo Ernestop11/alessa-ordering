@@ -397,10 +397,9 @@ export default function OrderPageClientElHornitoBakery({
     bundleItems.reduce((sum, { quantity }) => sum + quantity, 0),
   [bundleItems]);
 
-  // Add item to cart
+  // Add item to cart - bakery always accepts orders (items are made fresh daily or scheduled)
   const handleAddToCart = useCallback((item: BakeryMenuItem, quantity: number = 1) => {
-    if (!isOpen) return;
-
+    // Bakery items can always be added (pan dulce is baked fresh, cakes are scheduled)
     cart.addItem({
       id: `${item.id}-${Date.now()}`,
       menuItemId: item.id,
@@ -416,9 +415,8 @@ export default function OrderPageClientElHornitoBakery({
     setItemQuantity(1);
   }, [cart, isOpen]);
 
-  // Add cake order to cart
+  // Add cake order to cart - cakes are always scheduled in advance
   const handleAddCakeToCart = useCallback(() => {
-    if (!isOpen) return;
 
     const size = CAKE_SIZES.find(s => s.id === cakeOrder.size);
     const flavor = CAKE_FLAVORS.find(f => f.id === cakeOrder.flavor);
@@ -462,9 +460,9 @@ export default function OrderPageClientElHornitoBakery({
     setCakeStep(0);
   }, [cart, isOpen, cakeOrder, calculateCakeTotal]);
 
-  // Add bundle to cart
+  // Add bundle to cart - bundles are available anytime
   const handleAddBundleToCart = useCallback(() => {
-    if (!isOpen || !selectedBundle) return;
+    if (!selectedBundle) return;
 
     const total = calculateBundleTotal();
     const itemNames = bundleItems.map(({ item, quantity }) => `${quantity}x ${item.name}`).join(', ');
@@ -722,9 +720,9 @@ export default function OrderPageClientElHornitoBakery({
           </div>
         </div>
 
-        {/* === CAKE CAROUSEL SECTION === */}
+        {/* === CAKE CAROUSEL SECTION - Elegant Gallery Style === */}
         <div className="relative z-10 px-3 sm:px-4 pb-8">
-          <div className="max-w-5xl mx-auto">
+          <div className="max-w-4xl mx-auto">
             {/* Section title with stars */}
             <div className="text-center mb-4 sm:mb-6 relative">
               <SparkleStar className="text-pink-300 -left-4 top-0" size="md" delay={0} />
@@ -739,129 +737,138 @@ export default function OrderPageClientElHornitoBakery({
               <p className="text-blue-200/60 mt-1 sm:mt-2 text-sm sm:text-base">Hechos con amor para tu celebracion especial</p>
             </div>
 
-            {/* Mobile-Optimized Carousel Container */}
-            <div className="relative rounded-2xl sm:rounded-3xl overflow-hidden shadow-2xl"
-              style={{
-                background: 'linear-gradient(135deg, rgba(30, 41, 59, 0.9) 0%, rgba(15, 23, 42, 0.95) 100%)',
-                boxShadow: '0 25px 50px -12px rgba(0, 0, 0, 0.6), 0 0 0 1px rgba(251, 207, 232, 0.3), 0 0 0 3px rgba(165, 243, 252, 0.2), inset 0 0 30px rgba(255,255,255,0.03)'
-              }}>
+            {/* Elegant Cake Frame Gallery */}
+            <div className="relative">
+              {/* Decorative Corner Elements */}
+              <div className="absolute -top-3 -left-3 w-12 h-12 border-t-4 border-l-4 border-pink-400/60 rounded-tl-2xl" />
+              <div className="absolute -top-3 -right-3 w-12 h-12 border-t-4 border-r-4 border-cyan-400/60 rounded-tr-2xl" />
+              <div className="absolute -bottom-3 -left-3 w-12 h-12 border-b-4 border-l-4 border-amber-400/60 rounded-bl-2xl" />
+              <div className="absolute -bottom-3 -right-3 w-12 h-12 border-b-4 border-r-4 border-pink-400/60 rounded-br-2xl" />
 
-              {/* Pastel Rainbow Top Border */}
-              <div className="h-1.5 sm:h-2 bg-gradient-to-r from-pink-400 via-cyan-400 via-amber-300 to-pink-400" />
+              {/* Main Gallery Container */}
+              <div className="relative rounded-2xl overflow-hidden bg-gradient-to-br from-slate-900 via-slate-800/90 to-slate-900 p-3 sm:p-4"
+                style={{
+                  boxShadow: '0 25px 60px -15px rgba(0, 0, 0, 0.7), inset 0 1px 0 rgba(255,255,255,0.1)'
+                }}>
 
-              {/* Main Carousel - Taller on Mobile for Impact */}
-              <div className="relative aspect-[4/5] sm:aspect-[16/10] md:aspect-[16/9] overflow-hidden">
-                {cakeItems.length > 0 ? (
-                  <>
-                    {/* Current Image - Full Bleed */}
-                    <div className="absolute inset-0 transition-all duration-700 ease-out">
-                      {cakeItems[carouselIndex]?.image ? (
-                        <Image
-                          src={cakeItems[carouselIndex].image!}
-                          alt={cakeItems[carouselIndex].name}
-                          fill
-                          className="object-cover"
-                          sizes="(max-width: 640px) 100vw, (max-width: 1024px) 80vw, 1024px"
-                          priority
-                          unoptimized
-                        />
-                      ) : (
-                        <div className="w-full h-full bg-gradient-to-br from-pink-900/50 via-rose-800/50 to-amber-900/50 flex items-center justify-center">
-                          <span className="text-9xl">🎂</span>
-                        </div>
-                      )}
-
-                      {/* Elegant Gradient Overlay - Stronger at bottom for text readability */}
-                      <div className="absolute inset-0 bg-gradient-to-t from-black/90 via-black/30 via-50% to-transparent" />
-
-                      {/* Subtle Vignette Effect */}
-                      <div className="absolute inset-0" style={{
-                        background: 'radial-gradient(ellipse at center, transparent 50%, rgba(0,0,0,0.4) 100%)'
+                {/* Featured Image - Square/Portrait with Object-Contain */}
+                <div className="relative aspect-square sm:aspect-[4/3] rounded-xl overflow-hidden bg-gradient-to-br from-slate-800 to-slate-900">
+                  {cakeItems.length > 0 && cakeItems[carouselIndex]?.image ? (
+                    <>
+                      {/* Subtle Pattern Background */}
+                      <div className="absolute inset-0 opacity-30" style={{
+                        backgroundImage: `url("data:image/svg+xml,%3Csvg width='60' height='60' viewBox='0 0 60 60' xmlns='http://www.w3.org/2000/svg'%3E%3Cg fill='none' fill-rule='evenodd'%3E%3Cg fill='%23fbcfe8' fill-opacity='0.15'%3E%3Cpath d='M36 34v-4h-2v4h-4v2h4v4h2v-4h4v-2h-4zm0-30V0h-2v4h-4v2h4v4h2V6h4V4h-4zM6 34v-4H4v4H0v2h4v4h2v-4h4v-2H6zM6 4V0H4v4H0v2h4v4h2V6h4V4H6z'/%3E%3C/g%3E%3C/g%3E%3C/svg%3E")`,
                       }} />
 
-                      {/* Info Card - Better Mobile Layout */}
-                      <div className="absolute bottom-0 left-0 right-0 p-4 sm:p-6">
-                        <div className="flex flex-col sm:flex-row sm:items-end sm:justify-between gap-3">
-                          <div className="flex-1">
-                            <h3 className="text-xl sm:text-2xl md:text-3xl font-bold text-white mb-1 sm:mb-2 drop-shadow-lg">
-                              {cakeItems[carouselIndex]?.name || 'Pastel Artesanal'}
-                            </h3>
-                            <p className="text-blue-100/80 text-xs sm:text-sm md:text-base max-w-lg line-clamp-2 drop-shadow">
-                              {cakeItems[carouselIndex]?.description || 'Delicioso pastel hecho con los mejores ingredientes'}
-                            </p>
-                          </div>
-                          <div className="flex items-center sm:flex-col sm:items-end gap-2 sm:gap-0 sm:text-right sm:ml-4">
-                            <div className="text-xs sm:text-sm text-pink-300 font-medium">Desde</div>
-                            <div className="text-2xl sm:text-3xl font-bold text-white drop-shadow-lg">
-                              ${cakeItems[carouselIndex]?.price?.toFixed(2) || '35.00'}
-                            </div>
-                          </div>
+                      {/* Main Image - Object Contain for full cake display */}
+                      <Image
+                        src={cakeItems[carouselIndex].image!}
+                        alt={cakeItems[carouselIndex].name}
+                        fill
+                        className="object-contain p-2 sm:p-4 drop-shadow-2xl"
+                        sizes="(max-width: 640px) 100vw, 800px"
+                        priority
+                        unoptimized
+                      />
+
+                      {/* Soft Edge Glow */}
+                      <div className="absolute inset-0 pointer-events-none" style={{
+                        boxShadow: 'inset 0 0 60px rgba(251,207,232,0.1), inset 0 0 120px rgba(165,243,252,0.05)'
+                      }} />
+                    </>
+                  ) : (
+                    <div className="w-full h-full flex flex-col items-center justify-center">
+                      <span className="text-8xl mb-4 animate-bounce">🎂</span>
+                      <p className="text-blue-200/60 text-lg">Pasteles disponibles</p>
+                    </div>
+                  )}
+
+                  {/* Minimal Navigation - Side Arrows Only */}
+                  {cakeItems.length > 1 && (
+                    <>
+                      <button
+                        onClick={() => setCarouselIndex(prev => prev === 0 ? cakeItems.length - 1 : prev - 1)}
+                        className="absolute left-2 top-1/2 -translate-y-1/2 w-9 h-9 rounded-full bg-white/90 backdrop-blur-sm flex items-center justify-center text-slate-700 text-lg hover:bg-white hover:scale-110 active:scale-95 transition-all shadow-xl"
+                      >
+                        ‹
+                      </button>
+                      <button
+                        onClick={() => setCarouselIndex(prev => (prev + 1) % cakeItems.length)}
+                        className="absolute right-2 top-1/2 -translate-y-1/2 w-9 h-9 rounded-full bg-white/90 backdrop-blur-sm flex items-center justify-center text-slate-700 text-lg hover:bg-white hover:scale-110 active:scale-95 transition-all shadow-xl"
+                      >
+                        ›
+                      </button>
+                    </>
+                  )}
+                </div>
+
+                {/* Info Bar Below Image */}
+                {cakeItems.length > 0 && (
+                  <div className="mt-3 sm:mt-4 px-1">
+                    <div className="flex items-center justify-between gap-4">
+                      <div className="flex-1 min-w-0">
+                        <h3 className="text-lg sm:text-xl font-bold text-white truncate">
+                          {cakeItems[carouselIndex]?.name || 'Pastel Artesanal'}
+                        </h3>
+                        <p className="text-blue-200/60 text-xs sm:text-sm line-clamp-1">
+                          {cakeItems[carouselIndex]?.description || 'Delicioso pastel artesanal'}
+                        </p>
+                      </div>
+                      <div className="flex-shrink-0 text-right">
+                        <div className="text-[10px] sm:text-xs text-pink-300 font-medium uppercase tracking-wide">Desde</div>
+                        <div className="text-xl sm:text-2xl font-bold bg-gradient-to-r from-pink-400 via-cyan-400 to-amber-400 bg-clip-text text-transparent">
+                          ${cakeItems[carouselIndex]?.price?.toFixed(2) || '35.00'}
                         </div>
                       </div>
                     </div>
 
-                    {/* Navigation Dots - Higher up on mobile */}
-                    <div className="absolute bottom-20 sm:bottom-4 left-1/2 -translate-x-1/2 flex gap-1.5 sm:gap-2 bg-black/30 backdrop-blur-sm px-3 py-1.5 rounded-full">
-                      {cakeItems.slice(0, 8).map((_, idx) => (
-                        <button
-                          key={idx}
-                          onClick={() => setCarouselIndex(idx)}
-                          className={`h-2 rounded-full transition-all duration-300 ${
-                            idx === carouselIndex
-                              ? 'bg-white w-6 sm:w-8'
-                              : 'bg-white/50 w-2 hover:bg-white/70'
-                          }`}
-                        />
-                      ))}
-                    </div>
+                    {/* Dot Navigation */}
+                    {cakeItems.length > 1 && (
+                      <div className="flex justify-center gap-1.5 mt-3">
+                        {cakeItems.slice(0, 8).map((_, idx) => (
+                          <button
+                            key={idx}
+                            onClick={() => setCarouselIndex(idx)}
+                            className={`h-1.5 rounded-full transition-all duration-300 ${
+                              idx === carouselIndex
+                                ? 'bg-gradient-to-r from-pink-400 to-cyan-400 w-6'
+                                : 'bg-white/30 w-1.5 hover:bg-white/50'
+                            }`}
+                          />
+                        ))}
+                      </div>
+                    )}
+                  </div>
+                )}
 
-                    {/* Arrow Controls - Larger touch targets on mobile */}
-                    <button
-                      onClick={() => setCarouselIndex(prev => prev === 0 ? cakeItems.length - 1 : prev - 1)}
-                      className="absolute left-2 sm:left-4 top-1/2 -translate-y-1/2 w-10 h-10 sm:w-12 sm:h-12 rounded-full bg-black/40 backdrop-blur-sm flex items-center justify-center text-white text-xl sm:text-2xl hover:bg-black/60 active:scale-95 transition-all shadow-lg"
-                    >
-                      ‹
-                    </button>
-                    <button
-                      onClick={() => setCarouselIndex(prev => (prev + 1) % cakeItems.length)}
-                      className="absolute right-2 sm:right-4 top-1/2 -translate-y-1/2 w-10 h-10 sm:w-12 sm:h-12 rounded-full bg-black/40 backdrop-blur-sm flex items-center justify-center text-white text-xl sm:text-2xl hover:bg-black/60 active:scale-95 transition-all shadow-lg"
-                    >
-                      ›
-                    </button>
-                  </>
-                ) : (
-                  <div className="w-full h-full bg-gradient-to-br from-pink-900/30 via-rose-800/30 to-amber-900/30 flex flex-col items-center justify-center">
-                    <span className="text-8xl mb-4">🎂</span>
-                    <p className="text-blue-100/60 text-lg">Pasteles artesanales disponibles</p>
+                {/* Mini Thumbnail Preview */}
+                {cakeItems.length > 1 && (
+                  <div className="flex justify-center gap-2 mt-3 pt-3 border-t border-white/10">
+                    {cakeItems.slice(0, 5).map((cake, idx) => (
+                      <button
+                        key={cake.id}
+                        onClick={() => setCarouselIndex(idx)}
+                        className={`flex-shrink-0 w-12 h-12 sm:w-14 sm:h-14 rounded-lg overflow-hidden transition-all duration-300 ${
+                          idx === carouselIndex
+                            ? 'ring-2 ring-pink-400 scale-110 shadow-lg shadow-pink-500/30'
+                            : 'opacity-50 hover:opacity-80 grayscale hover:grayscale-0'
+                        }`}
+                      >
+                        {cake.image ? (
+                          <Image src={cake.image} alt={cake.name} width={56} height={56} className="w-full h-full object-cover" unoptimized />
+                        ) : (
+                          <div className="w-full h-full bg-gradient-to-br from-pink-800/50 to-rose-900/50 flex items-center justify-center text-xl">🎂</div>
+                        )}
+                      </button>
+                    ))}
+                    {cakeItems.length > 5 && (
+                      <div className="flex-shrink-0 w-12 h-12 sm:w-14 sm:h-14 rounded-lg bg-white/10 flex items-center justify-center text-white/60 text-xs font-medium">
+                        +{cakeItems.length - 5}
+                      </div>
+                    )}
                   </div>
                 )}
               </div>
-
-              {/* Thumbnail Strip - Larger, more spaced on mobile */}
-              {cakeItems.length > 1 && (
-                <div className="flex gap-2 sm:gap-3 p-3 sm:p-4 overflow-x-auto scrollbar-hide bg-gradient-to-b from-slate-900/50 to-slate-900/80">
-                  {cakeItems.slice(0, 8).map((cake, idx) => (
-                    <button
-                      key={cake.id}
-                      onClick={() => setCarouselIndex(idx)}
-                      className={`flex-shrink-0 w-[72px] h-[72px] sm:w-20 sm:h-20 rounded-xl overflow-hidden transition-all duration-300 ${
-                        idx === carouselIndex
-                          ? 'ring-2 ring-cyan-400 ring-offset-2 ring-offset-slate-900 scale-105 shadow-lg shadow-cyan-500/30'
-                          : 'opacity-70 hover:opacity-100 ring-1 ring-white/10'
-                      }`}
-                    >
-                      {cake.image ? (
-                        <Image src={cake.image} alt={cake.name} width={80} height={80} className="w-full h-full object-cover" unoptimized />
-                      ) : (
-                        <div className="w-full h-full bg-gradient-to-br from-pink-800/50 to-rose-900/50 flex items-center justify-center text-3xl">🎂</div>
-                      )}
-                    </button>
-                  ))}
-                </div>
-              )}
-
-              {/* Pastel Rainbow Bottom Border */}
-              <div className="h-1 bg-gradient-to-r from-amber-400 via-pink-400 via-cyan-400 to-amber-400" />
             </div>
 
             {/* CTA Button */}
@@ -1203,18 +1210,13 @@ export default function OrderPageClientElHornitoBakery({
                       </div>
                     )}
 
-                    {/* Quick Add */}
+                    {/* Quick Add - Always enabled for bakery */}
                     <button
                       onClick={(e) => {
                         e.stopPropagation();
                         if (!isCakeItem(item)) handleAddToCart(item, 1);
                       }}
-                      disabled={!isOpen}
-                      className={`absolute bottom-2 right-2 w-10 h-10 rounded-full flex items-center justify-center text-xl shadow-lg transition-all ${
-                        isOpen
-                          ? 'bg-gradient-to-r from-blue-400 to-cyan-400 text-white hover:scale-110 hover:shadow-cyan-500/50'
-                          : 'bg-slate-700 text-slate-500 cursor-not-allowed'
-                      }`}
+                      className="absolute bottom-2 right-2 w-10 h-10 rounded-full flex items-center justify-center text-xl shadow-lg transition-all bg-gradient-to-r from-blue-400 to-cyan-400 text-white hover:scale-110 hover:shadow-cyan-500/50 active:scale-95"
                     >
                       +
                     </button>
@@ -1384,14 +1386,9 @@ export default function OrderPageClientElHornitoBakery({
                 </div>
                 <button
                   onClick={() => handleAddToCart(selectedItem, itemQuantity)}
-                  disabled={!isOpen}
-                  className={`px-8 py-4 rounded-full font-bold text-lg transition-all ${
-                    isOpen
-                      ? 'bg-gradient-to-r from-blue-500 to-cyan-500 text-white hover:shadow-lg hover:shadow-cyan-500/40 hover:scale-105'
-                      : 'bg-slate-700 text-slate-500 cursor-not-allowed'
-                  }`}
+                  className="px-8 py-4 rounded-full font-bold text-lg transition-all bg-gradient-to-r from-blue-500 to-cyan-500 text-white hover:shadow-lg hover:shadow-cyan-500/40 hover:scale-105 active:scale-95"
                 >
-                  {isOpen ? 'Agregar' : 'Cerrado'}
+                  Agregar
                 </button>
               </div>
             </div>
