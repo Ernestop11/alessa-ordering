@@ -1401,7 +1401,6 @@ export default function OrderPageClientElHornitoBakery({
       {showCakeBuilder && mounted && createPortal(
         <div
           className="fixed inset-0 z-[200] flex flex-col"
-          style={{ paddingTop: 'env(safe-area-inset-top)', paddingBottom: 'env(safe-area-inset-bottom)' }}
           onClick={() => { setShowCakeBuilder(false); setCakeStep(0); }}
         >
           <div className="absolute inset-0 bg-black/95 backdrop-blur-md" />
@@ -1420,35 +1419,41 @@ export default function OrderPageClientElHornitoBakery({
               background: 'linear-gradient(135deg, #1e293b, #0f172a) padding-box, linear-gradient(135deg, #fbcfe8, #a5f3fc, #fde68a) border-box',
             }} />
 
-            {/* Header - Fixed at top */}
-            <div className="relative flex-shrink-0 bg-gradient-to-r from-pink-500 via-cyan-400 to-amber-400 p-4 sm:p-6 text-center">
-              <button
-                onClick={() => { setShowCakeBuilder(false); setCakeStep(0); }}
-                className="absolute top-3 right-3 sm:top-4 sm:right-4 w-9 h-9 sm:w-10 sm:h-10 rounded-full bg-black/30 backdrop-blur-sm flex items-center justify-center text-white hover:bg-black/50 transition-all z-10"
-              >
-                ✕
-              </button>
-              <span className="text-4xl sm:text-5xl mb-1 sm:mb-2 block">🎂</span>
-              <h3 className="text-xl sm:text-2xl font-bold text-white">Crea Tu Pastel Perfecto</h3>
-              <p className="text-white/80 text-xs sm:text-sm mt-1">Personaliza cada detalle para tu celebracion especial</p>
+            {/* Header - Extends to top of screen with safe area padding */}
+            <div
+              className="relative flex-shrink-0 bg-gradient-to-r from-pink-500 via-cyan-400 to-amber-400 text-center"
+              style={{ paddingTop: 'calc(env(safe-area-inset-top, 0px) + 16px)' }}
+            >
+              <div className="px-4 pb-4 sm:p-6">
+                <button
+                  onClick={() => { setShowCakeBuilder(false); setCakeStep(0); }}
+                  className="absolute right-3 w-9 h-9 sm:w-10 sm:h-10 rounded-full bg-black/30 backdrop-blur-sm flex items-center justify-center text-white hover:bg-black/50 transition-all z-10"
+                  style={{ top: 'calc(env(safe-area-inset-top, 0px) + 12px)' }}
+                >
+                  ✕
+                </button>
+                <span className="text-4xl sm:text-5xl mb-1 sm:mb-2 block">🎂</span>
+                <h3 className="text-xl sm:text-2xl font-bold text-white">Crea Tu Pastel Perfecto</h3>
+                <p className="text-white/80 text-xs sm:text-sm mt-1">Personaliza cada detalle para tu celebracion especial</p>
 
-              {/* Progress Steps - Horizontally scrollable on mobile */}
-              <div className="flex justify-center gap-1.5 sm:gap-2 mt-3 sm:mt-4 overflow-x-auto pb-1 scrollbar-hide">
-                {['Tamano', 'Sabor', 'Decoracion', 'Agenda'].map((step, idx) => (
-                  <button
-                    key={step}
-                    onClick={() => setCakeStep(idx)}
-                    className={`flex-shrink-0 px-2.5 sm:px-3 py-1 rounded-full text-[10px] sm:text-xs font-medium transition-all ${
-                      cakeStep === idx
-                        ? 'bg-white text-pink-600'
-                        : cakeStep > idx
-                        ? 'bg-white/30 text-white'
-                        : 'bg-white/20 text-white/60'
-                    }`}
-                  >
-                    {idx + 1}. {step}
-                  </button>
-                ))}
+                {/* Progress Steps - Horizontally scrollable on mobile */}
+                <div className="flex justify-center gap-1.5 sm:gap-2 mt-3 sm:mt-4 overflow-x-auto pb-1 scrollbar-hide">
+                  {['Tamano', 'Sabor', 'Decoracion', 'Agenda'].map((step, idx) => (
+                    <button
+                      key={step}
+                      onClick={() => setCakeStep(idx)}
+                      className={`flex-shrink-0 px-2.5 sm:px-3 py-1 rounded-full text-[10px] sm:text-xs font-medium transition-all ${
+                        cakeStep === idx
+                          ? 'bg-white text-pink-600'
+                          : cakeStep > idx
+                          ? 'bg-white/30 text-white'
+                          : 'bg-white/20 text-white/60'
+                      }`}
+                    >
+                      {idx + 1}. {step}
+                    </button>
+                  ))}
+                </div>
               </div>
             </div>
 
