@@ -289,6 +289,7 @@ export default function OrderPageClientElHornitoBakery({
   // Cake builder state
   const [showCakeBuilder, setShowCakeBuilder] = useState(false);
   const [cakeStep, setCakeStep] = useState(0);
+  const [cakeHeaderCollapsed, setCakeHeaderCollapsed] = useState(false);
   const [cakeOrder, setCakeOrder] = useState<CakeOrder>({
     size: 'medium',
     layers: 2,
@@ -1402,15 +1403,15 @@ export default function OrderPageClientElHornitoBakery({
         <div
           className="fixed inset-0 z-[200] overflow-hidden"
           style={{ touchAction: 'none' }}
-          onClick={() => { setShowCakeBuilder(false); setCakeStep(0); }}
+          onClick={() => { setShowCakeBuilder(false); setCakeStep(0); setCakeHeaderCollapsed(false); }}
         >
           {/* Background - gradient at top, dark below - blocks all touch events */}
           <div className="absolute inset-0" style={{ touchAction: 'none' }}>
             {/* Gradient extends from top through header area on mobile */}
             <div
-              className="absolute inset-x-0 top-0 sm:hidden"
+              className="absolute inset-x-0 top-0 sm:hidden transition-all duration-300"
               style={{
-                height: 'calc(env(safe-area-inset-top, 47px) + 220px)',
+                height: cakeHeaderCollapsed ? 'calc(env(safe-area-inset-top, 47px) + 80px)' : 'calc(env(safe-area-inset-top, 47px) + 160px)',
                 background: 'linear-gradient(to right, #ec4899, #06b6d4, #f59e0b)',
               }}
             />
@@ -1430,34 +1431,37 @@ export default function OrderPageClientElHornitoBakery({
               background: 'linear-gradient(135deg, #1e293b, #0f172a) padding-box, linear-gradient(135deg, #fbcfe8, #a5f3fc, #fde68a) border-box',
             }} />
 
-            {/* Header - Gradient bar that extends to status bar on mobile */}
+            {/* Header - Compact gradient bar with collapse animation */}
             <div
-              className="relative flex-shrink-0 text-center"
+              className="relative flex-shrink-0 text-center transition-all duration-300"
               style={{
                 background: 'linear-gradient(to right, #ec4899, #06b6d4, #f59e0b)',
                 paddingTop: 'env(safe-area-inset-top, 0px)',
               }}
             >
-              <div className="px-4 py-5 sm:p-6">
-                {/* Close button - larger for easier touch */}
+              <div className={`px-4 transition-all duration-300 ${cakeHeaderCollapsed ? 'py-2' : 'py-3'} sm:p-4`}>
+                {/* Close button */}
                 <button
-                  onClick={() => { setShowCakeBuilder(false); setCakeStep(0); }}
-                  className="absolute right-3 w-11 h-11 sm:w-12 sm:h-12 rounded-full bg-black/40 backdrop-blur-sm flex items-center justify-center text-white text-xl font-bold hover:bg-black/60 active:scale-95 transition-all z-10"
-                  style={{ top: 'calc(env(safe-area-inset-top, 0px) + 12px)' }}
+                  onClick={() => { setShowCakeBuilder(false); setCakeStep(0); setCakeHeaderCollapsed(false); }}
+                  className="absolute right-3 w-10 h-10 rounded-full bg-black/40 backdrop-blur-sm flex items-center justify-center text-white text-lg font-bold hover:bg-black/60 active:scale-95 transition-all z-10"
+                  style={{ top: 'calc(env(safe-area-inset-top, 0px) + 8px)' }}
                 >
                   ✕
                 </button>
-                <span className="text-4xl sm:text-5xl mb-2 block">🎂</span>
-                <h3 className="text-xl sm:text-2xl font-bold text-white">Crea Tu Pastel Perfecto</h3>
-                <p className="text-white/80 text-sm mt-1">Personaliza cada detalle para tu celebracion</p>
 
-                {/* Progress Steps - Larger touch targets */}
-                <div className="flex justify-center gap-2 mt-4 overflow-x-auto pb-2 scrollbar-hide">
-                  {['Tamano', 'Sabor', 'Decoracion', 'Agenda'].map((step, idx) => (
+                {/* Collapsible title area */}
+                <div className={`transition-all duration-300 overflow-hidden ${cakeHeaderCollapsed ? 'max-h-0 opacity-0' : 'max-h-20 opacity-100'}`}>
+                  <span className="text-2xl mb-1 block">🎂</span>
+                  <h3 className="text-lg font-bold text-white">Crea Tu Pastel</h3>
+                </div>
+
+                {/* Progress Steps - Always visible, compact */}
+                <div className={`flex justify-center gap-1.5 overflow-x-auto scrollbar-hide transition-all duration-300 ${cakeHeaderCollapsed ? 'mt-0' : 'mt-2'}`}>
+                  {['Tamano', 'Sabor', 'Deco', 'Agenda'].map((step, idx) => (
                     <button
                       key={step}
                       onClick={() => setCakeStep(idx)}
-                      className={`flex-shrink-0 px-4 py-2 rounded-full text-sm font-semibold transition-all active:scale-95 min-h-[44px] ${
+                      className={`flex-shrink-0 px-3 py-1.5 rounded-full text-xs font-semibold transition-all active:scale-95 min-h-[36px] ${
                         cakeStep === idx
                           ? 'bg-white text-pink-600 shadow-lg'
                           : cakeStep > idx
@@ -1475,6 +1479,10 @@ export default function OrderPageClientElHornitoBakery({
             {/* Scrollable Content Area - Isolated scroll container */}
             <div
               className="flex-1 overflow-y-auto p-4 sm:p-6 pb-6"
+              onScroll={(e) => {
+                const scrollTop = (e.target as HTMLDivElement).scrollTop;
+                setCakeHeaderCollapsed(scrollTop > 30);
+              }}
               style={{
                 WebkitOverflowScrolling: 'touch',
                 overscrollBehavior: 'contain',
