@@ -1400,26 +1400,28 @@ export default function OrderPageClientElHornitoBakery({
       {/* Cake Builder Modal - iPhone Optimized with full-bleed gradient */}
       {showCakeBuilder && mounted && createPortal(
         <div
-          className="fixed inset-0 z-[200] flex flex-col"
+          className="fixed inset-0 z-[200] overflow-hidden"
+          style={{ touchAction: 'none' }}
           onClick={() => { setShowCakeBuilder(false); setCakeStep(0); }}
         >
-          {/* Background - gradient at top, dark below */}
-          <div className="absolute inset-0">
+          {/* Background - gradient at top, dark below - blocks all touch events */}
+          <div className="absolute inset-0" style={{ touchAction: 'none' }}>
             {/* Gradient extends from top through header area on mobile */}
             <div
               className="absolute inset-x-0 top-0 sm:hidden"
               style={{
-                height: 'calc(env(safe-area-inset-top, 47px) + 200px)',
+                height: 'calc(env(safe-area-inset-top, 47px) + 220px)',
                 background: 'linear-gradient(to right, #ec4899, #06b6d4, #f59e0b)',
               }}
             />
             {/* Dark background for rest */}
-            <div className="absolute inset-0 bg-slate-950/98 backdrop-blur-md" />
+            <div className="absolute inset-0 bg-slate-950" />
           </div>
 
-          {/* Modal Container - respects safe areas */}
+          {/* Modal Container - respects safe areas, isolates scroll */}
           <div
             className="relative flex flex-col w-full h-full sm:h-auto sm:max-h-[90vh] sm:max-w-2xl sm:mx-auto sm:my-auto sm:rounded-3xl overflow-hidden shadow-2xl"
+            style={{ touchAction: 'pan-y', overscrollBehavior: 'contain' }}
             onClick={e => e.stopPropagation()}
           >
             {/* Pastel border effect on desktop */}
@@ -1436,30 +1438,31 @@ export default function OrderPageClientElHornitoBakery({
                 paddingTop: 'env(safe-area-inset-top, 0px)',
               }}
             >
-              <div className="px-4 py-4 sm:p-6">
+              <div className="px-4 py-5 sm:p-6">
+                {/* Close button - larger for easier touch */}
                 <button
                   onClick={() => { setShowCakeBuilder(false); setCakeStep(0); }}
-                  className="absolute right-3 top-3 w-9 h-9 sm:w-10 sm:h-10 rounded-full bg-black/30 backdrop-blur-sm flex items-center justify-center text-white hover:bg-black/50 transition-all z-10"
-                  style={{ marginTop: 'env(safe-area-inset-top, 0px)' }}
+                  className="absolute right-3 w-11 h-11 sm:w-12 sm:h-12 rounded-full bg-black/40 backdrop-blur-sm flex items-center justify-center text-white text-xl font-bold hover:bg-black/60 active:scale-95 transition-all z-10"
+                  style={{ top: 'calc(env(safe-area-inset-top, 0px) + 12px)' }}
                 >
                   ✕
                 </button>
-                <span className="text-4xl sm:text-5xl mb-1 sm:mb-2 block">🎂</span>
+                <span className="text-4xl sm:text-5xl mb-2 block">🎂</span>
                 <h3 className="text-xl sm:text-2xl font-bold text-white">Crea Tu Pastel Perfecto</h3>
-                <p className="text-white/80 text-xs sm:text-sm mt-1">Personaliza cada detalle para tu celebracion especial</p>
+                <p className="text-white/80 text-sm mt-1">Personaliza cada detalle para tu celebracion</p>
 
-                {/* Progress Steps - Horizontally scrollable on mobile */}
-                <div className="flex justify-center gap-1.5 sm:gap-2 mt-3 sm:mt-4 overflow-x-auto pb-1 scrollbar-hide">
+                {/* Progress Steps - Larger touch targets */}
+                <div className="flex justify-center gap-2 mt-4 overflow-x-auto pb-2 scrollbar-hide">
                   {['Tamano', 'Sabor', 'Decoracion', 'Agenda'].map((step, idx) => (
                     <button
                       key={step}
                       onClick={() => setCakeStep(idx)}
-                      className={`flex-shrink-0 px-2.5 sm:px-3 py-1 rounded-full text-[10px] sm:text-xs font-medium transition-all ${
+                      className={`flex-shrink-0 px-4 py-2 rounded-full text-sm font-semibold transition-all active:scale-95 min-h-[44px] ${
                         cakeStep === idx
-                          ? 'bg-white text-pink-600'
+                          ? 'bg-white text-pink-600 shadow-lg'
                           : cakeStep > idx
-                          ? 'bg-white/30 text-white'
-                          : 'bg-white/20 text-white/60'
+                          ? 'bg-white/40 text-white'
+                          : 'bg-white/20 text-white/70'
                       }`}
                     >
                       {idx + 1}. {step}
@@ -1469,64 +1472,65 @@ export default function OrderPageClientElHornitoBakery({
               </div>
             </div>
 
-            {/* Scrollable Content Area - Takes remaining space with dark background */}
+            {/* Scrollable Content Area - Isolated scroll container */}
             <div
-              className="flex-1 overflow-y-auto overscroll-contain p-4 sm:p-6 pb-6"
+              className="flex-1 overflow-y-auto p-4 sm:p-6 pb-6"
               style={{
                 WebkitOverflowScrolling: 'touch',
+                overscrollBehavior: 'contain',
                 background: 'linear-gradient(135deg, #1e293b 0%, #0f172a 100%)',
               }}
             >
               {/* Step 1: Size & Layers */}
               {cakeStep === 0 && (
-                <div className="space-y-5 sm:space-y-6">
+                <div className="space-y-6">
                   <div>
-                    <label className="block text-white font-semibold mb-2 sm:mb-3 text-base sm:text-lg">Tamano del Pastel</label>
-                    <div className="grid grid-cols-2 gap-2.5 sm:gap-3">
+                    <label className="block text-white font-semibold mb-3 text-lg">Tamano del Pastel</label>
+                    <div className="grid grid-cols-2 gap-3">
                       {CAKE_SIZES.map((size) => (
                         <button
                           key={size.id}
                           onClick={() => setCakeOrder(prev => ({ ...prev, size: size.id }))}
-                          className={`p-3 sm:p-4 rounded-xl text-left transition-all active:scale-[0.98] ${
+                          className={`p-4 rounded-2xl text-left transition-all active:scale-[0.97] min-h-[100px] ${
                             cakeOrder.size === size.id
-                              ? 'text-white shadow-lg shadow-pink-500/30'
-                              : 'bg-white/10 text-blue-100 hover:bg-white/20 border border-white/10'
+                              ? 'text-white shadow-lg shadow-pink-500/30 ring-2 ring-white/30'
+                              : 'bg-white/10 text-blue-100 hover:bg-white/20 border border-white/20'
                           }`}
                           style={cakeOrder.size === size.id ? {
                             background: 'linear-gradient(135deg, #ec4899, #f97316)',
                           } : {}}
                         >
-                          <div className="text-xl sm:text-2xl mb-0.5 sm:mb-1">{size.icon}</div>
-                          <div className="font-bold text-sm sm:text-base">{size.name}</div>
-                          <div className="text-xs sm:text-sm opacity-80">{size.serves} personas</div>
-                          <div className="text-sm font-bold mt-0.5 sm:mt-1">${size.price}</div>
+                          <div className="text-2xl mb-1">{size.icon}</div>
+                          <div className="font-bold text-base">{size.name}</div>
+                          <div className="text-sm opacity-80">{size.serves} personas</div>
+                          <div className="text-base font-bold mt-1">${size.price}</div>
                         </button>
                       ))}
                     </div>
                   </div>
 
                   <div>
-                    <label className="block text-white font-semibold mb-2 sm:mb-3 text-base sm:text-lg">Numero de Capas</label>
-                    <div className="flex items-center gap-4 sm:gap-6 bg-white/10 rounded-2xl p-3 sm:p-4">
+                    <label className="block text-white font-semibold mb-3 text-lg">Numero de Capas</label>
+                    <div className="flex items-center gap-5 bg-white/10 rounded-2xl p-4">
                       <button
                         onClick={() => setCakeOrder(prev => ({ ...prev, layers: Math.max(1, prev.layers - 1) }))}
-                        className="w-11 h-11 sm:w-12 sm:h-12 rounded-full bg-white/10 hover:bg-white/20 active:bg-white/30 text-white text-2xl transition-colors"
+                        className="w-14 h-14 rounded-full bg-white/20 hover:bg-white/30 active:bg-white/40 active:scale-95 text-white text-3xl font-bold transition-all flex items-center justify-center"
                       >
-                        -
+                        −
                       </button>
                       <div className="flex-1 text-center">
-                        <span className="text-3xl sm:text-4xl font-bold text-white">{cakeOrder.layers}</span>
-                        <span className="text-blue-200/60 ml-2 text-sm sm:text-base">capas</span>
+                        <span className="text-4xl font-bold text-white">{cakeOrder.layers}</span>
+                        <span className="text-blue-200/60 ml-2 text-base">capas</span>
                       </div>
                       <button
                         onClick={() => setCakeOrder(prev => ({ ...prev, layers: Math.min(5, prev.layers + 1) }))}
-                        className="w-11 h-11 sm:w-12 sm:h-12 rounded-full bg-white/10 hover:bg-white/20 active:bg-white/30 text-white text-2xl transition-colors"
+                        className="w-14 h-14 rounded-full bg-white/20 hover:bg-white/30 active:bg-white/40 active:scale-95 text-white text-3xl font-bold transition-all flex items-center justify-center"
                       >
                         +
                       </button>
                     </div>
                     {cakeOrder.layers > 2 && (
-                      <p className="text-pink-400 text-xs sm:text-sm mt-2">+${(cakeOrder.layers - 2) * 20} por capas adicionales</p>
+                      <p className="text-pink-400 text-sm mt-3">+${(cakeOrder.layers - 2) * 20} por capas adicionales</p>
                     )}
                   </div>
                 </div>
@@ -1537,21 +1541,21 @@ export default function OrderPageClientElHornitoBakery({
                 <div className="space-y-6">
                   <div>
                     <label className="block text-white font-semibold mb-3 text-lg">Sabor del Bizcocho</label>
-                    <div className="grid grid-cols-2 gap-2">
+                    <div className="grid grid-cols-2 gap-3">
                       {CAKE_FLAVORS.map((flavor) => (
                         <button
                           key={flavor.id}
                           onClick={() => setCakeOrder(prev => ({ ...prev, flavor: flavor.id }))}
-                          className={`p-3 rounded-xl text-left transition-all flex items-center gap-3 ${
+                          className={`p-4 rounded-2xl text-left transition-all flex items-center gap-3 min-h-[60px] active:scale-[0.97] ${
                             cakeOrder.flavor === flavor.id
-                              ? 'bg-gradient-to-r from-pink-500 to-rose-500 text-white shadow-lg'
-                              : 'bg-white/10 text-blue-100 hover:bg-white/20'
+                              ? 'bg-gradient-to-r from-pink-500 to-rose-500 text-white shadow-lg ring-2 ring-white/30'
+                              : 'bg-white/10 text-blue-100 hover:bg-white/20 border border-white/20'
                           }`}
                         >
-                          <div className="w-6 h-6 rounded-full border-2 border-white/30" style={{ backgroundColor: flavor.color }} />
+                          <div className="w-8 h-8 rounded-full border-2 border-white/30 flex-shrink-0" style={{ backgroundColor: flavor.color }} />
                           <div className="flex-1">
-                            <div className="font-medium">{flavor.name}</div>
-                            {flavor.price > 0 && <div className="text-xs opacity-80">+${flavor.price}</div>}
+                            <div className="font-semibold text-base">{flavor.name}</div>
+                            {flavor.price > 0 && <div className="text-sm opacity-80">+${flavor.price}</div>}
                           </div>
                         </button>
                       ))}
@@ -1560,19 +1564,19 @@ export default function OrderPageClientElHornitoBakery({
 
                   <div>
                     <label className="block text-white font-semibold mb-3 text-lg">Relleno</label>
-                    <div className="grid grid-cols-2 gap-2">
+                    <div className="grid grid-cols-2 gap-3">
                       {CAKE_FILLINGS.map((filling) => (
                         <button
                           key={filling.id}
                           onClick={() => setCakeOrder(prev => ({ ...prev, filling: filling.id }))}
-                          className={`p-3 rounded-xl text-left transition-all ${
+                          className={`p-4 rounded-2xl text-left transition-all min-h-[60px] active:scale-[0.97] ${
                             cakeOrder.filling === filling.id
-                              ? 'bg-gradient-to-r from-cyan-500 to-blue-500 text-white shadow-lg'
-                              : 'bg-white/10 text-blue-100 hover:bg-white/20'
+                              ? 'bg-gradient-to-r from-cyan-500 to-blue-500 text-white shadow-lg ring-2 ring-white/30'
+                              : 'bg-white/10 text-blue-100 hover:bg-white/20 border border-white/20'
                           }`}
                         >
-                          <div className="font-medium">{filling.name}</div>
-                          {filling.price > 0 && <div className="text-xs opacity-80">+${filling.price}</div>}
+                          <div className="font-semibold text-base">{filling.name}</div>
+                          {filling.price > 0 && <div className="text-sm opacity-80">+${filling.price}</div>}
                         </button>
                       ))}
                     </div>
@@ -1580,19 +1584,19 @@ export default function OrderPageClientElHornitoBakery({
 
                   <div>
                     <label className="block text-white font-semibold mb-3 text-lg">Cobertura</label>
-                    <div className="grid grid-cols-2 gap-2">
+                    <div className="grid grid-cols-2 gap-3">
                       {CAKE_FROSTINGS.map((frosting) => (
                         <button
                           key={frosting.id}
                           onClick={() => setCakeOrder(prev => ({ ...prev, frosting: frosting.id }))}
-                          className={`p-3 rounded-xl text-left transition-all ${
+                          className={`p-4 rounded-2xl text-left transition-all min-h-[60px] active:scale-[0.97] ${
                             cakeOrder.frosting === frosting.id
-                              ? 'bg-gradient-to-r from-amber-500 to-orange-500 text-white shadow-lg'
-                              : 'bg-white/10 text-blue-100 hover:bg-white/20'
+                              ? 'bg-gradient-to-r from-amber-500 to-orange-500 text-white shadow-lg ring-2 ring-white/30'
+                              : 'bg-white/10 text-blue-100 hover:bg-white/20 border border-white/20'
                           }`}
                         >
-                          <div className="font-medium">{frosting.name}</div>
-                          {frosting.price > 0 && <div className="text-xs opacity-80">+${frosting.price}</div>}
+                          <div className="font-semibold text-base">{frosting.name}</div>
+                          {frosting.price > 0 && <div className="text-sm opacity-80">+${frosting.price}</div>}
                         </button>
                       ))}
                     </div>
@@ -1605,7 +1609,7 @@ export default function OrderPageClientElHornitoBakery({
                 <div className="space-y-6">
                   <div>
                     <label className="block text-white font-semibold mb-3 text-lg">Decoraciones (opcional)</label>
-                    <div className="grid grid-cols-2 gap-2">
+                    <div className="grid grid-cols-2 gap-3">
                       {CAKE_DECORATIONS.map((dec) => (
                         <button
                           key={dec.id}
@@ -1617,18 +1621,18 @@ export default function OrderPageClientElHornitoBakery({
                                 : [...prev.decorations, dec.id]
                             }));
                           }}
-                          className={`p-3 rounded-xl text-left transition-all flex items-center gap-2 ${
+                          className={`p-4 rounded-2xl text-left transition-all flex items-center gap-3 min-h-[60px] active:scale-[0.97] ${
                             cakeOrder.decorations.includes(dec.id)
-                              ? 'bg-gradient-to-r from-pink-500 to-rose-500 text-white shadow-lg'
-                              : 'bg-white/10 text-blue-100 hover:bg-white/20'
+                              ? 'bg-gradient-to-r from-pink-500 to-rose-500 text-white shadow-lg ring-2 ring-white/30'
+                              : 'bg-white/10 text-blue-100 hover:bg-white/20 border border-white/20'
                           }`}
                         >
-                          <span className="text-xl">{dec.icon}</span>
+                          <span className="text-2xl">{dec.icon}</span>
                           <div className="flex-1">
-                            <div className="font-medium text-sm">{dec.name}</div>
-                            <div className="text-xs opacity-80">+${dec.price}</div>
+                            <div className="font-semibold text-base">{dec.name}</div>
+                            <div className="text-sm opacity-80">+${dec.price}</div>
                           </div>
-                          {cakeOrder.decorations.includes(dec.id) && <span>✓</span>}
+                          {cakeOrder.decorations.includes(dec.id) && <span className="text-xl">✓</span>}
                         </button>
                       ))}
                     </div>
@@ -1642,9 +1646,9 @@ export default function OrderPageClientElHornitoBakery({
                       onChange={(e) => setCakeOrder(prev => ({ ...prev, message: e.target.value }))}
                       placeholder="Ej: Feliz Cumpleanos Maria!"
                       maxLength={50}
-                      className="w-full px-4 py-3 rounded-xl bg-white/10 text-white placeholder-white/40 border border-white/20 focus:border-cyan-400 focus:outline-none focus:ring-2 focus:ring-cyan-400/20"
+                      className="w-full px-4 py-4 rounded-2xl bg-white/10 text-white text-base placeholder-white/40 border border-white/20 focus:border-cyan-400 focus:outline-none focus:ring-2 focus:ring-cyan-400/20"
                     />
-                    <p className="text-white/40 text-xs mt-1">{cakeOrder.message.length}/50 caracteres</p>
+                    <p className="text-white/40 text-sm mt-2">{cakeOrder.message.length}/50 caracteres</p>
                   </div>
 
                   <div>
@@ -1654,7 +1658,7 @@ export default function OrderPageClientElHornitoBakery({
                       onChange={(e) => setCakeOrder(prev => ({ ...prev, specialInstructions: e.target.value }))}
                       placeholder="Alergias, preferencias especiales, etc."
                       rows={3}
-                      className="w-full px-4 py-3 rounded-xl bg-white/10 text-white placeholder-white/40 border border-white/20 focus:border-cyan-400 focus:outline-none focus:ring-2 focus:ring-cyan-400/20"
+                      className="w-full px-4 py-4 rounded-2xl bg-white/10 text-white text-base placeholder-white/40 border border-white/20 focus:border-cyan-400 focus:outline-none focus:ring-2 focus:ring-cyan-400/20"
                     />
                   </div>
                 </div>
@@ -1663,8 +1667,8 @@ export default function OrderPageClientElHornitoBakery({
               {/* Step 4: Scheduling & Contact */}
               {cakeStep === 3 && (
                 <div className="space-y-6">
-                  <div className="bg-pink-500/10 border border-pink-500/30 rounded-xl p-4">
-                    <p className="text-pink-200 text-sm">
+                  <div className="bg-pink-500/10 border border-pink-500/30 rounded-2xl p-4">
+                    <p className="text-pink-200 text-base">
                       <strong>Importante:</strong> Los pasteles personalizados requieren minimo 2 dias de anticipacion.
                       Se requiere un deposito del 50% para confirmar el pedido.
                     </p>
@@ -1672,21 +1676,21 @@ export default function OrderPageClientElHornitoBakery({
 
                   <div className="grid grid-cols-2 gap-4">
                     <div>
-                      <label className="block text-white font-semibold mb-2">Fecha de Recogida</label>
+                      <label className="block text-white font-semibold mb-3 text-base">Fecha de Recogida</label>
                       <input
                         type="date"
                         value={cakeOrder.pickupDate}
                         min={minCakeDate}
                         onChange={(e) => setCakeOrder(prev => ({ ...prev, pickupDate: e.target.value }))}
-                        className="w-full px-4 py-3 rounded-xl bg-white/10 text-white border border-white/20 focus:border-cyan-400 focus:outline-none"
+                        className="w-full px-4 py-4 rounded-2xl bg-white/10 text-white text-base border border-white/20 focus:border-cyan-400 focus:outline-none"
                       />
                     </div>
                     <div>
-                      <label className="block text-white font-semibold mb-2">Hora de Recogida</label>
+                      <label className="block text-white font-semibold mb-3 text-base">Hora de Recogida</label>
                       <select
                         value={cakeOrder.pickupTime}
                         onChange={(e) => setCakeOrder(prev => ({ ...prev, pickupTime: e.target.value }))}
-                        className="w-full px-4 py-3 rounded-xl bg-white/10 text-white border border-white/20 focus:border-cyan-400 focus:outline-none"
+                        className="w-full px-4 py-4 rounded-2xl bg-white/10 text-white text-base border border-white/20 focus:border-cyan-400 focus:outline-none"
                       >
                         <option value="">Seleccionar hora</option>
                         {TIME_SLOTS.map(time => (
@@ -1697,35 +1701,35 @@ export default function OrderPageClientElHornitoBakery({
                   </div>
 
                   <div>
-                    <label className="block text-white font-semibold mb-2">Tu Nombre</label>
+                    <label className="block text-white font-semibold mb-3 text-base">Tu Nombre</label>
                     <input
                       type="text"
                       value={cakeOrder.customerName}
                       onChange={(e) => setCakeOrder(prev => ({ ...prev, customerName: e.target.value }))}
                       placeholder="Nombre completo"
-                      className="w-full px-4 py-3 rounded-xl bg-white/10 text-white placeholder-white/40 border border-white/20 focus:border-cyan-400 focus:outline-none"
+                      className="w-full px-4 py-4 rounded-2xl bg-white/10 text-white text-base placeholder-white/40 border border-white/20 focus:border-cyan-400 focus:outline-none"
                     />
                   </div>
 
                   <div className="grid grid-cols-2 gap-4">
                     <div>
-                      <label className="block text-white font-semibold mb-2">Telefono</label>
+                      <label className="block text-white font-semibold mb-3 text-base">Telefono</label>
                       <input
                         type="tel"
                         value={cakeOrder.customerPhone}
                         onChange={(e) => setCakeOrder(prev => ({ ...prev, customerPhone: e.target.value }))}
                         placeholder="(555) 123-4567"
-                        className="w-full px-4 py-3 rounded-xl bg-white/10 text-white placeholder-white/40 border border-white/20 focus:border-cyan-400 focus:outline-none"
+                        className="w-full px-4 py-4 rounded-2xl bg-white/10 text-white text-base placeholder-white/40 border border-white/20 focus:border-cyan-400 focus:outline-none"
                       />
                     </div>
                     <div>
-                      <label className="block text-white font-semibold mb-2">Email</label>
+                      <label className="block text-white font-semibold mb-3 text-base">Email</label>
                       <input
                         type="email"
                         value={cakeOrder.customerEmail}
                         onChange={(e) => setCakeOrder(prev => ({ ...prev, customerEmail: e.target.value }))}
                         placeholder="tu@email.com"
-                        className="w-full px-4 py-3 rounded-xl bg-white/10 text-white placeholder-white/40 border border-white/20 focus:border-cyan-400 focus:outline-none"
+                        className="w-full px-4 py-4 rounded-2xl bg-white/10 text-white text-base placeholder-white/40 border border-white/20 focus:border-cyan-400 focus:outline-none"
                       />
                     </div>
                   </div>
@@ -1739,19 +1743,19 @@ export default function OrderPageClientElHornitoBakery({
               style={{ paddingBottom: 'env(safe-area-inset-bottom, 0px)' }}
             >
               <div className="p-4 sm:p-6">
-                <div className="flex items-center justify-between mb-3 sm:mb-4">
+                <div className="flex items-center justify-between mb-4">
                   <div>
-                    <span className="text-blue-200/60 text-xs sm:text-sm">Total del Pastel:</span>
-                    <div className="text-2xl sm:text-3xl font-bold bg-gradient-to-r from-pink-400 via-cyan-400 to-amber-400 bg-clip-text text-transparent">${calculateCakeTotal().toFixed(2)}</div>
-                    <span className="text-pink-300/60 text-[10px] sm:text-sm">Deposito requerido: ${cakeDeposit.toFixed(2)} (50%)</span>
+                    <span className="text-blue-200/60 text-sm">Total del Pastel:</span>
+                    <div className="text-3xl font-bold bg-gradient-to-r from-pink-400 via-cyan-400 to-amber-400 bg-clip-text text-transparent">${calculateCakeTotal().toFixed(2)}</div>
+                    <span className="text-pink-300/60 text-sm">Deposito requerido: ${cakeDeposit.toFixed(2)} (50%)</span>
                   </div>
                 </div>
 
-                <div className="flex gap-2 sm:gap-3">
+                <div className="flex gap-3">
                   {cakeStep > 0 && (
                     <button
                       onClick={() => setCakeStep(prev => prev - 1)}
-                      className="flex-1 py-3 sm:py-4 rounded-xl font-bold text-sm sm:text-lg bg-white/10 text-white hover:bg-white/20 active:scale-[0.98] transition-all"
+                      className="flex-1 py-4 rounded-2xl font-bold text-base bg-white/15 text-white hover:bg-white/25 active:scale-[0.97] transition-all min-h-[56px]"
                     >
                       ← Anterior
                     </button>
@@ -1759,7 +1763,7 @@ export default function OrderPageClientElHornitoBakery({
                   {cakeStep < 3 ? (
                     <button
                       onClick={() => setCakeStep(prev => prev + 1)}
-                      className="flex-1 py-3 sm:py-4 rounded-xl font-bold text-sm sm:text-lg text-white hover:shadow-lg active:scale-[0.98] transition-all"
+                      className="flex-1 py-4 rounded-2xl font-bold text-lg text-white hover:shadow-lg active:scale-[0.97] transition-all min-h-[56px]"
                       style={{ background: 'linear-gradient(135deg, #ec4899, #06b6d4, #f59e0b)' }}
                     >
                       Siguiente →
@@ -1768,9 +1772,9 @@ export default function OrderPageClientElHornitoBakery({
                     <button
                       onClick={handleAddCakeToCart}
                       disabled={!cakeOrder.pickupDate || !cakeOrder.pickupTime || !cakeOrder.customerName || !cakeOrder.customerPhone}
-                      className={`flex-1 py-3 sm:py-4 rounded-xl font-bold text-sm sm:text-lg transition-all active:scale-[0.98] ${
+                      className={`flex-1 py-4 rounded-2xl font-bold text-lg transition-all active:scale-[0.97] min-h-[56px] ${
                         cakeOrder.pickupDate && cakeOrder.pickupTime && cakeOrder.customerName && cakeOrder.customerPhone
-                          ? 'text-white hover:shadow-lg'
+                          ? 'text-white hover:shadow-lg shadow-pink-500/30'
                           : 'bg-slate-700 text-slate-500 cursor-not-allowed'
                       }`}
                       style={cakeOrder.pickupDate && cakeOrder.pickupTime && cakeOrder.customerName && cakeOrder.customerPhone ? {
