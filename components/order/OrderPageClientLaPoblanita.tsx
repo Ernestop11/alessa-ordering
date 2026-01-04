@@ -2871,13 +2871,13 @@ export default function OrderPageClientLaPoblanita({
       </div>
 
       {/* Mobile Section Navigation - Fixed below header (matches Las Reinas pattern) */}
-      {/* Seamless gradient: matches header's end blue, smoothly transitions to dark */}
+      {/* Seamless gradient: continues header's dark gradient for unified look */}
       <div
         className="fixed left-0 right-0 sm:hidden border-b border-white/5 shadow-lg transition-all duration-300 ease-out"
         style={{
           top: isScrolled ? 'calc(env(safe-area-inset-top, 0px) + 56px)' : 'calc(env(safe-area-inset-top, 0px) + 72px)',
           zIndex: 35,
-          background: 'linear-gradient(to bottom, var(--tenant-gradient-to) 0%, rgba(20, 40, 65, 0.95) 100%)',
+          background: 'linear-gradient(to bottom, var(--tenant-gradient-from) 0%, var(--tenant-gradient-via) 100%)',
         }}
       >
         {/* Closed status indicator - integrated into nav bar */}
