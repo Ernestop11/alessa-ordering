@@ -1397,20 +1397,29 @@ export default function OrderPageClientElHornitoBakery({
         document.body
       )}
 
-      {/* Cake Builder Modal - iPhone Optimized */}
+      {/* Cake Builder Modal - iPhone Optimized with full-bleed gradient */}
       {showCakeBuilder && mounted && createPortal(
         <div
           className="fixed inset-0 z-[200] flex flex-col"
           onClick={() => { setShowCakeBuilder(false); setCakeStep(0); }}
         >
-          <div className="absolute inset-0 bg-black/95 backdrop-blur-md" />
+          {/* Background - gradient at top, dark below */}
+          <div className="absolute inset-0">
+            {/* Gradient extends from top through header area on mobile */}
+            <div
+              className="absolute inset-x-0 top-0 sm:hidden"
+              style={{
+                height: 'calc(env(safe-area-inset-top, 47px) + 200px)',
+                background: 'linear-gradient(to right, #ec4899, #06b6d4, #f59e0b)',
+              }}
+            />
+            {/* Dark background for rest */}
+            <div className="absolute inset-0 bg-slate-950/98 backdrop-blur-md" />
+          </div>
 
-          {/* Modal Container - Full height on mobile, centered on desktop */}
+          {/* Modal Container - respects safe areas */}
           <div
             className="relative flex flex-col w-full h-full sm:h-auto sm:max-h-[90vh] sm:max-w-2xl sm:mx-auto sm:my-auto sm:rounded-3xl overflow-hidden shadow-2xl"
-            style={{
-              background: 'linear-gradient(135deg, #1e293b 0%, #0f172a 100%)',
-            }}
             onClick={e => e.stopPropagation()}
           >
             {/* Pastel border effect on desktop */}
@@ -1419,16 +1428,19 @@ export default function OrderPageClientElHornitoBakery({
               background: 'linear-gradient(135deg, #1e293b, #0f172a) padding-box, linear-gradient(135deg, #fbcfe8, #a5f3fc, #fde68a) border-box',
             }} />
 
-            {/* Header - Extends to top of screen with safe area padding */}
+            {/* Header - Gradient bar that extends to status bar on mobile */}
             <div
-              className="relative flex-shrink-0 bg-gradient-to-r from-pink-500 via-cyan-400 to-amber-400 text-center"
-              style={{ paddingTop: 'calc(env(safe-area-inset-top, 0px) + 16px)' }}
+              className="relative flex-shrink-0 text-center"
+              style={{
+                background: 'linear-gradient(to right, #ec4899, #06b6d4, #f59e0b)',
+                paddingTop: 'env(safe-area-inset-top, 0px)',
+              }}
             >
-              <div className="px-4 pb-4 sm:p-6">
+              <div className="px-4 py-4 sm:p-6">
                 <button
                   onClick={() => { setShowCakeBuilder(false); setCakeStep(0); }}
-                  className="absolute right-3 w-9 h-9 sm:w-10 sm:h-10 rounded-full bg-black/30 backdrop-blur-sm flex items-center justify-center text-white hover:bg-black/50 transition-all z-10"
-                  style={{ top: 'calc(env(safe-area-inset-top, 0px) + 12px)' }}
+                  className="absolute right-3 top-3 w-9 h-9 sm:w-10 sm:h-10 rounded-full bg-black/30 backdrop-blur-sm flex items-center justify-center text-white hover:bg-black/50 transition-all z-10"
+                  style={{ marginTop: 'env(safe-area-inset-top, 0px)' }}
                 >
                   ✕
                 </button>
@@ -1457,8 +1469,14 @@ export default function OrderPageClientElHornitoBakery({
               </div>
             </div>
 
-            {/* Scrollable Content Area - Takes remaining space */}
-            <div className="flex-1 overflow-y-auto overscroll-contain p-4 sm:p-6 pb-6" style={{ WebkitOverflowScrolling: 'touch' }}>
+            {/* Scrollable Content Area - Takes remaining space with dark background */}
+            <div
+              className="flex-1 overflow-y-auto overscroll-contain p-4 sm:p-6 pb-6"
+              style={{
+                WebkitOverflowScrolling: 'touch',
+                background: 'linear-gradient(135deg, #1e293b 0%, #0f172a 100%)',
+              }}
+            >
               {/* Step 1: Size & Layers */}
               {cakeStep === 0 && (
                 <div className="space-y-5 sm:space-y-6">
@@ -1715,49 +1733,54 @@ export default function OrderPageClientElHornitoBakery({
               )}
             </div>
 
-            {/* Footer with Total & Actions - Fixed at bottom */}
-            <div className="flex-shrink-0 p-4 sm:p-6 border-t border-white/10 bg-slate-900/80 backdrop-blur-sm">
-              <div className="flex items-center justify-between mb-3 sm:mb-4">
-                <div>
-                  <span className="text-blue-200/60 text-xs sm:text-sm">Total del Pastel:</span>
-                  <div className="text-2xl sm:text-3xl font-bold bg-gradient-to-r from-pink-400 via-cyan-400 to-amber-400 bg-clip-text text-transparent">${calculateCakeTotal().toFixed(2)}</div>
-                  <span className="text-pink-300/60 text-[10px] sm:text-sm">Deposito requerido: ${cakeDeposit.toFixed(2)} (50%)</span>
+            {/* Footer with Total & Actions - Fixed at bottom with safe area */}
+            <div
+              className="flex-shrink-0 border-t border-white/10 bg-slate-900"
+              style={{ paddingBottom: 'env(safe-area-inset-bottom, 0px)' }}
+            >
+              <div className="p-4 sm:p-6">
+                <div className="flex items-center justify-between mb-3 sm:mb-4">
+                  <div>
+                    <span className="text-blue-200/60 text-xs sm:text-sm">Total del Pastel:</span>
+                    <div className="text-2xl sm:text-3xl font-bold bg-gradient-to-r from-pink-400 via-cyan-400 to-amber-400 bg-clip-text text-transparent">${calculateCakeTotal().toFixed(2)}</div>
+                    <span className="text-pink-300/60 text-[10px] sm:text-sm">Deposito requerido: ${cakeDeposit.toFixed(2)} (50%)</span>
+                  </div>
                 </div>
-              </div>
 
-              <div className="flex gap-2 sm:gap-3">
-                {cakeStep > 0 && (
-                  <button
-                    onClick={() => setCakeStep(prev => prev - 1)}
-                    className="flex-1 py-3 sm:py-4 rounded-xl font-bold text-sm sm:text-lg bg-white/10 text-white hover:bg-white/20 active:scale-[0.98] transition-all"
-                  >
-                    ← Anterior
-                  </button>
-                )}
-                {cakeStep < 3 ? (
-                  <button
-                    onClick={() => setCakeStep(prev => prev + 1)}
-                    className="flex-1 py-3 sm:py-4 rounded-xl font-bold text-sm sm:text-lg text-white hover:shadow-lg active:scale-[0.98] transition-all"
-                    style={{ background: 'linear-gradient(135deg, #ec4899, #06b6d4, #f59e0b)' }}
-                  >
-                    Siguiente →
-                  </button>
-                ) : (
-                  <button
-                    onClick={handleAddCakeToCart}
-                    disabled={!isOpen || !cakeOrder.pickupDate || !cakeOrder.pickupTime || !cakeOrder.customerName || !cakeOrder.customerPhone}
-                    className={`flex-1 py-3 sm:py-4 rounded-xl font-bold text-sm sm:text-lg transition-all active:scale-[0.98] ${
-                      isOpen && cakeOrder.pickupDate && cakeOrder.pickupTime && cakeOrder.customerName && cakeOrder.customerPhone
-                        ? 'text-white hover:shadow-lg'
-                        : 'bg-slate-700 text-slate-500 cursor-not-allowed'
-                    }`}
-                    style={isOpen && cakeOrder.pickupDate && cakeOrder.pickupTime && cakeOrder.customerName && cakeOrder.customerPhone ? {
-                      background: 'linear-gradient(135deg, #ec4899, #06b6d4, #f59e0b)',
-                    } : {}}
-                  >
-                    🎂 Agregar al Carrito
-                  </button>
-                )}
+                <div className="flex gap-2 sm:gap-3">
+                  {cakeStep > 0 && (
+                    <button
+                      onClick={() => setCakeStep(prev => prev - 1)}
+                      className="flex-1 py-3 sm:py-4 rounded-xl font-bold text-sm sm:text-lg bg-white/10 text-white hover:bg-white/20 active:scale-[0.98] transition-all"
+                    >
+                      ← Anterior
+                    </button>
+                  )}
+                  {cakeStep < 3 ? (
+                    <button
+                      onClick={() => setCakeStep(prev => prev + 1)}
+                      className="flex-1 py-3 sm:py-4 rounded-xl font-bold text-sm sm:text-lg text-white hover:shadow-lg active:scale-[0.98] transition-all"
+                      style={{ background: 'linear-gradient(135deg, #ec4899, #06b6d4, #f59e0b)' }}
+                    >
+                      Siguiente →
+                    </button>
+                  ) : (
+                    <button
+                      onClick={handleAddCakeToCart}
+                      disabled={!cakeOrder.pickupDate || !cakeOrder.pickupTime || !cakeOrder.customerName || !cakeOrder.customerPhone}
+                      className={`flex-1 py-3 sm:py-4 rounded-xl font-bold text-sm sm:text-lg transition-all active:scale-[0.98] ${
+                        cakeOrder.pickupDate && cakeOrder.pickupTime && cakeOrder.customerName && cakeOrder.customerPhone
+                          ? 'text-white hover:shadow-lg'
+                          : 'bg-slate-700 text-slate-500 cursor-not-allowed'
+                      }`}
+                      style={cakeOrder.pickupDate && cakeOrder.pickupTime && cakeOrder.customerName && cakeOrder.customerPhone ? {
+                        background: 'linear-gradient(135deg, #ec4899, #06b6d4, #f59e0b)',
+                      } : {}}
+                    >
+                      🎂 Agregar al Carrito
+                    </button>
+                  )}
+                </div>
               </div>
             </div>
           </div>
