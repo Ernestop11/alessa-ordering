@@ -1,6 +1,6 @@
 'use client';
 
-import { useState, useCallback } from 'react';
+import { useState, useCallback, useEffect, useRef } from 'react';
 import {
   VPSPageNode,
   SystemOverview,
@@ -44,22 +44,56 @@ export default function VPSDashboard({
   const [showPreview, setShowPreview] = useState(false);
   const [showAider, setShowAider] = useState(false);
   const [isRefreshing, setIsRefreshing] = useState(false);
+  const [autoRefresh, setAutoRefresh] = useState(true);
   const [system, setSystem] = useState(initialSystem);
-  const [pages] = useState(initialPages);
+  const [pages, setPages] = useState(initialPages);
+  const [apiRoutes, setApiRoutes] = useState(initialApiRoutes);
+  const [currentPageStats, setCurrentPageStats] = useState(pageStats);
+  const [lastUpdate, setLastUpdate] = useState<Date>(new Date());
+  const refreshIntervalRef = useRef<NodeJS.Timeout | null>(null);
 
-  const handleRefresh = useCallback(async () => {
-    setIsRefreshing(true);
+  const handleRefresh = useCallback(async (silent = false) => {
+    if (!silent) setIsRefreshing(true);
     try {
-      const res = await fetch('/api/vps-dashboard/system');
-      if (res.ok) {
-        const data = await res.json();
+      // Fetch both system and pages data in parallel
+      const [systemRes, pagesRes] = await Promise.all([
+        fetch('/api/vps-dashboard/system'),
+        fetch('/api/vps-dashboard/pages'),
+      ]);
+
+      if (systemRes.ok) {
+        const data = await systemRes.json();
         setSystem(data);
       }
+
+      if (pagesRes.ok) {
+        const data = await pagesRes.json();
+        setPages(data.pages);
+        setApiRoutes(data.apiRoutes);
+        setCurrentPageStats(data.stats);
+      }
+
+      setLastUpdate(new Date());
     } catch (error) {
       console.error('Failed to refresh:', error);
     }
-    setIsRefreshing(false);
+    if (!silent) setIsRefreshing(false);
   }, []);
+
+  // Auto-refresh every 10 seconds when enabled
+  useEffect(() => {
+    if (autoRefresh) {
+      refreshIntervalRef.current = setInterval(() => {
+        handleRefresh(true); // Silent refresh
+      }, 10000); // 10 seconds
+    }
+
+    return () => {
+      if (refreshIntervalRef.current) {
+        clearInterval(refreshIntervalRef.current);
+      }
+    };
+  }, [autoRefresh, handleRefresh]);
 
   const handlePageSelect = useCallback((page: VPSPageNode) => {
     setSelectedPage(page);
@@ -91,8 +125,20 @@ export default function VPSDashboard({
           </div>
 
           <div className="flex items-center gap-2">
+            {/* Auto-refresh toggle */}
             <button
-              onClick={handleRefresh}
+              onClick={() => setAutoRefresh(!autoRefresh)}
+              className={`flex items-center gap-2 px-3 py-1.5 text-sm rounded-lg transition-colors ${
+                autoRefresh
+                  ? 'bg-green-600/20 text-green-400 border border-green-500/30'
+                  : 'bg-slate-700 text-slate-400'
+              }`}
+            >
+              <span className={autoRefresh ? 'animate-pulse' : ''}>⚡</span>
+              Auto {autoRefresh ? 'ON' : 'OFF'}
+            </button>
+            <button
+              onClick={() => handleRefresh(false)}
               disabled={isRefreshing}
               className="flex items-center gap-2 px-3 py-1.5 text-sm bg-slate-700 hover:bg-slate-600 rounded-lg transition-colors disabled:opacity-50"
             >
@@ -113,8 +159,8 @@ export default function VPSDashboard({
             { id: 'pm2', label: 'PM2', icon: '⚡', color: 'text-blue-400' },
             { id: 'postgres', label: 'PostgreSQL', icon: '🗄️', color: 'text-purple-400' },
             { id: 'redis', label: 'Redis', icon: '⚡', color: 'text-red-400' },
-            { id: 'pages', label: `Pages (${pageStats.total})`, icon: '📄' },
-            { id: 'apis', label: `APIs (${initialApiRoutes.length})`, icon: '🔌' },
+            { id: 'pages', label: `Pages (${currentPageStats.total})`, icon: '📄' },
+            { id: 'apis', label: `APIs (${apiRoutes.length})`, icon: '🔌' },
           ].map((tab) => (
             <button
               key={tab.id}
@@ -139,7 +185,7 @@ export default function VPSDashboard({
           {viewMode === 'overview' && (
             <OverviewMap
               system={system}
-              pageStats={pageStats}
+              pageStats={currentPageStats}
               onNavigate={handleNavigate}
             />
           )}
@@ -186,9 +232,9 @@ export default function VPSDashboard({
 
           {viewMode === 'apis' && (
             <div className="h-full overflow-auto p-6">
-              <h2 className="text-xl font-bold mb-4">API Routes ({initialApiRoutes.length})</h2>
+              <h2 className="text-xl font-bold mb-4">API Routes ({apiRoutes.length})</h2>
               <div className="grid gap-2">
-                {initialApiRoutes.map((api) => (
+                {apiRoutes.map((api) => (
                   <div
                     key={api.route}
                     className="flex items-center gap-4 bg-slate-800 rounded-lg p-3 hover:bg-slate-700 transition-colors"
@@ -259,7 +305,11 @@ export default function VPSDashboard({
             <span>Uptime: {system.system.uptime}</span>
           </div>
           <div className="flex items-center gap-4">
-            <span>Last scan: {new Date(system.scannedAt).toLocaleTimeString()}</span>
+            <span>Last update: {lastUpdate.toLocaleTimeString()}</span>
+            <span className="text-slate-600">|</span>
+            <span className={autoRefresh ? 'text-green-400' : 'text-slate-500'}>
+              {autoRefresh ? '⚡ Auto-refresh: 10s' : 'Auto-refresh: OFF'}
+            </span>
             <span className="flex items-center gap-2">
               {system.nginx.status === 'running' && <span className="w-2 h-2 bg-green-500 rounded-full" />}
               {system.pm2.apps.filter(a => a.status === 'online').length} apps online
