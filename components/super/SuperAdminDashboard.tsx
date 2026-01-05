@@ -16,7 +16,6 @@ import ProductsTab from './dashboard/ProductsTab';
 import EnhancedProductsTab from './dashboard/EnhancedProductsTab';
 import TenantProductsView from './dashboard/TenantProductsView';
 import DashboardShortcuts from './dashboard/DashboardShortcuts';
-import AlfredPanel from './dashboard/AlfredPanel';
 
 type TenantLifecycleStatus =
   | 'PENDING_REVIEW'
@@ -226,7 +225,7 @@ const defaultCreateForm = {
 
 type CreateFormState = typeof defaultCreateForm;
 
-type SuperAdminTab = 'dashboard' | 'tenants' | 'onboarding' | 'templates' | 'mlm' | 'crm' | 'products' | 'alfred';
+type SuperAdminTab = 'dashboard' | 'tenants' | 'onboarding' | 'templates' | 'mlm' | 'crm' | 'products';
 
 interface BusinessTemplate {
   id: string;
@@ -944,7 +943,6 @@ export default function SuperAdminDashboard({ initialTenants, initialMetrics, ro
             { id: 'templates' as SuperAdminTab, label: 'Templates', icon: '🎨', color: 'orange' },
             { id: 'crm' as SuperAdminTab, label: 'CRM', icon: '💼', color: 'pink' },
             { id: 'mlm' as SuperAdminTab, label: 'MLM', icon: '🌳', color: 'teal' },
-            { id: 'alfred' as SuperAdminTab, label: 'Alfred', icon: '🤖', color: 'purple' },
           ].map((tab) => {
             const colorClasses = {
               blue: activeTab === tab.id ? 'bg-blue-600 text-white border-blue-600' : 'bg-white text-blue-600 border-blue-200 hover:bg-blue-50',
@@ -1613,11 +1611,6 @@ export default function SuperAdminDashboard({ initialTenants, initialMetrics, ro
           <CRMPanel tenants={tenants.map((t) => ({ id: t.id, name: t.name, slug: t.slug }))} />
         )}
 
-        {activeTab === 'alfred' && (
-          <section className="rounded-2xl border border-gray-200 bg-white p-6 shadow-sm">
-            <AlfredPanel />
-          </section>
-        )}
 
         {activeTab === 'products' && (
           <section className="rounded-2xl border border-gray-200 bg-white p-6 shadow-sm">
