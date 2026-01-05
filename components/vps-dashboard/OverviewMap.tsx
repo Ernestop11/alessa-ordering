@@ -1,6 +1,6 @@
 'use client';
 
-import { useCallback, useMemo } from 'react';
+import { useCallback, useMemo, useEffect, useRef } from 'react';
 import {
   ReactFlow,
   Background,
@@ -12,10 +12,13 @@ import {
   Edge,
   MarkerType,
   Position,
+  NodeChange,
 } from '@xyflow/react';
 import '@xyflow/react/dist/style.css';
 import { SystemOverview, PageGroup, SYSTEM_COLORS } from '@/lib/vps-dashboard/types';
 import SystemNode from './canvas/nodes/SystemNode';
+
+const POSITIONS_STORAGE_KEY = 'vps-dashboard-node-positions';
 
 interface OverviewMapProps {
   system: SystemOverview;
@@ -31,13 +34,46 @@ const nodeTypes = {
   system: SystemNode,
 } as const;
 
+// Load saved positions from localStorage
+function loadSavedPositions(): Record<string, { x: number; y: number }> {
+  if (typeof window === 'undefined') return {};
+  try {
+    const saved = localStorage.getItem(POSITIONS_STORAGE_KEY);
+    return saved ? JSON.parse(saved) : {};
+  } catch {
+    return {};
+  }
+}
+
+// Save positions to localStorage
+function savePositions(nodes: Node[]) {
+  if (typeof window === 'undefined') return;
+  try {
+    const positions: Record<string, { x: number; y: number }> = {};
+    nodes.forEach(node => {
+      positions[node.id] = { x: node.position.x, y: node.position.y };
+    });
+    localStorage.setItem(POSITIONS_STORAGE_KEY, JSON.stringify(positions));
+  } catch (e) {
+    console.error('Failed to save node positions:', e);
+  }
+}
+
 export default function OverviewMap({ system, pageStats, onNavigate, onOpenFixModal }: OverviewMapProps) {
+  const savedPositions = useRef<Record<string, { x: number; y: number }>>(loadSavedPositions());
+  const saveTimeoutRef = useRef<NodeJS.Timeout | null>(null);
+
+  // Helper to get position (saved or default)
+  const getPosition = (id: string, defaultPos: { x: number; y: number }) => {
+    return savedPositions.current[id] || defaultPos;
+  };
+
   const initialNodes: Node[] = useMemo(() => [
     // Internet Cloud
     {
       id: 'internet',
       type: 'system',
-      position: { x: 400, y: 0 },
+      position: getPosition('internet', { x: 400, y: 0 }),
       data: {
         label: 'Internet',
         type: 'internet',
@@ -52,7 +88,7 @@ export default function OverviewMap({ system, pageStats, onNavigate, onOpenFixMo
     {
       id: 'nginx',
       type: 'system',
-      position: { x: 400, y: 120 },
+      position: getPosition('nginx', { x: 400, y: 120 }),
       data: {
         label: 'Nginx',
         type: 'nginx',
@@ -76,7 +112,7 @@ export default function OverviewMap({ system, pageStats, onNavigate, onOpenFixMo
     ...system.nginx.sites.slice(0, 4).map((site, i) => ({
       id: `site-${i}`,
       type: 'system',
-      position: { x: 100 + i * 200, y: 240 },
+      position: getPosition(`site-${i}`, { x: 100 + i * 200, y: 240 }),
       data: {
         label: site.domain.split('.')[0],
         type: 'tenant' as const,
@@ -91,7 +127,7 @@ export default function OverviewMap({ system, pageStats, onNavigate, onOpenFixMo
     {
       id: 'pm2',
       type: 'system',
-      position: { x: 400, y: 380 },
+      position: getPosition('pm2', { x: 400, y: 380 }),
       data: {
         label: 'PM2',
         type: 'pm2',
@@ -115,7 +151,7 @@ export default function OverviewMap({ system, pageStats, onNavigate, onOpenFixMo
     ...system.pm2.apps.map((app, i) => ({
       id: `app-${i}`,
       type: 'system',
-      position: { x: 200 + i * 400, y: 500 },
+      position: getPosition(`app-${i}`, { x: 200 + i * 400, y: 500 }),
       data: {
         label: app.name,
         type: 'pm2' as const,
@@ -134,7 +170,7 @@ export default function OverviewMap({ system, pageStats, onNavigate, onOpenFixMo
     {
       id: 'postgres',
       type: 'system',
-      position: { x: 200, y: 640 },
+      position: getPosition('postgres', { x: 200, y: 640 }),
       data: {
         label: 'PostgreSQL',
         type: 'postgres',
@@ -159,7 +195,7 @@ export default function OverviewMap({ system, pageStats, onNavigate, onOpenFixMo
     {
       id: 'redis',
       type: 'system',
-      position: { x: 600, y: 640 },
+      position: getPosition('redis', { x: 600, y: 640 }),
       data: {
         label: 'Redis',
         type: 'redis',
@@ -183,7 +219,7 @@ export default function OverviewMap({ system, pageStats, onNavigate, onOpenFixMo
     {
       id: 'pages',
       type: 'system',
-      position: { x: 750, y: 380 },
+      position: getPosition('pages', { x: 750, y: 380 }),
       data: {
         label: 'Pages',
         type: 'pages' as const,
@@ -198,7 +234,7 @@ export default function OverviewMap({ system, pageStats, onNavigate, onOpenFixMo
         onClick: () => onNavigate('pages'),
       },
     },
-  ], [system, pageStats, onNavigate, onOpenFixModal]);
+  ], [system, pageStats, onNavigate, onOpenFixModal, getPosition]);
 
   const initialEdges: Edge[] = useMemo(() => [
     // Internet to Nginx
@@ -259,12 +295,45 @@ export default function OverviewMap({ system, pageStats, onNavigate, onOpenFixMo
   const [nodes, setNodes, onNodesChange] = useNodesState(initialNodes);
   const [edges, setEdges, onEdgesChange] = useEdgesState(initialEdges);
 
+  // Custom handler that saves positions after node drag ends
+  const handleNodesChange = useCallback((changes: NodeChange[]) => {
+    onNodesChange(changes);
+
+    // Check if any node was moved (drag end)
+    const hasDragEnd = changes.some(
+      change => change.type === 'position' && 'dragging' in change && change.dragging === false
+    );
+
+    if (hasDragEnd) {
+      // Debounce the save to avoid excessive writes
+      if (saveTimeoutRef.current) {
+        clearTimeout(saveTimeoutRef.current);
+      }
+      saveTimeoutRef.current = setTimeout(() => {
+        // Get latest nodes from state
+        setNodes(currentNodes => {
+          savePositions(currentNodes);
+          return currentNodes;
+        });
+      }, 300);
+    }
+  }, [onNodesChange, setNodes]);
+
+  // Cleanup timeout on unmount
+  useEffect(() => {
+    return () => {
+      if (saveTimeoutRef.current) {
+        clearTimeout(saveTimeoutRef.current);
+      }
+    };
+  }, []);
+
   return (
     <div className="h-full w-full">
       <ReactFlow
         nodes={nodes}
         edges={edges}
-        onNodesChange={onNodesChange}
+        onNodesChange={handleNodesChange}
         onEdgesChange={onEdgesChange}
         nodeTypes={nodeTypes}
         fitView
@@ -291,9 +360,9 @@ export default function OverviewMap({ system, pageStats, onNavigate, onOpenFixMo
           <span>🗺️</span> System Overview
         </h3>
         <p className="text-sm text-slate-400 mb-3">
-          This is your VPS architecture. Click on any component to explore its office and learn more.
+          Drag cards to rearrange. Your layout is saved automatically.
         </p>
-        <div className="flex flex-wrap gap-2 text-xs">
+        <div className="flex flex-wrap gap-2 text-xs mb-3">
           <span className="flex items-center gap-1 text-green-400">
             <span className="w-2 h-2 bg-green-500 rounded-full" /> Healthy
           </span>
@@ -304,6 +373,15 @@ export default function OverviewMap({ system, pageStats, onNavigate, onOpenFixMo
             <span className="w-2 h-2 bg-red-500 rounded-full" /> Error
           </span>
         </div>
+        <button
+          onClick={() => {
+            localStorage.removeItem(POSITIONS_STORAGE_KEY);
+            window.location.reload();
+          }}
+          className="text-xs text-slate-500 hover:text-slate-300 transition-colors"
+        >
+          Reset layout
+        </button>
       </div>
 
       {/* Data Flow Legend */}
