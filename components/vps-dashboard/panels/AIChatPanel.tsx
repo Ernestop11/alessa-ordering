@@ -1,6 +1,6 @@
 'use client';
 
-import { useState, useRef, useEffect } from 'react';
+import { useState, useRef, useEffect, useCallback } from 'react';
 
 type ActivePanel = 'claude' | 'aider' | 'terminal';
 
@@ -10,9 +10,25 @@ interface Message {
   timestamp: Date;
 }
 
+interface ChatSession {
+  id: string;
+  panelType: string;
+  title: string | null;
+  model: string | null;
+  createdAt: string;
+  updatedAt: string;
+  _count?: { messages: number };
+}
+
 export default function AIChatPanel() {
   const [activePanel, setActivePanel] = useState<ActivePanel>('claude');
   const [isMobile, setIsMobile] = useState(false);
+  const [showHistory, setShowHistory] = useState(false);
+
+  // Session management
+  const [claudeSessionId, setClaudeSessionId] = useState<string | null>(null);
+  const [claudeSessions, setClaudeSessions] = useState<ChatSession[]>([]);
+  const [sessionsLoading, setSessionsLoading] = useState(false);
 
   // Claude chat state
   const [claudeMessages, setClaudeMessages] = useState<Message[]>([
@@ -52,6 +68,119 @@ export default function AIChatPanel() {
   const aiderEndRef = useRef<HTMLDivElement>(null);
   const terminalEndRef = useRef<HTMLDivElement>(null);
 
+  // Load chat sessions on mount
+  const loadSessions = useCallback(async () => {
+    setSessionsLoading(true);
+    try {
+      const res = await fetch('/api/vps-dashboard/chat-history?panelType=claude');
+      if (res.ok) {
+        const data = await res.json();
+        setClaudeSessions(data.sessions || []);
+      }
+    } catch (error) {
+      console.error('Failed to load sessions:', error);
+    }
+    setSessionsLoading(false);
+  }, []);
+
+  // Load specific session
+  const loadSession = useCallback(async (sessionId: string) => {
+    try {
+      const res = await fetch(`/api/vps-dashboard/chat-history?sessionId=${sessionId}`);
+      if (res.ok) {
+        const session = await res.json();
+        setClaudeSessionId(sessionId);
+        setClaudeModel((session.model as 'sonnet' | 'opus' | 'haiku') || 'sonnet');
+        setClaudeMessages(
+          session.messages.map((m: { role: string; content: string; createdAt: string }) => ({
+            role: m.role as 'user' | 'assistant' | 'system',
+            content: m.content,
+            timestamp: new Date(m.createdAt),
+          }))
+        );
+        setShowHistory(false);
+      }
+    } catch (error) {
+      console.error('Failed to load session:', error);
+    }
+  }, []);
+
+  // Create new session
+  const createSession = useCallback(async (firstMessage: string) => {
+    try {
+      const res = await fetch('/api/vps-dashboard/chat-history', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({
+          action: 'create-session',
+          panelType: 'claude',
+          model: claudeModel,
+          content: firstMessage,
+        }),
+      });
+      if (res.ok) {
+        const data = await res.json();
+        setClaudeSessionId(data.session.id);
+        return data.session.id;
+      }
+    } catch (error) {
+      console.error('Failed to create session:', error);
+    }
+    return null;
+  }, [claudeModel]);
+
+  // Save message to session
+  const saveMessage = useCallback(async (sessionId: string, role: string, content: string) => {
+    try {
+      await fetch('/api/vps-dashboard/chat-history', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({
+          action: 'add-message',
+          sessionId,
+          role,
+          content,
+        }),
+      });
+    } catch (error) {
+      console.error('Failed to save message:', error);
+    }
+  }, []);
+
+  // Delete session
+  const deleteSession = useCallback(async (sessionId: string) => {
+    try {
+      const res = await fetch(`/api/vps-dashboard/chat-history?sessionId=${sessionId}`, {
+        method: 'DELETE',
+      });
+      if (res.ok) {
+        setClaudeSessions(prev => prev.filter(s => s.id !== sessionId));
+        if (claudeSessionId === sessionId) {
+          startNewChat();
+        }
+      }
+    } catch (error) {
+      console.error('Failed to delete session:', error);
+    }
+  }, [claudeSessionId]);
+
+  // Start new chat
+  const startNewChat = useCallback(() => {
+    setClaudeSessionId(null);
+    setClaudeMessages([
+      {
+        role: 'system',
+        content: 'Claude Code connected. I can help you manage your VPS, edit code, and troubleshoot issues. What would you like to do?',
+        timestamp: new Date(),
+      },
+    ]);
+    setShowHistory(false);
+  }, []);
+
+  useEffect(() => {
+    loadSessions();
+  }, [loadSessions]);
+
   useEffect(() => {
     const checkMobile = () => setIsMobile(window.innerWidth < 768);
     checkMobile();
@@ -81,31 +210,54 @@ export default function AIChatPanel() {
     };
 
     setClaudeMessages(prev => [...prev, userMessage]);
+    const inputText = claudeInput;
     setClaudeInput('');
     setClaudeLoading(true);
+
+    // Create session if needed
+    let sessionId = claudeSessionId;
+    if (!sessionId) {
+      sessionId = await createSession(inputText);
+    }
+
+    // Save user message
+    if (sessionId) {
+      await saveMessage(sessionId, 'user', inputText);
+    }
 
     try {
       const response = await fetch('/api/vps-dashboard/claude-chat', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ message: claudeInput, model: claudeModel }),
+        body: JSON.stringify({ message: inputText, model: claudeModel }),
       });
 
       const data = await response.json();
+      const assistantContent = data.response || data.error || 'No response';
+
       setClaudeMessages(prev => [
         ...prev,
         {
           role: 'assistant',
-          content: data.response || data.error || 'No response',
+          content: assistantContent,
           timestamp: new Date(),
         },
       ]);
+
+      // Save assistant message
+      if (sessionId) {
+        await saveMessage(sessionId, 'assistant', assistantContent);
+      }
+
+      // Refresh sessions list
+      loadSessions();
     } catch (error) {
+      const errorContent = `Error: ${error instanceof Error ? error.message : 'Failed to connect'}`;
       setClaudeMessages(prev => [
         ...prev,
         {
           role: 'assistant',
-          content: `Error: ${error instanceof Error ? error.message : 'Failed to connect'}`,
+          content: errorContent,
           timestamp: new Date(),
         },
       ]);
@@ -186,12 +338,85 @@ export default function AIChatPanel() {
     setTerminalLoading(false);
   };
 
+  // History sidebar component
+  const HistorySidebar = () => (
+    <div className={`${showHistory ? 'block' : 'hidden'} absolute inset-0 z-10 bg-slate-900 md:relative md:block md:w-64 md:border-r md:border-slate-700 flex flex-col`}>
+      <div className="flex-shrink-0 p-3 border-b border-slate-700 flex items-center justify-between">
+        <h3 className="font-semibold text-white text-sm">Chat History</h3>
+        <div className="flex gap-2">
+          <button
+            onClick={startNewChat}
+            className="text-xs px-2 py-1 bg-purple-600 hover:bg-purple-500 rounded text-white"
+          >
+            + New
+          </button>
+          <button
+            onClick={() => setShowHistory(false)}
+            className="md:hidden text-slate-400 hover:text-white"
+          >
+            ✕
+          </button>
+        </div>
+      </div>
+      <div className="flex-1 overflow-auto">
+        {sessionsLoading ? (
+          <div className="p-4 text-center text-slate-500 text-sm">Loading...</div>
+        ) : claudeSessions.length === 0 ? (
+          <div className="p-4 text-center text-slate-500 text-sm">No chat history yet</div>
+        ) : (
+          <div className="divide-y divide-slate-800">
+            {claudeSessions.map(session => (
+              <div
+                key={session.id}
+                className={`p-3 cursor-pointer hover:bg-slate-800 transition-colors ${
+                  claudeSessionId === session.id ? 'bg-slate-800 border-l-2 border-purple-500' : ''
+                }`}
+                onClick={() => loadSession(session.id)}
+              >
+                <div className="flex items-start justify-between gap-2">
+                  <div className="flex-1 min-w-0">
+                    <p className="text-sm text-white truncate">
+                      {session.title || 'Untitled Chat'}
+                    </p>
+                    <p className="text-xs text-slate-500 mt-1">
+                      {new Date(session.updatedAt).toLocaleDateString()} • {session._count?.messages || 0} msgs
+                    </p>
+                  </div>
+                  <button
+                    onClick={(e) => {
+                      e.stopPropagation();
+                      if (confirm('Delete this chat?')) {
+                        deleteSession(session.id);
+                      }
+                    }}
+                    className="text-slate-500 hover:text-red-400 text-xs p-1"
+                  >
+                    🗑️
+                  </button>
+                </div>
+              </div>
+            ))}
+          </div>
+        )}
+      </div>
+    </div>
+  );
+
   // Mobile layout - tabs
   if (isMobile) {
     return (
-      <div className="h-full flex flex-col bg-slate-900">
+      <div className="h-full flex flex-col bg-slate-900 relative">
+        {/* History sidebar overlay */}
+        <HistorySidebar />
+
         {/* Mobile tabs */}
         <div className="flex-shrink-0 flex border-b border-slate-700">
+          <button
+            onClick={() => setShowHistory(true)}
+            className="px-3 py-3 text-slate-400 hover:text-white border-r border-slate-700"
+          >
+            📜
+          </button>
           {[
             { id: 'claude', label: 'Claude', icon: '🧠' },
             { id: 'aider', label: 'Aider', icon: '🤖' },
@@ -267,87 +492,100 @@ export default function AIChatPanel() {
     );
   }
 
-  // Desktop layout - split view
+  // Desktop layout - split view with history sidebar
   return (
-    <div className="h-full flex flex-col bg-slate-900">
-      {/* Top section - Claude and Aider side by side */}
-      <div className="flex-1 flex overflow-hidden border-b border-slate-700">
-        {/* Claude Chat */}
-        <div className="flex-1 flex flex-col border-r border-slate-700">
-          <div className="flex-shrink-0 px-4 py-3 bg-slate-800/50 border-b border-slate-700">
-            <div className="flex items-center justify-between">
-              <div>
-                <h3 className="font-semibold text-white flex items-center gap-2">
-                  <span>🧠</span> Claude Code
-                </h3>
-                <p className="text-xs text-slate-500">AI assistant for your VPS</p>
+    <div className="h-full flex bg-slate-900">
+      {/* History sidebar */}
+      <HistorySidebar />
+
+      <div className="flex-1 flex flex-col">
+        {/* Top section - Claude and Aider side by side */}
+        <div className="flex-1 flex overflow-hidden border-b border-slate-700">
+          {/* Claude Chat */}
+          <div className="flex-1 flex flex-col border-r border-slate-700">
+            <div className="flex-shrink-0 px-4 py-3 bg-slate-800/50 border-b border-slate-700">
+              <div className="flex items-center justify-between">
+                <div className="flex items-center gap-2">
+                  <button
+                    onClick={() => setShowHistory(!showHistory)}
+                    className="md:hidden text-slate-400 hover:text-white"
+                  >
+                    📜
+                  </button>
+                  <div>
+                    <h3 className="font-semibold text-white flex items-center gap-2">
+                      <span>🧠</span> Claude Code
+                    </h3>
+                    <p className="text-xs text-slate-500">AI assistant for your VPS</p>
+                  </div>
+                </div>
+                <select
+                  value={claudeModel}
+                  onChange={(e) => setClaudeModel(e.target.value as 'sonnet' | 'opus' | 'haiku')}
+                  className="bg-slate-700 border border-slate-600 rounded-lg px-3 py-1.5 text-white text-xs focus:outline-none focus:ring-2 focus:ring-purple-500"
+                >
+                  <option value="sonnet">Sonnet 4 (Balanced)</option>
+                  <option value="opus">Opus 4 (Powerful)</option>
+                  <option value="haiku">Haiku 3.5 (Fast)</option>
+                </select>
               </div>
-              <select
-                value={claudeModel}
-                onChange={(e) => setClaudeModel(e.target.value as 'sonnet' | 'opus' | 'haiku')}
-                className="bg-slate-700 border border-slate-600 rounded-lg px-3 py-1.5 text-white text-xs focus:outline-none focus:ring-2 focus:ring-purple-500"
-              >
-                <option value="sonnet">Sonnet 4 (Balanced)</option>
-                <option value="opus">Opus 4 (Powerful)</option>
-                <option value="haiku">Haiku 3.5 (Fast)</option>
-              </select>
             </div>
+            <ChatPanel
+              messages={claudeMessages}
+              input={claudeInput}
+              setInput={setClaudeInput}
+              onSend={handleClaudeSend}
+              loading={claudeLoading}
+              endRef={claudeEndRef}
+              placeholder="Ask Claude anything..."
+            />
           </div>
-          <ChatPanel
-            messages={claudeMessages}
-            input={claudeInput}
-            setInput={setClaudeInput}
-            onSend={handleClaudeSend}
-            loading={claudeLoading}
-            endRef={claudeEndRef}
-            placeholder="Ask Claude anything..."
-          />
+
+          {/* Aider */}
+          <div className="flex-1 flex flex-col">
+            <div className="flex-shrink-0 px-4 py-3 bg-slate-800/50 border-b border-slate-700">
+              <h3 className="font-semibold text-white flex items-center gap-2">
+                <span>🤖</span> Aider Editor
+              </h3>
+              <p className="text-xs text-slate-500">AI code editing on VPS</p>
+            </div>
+            <AiderChatPanel
+              messages={aiderMessages}
+              input={aiderInput}
+              setInput={setAiderInput}
+              filePath={aiderFilePath}
+              setFilePath={setAiderFilePath}
+              onSend={handleAiderSend}
+              loading={aiderLoading}
+              endRef={aiderEndRef}
+            />
+          </div>
         </div>
 
-        {/* Aider */}
-        <div className="flex-1 flex flex-col">
-          <div className="flex-shrink-0 px-4 py-3 bg-slate-800/50 border-b border-slate-700">
-            <h3 className="font-semibold text-white flex items-center gap-2">
-              <span>🤖</span> Aider Editor
+        {/* Bottom section - Terminal */}
+        <div className="h-48 flex flex-col">
+          <div className="flex-shrink-0 px-4 py-2 bg-slate-800/50 border-b border-slate-700 flex items-center justify-between">
+            <h3 className="font-semibold text-white flex items-center gap-2 text-sm">
+              <span>💻</span> Terminal
             </h3>
-            <p className="text-xs text-slate-500">AI code editing on VPS</p>
+            <a
+              href="http://77.243.85.8:7681"
+              target="_blank"
+              rel="noopener noreferrer"
+              className="text-xs text-blue-400 hover:text-blue-300"
+            >
+              Open Full Terminal ↗
+            </a>
           </div>
-          <AiderChatPanel
-            messages={aiderMessages}
-            input={aiderInput}
-            setInput={setAiderInput}
-            filePath={aiderFilePath}
-            setFilePath={setAiderFilePath}
-            onSend={handleAiderSend}
-            loading={aiderLoading}
-            endRef={aiderEndRef}
+          <TerminalPanel
+            history={terminalHistory}
+            input={terminalInput}
+            setInput={setTerminalInput}
+            onSend={handleTerminalCommand}
+            loading={terminalLoading}
+            endRef={terminalEndRef}
           />
         </div>
-      </div>
-
-      {/* Bottom section - Terminal */}
-      <div className="h-48 flex flex-col">
-        <div className="flex-shrink-0 px-4 py-2 bg-slate-800/50 border-b border-slate-700 flex items-center justify-between">
-          <h3 className="font-semibold text-white flex items-center gap-2 text-sm">
-            <span>💻</span> Terminal
-          </h3>
-          <a
-            href="http://77.243.85.8:7681"
-            target="_blank"
-            rel="noopener noreferrer"
-            className="text-xs text-blue-400 hover:text-blue-300"
-          >
-            Open Full Terminal ↗
-          </a>
-        </div>
-        <TerminalPanel
-          history={terminalHistory}
-          input={terminalInput}
-          setInput={setTerminalInput}
-          onSend={handleTerminalCommand}
-          loading={terminalLoading}
-          endRef={terminalEndRef}
-        />
       </div>
     </div>
   );
@@ -370,7 +608,7 @@ function ChatPanel({
   setInput: (v: string) => void;
   onSend: () => void;
   loading: boolean;
-  endRef: React.RefObject<HTMLDivElement>;
+  endRef: React.RefObject<HTMLDivElement | null>;
   placeholder: string;
 }) {
   return (
@@ -448,7 +686,7 @@ function AiderChatPanel({
   setFilePath: (v: string) => void;
   onSend: () => void;
   loading: boolean;
-  endRef: React.RefObject<HTMLDivElement>;
+  endRef: React.RefObject<HTMLDivElement | null>;
 }) {
   return (
     <div className="flex-1 flex flex-col overflow-hidden">
@@ -527,7 +765,7 @@ function TerminalPanel({
   setInput: (v: string) => void;
   onSend: () => void;
   loading: boolean;
-  endRef: React.RefObject<HTMLDivElement>;
+  endRef: React.RefObject<HTMLDivElement | null>;
 }) {
   return (
     <div className="flex-1 flex flex-col overflow-hidden bg-black">

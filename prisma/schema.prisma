@@ -1465,3 +1465,31 @@ model GroupOrderInvitation {
   @@index([token])
   @@index([status])
 }
+
+// VPS Dashboard - AI Chat History
+model VPSChatSession {
+  id        String           @id @default(uuid())
+  userId    String           // super_admin user ID
+  panelType String           // 'claude', 'ollama', 'workflow', 'aider'
+  title     String?          // Auto-generated from first message
+  model     String?          // Model used (sonnet, opus, haiku, llama3.2, etc.)
+  createdAt DateTime         @default(now())
+  updatedAt DateTime         @updatedAt
+  messages  VPSChatMessage[]
+
+  @@index([userId])
+  @@index([panelType])
+  @@index([createdAt])
+}
+
+model VPSChatMessage {
+  id        String         @id @default(uuid())
+  sessionId String
+  role      String         // 'user', 'assistant', 'system'
+  content   String         @db.Text
+  createdAt DateTime       @default(now())
+  session   VPSChatSession @relation(fields: [sessionId], references: [id], onDelete: Cascade)
+
+  @@index([sessionId])
+  @@index([createdAt])
+}
