@@ -22,6 +22,7 @@ import FixModal from './panels/FixModal';
 import ToolsOffice from './offices/ToolsOffice';
 import AIChatPanel from './panels/AIChatPanel';
 import OllamaOffice from './offices/OllamaOffice';
+import AIWorkflowPanel from './panels/AIWorkflowPanel';
 
 interface VPSDashboardProps {
   initialPages: VPSPageNode[];
@@ -36,7 +37,7 @@ interface VPSDashboardProps {
   };
 }
 
-type ViewMode = 'overview' | 'pages' | 'apis' | 'nginx' | 'pm2' | 'postgres' | 'redis' | 'status' | 'tools' | 'ai-chat' | 'ollama';
+type ViewMode = 'overview' | 'pages' | 'apis' | 'nginx' | 'pm2' | 'postgres' | 'redis' | 'status' | 'tools' | 'ai-chat' | 'ollama' | 'ai-workflow';
 
 export default function VPSDashboard({
   initialPages,
@@ -163,34 +164,95 @@ export default function VPSDashboard({
           </div>
         </div>
 
-        {/* Navigation Tabs */}
+        {/* Navigation Tabs - Grouped */}
         <div className="flex items-center gap-1 px-4 pb-2 overflow-x-auto">
-          {[
-            { id: 'overview', label: 'Overview', icon: '🗺️' },
-            { id: 'nginx', label: 'Nginx', icon: '🌐', color: 'text-green-400' },
-            { id: 'pm2', label: 'PM2', icon: '⚡', color: 'text-blue-400' },
-            { id: 'postgres', label: 'PostgreSQL', icon: '🗄️', color: 'text-purple-400' },
-            { id: 'redis', label: 'Redis', icon: '⚡', color: 'text-red-400' },
-            { id: 'pages', label: `Pages (${currentPageStats.total})`, icon: '📄' },
-            { id: 'apis', label: `APIs (${apiRoutes.length})`, icon: '🔌' },
-            { id: 'tools', label: 'Tools', icon: '🧰', color: 'text-orange-400' },
-            { id: 'ollama', label: 'Ollama', icon: '🦙', color: 'text-green-400' },
-            { id: 'status', label: 'Status', icon: '🚨', color: 'text-yellow-400' },
-            { id: 'ai-chat', label: 'AI Chat', icon: '🤖', color: 'text-purple-400' },
-          ].map((tab) => (
-            <button
-              key={tab.id}
-              onClick={() => setViewMode(tab.id as ViewMode)}
-              className={`flex items-center gap-2 px-4 py-2 text-sm rounded-lg transition-colors whitespace-nowrap ${
-                viewMode === tab.id
-                  ? 'bg-blue-600 text-white'
-                  : 'text-slate-400 hover:text-white hover:bg-slate-700'
-              } ${tab.color || ''}`}
-            >
-              <span>{tab.icon}</span>
-              {tab.label}
-            </button>
-          ))}
+          {/* System Group */}
+          <div className="flex items-center gap-1 pr-2 border-r border-slate-700">
+            {[
+              { id: 'overview', label: 'Overview', icon: '🗺️' },
+              { id: 'nginx', label: 'Nginx', icon: '🌐', color: 'text-green-400' },
+              { id: 'pm2', label: 'PM2', icon: '⚡', color: 'text-blue-400' },
+              { id: 'postgres', label: 'PostgreSQL', icon: '🗄️', color: 'text-purple-400' },
+              { id: 'redis', label: 'Redis', icon: '🔴', color: 'text-red-400' },
+            ].map((tab) => (
+              <button
+                key={tab.id}
+                onClick={() => setViewMode(tab.id as ViewMode)}
+                className={`flex items-center gap-2 px-3 py-1.5 text-sm rounded-lg transition-colors whitespace-nowrap ${
+                  viewMode === tab.id
+                    ? 'bg-blue-600 text-white'
+                    : 'text-slate-400 hover:text-white hover:bg-slate-700'
+                } ${tab.color || ''}`}
+              >
+                <span>{tab.icon}</span>
+                {tab.label}
+              </button>
+            ))}
+          </div>
+
+          {/* Code Group */}
+          <div className="flex items-center gap-1 px-2 border-r border-slate-700">
+            {[
+              { id: 'pages', label: `Pages`, icon: '📄' },
+              { id: 'apis', label: `APIs`, icon: '🔌' },
+            ].map((tab) => (
+              <button
+                key={tab.id}
+                onClick={() => setViewMode(tab.id as ViewMode)}
+                className={`flex items-center gap-2 px-3 py-1.5 text-sm rounded-lg transition-colors whitespace-nowrap ${
+                  viewMode === tab.id
+                    ? 'bg-blue-600 text-white'
+                    : 'text-slate-400 hover:text-white hover:bg-slate-700'
+                }`}
+              >
+                <span>{tab.icon}</span>
+                {tab.label}
+              </button>
+            ))}
+          </div>
+
+          {/* Tools Group */}
+          <div className="flex items-center gap-1 px-2 border-r border-slate-700">
+            {[
+              { id: 'tools', label: 'Tools', icon: '🧰', color: 'text-orange-400' },
+              { id: 'status', label: 'Alerts', icon: '🚨', color: 'text-yellow-400' },
+            ].map((tab) => (
+              <button
+                key={tab.id}
+                onClick={() => setViewMode(tab.id as ViewMode)}
+                className={`flex items-center gap-2 px-3 py-1.5 text-sm rounded-lg transition-colors whitespace-nowrap ${
+                  viewMode === tab.id
+                    ? 'bg-blue-600 text-white'
+                    : 'text-slate-400 hover:text-white hover:bg-slate-700'
+                } ${tab.color || ''}`}
+              >
+                <span>{tab.icon}</span>
+                {tab.label}
+              </button>
+            ))}
+          </div>
+
+          {/* AI Group */}
+          <div className="flex items-center gap-1 pl-2">
+            {[
+              { id: 'ai-workflow', label: 'AI Workflow', icon: '🚀', color: 'text-cyan-400' },
+              { id: 'ollama', label: 'Ollama', icon: '🦙', color: 'text-green-400' },
+              { id: 'ai-chat', label: 'Chat', icon: '💬', color: 'text-purple-400' },
+            ].map((tab) => (
+              <button
+                key={tab.id}
+                onClick={() => setViewMode(tab.id as ViewMode)}
+                className={`flex items-center gap-2 px-3 py-1.5 text-sm rounded-lg transition-colors whitespace-nowrap ${
+                  viewMode === tab.id
+                    ? 'bg-gradient-to-r from-purple-600 to-blue-600 text-white'
+                    : 'text-slate-400 hover:text-white hover:bg-slate-700'
+                } ${tab.color || ''}`}
+              >
+                <span>{tab.icon}</span>
+                {tab.label}
+              </button>
+            ))}
+          </div>
         </div>
       </header>
 
@@ -298,6 +360,10 @@ export default function VPSDashboard({
 
           {viewMode === 'ollama' && (
             <OllamaOffice onClose={handleCloseOffice} />
+          )}
+
+          {viewMode === 'ai-workflow' && (
+            <AIWorkflowPanel />
           )}
         </div>
 
