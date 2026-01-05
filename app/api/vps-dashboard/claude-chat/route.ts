@@ -13,11 +13,20 @@ export async function POST(request: NextRequest) {
   }
 
   try {
-    const { message } = await request.json();
+    const { message, model } = await request.json();
 
     if (!message) {
       return NextResponse.json({ error: 'Missing message' }, { status: 400 });
     }
+
+    // Available models
+    const MODELS: Record<string, string> = {
+      'sonnet': 'claude-sonnet-4-20250514',
+      'opus': 'claude-opus-4-20250514',
+      'haiku': 'claude-3-5-haiku-20241022',
+    };
+
+    const selectedModel = MODELS[model] || MODELS['sonnet'];
 
     // Check for Anthropic API key
     const apiKey = process.env.ANTHROPIC_API_KEY;
@@ -43,7 +52,7 @@ export async function POST(request: NextRequest) {
         'anthropic-version': '2023-06-01',
       },
       body: JSON.stringify({
-        model: 'claude-sonnet-4-20250514',
+        model: selectedModel,
         max_tokens: 4096,
         system: `You are a helpful VPS management assistant. You help users manage their server, troubleshoot issues, edit code, and understand their infrastructure.
 

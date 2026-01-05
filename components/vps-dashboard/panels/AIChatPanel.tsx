@@ -24,6 +24,7 @@ export default function AIChatPanel() {
   ]);
   const [claudeInput, setClaudeInput] = useState('');
   const [claudeLoading, setClaudeLoading] = useState(false);
+  const [claudeModel, setClaudeModel] = useState<'sonnet' | 'opus' | 'haiku'>('sonnet');
 
   // Aider state
   const [aiderMessages, setAiderMessages] = useState<Message[]>([
@@ -87,7 +88,7 @@ export default function AIChatPanel() {
       const response = await fetch('/api/vps-dashboard/claude-chat', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ message: claudeInput }),
+        body: JSON.stringify({ message: claudeInput, model: claudeModel }),
       });
 
       const data = await response.json();
@@ -214,16 +215,30 @@ export default function AIChatPanel() {
         {/* Active panel content */}
         <div className="flex-1 flex flex-col overflow-hidden">
           {activePanel === 'claude' && (
-            <ChatPanel
-              title="Claude Code"
-              messages={claudeMessages}
-              input={claudeInput}
-              setInput={setClaudeInput}
-              onSend={handleClaudeSend}
-              loading={claudeLoading}
-              endRef={claudeEndRef}
-              placeholder="Ask Claude anything..."
-            />
+            <div className="flex-1 flex flex-col overflow-hidden">
+              <div className="flex-shrink-0 px-4 py-2 bg-slate-800/50 border-b border-slate-700 flex items-center justify-between">
+                <span className="text-sm text-slate-400">Model:</span>
+                <select
+                  value={claudeModel}
+                  onChange={(e) => setClaudeModel(e.target.value as 'sonnet' | 'opus' | 'haiku')}
+                  className="bg-slate-700 border border-slate-600 rounded-lg px-3 py-1.5 text-white text-xs focus:outline-none focus:ring-2 focus:ring-purple-500"
+                >
+                  <option value="sonnet">Sonnet 4</option>
+                  <option value="opus">Opus 4</option>
+                  <option value="haiku">Haiku 3.5</option>
+                </select>
+              </div>
+              <ChatPanel
+                title="Claude Code"
+                messages={claudeMessages}
+                input={claudeInput}
+                setInput={setClaudeInput}
+                onSend={handleClaudeSend}
+                loading={claudeLoading}
+                endRef={claudeEndRef}
+                placeholder="Ask Claude anything..."
+              />
+            </div>
           )}
           {activePanel === 'aider' && (
             <AiderChatPanel
@@ -260,10 +275,23 @@ export default function AIChatPanel() {
         {/* Claude Chat */}
         <div className="flex-1 flex flex-col border-r border-slate-700">
           <div className="flex-shrink-0 px-4 py-3 bg-slate-800/50 border-b border-slate-700">
-            <h3 className="font-semibold text-white flex items-center gap-2">
-              <span>🧠</span> Claude Code
-            </h3>
-            <p className="text-xs text-slate-500">AI assistant for your VPS</p>
+            <div className="flex items-center justify-between">
+              <div>
+                <h3 className="font-semibold text-white flex items-center gap-2">
+                  <span>🧠</span> Claude Code
+                </h3>
+                <p className="text-xs text-slate-500">AI assistant for your VPS</p>
+              </div>
+              <select
+                value={claudeModel}
+                onChange={(e) => setClaudeModel(e.target.value as 'sonnet' | 'opus' | 'haiku')}
+                className="bg-slate-700 border border-slate-600 rounded-lg px-3 py-1.5 text-white text-xs focus:outline-none focus:ring-2 focus:ring-purple-500"
+              >
+                <option value="sonnet">Sonnet 4 (Balanced)</option>
+                <option value="opus">Opus 4 (Powerful)</option>
+                <option value="haiku">Haiku 3.5 (Fast)</option>
+              </select>
+            </div>
           </div>
           <ChatPanel
             messages={claudeMessages}
