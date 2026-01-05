@@ -17,6 +17,8 @@ import NginxOffice from './offices/NginxOffice';
 import PM2Office from './offices/PM2Office';
 import PostgresOffice from './offices/PostgresOffice';
 import RedisOffice from './offices/RedisOffice';
+import StatusLights from './StatusLights';
+import FixModal from './panels/FixModal';
 
 interface VPSDashboardProps {
   initialPages: VPSPageNode[];
@@ -31,7 +33,7 @@ interface VPSDashboardProps {
   };
 }
 
-type ViewMode = 'overview' | 'pages' | 'apis' | 'nginx' | 'pm2' | 'postgres' | 'redis';
+type ViewMode = 'overview' | 'pages' | 'apis' | 'nginx' | 'pm2' | 'postgres' | 'redis' | 'status';
 
 export default function VPSDashboard({
   initialPages,
@@ -51,6 +53,8 @@ export default function VPSDashboard({
   const [currentPageStats, setCurrentPageStats] = useState(pageStats);
   const [lastUpdate, setLastUpdate] = useState<Date>(new Date());
   const refreshIntervalRef = useRef<NodeJS.Timeout | null>(null);
+  const [fixModalOpen, setFixModalOpen] = useState(false);
+  const [fixModalComponent, setFixModalComponent] = useState<'nginx' | 'pm2' | 'postgres' | 'redis' | 'system' | null>(null);
 
   const handleRefresh = useCallback(async (silent = false) => {
     if (!silent) setIsRefreshing(true);
@@ -108,6 +112,11 @@ export default function VPSDashboard({
     setViewMode('overview');
   }, []);
 
+  const handleOpenFixModal = useCallback((component: 'nginx' | 'pm2' | 'postgres' | 'redis' | 'system') => {
+    setFixModalComponent(component);
+    setFixModalOpen(true);
+  }, []);
+
   return (
     <div className="h-screen flex flex-col bg-slate-900">
       {/* Header */}
@@ -161,6 +170,7 @@ export default function VPSDashboard({
             { id: 'redis', label: 'Redis', icon: '⚡', color: 'text-red-400' },
             { id: 'pages', label: `Pages (${currentPageStats.total})`, icon: '📄' },
             { id: 'apis', label: `APIs (${apiRoutes.length})`, icon: '🔌' },
+            { id: 'status', label: 'Status', icon: '🚨', color: 'text-yellow-400' },
           ].map((tab) => (
             <button
               key={tab.id}
@@ -187,6 +197,7 @@ export default function VPSDashboard({
               system={system}
               pageStats={currentPageStats}
               onNavigate={handleNavigate}
+              onOpenFixModal={handleOpenFixModal}
             />
           )}
 
@@ -266,6 +277,10 @@ export default function VPSDashboard({
               </div>
             </div>
           )}
+
+          {viewMode === 'status' && (
+            <StatusLights system={system} />
+          )}
         </div>
 
         {/* Right Sidebar - Info Panel */}
@@ -294,6 +309,18 @@ export default function VPSDashboard({
           onClose={() => setShowAider(false)}
         />
       )}
+
+      {/* Fix Modal */}
+      <FixModal
+        isOpen={fixModalOpen}
+        onClose={() => {
+          setFixModalOpen(false);
+          setFixModalComponent(null);
+        }}
+        componentType={fixModalComponent}
+        system={system}
+        onNavigate={handleNavigate}
+      />
 
       {/* Bottom Status Bar */}
       <footer className="flex-shrink-0 border-t border-slate-700 bg-slate-800/50 px-4 py-2">

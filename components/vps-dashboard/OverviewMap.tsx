@@ -24,13 +24,14 @@ interface OverviewMapProps {
     byGroup: Record<PageGroup, number>;
   };
   onNavigate: (target: 'nginx' | 'pm2' | 'postgres' | 'redis' | 'pages') => void;
+  onOpenFixModal?: (component: 'nginx' | 'pm2' | 'postgres' | 'redis' | 'system') => void;
 }
 
 const nodeTypes = {
   system: SystemNode,
 } as const;
 
-export default function OverviewMap({ system, pageStats, onNavigate }: OverviewMapProps) {
+export default function OverviewMap({ system, pageStats, onNavigate, onOpenFixModal }: OverviewMapProps) {
   const initialNodes: Node[] = useMemo(() => [
     // Internet Cloud
     {
@@ -62,7 +63,13 @@ export default function OverviewMap({ system, pageStats, onNavigate }: OverviewM
           ssl: 'Active',
         },
         color: SYSTEM_COLORS.nginx,
-        onClick: () => onNavigate('nginx'),
+        onClick: () => {
+          if (system.nginx.status !== 'running' && onOpenFixModal) {
+            onOpenFixModal('nginx');
+          } else {
+            onNavigate('nginx');
+          }
+        },
       },
     },
     // Tenant Nodes
@@ -95,7 +102,13 @@ export default function OverviewMap({ system, pageStats, onNavigate }: OverviewM
           memory: system.pm2.totalMemory,
         },
         color: SYSTEM_COLORS.pm2,
-        onClick: () => onNavigate('pm2'),
+        onClick: () => {
+          if (system.pm2.apps.some(a => a.status !== 'online') && onOpenFixModal) {
+            onOpenFixModal('pm2');
+          } else {
+            onNavigate('pm2');
+          }
+        },
       },
     },
     // App instances
@@ -133,7 +146,13 @@ export default function OverviewMap({ system, pageStats, onNavigate }: OverviewM
           conn: `${system.postgres.connections}/${system.postgres.maxConnections}`,
         },
         color: SYSTEM_COLORS.postgres,
-        onClick: () => onNavigate('postgres'),
+        onClick: () => {
+          if (system.postgres.status !== 'running' && onOpenFixModal) {
+            onOpenFixModal('postgres');
+          } else {
+            onNavigate('postgres');
+          }
+        },
       },
     },
     // Redis
@@ -151,7 +170,13 @@ export default function OverviewMap({ system, pageStats, onNavigate }: OverviewM
           memory: system.redis.memory,
         },
         color: SYSTEM_COLORS.redis,
-        onClick: () => onNavigate('redis'),
+        onClick: () => {
+          if (system.redis.status !== 'running' && onOpenFixModal) {
+            onOpenFixModal('redis');
+          } else {
+            onNavigate('redis');
+          }
+        },
       },
     },
     // Pages Overview
@@ -173,7 +198,7 @@ export default function OverviewMap({ system, pageStats, onNavigate }: OverviewM
         onClick: () => onNavigate('pages'),
       },
     },
-  ], [system, pageStats, onNavigate]);
+  ], [system, pageStats, onNavigate, onOpenFixModal]);
 
   const initialEdges: Edge[] = useMemo(() => [
     // Internet to Nginx
