@@ -21,6 +21,7 @@ import StatusLights from './StatusLights';
 import FixModal from './panels/FixModal';
 import ToolsOffice from './offices/ToolsOffice';
 import AIChatPanel from './panels/AIChatPanel';
+import OllamaOffice from './offices/OllamaOffice';
 
 interface VPSDashboardProps {
   initialPages: VPSPageNode[];
@@ -35,7 +36,7 @@ interface VPSDashboardProps {
   };
 }
 
-type ViewMode = 'overview' | 'pages' | 'apis' | 'nginx' | 'pm2' | 'postgres' | 'redis' | 'status' | 'tools' | 'ai-chat';
+type ViewMode = 'overview' | 'pages' | 'apis' | 'nginx' | 'pm2' | 'postgres' | 'redis' | 'status' | 'tools' | 'ai-chat' | 'ollama';
 
 export default function VPSDashboard({
   initialPages,
@@ -173,6 +174,7 @@ export default function VPSDashboard({
             { id: 'pages', label: `Pages (${currentPageStats.total})`, icon: '📄' },
             { id: 'apis', label: `APIs (${apiRoutes.length})`, icon: '🔌' },
             { id: 'tools', label: 'Tools', icon: '🧰', color: 'text-orange-400' },
+            { id: 'ollama', label: 'Ollama', icon: '🦙', color: 'text-green-400' },
             { id: 'status', label: 'Status', icon: '🚨', color: 'text-yellow-400' },
             { id: 'ai-chat', label: 'AI Chat', icon: '🤖', color: 'text-purple-400' },
           ].map((tab) => (
@@ -292,6 +294,10 @@ export default function VPSDashboard({
 
           {viewMode === 'ai-chat' && (
             <AIChatPanel />
+          )}
+
+          {viewMode === 'ollama' && (
+            <OllamaOffice onClose={handleCloseOffice} />
           )}
         </div>
 
