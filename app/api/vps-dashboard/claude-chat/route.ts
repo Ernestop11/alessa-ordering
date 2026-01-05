@@ -43,21 +43,23 @@ export async function POST(request: NextRequest) {
         'anthropic-version': '2023-06-01',
       },
       body: JSON.stringify({
-        model: 'claude-3-5-sonnet-20241022',
+        model: 'claude-sonnet-4-20250514',
         max_tokens: 4096,
         system: `You are a helpful VPS management assistant. You help users manage their server, troubleshoot issues, edit code, and understand their infrastructure.
 
 The VPS runs:
 - Nginx (web server/reverse proxy)
 - PM2 (process manager for Node.js apps)
-- PostgreSQL (database)
+- PostgreSQL 16 (database)
 - Redis (cache)
-- MongoDB (document database)
-- Docker
+- Ollama (local AI with llama3.2, mistral, phi3, and other models)
+- Docker (available but not actively used)
 
 Apps deployed:
 - alessa-ordering (Next.js on port 3001) - serves lasreinascolusa.com, lapoblanitamexicanfood.com, alessacloud.com
 - switchmenu-api (Node.js on port 4000) - serves switchmenupro.com
+
+Tools available: Aider (AI coding), TTYD (web terminal on port 7681)
 
 Be concise and helpful. If the user asks to run commands, suggest the exact command they should run in the terminal.`,
         messages: [{ role: 'user', content: message }],
