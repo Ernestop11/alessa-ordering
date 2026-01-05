@@ -141,7 +141,29 @@ export interface TenantInfo {
   slug: string;
   status: string;
   domain: string | null;
+  customDomain: string | null;
   hasAssets: boolean;
+  primaryColor: string | null;
+  secondaryColor: string | null;
+  logoUrl: string | null;
+  parentTenantId: string | null;
+  subTenants: SubTenantInfo[];
+  menuSectionCount: number;
+  menuItemCount: number;
+  orderCount: number;
+  customerCount: number;
+}
+
+export interface SubTenantInfo {
+  id: string;
+  name: string;
+  slug: string;
+  status: string;
+  primaryColor: string | null;
+  secondaryColor: string | null;
+  logoUrl: string | null;
+  menuSectionCount: number;
+  menuItemCount: number;
 }
 
 // ============================================

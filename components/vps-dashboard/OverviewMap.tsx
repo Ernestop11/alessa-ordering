@@ -15,8 +15,9 @@ import {
   NodeChange,
 } from '@xyflow/react';
 import '@xyflow/react/dist/style.css';
-import { SystemOverview, PageGroup, SYSTEM_COLORS } from '@/lib/vps-dashboard/types';
+import { SystemOverview, PageGroup, SYSTEM_COLORS, TenantInfo } from '@/lib/vps-dashboard/types';
 import SystemNode from './canvas/nodes/SystemNode';
+import TenantNode from './canvas/nodes/TenantNode';
 
 const POSITIONS_STORAGE_KEY = 'vps-dashboard-node-positions';
 
@@ -32,6 +33,7 @@ interface OverviewMapProps {
 
 const nodeTypes = {
   system: SystemNode,
+  tenant: TenantNode,
 } as const;
 
 // Load saved positions from localStorage
@@ -108,21 +110,38 @@ export default function OverviewMap({ system, pageStats, onNavigate, onOpenFixMo
         },
       },
     },
-    // Tenant Nodes
-    ...system.nginx.sites.slice(0, 4).map((site, i) => ({
-      id: `site-${i}`,
-      type: 'system',
-      position: getPosition(`site-${i}`, { x: 100 + i * 200, y: 240 }),
-      data: {
-        label: site.domain.split('.')[0],
-        type: 'tenant' as const,
-        icon: '🏪',
-        status: site.status,
-        stats: { domain: site.domain },
-        color: '#10b981',
-        onClick: () => {},
-      },
-    })),
+    // Tenant Nodes - use actual tenants from database
+    ...system.tenants.map((tenant, i) => {
+      const tenantId = `tenant-${tenant.slug}`;
+      return {
+        id: tenantId,
+        type: 'tenant',
+        position: getPosition(tenantId, { x: 50 + i * 220, y: 240 }),
+        data: {
+          tenant,
+          isSubTenant: false,
+          isSelected: false,
+          onClick: () => onNavigate('pages'),
+        },
+      };
+    }),
+    // Sub-tenants
+    ...system.tenants.flatMap((tenant, parentIdx) =>
+      tenant.subTenants.map((sub, subIdx) => {
+        const subId = `subtenant-${sub.slug}`;
+        return {
+          id: subId,
+          type: 'tenant',
+          position: getPosition(subId, { x: 50 + parentIdx * 220 + (subIdx * 40), y: 420 }),
+          data: {
+            tenant: sub,
+            isSubTenant: true,
+            isSelected: false,
+            onClick: () => onNavigate('pages'),
+          },
+        };
+      })
+    ),
     // PM2 Hub
     {
       id: 'pm2',
@@ -246,18 +265,28 @@ export default function OverviewMap({ system, pageStats, onNavigate, onOpenFixMo
       style: { stroke: '#fbbf24', strokeWidth: 2 },
       markerEnd: { type: MarkerType.ArrowClosed, color: '#fbbf24' },
     },
-    // Nginx to Sites
-    ...system.nginx.sites.slice(0, 4).map((_, i) => ({
-      id: `e-nginx-site-${i}`,
+    // Nginx to Tenants
+    ...system.tenants.map((tenant) => ({
+      id: `e-nginx-tenant-${tenant.slug}`,
       source: 'nginx',
-      target: `site-${i}`,
+      target: `tenant-${tenant.slug}`,
       animated: true,
-      style: { stroke: '#22c55e', strokeWidth: 1.5 },
+      style: { stroke: tenant.primaryColor || '#22c55e', strokeWidth: 1.5 },
     })),
-    // Sites to PM2
-    ...system.nginx.sites.slice(0, 4).map((_, i) => ({
-      id: `e-site-${i}-pm2`,
-      source: `site-${i}`,
+    // Tenants to Sub-tenants
+    ...system.tenants.flatMap((tenant) =>
+      tenant.subTenants.map((sub) => ({
+        id: `e-tenant-${tenant.slug}-${sub.slug}`,
+        source: `tenant-${tenant.slug}`,
+        target: `subtenant-${sub.slug}`,
+        animated: false,
+        style: { stroke: sub.primaryColor || tenant.primaryColor || '#64748b', strokeWidth: 1.5, strokeDasharray: '5,5' },
+      }))
+    ),
+    // Tenants to PM2
+    ...system.tenants.map((tenant) => ({
+      id: `e-tenant-${tenant.slug}-pm2`,
+      source: `tenant-${tenant.slug}`,
       target: 'pm2',
       style: { stroke: '#334155', strokeWidth: 1 },
     })),

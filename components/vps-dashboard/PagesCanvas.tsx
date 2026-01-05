@@ -1,6 +1,6 @@
 'use client';
 
-import { useMemo, useState, useCallback, useEffect } from 'react';
+import { useMemo, useState, useCallback, useEffect, useRef } from 'react';
 import {
   ReactFlow,
   Background,
@@ -11,303 +11,73 @@ import {
   Node,
   Edge,
   MarkerType,
-  useReactFlow,
   ReactFlowProvider,
+  NodeChange,
 } from '@xyflow/react';
 import '@xyflow/react/dist/style.css';
-import { VPSPageNode, PageGroup, GROUP_COLORS, GROUP_LABELS } from '@/lib/vps-dashboard/types';
+import { VPSPageNode, PageGroup, GROUP_COLORS, GROUP_LABELS, TenantInfo } from '@/lib/vps-dashboard/types';
 import PageNode from './canvas/nodes/PageNode';
+import TenantNode from './canvas/nodes/TenantNode';
+import SystemNode from './canvas/nodes/SystemNode';
 
 interface PagesCanvasProps {
   pages: VPSPageNode[];
   onPageSelect: (page: VPSPageNode) => void;
   selectedPageId?: string;
+  tenants?: TenantInfo[];
 }
 
 const nodeTypes = {
   page: PageNode,
-  groupHeader: GroupHeaderNode,
+  tenant: TenantNode,
+  system: SystemNode,
 } as const;
 
-// Group header node component
-function GroupHeaderNode({ data }: { data: { label: string; count: number; color: string } }) {
-  return (
-    <div
-      className="px-4 py-2 rounded-lg border-2 bg-slate-800/80 backdrop-blur-sm"
-      style={{ borderColor: data.color }}
-    >
-      <div className="flex items-center gap-2">
-        <div
-          className="w-3 h-3 rounded-full"
-          style={{ backgroundColor: data.color }}
-        />
-        <span className="font-semibold text-white text-sm">{data.label}</span>
-        <span className="text-xs text-slate-400">({data.count} pages)</span>
-      </div>
-    </div>
-  );
-}
+const POSITIONS_STORAGE_KEY = 'vps-pages-positions-v2';
 
-// Storage key for position persistence
-const POSITIONS_STORAGE_KEY = 'vps-pages-positions';
-
-// Build route tree structure
-interface RouteTreeNode {
-  segment: string;
-  fullPath: string;
-  pages: VPSPageNode[];
-  children: Map<string, RouteTreeNode>;
-  depth: number;
-}
-
-function buildRouteTree(pages: VPSPageNode[]): Map<string, RouteTreeNode> {
-  const tree = new Map<string, RouteTreeNode>();
-
-  for (const page of pages) {
-    const segments = page.route.split('/').filter(Boolean);
-    if (segments.length === 0) {
-      // Root page
-      if (!tree.has('root')) {
-        tree.set('root', {
-          segment: '/',
-          fullPath: '/',
-          pages: [],
-          children: new Map(),
-          depth: 0,
-        });
-      }
-      tree.get('root')!.pages.push(page);
-      continue;
-    }
-
-    const topLevel = segments[0];
-    if (!tree.has(topLevel)) {
-      tree.set(topLevel, {
-        segment: topLevel,
-        fullPath: `/${topLevel}`,
-        pages: [],
-        children: new Map(),
-        depth: 0,
-      });
-    }
-
-    let current = tree.get(topLevel)!;
-
-    if (segments.length === 1) {
-      current.pages.push(page);
-    } else {
-      // Navigate to or create nested path
-      for (let i = 1; i < segments.length; i++) {
-        const segment = segments[i];
-        if (!current.children.has(segment)) {
-          current.children.set(segment, {
-            segment,
-            fullPath: '/' + segments.slice(0, i + 1).join('/'),
-            pages: [],
-            children: new Map(),
-            depth: i,
-          });
-        }
-        current = current.children.get(segment)!;
-
-        if (i === segments.length - 1) {
-          current.pages.push(page);
-        }
-      }
-    }
+function loadSavedPositions(): Record<string, { x: number; y: number }> {
+  if (typeof window === 'undefined') return {};
+  try {
+    const saved = localStorage.getItem(POSITIONS_STORAGE_KEY);
+    return saved ? JSON.parse(saved) : {};
+  } catch {
+    return {};
   }
-
-  return tree;
 }
 
-// Flatten tree for layout
-function flattenTree(
-  tree: Map<string, RouteTreeNode>,
-  parentId: string | null = null,
-  depth: number = 0
-): Array<{ node: RouteTreeNode; parentId: string | null; depth: number }> {
-  const result: Array<{ node: RouteTreeNode; parentId: string | null; depth: number }> = [];
-
-  Array.from(tree.entries()).forEach(([key, node]) => {
-    result.push({ node, parentId, depth });
-    if (node.children.size > 0) {
-      result.push(...flattenTree(node.children, node.fullPath, depth + 1));
-    }
-  });
-
-  return result;
+function savePositions(nodes: Node[]) {
+  if (typeof window === 'undefined') return;
+  try {
+    const positions: Record<string, { x: number; y: number }> = {};
+    nodes.forEach(node => {
+      positions[node.id] = { x: node.position.x, y: node.position.y };
+    });
+    localStorage.setItem(POSITIONS_STORAGE_KEY, JSON.stringify(positions));
+  } catch (e) {
+    console.error('Failed to save node positions:', e);
+  }
 }
 
-function PagesCanvasInner({ pages, onPageSelect, selectedPageId }: PagesCanvasProps) {
-  const [activeFilter, setActiveFilter] = useState<PageGroup | 'all'>('all');
-  const { fitView } = useReactFlow();
+function PagesCanvasInner({ pages, onPageSelect, selectedPageId, tenants = [] }: PagesCanvasProps) {
+  const [viewMode, setViewMode] = useState<'tenants' | 'pages' | 'all'>('tenants');
+  const [selectedTenant, setSelectedTenant] = useState<TenantInfo | null>(null);
+  const savedPositions = useRef<Record<string, { x: number; y: number }>>(loadSavedPositions());
+  const saveTimeoutRef = useRef<NodeJS.Timeout | null>(null);
 
-  const filteredPages = useMemo(() => {
-    if (activeFilter === 'all') return pages;
-    return pages.filter(p => p.group === activeFilter);
-  }, [pages, activeFilter]);
+  const getPosition = (id: string, defaultPos: { x: number; y: number }) => {
+    return savedPositions.current[id] || defaultPos;
+  };
 
-  // Load saved positions
-  const savedPositions = useMemo(() => {
-    if (typeof window === 'undefined') return {};
-    try {
-      const saved = localStorage.getItem(POSITIONS_STORAGE_KEY);
-      return saved ? JSON.parse(saved) : {};
-    } catch {
-      return {};
+  // Group pages by route prefix
+  const pagesByRoute = useMemo(() => {
+    const groups: Record<string, VPSPageNode[]> = {};
+    for (const page of pages) {
+      const prefix = page.route.split('/')[1] || 'root';
+      if (!groups[prefix]) groups[prefix] = [];
+      groups[prefix].push(page);
     }
-  }, []);
-
-  // Build hierarchical layout
-  const { nodes: initialNodes, edges: initialEdges } = useMemo(() => {
-    const nodes: Node[] = [];
-    const edges: Edge[] = [];
-
-    const routeTree = buildRouteTree(filteredPages);
-    const flatTree = flattenTree(routeTree);
-
-    // Group pages by their top-level route for color coding
-    const getGroupColor = (route: string): string => {
-      const page = filteredPages.find(p => p.route === route);
-      if (page) return GROUP_COLORS[page.group];
-
-      // Find any page under this route
-      const childPage = filteredPages.find(p => p.route.startsWith(route));
-      if (childPage) return GROUP_COLORS[childPage.group];
-
-      return '#64748b';
-    };
-
-    // Layout constants
-    const HEADER_WIDTH = 200;
-    const PAGE_WIDTH = 180;
-    const PAGE_HEIGHT = 120;
-    const HORIZONTAL_GAP = 60;
-    const VERTICAL_GAP = 40;
-    const GROUP_GAP = 100;
-
-    let currentY = 50;
-    const processedGroups = new Map<string, { y: number; pageCount: number }>();
-
-    // First pass: create group headers and calculate positions
-    for (const { node, parentId, depth } of flatTree) {
-      const groupId = `group-${node.fullPath}`;
-      const color = getGroupColor(node.fullPath);
-
-      // Only create group headers for routes with pages or children
-      if (node.pages.length > 0 || node.children.size > 0) {
-        const savedPos = savedPositions[groupId];
-        const headerX = depth * (PAGE_WIDTH + HORIZONTAL_GAP);
-
-        nodes.push({
-          id: groupId,
-          type: 'groupHeader',
-          position: savedPos || { x: headerX, y: currentY },
-          data: {
-            label: node.fullPath,
-            count: node.pages.length,
-            color,
-          },
-          draggable: true,
-        });
-
-        // Add edge from parent group to this group
-        if (parentId) {
-          edges.push({
-            id: `edge-${parentId}-${node.fullPath}`,
-            source: `group-${parentId}`,
-            target: groupId,
-            type: 'smoothstep',
-            animated: false,
-            style: { stroke: color, strokeWidth: 1.5, opacity: 0.4 },
-            markerEnd: {
-              type: MarkerType.ArrowClosed,
-              color,
-              width: 15,
-              height: 15,
-            },
-          });
-        }
-
-        processedGroups.set(node.fullPath, { y: currentY, pageCount: node.pages.length });
-
-        // Add page nodes for this group
-        let pageX = headerX + HEADER_WIDTH + HORIZONTAL_GAP;
-        let pageY = currentY;
-        const pagesPerRow = 4;
-
-        node.pages.forEach((page, idx) => {
-          const savedPagePos = savedPositions[page.id];
-          const row = Math.floor(idx / pagesPerRow);
-          const col = idx % pagesPerRow;
-
-          nodes.push({
-            id: page.id,
-            type: 'page',
-            position: savedPagePos || {
-              x: pageX + col * (PAGE_WIDTH + 20),
-              y: pageY + row * (PAGE_HEIGHT + 20),
-            },
-            data: {
-              page,
-              isSelected: page.id === selectedPageId,
-              onClick: () => onPageSelect(page),
-            },
-            draggable: true,
-          });
-
-          // Edge from group header to page
-          edges.push({
-            id: `edge-${groupId}-${page.id}`,
-            source: groupId,
-            target: page.id,
-            type: 'smoothstep',
-            animated: false,
-            style: { stroke: GROUP_COLORS[page.group], strokeWidth: 1, opacity: 0.3 },
-          });
-        });
-
-        // Calculate space needed for this group
-        const rowsNeeded = Math.ceil(node.pages.length / pagesPerRow);
-        currentY += Math.max(PAGE_HEIGHT, rowsNeeded * (PAGE_HEIGHT + 20)) + GROUP_GAP;
-      }
-    }
-
-    return { nodes, edges };
-  }, [filteredPages, selectedPageId, onPageSelect, savedPositions]);
-
-  const [nodes, setNodes, onNodesChange] = useNodesState(initialNodes);
-  const [edges, setEdges, onEdgesChange] = useEdgesState(initialEdges);
-
-  // Update nodes when filter or selection changes
-  useEffect(() => {
-    setNodes(initialNodes);
-    setEdges(initialEdges);
-    setTimeout(() => fitView({ padding: 0.15 }), 100);
-  }, [initialNodes, initialEdges, setNodes, setEdges, fitView]);
-
-  // Save positions on change
-  const handleNodesChange = useCallback(
-    (changes: any) => {
-      onNodesChange(changes);
-
-      // Save positions after drag
-      const positionChanges = changes.filter(
-        (c: any) => c.type === 'position' && c.dragging === false
-      );
-
-      if (positionChanges.length > 0) {
-        const currentPositions = { ...savedPositions };
-        for (const change of positionChanges) {
-          if (change.position) {
-            currentPositions[change.id] = change.position;
-          }
-        }
-        localStorage.setItem(POSITIONS_STORAGE_KEY, JSON.stringify(currentPositions));
-      }
-    },
-    [onNodesChange, savedPositions]
-  );
+    return groups;
+  }, [pages]);
 
   // Group statistics
   const groupStats = useMemo(() => {
@@ -330,6 +100,196 @@ function PagesCanvasInner({ pages, onPageSelect, selectedPageId }: PagesCanvasPr
     return stats;
   }, [pages]);
 
+  const { initialNodes, initialEdges } = useMemo(() => {
+    const nodes: Node[] = [];
+    const edges: Edge[] = [];
+
+    if (viewMode === 'tenants' || viewMode === 'all') {
+      // Central hub node
+      nodes.push({
+        id: 'hub',
+        type: 'system',
+        position: getPosition('hub', { x: 400, y: 50 }),
+        data: {
+          label: 'Alessa Cloud',
+          type: 'internet',
+          icon: '☁️',
+          status: 'healthy',
+          stats: { tenants: `${tenants.length} tenants` },
+          color: '#8b5cf6',
+          onClick: () => {},
+        },
+      });
+
+      // Tenant nodes in a semi-circle
+      const tenantRadius = 280;
+      const startAngle = Math.PI * 0.2;
+      const endAngle = Math.PI * 0.8;
+      const angleStep = tenants.length > 1 ? (endAngle - startAngle) / (tenants.length - 1) : 0;
+
+      tenants.forEach((tenant, idx) => {
+        const angle = tenants.length > 1 ? startAngle + idx * angleStep : Math.PI * 0.5;
+        const x = 400 + Math.cos(angle) * tenantRadius * 1.5;
+        const y = 200 + Math.sin(angle) * tenantRadius;
+
+        const tenantId = `tenant-${tenant.slug}`;
+        nodes.push({
+          id: tenantId,
+          type: 'tenant',
+          position: getPosition(tenantId, { x, y }),
+          data: {
+            tenant,
+            isSubTenant: false,
+            isSelected: selectedTenant?.id === tenant.id,
+            onClick: () => setSelectedTenant(tenant),
+          },
+        });
+
+        // Edge from hub to tenant
+        edges.push({
+          id: `e-hub-${tenantId}`,
+          source: 'hub',
+          target: tenantId,
+          animated: true,
+          style: { stroke: tenant.primaryColor || '#8b5cf6', strokeWidth: 2 },
+          markerEnd: {
+            type: MarkerType.ArrowClosed,
+            color: tenant.primaryColor || '#8b5cf6',
+          },
+        });
+
+        // Sub-tenants
+        if (tenant.subTenants && tenant.subTenants.length > 0) {
+          tenant.subTenants.forEach((sub, subIdx) => {
+            const subAngle = angle + (subIdx - (tenant.subTenants.length - 1) / 2) * 0.3;
+            const subX = x + Math.cos(subAngle) * 180;
+            const subY = y + 180;
+
+            const subId = `subtenant-${sub.slug}`;
+            nodes.push({
+              id: subId,
+              type: 'tenant',
+              position: getPosition(subId, { x: subX, y: subY }),
+              data: {
+                tenant: sub,
+                isSubTenant: true,
+                onClick: () => {},
+              },
+            });
+
+            edges.push({
+              id: `e-${tenantId}-${subId}`,
+              source: tenantId,
+              target: subId,
+              animated: false,
+              style: {
+                stroke: sub.primaryColor || tenant.primaryColor || '#64748b',
+                strokeWidth: 1.5,
+                strokeDasharray: '5,5',
+              },
+            });
+          });
+        }
+      });
+    }
+
+    if (viewMode === 'pages' || viewMode === 'all') {
+      // Page groups as system nodes
+      const routeGroups = Object.entries(pagesByRoute);
+      const pagesStartY = viewMode === 'all' ? 500 : 50;
+      const groupSpacing = 300;
+
+      // Create page group nodes
+      routeGroups.forEach(([prefix, groupPages], groupIdx) => {
+        const groupX = 100 + (groupIdx % 4) * groupSpacing;
+        const groupY = pagesStartY + Math.floor(groupIdx / 4) * 400;
+
+        const primaryGroup = groupPages[0]?.group || 'public';
+        const groupColor = GROUP_COLORS[primaryGroup];
+        const groupId = `pagegroup-${prefix}`;
+
+        nodes.push({
+          id: groupId,
+          type: 'system',
+          position: getPosition(groupId, { x: groupX, y: groupY }),
+          data: {
+            label: `/${prefix}`,
+            type: 'pages',
+            icon: prefix === 'admin' ? '⚙️' : prefix === 'order' ? '🛒' : prefix === 'customer' ? '👤' : '📄',
+            status: 'healthy',
+            stats: { pages: `${groupPages.length} pages` },
+            color: groupColor,
+            onClick: () => {},
+          },
+        });
+
+        // Pages under each group
+        groupPages.forEach((page, pageIdx) => {
+          const pageX = groupX + 200 + (pageIdx % 3) * 200;
+          const pageY = groupY + Math.floor(pageIdx / 3) * 140;
+
+          nodes.push({
+            id: page.id,
+            type: 'page',
+            position: getPosition(page.id, { x: pageX, y: pageY }),
+            data: {
+              page,
+              isSelected: page.id === selectedPageId,
+              onClick: () => onPageSelect(page),
+            },
+          });
+
+          edges.push({
+            id: `e-${groupId}-${page.id}`,
+            source: groupId,
+            target: page.id,
+            style: { stroke: GROUP_COLORS[page.group], strokeWidth: 1, opacity: 0.5 },
+          });
+        });
+      });
+    }
+
+    return { initialNodes: nodes, initialEdges: edges };
+  }, [viewMode, tenants, pages, pagesByRoute, selectedTenant, selectedPageId, onPageSelect, getPosition]);
+
+  const [nodes, setNodes, onNodesChange] = useNodesState(initialNodes);
+  const [edges, setEdges, onEdgesChange] = useEdgesState(initialEdges);
+
+  // Update when view mode changes
+  useEffect(() => {
+    setNodes(initialNodes);
+    setEdges(initialEdges);
+  }, [initialNodes, initialEdges, setNodes, setEdges]);
+
+  // Save positions on drag end
+  const handleNodesChange = useCallback((changes: NodeChange[]) => {
+    onNodesChange(changes);
+
+    const hasDragEnd = changes.some(
+      change => change.type === 'position' && 'dragging' in change && change.dragging === false
+    );
+
+    if (hasDragEnd) {
+      if (saveTimeoutRef.current) {
+        clearTimeout(saveTimeoutRef.current);
+      }
+      saveTimeoutRef.current = setTimeout(() => {
+        setNodes(currentNodes => {
+          savePositions(currentNodes);
+          return currentNodes;
+        });
+      }, 300);
+    }
+  }, [onNodesChange, setNodes]);
+
+  useEffect(() => {
+    return () => {
+      if (saveTimeoutRef.current) {
+        clearTimeout(saveTimeoutRef.current);
+      }
+    };
+  }, []);
+
   const resetPositions = useCallback(() => {
     localStorage.removeItem(POSITIONS_STORAGE_KEY);
     window.location.reload();
@@ -337,55 +297,75 @@ function PagesCanvasInner({ pages, onPageSelect, selectedPageId }: PagesCanvasPr
 
   return (
     <div className="h-full w-full flex flex-col">
-      {/* Filter Bar */}
+      {/* Header with view mode toggle */}
       <div className="flex-shrink-0 p-4 bg-slate-800/50 border-b border-slate-700">
-        <div className="flex items-center justify-between flex-wrap gap-2">
-          <div className="flex items-center gap-2 flex-wrap">
-            <button
-              onClick={() => setActiveFilter('all')}
-              className={`px-3 py-1.5 text-sm rounded-lg transition-colors ${
-                activeFilter === 'all'
-                  ? 'bg-blue-600 text-white'
-                  : 'bg-slate-700 text-slate-400 hover:text-white'
-              }`}
-            >
-              All ({groupStats.all})
-            </button>
+        <div className="flex items-center justify-between flex-wrap gap-3">
+          {/* View mode buttons */}
+          <div className="flex items-center gap-2">
+            <span className="text-sm text-slate-400 mr-2">View:</span>
+            {[
+              { id: 'tenants', label: 'Tenants', icon: '🏪' },
+              { id: 'pages', label: 'Pages', icon: '📄' },
+              { id: 'all', label: 'All', icon: '🗺️' },
+            ].map((mode) => (
+              <button
+                key={mode.id}
+                onClick={() => setViewMode(mode.id as typeof viewMode)}
+                className={`flex items-center gap-2 px-4 py-2 text-sm rounded-lg transition-all ${
+                  viewMode === mode.id
+                    ? 'bg-blue-600 text-white shadow-lg shadow-blue-500/20'
+                    : 'bg-slate-700 text-slate-400 hover:text-white hover:bg-slate-600'
+                }`}
+              >
+                <span>{mode.icon}</span>
+                {mode.label}
+              </button>
+            ))}
+          </div>
 
+          {/* Stats summary */}
+          <div className="flex items-center gap-4 text-sm">
+            <span className="text-slate-400">
+              <span className="text-white font-medium">{tenants.length}</span> Tenants
+            </span>
+            <span className="text-slate-400">
+              <span className="text-white font-medium">{pages.length}</span> Pages
+            </span>
+            <button
+              onClick={resetPositions}
+              className="px-3 py-1.5 text-xs rounded-lg bg-slate-700 text-slate-400 hover:text-white hover:bg-slate-600 transition-colors"
+            >
+              Reset Layout
+            </button>
+          </div>
+        </div>
+
+        {/* Page group filters (only in pages/all view) */}
+        {(viewMode === 'pages' || viewMode === 'all') && (
+          <div className="flex items-center gap-2 mt-3 flex-wrap">
             {(Object.keys(GROUP_LABELS) as PageGroup[]).map((group) => {
               const count = groupStats[group];
               if (count === 0) return null;
 
               return (
-                <button
+                <span
                   key={group}
-                  onClick={() => setActiveFilter(group)}
-                  className={`px-3 py-1.5 text-sm rounded-lg transition-colors flex items-center gap-2 ${
-                    activeFilter === group
-                      ? 'text-white'
-                      : 'text-slate-400 hover:text-white'
-                  }`}
+                  className="flex items-center gap-1.5 px-2 py-1 rounded-full text-xs"
                   style={{
-                    backgroundColor: activeFilter === group ? GROUP_COLORS[group] : undefined,
+                    backgroundColor: `${GROUP_COLORS[group]}20`,
+                    color: GROUP_COLORS[group],
                   }}
                 >
                   <span
                     className="w-2 h-2 rounded-full"
                     style={{ backgroundColor: GROUP_COLORS[group] }}
                   />
-                  {GROUP_LABELS[group]} ({count})
-                </button>
+                  {GROUP_LABELS[group]}: {count}
+                </span>
               );
             })}
           </div>
-
-          <button
-            onClick={resetPositions}
-            className="px-3 py-1.5 text-xs rounded-lg bg-slate-700 text-slate-400 hover:text-white hover:bg-slate-600 transition-colors"
-          >
-            Reset Layout
-          </button>
-        </div>
+        )}
       </div>
 
       {/* Canvas */}
@@ -397,8 +377,8 @@ function PagesCanvasInner({ pages, onPageSelect, selectedPageId }: PagesCanvasPr
           onEdgesChange={onEdgesChange}
           nodeTypes={nodeTypes}
           fitView
-          fitViewOptions={{ padding: 0.15 }}
-          minZoom={0.1}
+          fitViewOptions={{ padding: 0.2 }}
+          minZoom={0.2}
           maxZoom={2}
           className="bg-slate-900"
           nodesDraggable={true}
@@ -409,13 +389,19 @@ function PagesCanvasInner({ pages, onPageSelect, selectedPageId }: PagesCanvasPr
           <Controls className="bg-slate-800 border-slate-700 [&>button]:bg-slate-700 [&>button]:border-slate-600 [&>button]:text-white [&>button:hover]:bg-slate-600" />
           <MiniMap
             nodeColor={(node) => {
-              if (node.type === 'groupHeader') {
+              if (node.type === 'tenant') {
+                const data = node.data as { tenant?: { primaryColor?: string } };
+                return data?.tenant?.primaryColor || '#64748b';
+              }
+              if (node.type === 'system') {
                 const data = node.data as { color?: string };
                 return data?.color || '#64748b';
               }
-              const data = node.data as { page?: VPSPageNode };
-              if (data?.page) {
-                return GROUP_COLORS[data.page.group];
+              if (node.type === 'page') {
+                const data = node.data as { page?: VPSPageNode };
+                if (data?.page) {
+                  return GROUP_COLORS[data.page.group];
+                }
               }
               return '#64748b';
             }}
@@ -424,54 +410,128 @@ function PagesCanvasInner({ pages, onPageSelect, selectedPageId }: PagesCanvasPr
           />
         </ReactFlow>
 
-        {/* Info Overlay */}
-        <div className="absolute top-4 right-4 bg-slate-800/90 backdrop-blur-sm rounded-xl border border-slate-700 p-4 max-w-xs">
+        {/* Info Panel */}
+        <div className="absolute top-4 left-4 bg-slate-800/90 backdrop-blur-sm rounded-xl border border-slate-700 p-4 max-w-xs">
           <h3 className="font-semibold text-white mb-2 flex items-center gap-2">
-            <span className="text-lg">📄</span>
-            Pages Hierarchy
+            {viewMode === 'tenants' && <><span>🏪</span> Tenant Ecosystem</>}
+            {viewMode === 'pages' && <><span>📄</span> Application Pages</>}
+            {viewMode === 'all' && <><span>🗺️</span> Full Overview</>}
           </h3>
           <p className="text-xs text-slate-400 mb-3">
-            Pages organized by their route structure. Each route group shows its child pages.
+            {viewMode === 'tenants' && 'Your multi-tenant architecture. Click a tenant to see details. Sub-tenants shown with dashed connections.'}
+            {viewMode === 'pages' && 'All application pages grouped by route. Click a page for details.'}
+            {viewMode === 'all' && 'Complete view of tenants and pages. Drag to rearrange.'}
           </p>
-          <div className="space-y-1.5 text-xs">
-            {(Object.keys(GROUP_LABELS) as PageGroup[]).map((group) => {
-              const count = groupStats[group];
-              if (count === 0) return null;
-              return (
-                <div key={group} className="flex items-center gap-2">
-                  <span
-                    className="w-2.5 h-2.5 rounded-full"
-                    style={{ backgroundColor: GROUP_COLORS[group] }}
-                  />
-                  <span className="text-slate-300">{GROUP_LABELS[group]}</span>
-                  <span className="text-slate-500 ml-auto">{count}</span>
-                </div>
-              );
-            })}
-          </div>
+
+          {viewMode === 'tenants' && (
+            <div className="space-y-2 text-xs">
+              <div className="flex items-center gap-2">
+                <div className="w-3 h-3 rounded-full bg-green-500" />
+                <span className="text-slate-400">Live tenant</span>
+              </div>
+              <div className="flex items-center gap-2">
+                <div className="w-3 h-3 rounded-full bg-yellow-500" />
+                <span className="text-slate-400">Pending review</span>
+              </div>
+              <div className="flex items-center gap-2">
+                <div className="w-8 h-0.5 border-t-2 border-dashed border-slate-400" />
+                <span className="text-slate-400">Sub-tenant</span>
+              </div>
+            </div>
+          )}
         </div>
+
+        {/* Selected Tenant Panel */}
+        {selectedTenant && viewMode === 'tenants' && (
+          <div className="absolute top-4 right-4 bg-slate-800/95 backdrop-blur-sm rounded-xl border border-slate-700 p-4 w-80">
+            <div className="flex items-center justify-between mb-3">
+              <h3 className="font-semibold text-white flex items-center gap-2">
+                {selectedTenant.logoUrl ? (
+                  <img src={selectedTenant.logoUrl} className="w-6 h-6 rounded" alt="" />
+                ) : (
+                  <span>🏪</span>
+                )}
+                {selectedTenant.name}
+              </h3>
+              <button
+                onClick={() => setSelectedTenant(null)}
+                className="text-slate-400 hover:text-white"
+              >
+                ✕
+              </button>
+            </div>
+
+            <div className="space-y-3">
+              <div className="grid grid-cols-2 gap-2 text-xs">
+                <div className="bg-slate-700/50 rounded-lg p-2">
+                  <div className="text-slate-400">Menu Items</div>
+                  <div className="text-xl font-bold text-white">{selectedTenant.menuItemCount}</div>
+                </div>
+                <div className="bg-slate-700/50 rounded-lg p-2">
+                  <div className="text-slate-400">Orders</div>
+                  <div className="text-xl font-bold text-white">{selectedTenant.orderCount}</div>
+                </div>
+                <div className="bg-slate-700/50 rounded-lg p-2">
+                  <div className="text-slate-400">Customers</div>
+                  <div className="text-xl font-bold text-white">{selectedTenant.customerCount}</div>
+                </div>
+                <div className="bg-slate-700/50 rounded-lg p-2">
+                  <div className="text-slate-400">Sections</div>
+                  <div className="text-xl font-bold text-white">{selectedTenant.menuSectionCount}</div>
+                </div>
+              </div>
+
+              {selectedTenant.domain && (
+                <div className="text-xs">
+                  <span className="text-slate-400">Domain: </span>
+                  <span className="text-blue-400 font-mono">{selectedTenant.domain}</span>
+                </div>
+              )}
+              {selectedTenant.customDomain && (
+                <div className="text-xs">
+                  <span className="text-slate-400">Custom: </span>
+                  <span className="text-green-400 font-mono">{selectedTenant.customDomain}</span>
+                </div>
+              )}
+
+              {selectedTenant.subTenants.length > 0 && (
+                <div className="pt-2 border-t border-slate-700">
+                  <div className="text-xs text-slate-400 mb-2">Sub-tenants:</div>
+                  <div className="space-y-1">
+                    {selectedTenant.subTenants.map(sub => (
+                      <div key={sub.id} className="flex items-center justify-between text-xs bg-slate-700/30 rounded px-2 py-1">
+                        <span className="text-white">{sub.name}</span>
+                        <span className="text-slate-400">{sub.menuItemCount} items</span>
+                      </div>
+                    ))}
+                  </div>
+                </div>
+              )}
+
+              {/* Color bar */}
+              <div
+                className="h-2 rounded-full"
+                style={{
+                  background: `linear-gradient(to right, ${selectedTenant.primaryColor || '#3b82f6'}, ${selectedTenant.secondaryColor || selectedTenant.primaryColor || '#3b82f6'})`,
+                }}
+              />
+            </div>
+          </div>
+        )}
       </div>
 
-      {/* Legend */}
+      {/* Footer legend */}
       <div className="flex-shrink-0 p-3 bg-slate-800/50 border-t border-slate-700">
-        <div className="flex items-center justify-between text-xs">
+        <div className="flex items-center justify-between text-xs text-slate-400">
           <div className="flex items-center gap-4">
-            <span className="text-slate-400">Legend:</span>
-            <span className="flex items-center gap-1">
-              <span className="w-3 h-3 rounded bg-gradient-to-r from-yellow-500 to-yellow-600" />
-              Client Component
-            </span>
-            <span className="flex items-center gap-1">
-              <span className="w-3 h-3 rounded bg-gradient-to-r from-green-500 to-green-600" />
-              Server Component
-            </span>
-            <span className="flex items-center gap-1">
-              <span className="w-3 h-3 rounded border-2 border-orange-500" />
-              Auth Required
-            </span>
+            <span>Drag nodes to rearrange</span>
+            <span>•</span>
+            <span>Click to select</span>
+            <span>•</span>
+            <span>Scroll to zoom</span>
           </div>
-          <div className="text-slate-500">
-            Drag to rearrange • Click to select • Scroll to zoom
+          <div>
+            Layout auto-saved
           </div>
         </div>
       </div>

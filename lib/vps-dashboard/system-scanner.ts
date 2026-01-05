@@ -347,12 +347,47 @@ export async function scanSystemMetrics(): Promise<SystemMetrics> {
 
 export async function scanTenants(): Promise<TenantInfo[]> {
   try {
+    // Get all root tenants (no parent) with their sub-tenants and counts
     const tenants = await prisma.tenant.findMany({
+      where: {
+        parentTenantId: null, // Only root tenants
+      },
       select: {
         id: true,
         name: true,
         slug: true,
         status: true,
+        domain: true,
+        customDomain: true,
+        primaryColor: true,
+        secondaryColor: true,
+        logoUrl: true,
+        parentTenantId: true,
+        subTenants: {
+          select: {
+            id: true,
+            name: true,
+            slug: true,
+            status: true,
+            primaryColor: true,
+            secondaryColor: true,
+            logoUrl: true,
+            _count: {
+              select: {
+                menuSections: true,
+                menuItems: true,
+              },
+            },
+          },
+        },
+        _count: {
+          select: {
+            menuSections: true,
+            menuItems: true,
+            orders: true,
+            customers: true,
+          },
+        },
       },
       orderBy: { name: 'asc' },
     });
@@ -362,10 +397,31 @@ export async function scanTenants(): Promise<TenantInfo[]> {
       name: t.name,
       slug: t.slug,
       status: t.status,
-      domain: null, // Would need to check nginx configs
-      hasAssets: true, // Would need to check public/tenant/{slug}
+      domain: t.domain,
+      customDomain: t.customDomain,
+      primaryColor: t.primaryColor,
+      secondaryColor: t.secondaryColor,
+      logoUrl: t.logoUrl,
+      parentTenantId: t.parentTenantId,
+      hasAssets: true,
+      subTenants: t.subTenants.map(sub => ({
+        id: sub.id,
+        name: sub.name,
+        slug: sub.slug,
+        status: sub.status,
+        primaryColor: sub.primaryColor,
+        secondaryColor: sub.secondaryColor,
+        logoUrl: sub.logoUrl,
+        menuSectionCount: sub._count.menuSections,
+        menuItemCount: sub._count.menuItems,
+      })),
+      menuSectionCount: t._count.menuSections,
+      menuItemCount: t._count.menuItems,
+      orderCount: t._count.orders,
+      customerCount: t._count.customers,
     }));
-  } catch {
+  } catch (err) {
+    console.error('Failed to scan tenants:', err);
     return [];
   }
 }

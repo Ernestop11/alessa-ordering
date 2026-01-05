@@ -274,6 +274,7 @@ export default function VPSDashboard({
               pages={pages}
               onPageSelect={handlePageSelect}
               selectedPageId={selectedPage?.id}
+              tenants={system.tenants}
             />
           )}
 
