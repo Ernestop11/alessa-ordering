@@ -280,6 +280,7 @@ export default function VPSDashboard({
           {viewMode === 'nginx' && (
             <NginxOffice
               nginx={system.nginx}
+              system={system}
               onClose={handleCloseOffice}
               onNavigate={handleNavigate}
             />
@@ -288,6 +289,7 @@ export default function VPSDashboard({
           {viewMode === 'pm2' && (
             <PM2Office
               pm2={system.pm2}
+              system={system}
               onClose={handleCloseOffice}
               onNavigate={handleNavigate}
             />
@@ -296,6 +298,7 @@ export default function VPSDashboard({
           {viewMode === 'postgres' && (
             <PostgresOffice
               postgres={system.postgres}
+              system={system}
               onClose={handleCloseOffice}
               onNavigate={handleNavigate}
             />
@@ -304,6 +307,7 @@ export default function VPSDashboard({
           {viewMode === 'redis' && (
             <RedisOffice
               redis={system.redis}
+              system={system}
               onClose={handleCloseOffice}
               onNavigate={handleNavigate}
             />

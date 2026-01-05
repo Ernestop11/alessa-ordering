@@ -11,6 +11,8 @@ interface SystemNodeData {
   stats?: Record<string, string | number>;
   color: string;
   onClick?: () => void;
+  focused?: boolean;
+  mini?: boolean;
 }
 
 interface SystemNodeProps {
@@ -19,7 +21,7 @@ interface SystemNodeProps {
 
 function SystemNode({ data }: SystemNodeProps) {
   const nodeData = data;
-  const { label, icon, status, stats, color, onClick } = nodeData;
+  const { label, icon, status, stats, color, onClick, focused, mini } = nodeData;
 
   const statusColors = {
     healthy: 'bg-green-500',
@@ -27,6 +29,36 @@ function SystemNode({ data }: SystemNodeProps) {
     error: 'bg-red-500',
     offline: 'bg-gray-500',
   };
+
+  // Mini mode for compact visualization
+  if (mini) {
+    return (
+      <div
+        onClick={onClick}
+        className={`
+          relative bg-slate-800 rounded-lg border-2 p-2 min-w-[80px]
+          transition-all duration-200
+          ${onClick ? 'cursor-pointer hover:scale-105' : ''}
+          ${focused ? 'ring-2 ring-offset-2 ring-offset-slate-900' : ''}
+        `}
+        style={{
+          borderColor: focused ? color : `${color}60`,
+          boxShadow: focused ? `0 0 20px ${color}40` : 'none',
+          '--tw-ring-color': color,
+        } as React.CSSProperties}
+      >
+        <Handle type="target" position={Position.Left} className="!bg-slate-600 !border-slate-500 !w-2 !h-2" />
+        <Handle type="source" position={Position.Right} className="!bg-slate-600 !border-slate-500 !w-2 !h-2" />
+
+        <div className={`absolute -top-1 -right-1 w-2 h-2 rounded-full ${statusColors[status]} ring-1 ring-slate-800`} />
+
+        <div className="flex flex-col items-center text-center">
+          <span className="text-lg">{icon}</span>
+          <span className={`font-medium text-[10px] ${focused ? 'text-white' : 'text-slate-400'}`}>{label}</span>
+        </div>
+      </div>
+    );
+  }
 
   return (
     <div

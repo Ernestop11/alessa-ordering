@@ -1,16 +1,18 @@
 'use client';
 
-import { PM2Status } from '@/lib/vps-dashboard/types';
+import { PM2Status, SystemOverview } from '@/lib/vps-dashboard/types';
+import MiniFlowView from '../canvas/MiniFlowView';
 
 type ViewMode = 'overview' | 'pages' | 'apis' | 'nginx' | 'pm2' | 'postgres' | 'redis';
 
 interface PM2OfficeProps {
   pm2: PM2Status;
+  system: SystemOverview;
   onClose: () => void;
   onNavigate: (target: ViewMode) => void;
 }
 
-export default function PM2Office({ pm2, onClose, onNavigate }: PM2OfficeProps) {
+export default function PM2Office({ pm2, system, onClose, onNavigate }: PM2OfficeProps) {
   const onlineApps = pm2.apps.filter(a => a.status === 'online').length;
   const totalRestarts = pm2.apps.reduce((sum, a) => sum + a.restarts, 0);
 
@@ -38,6 +40,22 @@ export default function PM2Office({ pm2, onClose, onNavigate }: PM2OfficeProps) 
         >
           ← Back to Overview
         </button>
+      </div>
+
+      {/* Mini System Flow */}
+      <div className="mb-6">
+        <h3 className="text-sm font-medium text-slate-400 mb-2">System Architecture</h3>
+        <MiniFlowView
+          focusedSystem="pm2"
+          systemData={{
+            nginx: { status: system.nginx.status, sitesCount: system.nginx.sites.length },
+            pm2: { status: 'running', appsCount: system.pm2.apps.length, apps: system.pm2.apps },
+            postgres: { status: system.postgres.status, dbCount: system.postgres.databases.length },
+            redis: { status: system.redis.status, keys: system.redis.keys },
+          }}
+          onNavigate={onNavigate}
+          height="180px"
+        />
       </div>
 
       {/* Educational Section */}

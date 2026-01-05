@@ -1,16 +1,18 @@
 'use client';
 
-import { NginxStatus } from '@/lib/vps-dashboard/types';
+import { NginxStatus, SystemOverview } from '@/lib/vps-dashboard/types';
+import MiniFlowView from '../canvas/MiniFlowView';
 
 type ViewMode = 'overview' | 'pages' | 'apis' | 'nginx' | 'pm2' | 'postgres' | 'redis';
 
 interface NginxOfficeProps {
   nginx: NginxStatus;
+  system: SystemOverview;
   onClose: () => void;
   onNavigate: (target: ViewMode) => void;
 }
 
-export default function NginxOffice({ nginx, onClose, onNavigate }: NginxOfficeProps) {
+export default function NginxOffice({ nginx, system, onClose, onNavigate }: NginxOfficeProps) {
   return (
     <div className="h-full overflow-auto p-6">
       {/* Header */}
@@ -39,6 +41,22 @@ export default function NginxOffice({ nginx, onClose, onNavigate }: NginxOfficeP
         >
           ← Back to Overview
         </button>
+      </div>
+
+      {/* Mini System Flow */}
+      <div className="mb-6">
+        <h3 className="text-sm font-medium text-slate-400 mb-2">System Architecture</h3>
+        <MiniFlowView
+          focusedSystem="nginx"
+          systemData={{
+            nginx: { status: system.nginx.status, sitesCount: system.nginx.sites.length },
+            pm2: { status: 'running', appsCount: system.pm2.apps.length },
+            postgres: { status: system.postgres.status, dbCount: system.postgres.databases.length },
+            redis: { status: system.redis.status, keys: system.redis.keys },
+          }}
+          onNavigate={onNavigate}
+          height="180px"
+        />
       </div>
 
       {/* Educational Section */}

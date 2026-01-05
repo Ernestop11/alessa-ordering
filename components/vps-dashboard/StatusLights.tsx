@@ -14,6 +14,15 @@ interface Alert {
   message: string;
   component: string;
   timestamp: Date;
+  fixSteps?: FixStep[];
+}
+
+interface FixStep {
+  id: string;
+  title: string;
+  command?: string;
+  description: string;
+  risk: 'safe' | 'moderate' | 'dangerous';
 }
 
 function getSystemAlerts(system: SystemOverview): Alert[] {
@@ -29,6 +38,12 @@ function getSystemAlerts(system: SystemOverview): Alert[] {
       message: 'Nginx gateway is not running. All sites are inaccessible!',
       component: 'nginx',
       timestamp: now,
+      fixSteps: [
+        { id: 'nginx-1', title: 'Check Nginx Status', command: 'systemctl status nginx', description: 'View current Nginx service status and recent logs', risk: 'safe' },
+        { id: 'nginx-2', title: 'Test Configuration', command: 'nginx -t', description: 'Validate Nginx configuration files for syntax errors', risk: 'safe' },
+        { id: 'nginx-3', title: 'Restart Nginx', command: 'sudo systemctl restart nginx', description: 'Restart the Nginx service', risk: 'moderate' },
+        { id: 'nginx-4', title: 'View Error Logs', command: 'tail -50 /var/log/nginx/error.log', description: 'Check recent error logs for issues', risk: 'safe' },
+      ],
     });
   }
 
@@ -42,6 +57,12 @@ function getSystemAlerts(system: SystemOverview): Alert[] {
         message: `${site.domain} is not responding`,
         component: 'nginx',
         timestamp: now,
+        fixSteps: [
+          { id: 'site-1', title: 'Check Site Config', command: `cat /etc/nginx/sites-enabled/${site.domain}`, description: 'View the Nginx configuration for this site', risk: 'safe' },
+          { id: 'site-2', title: 'Test Connectivity', command: `curl -I ${site.domain}`, description: 'Test if the site responds to HTTP requests', risk: 'safe' },
+          { id: 'site-3', title: 'Check Upstream', command: `curl -I localhost${site.proxyTo}`, description: 'Test if the upstream application is responding', risk: 'safe' },
+          { id: 'site-4', title: 'Reload Nginx', command: 'sudo nginx -s reload', description: 'Reload Nginx configuration without downtime', risk: 'moderate' },
+        ],
       });
     }
 
@@ -57,6 +78,11 @@ function getSystemAlerts(system: SystemOverview): Alert[] {
           message: `SSL certificate expires in ${daysUntilExpiry} days`,
           component: 'nginx',
           timestamp: now,
+          fixSteps: [
+            { id: 'ssl-1', title: 'Check Certificate', command: `sudo certbot certificates -d ${site.domain}`, description: 'View current certificate status and expiry date', risk: 'safe' },
+            { id: 'ssl-2', title: 'Test Renewal', command: `sudo certbot renew --dry-run`, description: 'Test certificate renewal without making changes', risk: 'safe' },
+            { id: 'ssl-3', title: 'Renew Certificate', command: `sudo certbot renew`, description: 'Renew SSL certificate using Certbot', risk: 'moderate' },
+          ],
         });
       }
     }
@@ -72,6 +98,12 @@ function getSystemAlerts(system: SystemOverview): Alert[] {
         message: `${app.name} has crashed and is in errored state`,
         component: 'pm2',
         timestamp: now,
+        fixSteps: [
+          { id: 'pm2-1', title: 'View Error Logs', command: `pm2 logs ${app.name} --lines 50`, description: 'Check recent logs to see the crash error', risk: 'safe' },
+          { id: 'pm2-2', title: 'Check App Info', command: `pm2 show ${app.name}`, description: 'View detailed app information and status', risk: 'safe' },
+          { id: 'pm2-3', title: 'Restart App', command: `pm2 restart ${app.name}`, description: 'Restart the application', risk: 'moderate' },
+          { id: 'pm2-4', title: 'Reset Restart Count', command: `pm2 reset ${app.name}`, description: 'Reset the restart counter to 0', risk: 'safe' },
+        ],
       });
     } else if (app.status === 'stopped') {
       alerts.push({
@@ -81,6 +113,11 @@ function getSystemAlerts(system: SystemOverview): Alert[] {
         message: `${app.name} is stopped`,
         component: 'pm2',
         timestamp: now,
+        fixSteps: [
+          { id: 'pm2-1', title: 'Check Status', command: `pm2 status`, description: 'View all PM2 processes and their status', risk: 'safe' },
+          { id: 'pm2-2', title: 'View Logs', command: `pm2 logs ${app.name} --lines 30`, description: 'Check logs before the app stopped', risk: 'safe' },
+          { id: 'pm2-3', title: 'Start App', command: `pm2 start ${app.name}`, description: 'Start the stopped application', risk: 'safe' },
+        ],
       });
     }
 
@@ -93,6 +130,12 @@ function getSystemAlerts(system: SystemOverview): Alert[] {
         message: `${app.name} has restarted ${app.restarts} times`,
         component: 'pm2',
         timestamp: now,
+        fixSteps: [
+          { id: 'pm2-1', title: 'View Recent Logs', command: `pm2 logs ${app.name} --lines 100`, description: 'Check logs for crash patterns', risk: 'safe' },
+          { id: 'pm2-2', title: 'Monitor App', command: `pm2 monit`, description: 'Open real-time monitoring dashboard', risk: 'safe' },
+          { id: 'pm2-3', title: 'Reset Counter', command: `pm2 reset ${app.name}`, description: 'Reset the restart counter to track fresh restarts', risk: 'safe' },
+          { id: 'pm2-4', title: 'Check Memory', command: `pm2 show ${app.name} | grep memory`, description: 'Check if memory limits are being hit', risk: 'safe' },
+        ],
       });
     }
   });
@@ -106,6 +149,12 @@ function getSystemAlerts(system: SystemOverview): Alert[] {
       message: 'PostgreSQL database is not running!',
       component: 'postgres',
       timestamp: now,
+      fixSteps: [
+        { id: 'pg-1', title: 'Check Status', command: 'systemctl status postgresql', description: 'View PostgreSQL service status', risk: 'safe' },
+        { id: 'pg-2', title: 'View Logs', command: 'sudo journalctl -u postgresql --since "1 hour ago"', description: 'Check recent PostgreSQL logs', risk: 'safe' },
+        { id: 'pg-3', title: 'Start Database', command: 'sudo systemctl start postgresql', description: 'Start the PostgreSQL service', risk: 'moderate' },
+        { id: 'pg-4', title: 'Check Disk Space', command: 'df -h /var/lib/postgresql', description: 'Verify disk space for database files', risk: 'safe' },
+      ],
     });
   } else {
     // Connection pool warning
@@ -118,6 +167,11 @@ function getSystemAlerts(system: SystemOverview): Alert[] {
         message: `${system.postgres.connections}/${system.postgres.maxConnections} connections (${Math.round(connPercent)}%)`,
         component: 'postgres',
         timestamp: now,
+        fixSteps: [
+          { id: 'conn-1', title: 'View Active Connections', command: "sudo -u postgres psql -c \"SELECT pid, usename, application_name, state FROM pg_stat_activity WHERE state != 'idle';\"", description: 'List all active database connections', risk: 'safe' },
+          { id: 'conn-2', title: 'Kill Idle Connections', command: "sudo -u postgres psql -c \"SELECT pg_terminate_backend(pid) FROM pg_stat_activity WHERE state = 'idle' AND pid <> pg_backend_pid();\"", description: 'Terminate idle connections to free up pool', risk: 'moderate' },
+          { id: 'conn-3', title: 'Restart PM2 Apps', command: 'pm2 restart all', description: 'Restart all apps to reset their connection pools', risk: 'moderate' },
+        ],
       });
     }
   }
@@ -131,6 +185,11 @@ function getSystemAlerts(system: SystemOverview): Alert[] {
       message: 'Redis cache is not running. Performance may be degraded.',
       component: 'redis',
       timestamp: now,
+      fixSteps: [
+        { id: 'redis-1', title: 'Check Status', command: 'systemctl status redis', description: 'View Redis service status', risk: 'safe' },
+        { id: 'redis-2', title: 'Start Redis', command: 'sudo systemctl start redis', description: 'Start the Redis service', risk: 'safe' },
+        { id: 'redis-3', title: 'Check Memory', command: 'redis-cli info memory', description: 'Check Redis memory usage', risk: 'safe' },
+      ],
     });
   }
 
@@ -143,6 +202,11 @@ function getSystemAlerts(system: SystemOverview): Alert[] {
       message: `Memory at ${system.system.memoryPercent}% (${system.system.memoryUsed}/${system.system.memoryTotal})`,
       component: 'system',
       timestamp: now,
+      fixSteps: [
+        { id: 'mem-1', title: 'View Top Processes', command: 'ps aux --sort=-%mem | head -15', description: 'List processes using the most memory', risk: 'safe' },
+        { id: 'mem-2', title: 'Clear System Cache', command: 'sudo sync && sudo sh -c "echo 3 > /proc/sys/vm/drop_caches"', description: 'Clear system page cache (safe, temporary)', risk: 'safe' },
+        { id: 'mem-3', title: 'Restart Heavy Apps', command: 'pm2 restart alessa-ordering', description: 'Restart apps to release memory', risk: 'moderate' },
+      ],
     });
   }
 
@@ -154,6 +218,12 @@ function getSystemAlerts(system: SystemOverview): Alert[] {
       message: `Disk at ${system.system.diskPercent}% (${system.system.diskUsed}/${system.system.diskTotal})`,
       component: 'system',
       timestamp: now,
+      fixSteps: [
+        { id: 'disk-1', title: 'Find Large Files', command: 'du -ah / 2>/dev/null | sort -rh | head -20', description: 'Find the largest files on disk', risk: 'safe' },
+        { id: 'disk-2', title: 'Clean PM2 Logs', command: 'pm2 flush', description: 'Clear all PM2 log files', risk: 'safe' },
+        { id: 'disk-3', title: 'Clean Journal Logs', command: 'sudo journalctl --vacuum-time=7d', description: 'Remove system logs older than 7 days', risk: 'safe' },
+        { id: 'disk-4', title: 'Clean Apt Cache', command: 'sudo apt autoremove && sudo apt clean', description: 'Remove unused packages and clean apt cache', risk: 'safe' },
+      ],
     });
   }
 
@@ -163,6 +233,9 @@ function getSystemAlerts(system: SystemOverview): Alert[] {
 export default function StatusLights({ system }: StatusLightsProps) {
   const [alerts, setAlerts] = useState<Alert[]>([]);
   const [isAlarmActive, setIsAlarmActive] = useState(false);
+  const [selectedAlert, setSelectedAlert] = useState<Alert | null>(null);
+  const [commandOutput, setCommandOutput] = useState<string>('');
+  const [isRunningCommand, setIsRunningCommand] = useState(false);
 
   useEffect(() => {
     const newAlerts = getSystemAlerts(system);
@@ -372,7 +445,8 @@ export default function StatusLights({ system }: StatusLightsProps) {
               {alerts.map((alert) => (
                 <div
                   key={alert.id}
-                  className={`p-4 flex items-start gap-4 ${
+                  onClick={() => alert.fixSteps && setSelectedAlert(alert)}
+                  className={`p-4 flex items-start gap-4 cursor-pointer hover:bg-slate-700/50 transition-colors ${
                     alert.severity === 'critical' ? 'bg-red-900/20' :
                     alert.severity === 'warning' ? 'bg-yellow-900/20' : ''
                   }`}
@@ -391,7 +465,14 @@ export default function StatusLights({ system }: StatusLightsProps) {
                     </h4>
                     <p className="text-sm text-slate-400">{alert.message}</p>
                   </div>
-                  <span className="text-xs text-slate-500 uppercase">{alert.component}</span>
+                  <div className="flex items-center gap-2">
+                    <span className="text-xs text-slate-500 uppercase">{alert.component}</span>
+                    {alert.fixSteps && (
+                      <span className="text-xs bg-blue-500/20 text-blue-400 px-2 py-0.5 rounded">
+                        Fix →
+                      </span>
+                    )}
+                  </div>
                 </div>
               ))}
             </div>
@@ -406,6 +487,128 @@ export default function StatusLights({ system }: StatusLightsProps) {
           <span className="text-slate-300">System Uptime: <span className="text-white font-semibold">{system.system.uptime}</span></span>
         </div>
       </div>
+
+      {/* Alert Detail Modal */}
+      {selectedAlert && (
+        <div className="fixed inset-0 bg-black/70 flex items-center justify-center z-50 p-4">
+          <div className="bg-slate-900 rounded-2xl border border-slate-700 max-w-2xl w-full max-h-[90vh] overflow-hidden flex flex-col">
+            {/* Modal Header */}
+            <div className={`p-6 border-b border-slate-700 ${
+              selectedAlert.severity === 'critical' ? 'bg-red-900/30' : 'bg-yellow-900/30'
+            }`}>
+              <div className="flex items-start justify-between">
+                <div className="flex items-center gap-4">
+                  <span className="text-4xl">
+                    {selectedAlert.severity === 'critical' ? '🔴' : '🟡'}
+                  </span>
+                  <div>
+                    <h3 className={`text-xl font-bold ${
+                      selectedAlert.severity === 'critical' ? 'text-red-400' : 'text-yellow-400'
+                    }`}>
+                      {selectedAlert.title}
+                    </h3>
+                    <p className="text-slate-400">{selectedAlert.message}</p>
+                  </div>
+                </div>
+                <button
+                  onClick={() => {
+                    setSelectedAlert(null);
+                    setCommandOutput('');
+                  }}
+                  className="text-slate-400 hover:text-white text-2xl"
+                >
+                  ×
+                </button>
+              </div>
+            </div>
+
+            {/* Fix Steps */}
+            <div className="flex-1 overflow-auto p-6">
+              <h4 className="text-sm font-semibold text-slate-400 mb-4 uppercase tracking-wide">
+                Troubleshooting Steps
+              </h4>
+              <div className="space-y-3">
+                {selectedAlert.fixSteps?.map((step, index) => (
+                  <div
+                    key={step.id}
+                    className="bg-slate-800 rounded-xl border border-slate-700 overflow-hidden"
+                  >
+                    <div className="p-4">
+                      <div className="flex items-center justify-between mb-2">
+                        <div className="flex items-center gap-3">
+                          <span className="w-6 h-6 rounded-full bg-slate-700 flex items-center justify-center text-sm text-slate-400">
+                            {index + 1}
+                          </span>
+                          <h5 className="font-semibold text-white">{step.title}</h5>
+                        </div>
+                        <span className={`text-xs px-2 py-0.5 rounded ${
+                          step.risk === 'safe' ? 'bg-green-500/20 text-green-400' :
+                          step.risk === 'moderate' ? 'bg-yellow-500/20 text-yellow-400' :
+                          'bg-red-500/20 text-red-400'
+                        }`}>
+                          {step.risk}
+                        </span>
+                      </div>
+                      <p className="text-sm text-slate-400 mb-3">{step.description}</p>
+                      {step.command && (
+                        <div className="flex items-center gap-2">
+                          <code className="flex-1 bg-slate-900 px-3 py-2 rounded-lg text-sm font-mono text-cyan-400 overflow-x-auto">
+                            {step.command}
+                          </code>
+                          <button
+                            onClick={() => navigator.clipboard.writeText(step.command || '')}
+                            className="px-3 py-2 bg-slate-700 hover:bg-slate-600 rounded-lg text-sm text-slate-300 transition-colors"
+                          >
+                            Copy
+                          </button>
+                        </div>
+                      )}
+                    </div>
+                  </div>
+                ))}
+              </div>
+
+              {/* Command Output (if any) */}
+              {commandOutput && (
+                <div className="mt-6">
+                  <h4 className="text-sm font-semibold text-slate-400 mb-2 uppercase tracking-wide">
+                    Command Output
+                  </h4>
+                  <pre className="bg-black rounded-xl p-4 text-sm font-mono text-green-400 overflow-auto max-h-48">
+                    {commandOutput}
+                  </pre>
+                </div>
+              )}
+            </div>
+
+            {/* Modal Footer */}
+            <div className="p-4 border-t border-slate-700 bg-slate-800/50 flex items-center justify-between">
+              <p className="text-xs text-slate-500">
+                💡 Tip: Copy commands and run them in TTYD terminal or SSH
+              </p>
+              <div className="flex items-center gap-2">
+                <a
+                  href="http://77.243.85.8:7681"
+                  target="_blank"
+                  rel="noopener noreferrer"
+                  className="px-4 py-2 bg-blue-600 hover:bg-blue-500 text-white rounded-lg text-sm font-medium transition-colors"
+                >
+                  Open Terminal (TTYD)
+                </a>
+                <button
+                  onClick={() => {
+                    setSelectedAlert(null);
+                    setCommandOutput('');
+                  }}
+                  className="px-4 py-2 bg-slate-700 hover:bg-slate-600 text-white rounded-lg text-sm transition-colors"
+                >
+                  Close
+                </button>
+              </div>
+            </div>
+          </div>
+        </div>
+      )}
     </div>
   );
 }

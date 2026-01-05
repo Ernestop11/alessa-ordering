@@ -1,16 +1,18 @@
 'use client';
 
-import { PostgresStatus } from '@/lib/vps-dashboard/types';
+import { PostgresStatus, SystemOverview } from '@/lib/vps-dashboard/types';
+import MiniFlowView from '../canvas/MiniFlowView';
 
 type ViewMode = 'overview' | 'pages' | 'apis' | 'nginx' | 'pm2' | 'postgres' | 'redis';
 
 interface PostgresOfficeProps {
   postgres: PostgresStatus;
+  system: SystemOverview;
   onClose: () => void;
   onNavigate: (target: ViewMode) => void;
 }
 
-export default function PostgresOffice({ postgres, onClose, onNavigate }: PostgresOfficeProps) {
+export default function PostgresOffice({ postgres, system, onClose, onNavigate }: PostgresOfficeProps) {
   const connectionPercent = postgres.maxConnections > 0
     ? Math.round((postgres.connections / postgres.maxConnections) * 100)
     : 0;
@@ -43,6 +45,22 @@ export default function PostgresOffice({ postgres, onClose, onNavigate }: Postgr
         >
           ← Back to Overview
         </button>
+      </div>
+
+      {/* Mini System Flow */}
+      <div className="mb-6">
+        <h3 className="text-sm font-medium text-slate-400 mb-2">System Architecture</h3>
+        <MiniFlowView
+          focusedSystem="postgres"
+          systemData={{
+            nginx: { status: system.nginx.status, sitesCount: system.nginx.sites.length },
+            pm2: { status: 'running', appsCount: system.pm2.apps.length },
+            postgres: { status: system.postgres.status, dbCount: system.postgres.databases.length },
+            redis: { status: system.redis.status, keys: system.redis.keys },
+          }}
+          onNavigate={onNavigate}
+          height="180px"
+        />
       </div>
 
       {/* Educational Section */}
