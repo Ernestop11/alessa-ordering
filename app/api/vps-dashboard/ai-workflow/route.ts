@@ -4,10 +4,16 @@ import { authOptions } from '@/lib/auth/options';
 
 const IS_PRODUCTION = process.env.NODE_ENV === 'production';
 
-const MODELS: Record<string, string> = {
+const ANTHROPIC_MODELS: Record<string, string> = {
   'sonnet': 'claude-sonnet-4-20250514',
   'opus': 'claude-opus-4-20250514',
   'haiku': 'claude-3-5-haiku-20241022',
+};
+
+const OPENAI_MODELS: Record<string, string> = {
+  'gpt-4o': 'gpt-4o',
+  'gpt-4o-mini': 'gpt-4o-mini',
+  'gpt-4-turbo': 'gpt-4-turbo',
 };
 
 const SYSTEM_PROMPT = `You are a helpful VPS management assistant. You help users manage their server, troubleshoot issues, edit code, and understand their infrastructure.
@@ -72,13 +78,9 @@ export async function POST(request: NextRequest) {
       return NextResponse.json({ error: 'Missing message' }, { status: 400 });
     }
 
-    const apiKey = process.env.ANTHROPIC_API_KEY;
-
-    if (!apiKey || apiKey.includes('YOUR_') || apiKey.length < 20) {
-      return NextResponse.json({
-        response: '[API Key Not Configured] Set ANTHROPIC_API_KEY to enable AI workflow.',
-      });
-    }
+    // Determine provider
+    const isOpenAI = model in OPENAI_MODELS;
+    const isAnthropic = model in ANTHROPIC_MODELS;
 
     if (!IS_PRODUCTION) {
       if (action === 'generate-options') {
@@ -104,11 +106,95 @@ export async function POST(request: NextRequest) {
         });
       }
       return NextResponse.json({
-        response: `[Dev Mode] Would process: "${message}"`,
+        response: `[Dev Mode] Provider: ${isOpenAI ? 'OpenAI' : 'Anthropic'}, Model: ${model}\nWould process: "${message}"`,
       });
     }
 
-    const selectedModel = MODELS[model] || MODELS['sonnet'];
+    // OpenAI API handling
+    if (isOpenAI) {
+      const openaiKey = process.env.OPENAI_API_KEY;
+      if (!openaiKey || openaiKey.includes('YOUR_') || openaiKey.length < 20) {
+        return NextResponse.json({
+          response: '[OpenAI API Key Not Configured] Set OPENAI_API_KEY to use GPT models.',
+        });
+      }
+
+      if (action === 'generate-options') {
+        // Use GPT-4o-mini for fast option generation
+        const response = await fetch('https://api.openai.com/v1/chat/completions', {
+          method: 'POST',
+          headers: {
+            'Content-Type': 'application/json',
+            'Authorization': `Bearer ${openaiKey}`,
+          },
+          body: JSON.stringify({
+            model: 'gpt-4o-mini',
+            max_tokens: 1024,
+            messages: [
+              { role: 'system', content: OPTIONS_PROMPT },
+              { role: 'user', content: `User's question: ${message}\n\nYour previous response: ${context}\n\nGenerate actionable options as JSON array:` },
+            ],
+          }),
+        });
+
+        if (!response.ok) {
+          const errorText = await response.text();
+          throw new Error(`OpenAI API error: ${response.status} - ${errorText}`);
+        }
+
+        const data = await response.json();
+        const content = data.choices?.[0]?.message?.content || '[]';
+
+        try {
+          const jsonMatch = content.match(/\[[\s\S]*\]/);
+          if (jsonMatch) {
+            const options = JSON.parse(jsonMatch[0]);
+            return NextResponse.json({ options });
+          }
+        } catch (parseError) {
+          console.error('Failed to parse options:', parseError, content);
+        }
+
+        return NextResponse.json({ options: [] });
+      }
+
+      // Regular chat with OpenAI
+      const response = await fetch('https://api.openai.com/v1/chat/completions', {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+          'Authorization': `Bearer ${openaiKey}`,
+        },
+        body: JSON.stringify({
+          model: OPENAI_MODELS[model],
+          max_tokens: 4096,
+          messages: [
+            { role: 'system', content: SYSTEM_PROMPT },
+            { role: 'user', content: message },
+          ],
+        }),
+      });
+
+      if (!response.ok) {
+        const errorText = await response.text();
+        throw new Error(`OpenAI API error: ${response.status} - ${errorText}`);
+      }
+
+      const data = await response.json();
+      const assistantMessage = data.choices?.[0]?.message?.content || 'No response from OpenAI';
+
+      return NextResponse.json({ response: assistantMessage });
+    }
+
+    // Anthropic (Claude) API handling
+    const apiKey = process.env.ANTHROPIC_API_KEY;
+    if (!apiKey || apiKey.includes('YOUR_') || apiKey.length < 20) {
+      return NextResponse.json({
+        response: '[Anthropic API Key Not Configured] Set ANTHROPIC_API_KEY to enable AI workflow.',
+      });
+    }
+
+    const selectedModel = ANTHROPIC_MODELS[model] || ANTHROPIC_MODELS['sonnet'];
 
     if (action === 'generate-options') {
       // Generate actionable options from previous context
@@ -120,7 +206,7 @@ export async function POST(request: NextRequest) {
           'anthropic-version': '2023-06-01',
         },
         body: JSON.stringify({
-          model: MODELS['haiku'], // Always use haiku for fast option generation
+          model: ANTHROPIC_MODELS['haiku'], // Always use haiku for fast option generation
           max_tokens: 1024,
           system: OPTIONS_PROMPT,
           messages: [
@@ -155,7 +241,7 @@ export async function POST(request: NextRequest) {
       return NextResponse.json({ options: [] });
     }
 
-    // Regular chat
+    // Regular chat with Anthropic
     const response = await fetch('https://api.anthropic.com/v1/messages', {
       method: 'POST',
       headers: {

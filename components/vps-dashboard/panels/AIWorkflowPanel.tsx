@@ -1,6 +1,6 @@
 'use client';
 
-import { useState, useRef, useEffect } from 'react';
+import { useState, useRef, useEffect, useCallback } from 'react';
 
 interface Message {
   role: 'user' | 'assistant' | 'system';
@@ -23,6 +23,26 @@ interface WorkflowState {
   selectedOption: ActionOption | null;
 }
 
+interface ChatSession {
+  id: string;
+  panelType: string;
+  title: string | null;
+  model: string | null;
+  createdAt: string;
+  updatedAt: string;
+  _count?: { messages: number };
+}
+
+type AIModel = 'sonnet' | 'opus' | 'haiku' | 'gpt-4o' | 'gpt-4o-mini' | 'gpt-4-turbo';
+
+const MODEL_OPTIONS: { value: AIModel; label: string; provider: 'anthropic' | 'openai' }[] = [
+  { value: 'sonnet', label: 'Sonnet 4', provider: 'anthropic' },
+  { value: 'opus', label: 'Opus 4', provider: 'anthropic' },
+  { value: 'haiku', label: 'Haiku 3.5', provider: 'anthropic' },
+  { value: 'gpt-4o', label: 'GPT-4o', provider: 'openai' },
+  { value: 'gpt-4o-mini', label: 'GPT-4o Mini', provider: 'openai' },
+];
+
 export default function AIWorkflowPanel() {
   // Chat state
   const [messages, setMessages] = useState<Message[]>([
@@ -34,7 +54,12 @@ export default function AIWorkflowPanel() {
   ]);
   const [input, setInput] = useState('');
   const [loading, setLoading] = useState(false);
-  const [model, setModel] = useState<'sonnet' | 'opus' | 'haiku'>('sonnet');
+  const [model, setModel] = useState<AIModel>('sonnet');
+
+  // Session management
+  const [sessionId, setSessionId] = useState<string | null>(null);
+  const [sessions, setSessions] = useState<ChatSession[]>([]);
+  const [showHistory, setShowHistory] = useState(false);
 
   // Workflow state
   const [workflow, setWorkflow] = useState<WorkflowState>({
@@ -52,6 +77,11 @@ export default function AIWorkflowPanel() {
   const messagesEndRef = useRef<HTMLDivElement>(null);
   const terminalEndRef = useRef<HTMLDivElement>(null);
 
+  // Load sessions on mount
+  useEffect(() => {
+    loadSessions();
+  }, []);
+
   useEffect(() => {
     messagesEndRef.current?.scrollIntoView({ behavior: 'smooth' });
   }, [messages]);
@@ -59,6 +89,108 @@ export default function AIWorkflowPanel() {
   useEffect(() => {
     terminalEndRef.current?.scrollIntoView({ behavior: 'smooth' });
   }, [terminalOutput]);
+
+  // Session management functions
+  const loadSessions = useCallback(async () => {
+    try {
+      const res = await fetch('/api/vps-dashboard/chat-history?panelType=workflow');
+      if (res.ok) {
+        const data = await res.json();
+        setSessions(data.sessions || []);
+      }
+    } catch (error) {
+      console.error('Failed to load sessions:', error);
+    }
+  }, []);
+
+  const loadSession = useCallback(async (id: string) => {
+    try {
+      const res = await fetch(`/api/vps-dashboard/chat-history?sessionId=${id}`);
+      if (res.ok) {
+        const data = await res.json();
+        if (data.messages) {
+          const loadedMessages: Message[] = data.messages.map((m: { role: 'user' | 'assistant' | 'system'; content: string; createdAt: string }) => ({
+            role: m.role,
+            content: m.content,
+            timestamp: new Date(m.createdAt),
+          }));
+          setMessages(loadedMessages);
+          setSessionId(id);
+          if (data.model) setModel(data.model as AIModel);
+          setShowHistory(false);
+          setWorkflow({ step: 'chat', options: [], selectedOption: null });
+        }
+      }
+    } catch (error) {
+      console.error('Failed to load session:', error);
+    }
+  }, []);
+
+  const createSession = useCallback(async (firstMessage: string): Promise<string | null> => {
+    try {
+      const res = await fetch('/api/vps-dashboard/chat-history', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({
+          action: 'create-session',
+          panelType: 'workflow',
+          model,
+          content: firstMessage,
+        }),
+      });
+      if (res.ok) {
+        const data = await res.json();
+        setSessionId(data.session.id);
+        loadSessions();
+        return data.session.id;
+      }
+    } catch (error) {
+      console.error('Failed to create session:', error);
+    }
+    return null;
+  }, [model, loadSessions]);
+
+  const saveMessage = useCallback(async (sId: string, role: string, content: string) => {
+    try {
+      await fetch('/api/vps-dashboard/chat-history', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({
+          action: 'add-message',
+          sessionId: sId,
+          role,
+          content,
+        }),
+      });
+    } catch (error) {
+      console.error('Failed to save message:', error);
+    }
+  }, []);
+
+  const deleteSession = useCallback(async (id: string) => {
+    try {
+      await fetch(`/api/vps-dashboard/chat-history?sessionId=${id}`, { method: 'DELETE' });
+      if (sessionId === id) {
+        startNewChat();
+      }
+      loadSessions();
+    } catch (error) {
+      console.error('Failed to delete session:', error);
+    }
+  }, [sessionId, loadSessions]);
+
+  const startNewChat = useCallback(() => {
+    setSessionId(null);
+    setMessages([
+      {
+        role: 'system',
+        content: '🚀 AI Workflow ready. Ask me anything about your VPS, and I\'ll give you actionable options to choose from.',
+        timestamp: new Date(),
+      },
+    ]);
+    setWorkflow({ step: 'chat', options: [], selectedOption: null });
+    setTerminalOutput(['$ Ready to execute commands...']);
+  }, []);
 
   const handleSend = async () => {
     if (!input.trim() || loading) return;
@@ -75,6 +207,15 @@ export default function AIWorkflowPanel() {
     setLoading(true);
     setWorkflow({ step: 'chat', options: [], selectedOption: null });
 
+    // Create session if needed and save user message
+    let currentSessionId = sessionId;
+    if (!currentSessionId) {
+      currentSessionId = await createSession(userInput);
+    }
+    if (currentSessionId) {
+      saveMessage(currentSessionId, 'user', userInput);
+    }
+
     try {
       const response = await fetch('/api/vps-dashboard/ai-workflow', {
         method: 'POST',
@@ -87,26 +228,33 @@ export default function AIWorkflowPanel() {
       });
 
       const data = await response.json();
+      const assistantContent = data.response || data.error || 'No response';
 
       setMessages(prev => [
         ...prev,
         {
           role: 'assistant',
-          content: data.response || data.error || 'No response',
+          content: assistantContent,
           timestamp: new Date(),
         },
       ]);
+
+      // Save assistant message
+      if (currentSessionId) {
+        saveMessage(currentSessionId, 'assistant', assistantContent);
+      }
 
       // If response contains actionable items, show generate options button
       if (data.response && !data.error) {
         setWorkflow(prev => ({ ...prev, step: 'chat' }));
       }
     } catch (error) {
+      const errorContent = `Error: ${error instanceof Error ? error.message : 'Failed to connect'}`;
       setMessages(prev => [
         ...prev,
         {
           role: 'assistant',
-          content: `Error: ${error instanceof Error ? error.message : 'Failed to connect'}`,
+          content: errorContent,
           timestamp: new Date(),
         },
       ]);
@@ -243,7 +391,7 @@ export default function AIWorkflowPanel() {
   };
 
   return (
-    <div className="h-full flex flex-col bg-slate-900">
+    <div className="h-full flex flex-col bg-slate-900 relative">
       {/* Pipeline Header */}
       <div className="flex-shrink-0 px-4 py-3 bg-gradient-to-r from-purple-500/10 via-blue-500/10 to-green-500/10 border-b border-slate-700">
         <div className="flex items-center justify-between">
@@ -253,15 +401,53 @@ export default function AIWorkflowPanel() {
             </h2>
             <p className="text-xs text-slate-400">Chat → Options → Execute</p>
           </div>
-          <select
-            value={model}
-            onChange={(e) => setModel(e.target.value as 'sonnet' | 'opus' | 'haiku')}
-            className="bg-slate-700 border border-slate-600 rounded-lg px-3 py-1.5 text-white text-xs focus:outline-none focus:ring-2 focus:ring-purple-500"
-          >
-            <option value="sonnet">Sonnet 4</option>
-            <option value="opus">Opus 4</option>
-            <option value="haiku">Haiku 3.5</option>
-          </select>
+          <div className="flex items-center gap-2">
+            {/* History toggle */}
+            <button
+              onClick={() => setShowHistory(!showHistory)}
+              className={`p-1.5 rounded-lg transition-colors ${
+                showHistory ? 'bg-purple-600 text-white' : 'bg-slate-700 text-slate-400 hover:text-white'
+              }`}
+              title="Chat History"
+            >
+              <svg xmlns="http://www.w3.org/2000/svg" className="h-4 w-4" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 8v4l3 3m6-3a9 9 0 11-18 0 9 9 0 0118 0z" />
+              </svg>
+            </button>
+            {/* New chat button */}
+            <button
+              onClick={startNewChat}
+              className="p-1.5 rounded-lg bg-slate-700 text-slate-400 hover:text-white transition-colors"
+              title="New Chat"
+            >
+              <svg xmlns="http://www.w3.org/2000/svg" className="h-4 w-4" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 4v16m8-8H4" />
+              </svg>
+            </button>
+            {/* Provider indicator */}
+            <span className={`w-2 h-2 rounded-full ${
+              MODEL_OPTIONS.find(m => m.value === model)?.provider === 'openai'
+                ? 'bg-green-400'
+                : 'bg-purple-400'
+            }`} title={MODEL_OPTIONS.find(m => m.value === model)?.provider === 'openai' ? 'OpenAI' : 'Anthropic'} />
+            {/* Model selector */}
+            <select
+              value={model}
+              onChange={(e) => setModel(e.target.value as AIModel)}
+              className="bg-slate-700 border border-slate-600 rounded-lg px-3 py-1.5 text-white text-xs focus:outline-none focus:ring-2 focus:ring-purple-500"
+            >
+              <optgroup label="Anthropic">
+                {MODEL_OPTIONS.filter(m => m.provider === 'anthropic').map(m => (
+                  <option key={m.value} value={m.value}>{m.label}</option>
+                ))}
+              </optgroup>
+              <optgroup label="OpenAI">
+                {MODEL_OPTIONS.filter(m => m.provider === 'openai').map(m => (
+                  <option key={m.value} value={m.value}>{m.label}</option>
+                ))}
+              </optgroup>
+            </select>
+          </div>
         </div>
 
         {/* Pipeline Steps */}
@@ -285,6 +471,50 @@ export default function AIWorkflowPanel() {
           </div>
         </div>
       </div>
+
+      {/* History Sidebar (overlay) */}
+      {showHistory && (
+        <div className="absolute top-0 left-0 w-64 h-full bg-slate-900 border-r border-slate-700 z-20 flex flex-col">
+          <div className="flex items-center justify-between p-3 border-b border-slate-700">
+            <span className="text-sm font-medium text-white">Chat History</span>
+            <button onClick={() => setShowHistory(false)} className="text-slate-400 hover:text-white">
+              <svg xmlns="http://www.w3.org/2000/svg" className="h-4 w-4" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M6 18L18 6M6 6l12 12" />
+              </svg>
+            </button>
+          </div>
+          <div className="flex-1 overflow-auto p-2 space-y-1">
+            {sessions.length === 0 ? (
+              <p className="text-xs text-slate-500 text-center py-4">No saved chats</p>
+            ) : (
+              sessions.map((s) => (
+                <div
+                  key={s.id}
+                  className={`group flex items-center gap-2 p-2 rounded-lg cursor-pointer transition-colors ${
+                    sessionId === s.id ? 'bg-purple-600/20 border border-purple-500/30' : 'hover:bg-slate-800'
+                  }`}
+                  onClick={() => loadSession(s.id)}
+                >
+                  <div className="flex-1 min-w-0">
+                    <p className="text-xs text-white truncate">{s.title || 'Untitled'}</p>
+                    <p className="text-[10px] text-slate-500">
+                      {s._count?.messages || 0} msgs • {new Date(s.updatedAt).toLocaleDateString()}
+                    </p>
+                  </div>
+                  <button
+                    onClick={(e) => { e.stopPropagation(); deleteSession(s.id); }}
+                    className="opacity-0 group-hover:opacity-100 p-1 text-slate-500 hover:text-red-400"
+                  >
+                    <svg xmlns="http://www.w3.org/2000/svg" className="h-3 w-3" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                      <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M19 7l-.867 12.142A2 2 0 0116.138 21H7.862a2 2 0 01-1.995-1.858L5 7m5 4v6m4-6v6m1-10V4a1 1 0 00-1-1h-4a1 1 0 00-1 1v3M4 7h16" />
+                    </svg>
+                  </button>
+                </div>
+              ))
+            )}
+          </div>
+        </div>
+      )}
 
       {/* Main Content - 2x2 Grid */}
       <div className="flex-1 grid grid-cols-2 grid-rows-2 gap-px bg-slate-700 overflow-hidden">

@@ -3,6 +3,7 @@
 import { useState, useRef, useEffect, useCallback } from 'react';
 
 type ActivePanel = 'claude' | 'aider' | 'terminal';
+type AIModel = 'sonnet' | 'opus' | 'haiku' | 'gpt-4o' | 'gpt-4o-mini' | 'gpt-4-turbo';
 
 interface Message {
   role: 'user' | 'assistant' | 'system';
@@ -20,6 +21,17 @@ interface ChatSession {
   _count?: { messages: number };
 }
 
+const MODEL_OPTIONS: { value: AIModel; label: string; provider: 'anthropic' | 'openai' }[] = [
+  // Anthropic models
+  { value: 'sonnet', label: 'Claude Sonnet 4', provider: 'anthropic' },
+  { value: 'opus', label: 'Claude Opus 4', provider: 'anthropic' },
+  { value: 'haiku', label: 'Claude Haiku 3.5', provider: 'anthropic' },
+  // OpenAI models
+  { value: 'gpt-4o', label: 'GPT-4o', provider: 'openai' },
+  { value: 'gpt-4o-mini', label: 'GPT-4o Mini', provider: 'openai' },
+  { value: 'gpt-4-turbo', label: 'GPT-4 Turbo', provider: 'openai' },
+];
+
 export default function AIChatPanel() {
   const [activePanel, setActivePanel] = useState<ActivePanel>('claude');
   const [isMobile, setIsMobile] = useState(false);
@@ -34,13 +46,13 @@ export default function AIChatPanel() {
   const [claudeMessages, setClaudeMessages] = useState<Message[]>([
     {
       role: 'system',
-      content: 'Claude Code connected. I can help you manage your VPS, edit code, and troubleshoot issues. What would you like to do?',
+      content: 'AI Assistant connected. I can help you manage your VPS, edit code, and troubleshoot issues. What would you like to do?',
       timestamp: new Date(),
     },
   ]);
   const [claudeInput, setClaudeInput] = useState('');
   const [claudeLoading, setClaudeLoading] = useState(false);
-  const [claudeModel, setClaudeModel] = useState<'sonnet' | 'opus' | 'haiku'>('sonnet');
+  const [claudeModel, setClaudeModel] = useState<AIModel>('sonnet');
 
   // Aider state
   const [aiderMessages, setAiderMessages] = useState<Message[]>([
@@ -90,7 +102,7 @@ export default function AIChatPanel() {
       if (res.ok) {
         const session = await res.json();
         setClaudeSessionId(sessionId);
-        setClaudeModel((session.model as 'sonnet' | 'opus' | 'haiku') || 'sonnet');
+        setClaudeModel((session.model as AIModel) || 'sonnet');
         setClaudeMessages(
           session.messages.map((m: { role: string; content: string; createdAt: string }) => ({
             role: m.role as 'user' | 'assistant' | 'system',
@@ -170,7 +182,7 @@ export default function AIChatPanel() {
     setClaudeMessages([
       {
         role: 'system',
-        content: 'Claude Code connected. I can help you manage your VPS, edit code, and troubleshoot issues. What would you like to do?',
+        content: 'AI Assistant connected. I can help you manage your VPS, edit code, and troubleshoot issues. What would you like to do?',
         timestamp: new Date(),
       },
     ]);
@@ -338,6 +350,29 @@ export default function AIChatPanel() {
     setTerminalLoading(false);
   };
 
+  // Get model info
+  const getCurrentModelInfo = () => MODEL_OPTIONS.find(m => m.value === claudeModel);
+
+  // Model selector component
+  const ModelSelector = ({ className = '' }: { className?: string }) => (
+    <select
+      value={claudeModel}
+      onChange={(e) => setClaudeModel(e.target.value as AIModel)}
+      className={`bg-slate-700 border border-slate-600 rounded-lg px-3 py-1.5 text-white text-xs focus:outline-none focus:ring-2 focus:ring-purple-500 ${className}`}
+    >
+      <optgroup label="🟣 Anthropic (Claude)">
+        {MODEL_OPTIONS.filter(m => m.provider === 'anthropic').map(m => (
+          <option key={m.value} value={m.value}>{m.label}</option>
+        ))}
+      </optgroup>
+      <optgroup label="🟢 OpenAI (GPT)">
+        {MODEL_OPTIONS.filter(m => m.provider === 'openai').map(m => (
+          <option key={m.value} value={m.value}>{m.label}</option>
+        ))}
+      </optgroup>
+    </select>
+  );
+
   // History sidebar component
   const HistorySidebar = () => (
     <div className={`${showHistory ? 'block' : 'hidden'} absolute inset-0 z-10 bg-slate-900 md:relative md:block md:w-64 md:border-r md:border-slate-700 flex flex-col`}>
@@ -378,9 +413,18 @@ export default function AIChatPanel() {
                     <p className="text-sm text-white truncate">
                       {session.title || 'Untitled Chat'}
                     </p>
-                    <p className="text-xs text-slate-500 mt-1">
-                      {new Date(session.updatedAt).toLocaleDateString()} • {session._count?.messages || 0} msgs
-                    </p>
+                    <div className="flex items-center gap-2 mt-1">
+                      <span className={`text-[10px] px-1.5 py-0.5 rounded ${
+                        MODEL_OPTIONS.find(m => m.value === session.model)?.provider === 'openai'
+                          ? 'bg-green-500/20 text-green-400'
+                          : 'bg-purple-500/20 text-purple-400'
+                      }`}>
+                        {MODEL_OPTIONS.find(m => m.value === session.model)?.label || session.model}
+                      </span>
+                      <span className="text-xs text-slate-500">
+                        {session._count?.messages || 0} msgs
+                      </span>
+                    </div>
                   </div>
                   <button
                     onClick={(e) => {
@@ -418,8 +462,8 @@ export default function AIChatPanel() {
             📜
           </button>
           {[
-            { id: 'claude', label: 'Claude', icon: '🧠' },
-            { id: 'aider', label: 'Aider', icon: '🤖' },
+            { id: 'claude', label: 'AI Chat', icon: '🤖' },
+            { id: 'aider', label: 'Aider', icon: '✏️' },
             { id: 'terminal', label: 'Terminal', icon: '💻' },
           ].map(tab => (
             <button
@@ -442,26 +486,21 @@ export default function AIChatPanel() {
           {activePanel === 'claude' && (
             <div className="flex-1 flex flex-col overflow-hidden">
               <div className="flex-shrink-0 px-4 py-2 bg-slate-800/50 border-b border-slate-700 flex items-center justify-between">
-                <span className="text-sm text-slate-400">Model:</span>
-                <select
-                  value={claudeModel}
-                  onChange={(e) => setClaudeModel(e.target.value as 'sonnet' | 'opus' | 'haiku')}
-                  className="bg-slate-700 border border-slate-600 rounded-lg px-3 py-1.5 text-white text-xs focus:outline-none focus:ring-2 focus:ring-purple-500"
-                >
-                  <option value="sonnet">Sonnet 4</option>
-                  <option value="opus">Opus 4</option>
-                  <option value="haiku">Haiku 3.5</option>
-                </select>
+                <div className="flex items-center gap-2">
+                  <span className={`w-2 h-2 rounded-full ${getCurrentModelInfo()?.provider === 'openai' ? 'bg-green-500' : 'bg-purple-500'}`} />
+                  <span className="text-xs text-slate-400">{getCurrentModelInfo()?.provider === 'openai' ? 'OpenAI' : 'Anthropic'}</span>
+                </div>
+                <ModelSelector />
               </div>
               <ChatPanel
-                title="Claude Code"
+                title="AI Chat"
                 messages={claudeMessages}
                 input={claudeInput}
                 setInput={setClaudeInput}
                 onSend={handleClaudeSend}
                 loading={claudeLoading}
                 endRef={claudeEndRef}
-                placeholder="Ask Claude anything..."
+                placeholder="Ask anything..."
               />
             </div>
           )}
@@ -499,9 +538,9 @@ export default function AIChatPanel() {
       <HistorySidebar />
 
       <div className="flex-1 flex flex-col">
-        {/* Top section - Claude and Aider side by side */}
+        {/* Top section - AI Chat and Aider side by side */}
         <div className="flex-1 flex overflow-hidden border-b border-slate-700">
-          {/* Claude Chat */}
+          {/* AI Chat */}
           <div className="flex-1 flex flex-col border-r border-slate-700">
             <div className="flex-shrink-0 px-4 py-3 bg-slate-800/50 border-b border-slate-700">
               <div className="flex items-center justify-between">
@@ -514,20 +553,15 @@ export default function AIChatPanel() {
                   </button>
                   <div>
                     <h3 className="font-semibold text-white flex items-center gap-2">
-                      <span>🧠</span> Claude Code
+                      <span className={`w-2 h-2 rounded-full ${getCurrentModelInfo()?.provider === 'openai' ? 'bg-green-500' : 'bg-purple-500'}`} />
+                      AI Chat
                     </h3>
-                    <p className="text-xs text-slate-500">AI assistant for your VPS</p>
+                    <p className="text-xs text-slate-500">
+                      {getCurrentModelInfo()?.provider === 'openai' ? '🟢 OpenAI' : '🟣 Anthropic'}
+                    </p>
                   </div>
                 </div>
-                <select
-                  value={claudeModel}
-                  onChange={(e) => setClaudeModel(e.target.value as 'sonnet' | 'opus' | 'haiku')}
-                  className="bg-slate-700 border border-slate-600 rounded-lg px-3 py-1.5 text-white text-xs focus:outline-none focus:ring-2 focus:ring-purple-500"
-                >
-                  <option value="sonnet">Sonnet 4 (Balanced)</option>
-                  <option value="opus">Opus 4 (Powerful)</option>
-                  <option value="haiku">Haiku 3.5 (Fast)</option>
-                </select>
+                <ModelSelector />
               </div>
             </div>
             <ChatPanel
@@ -537,7 +571,7 @@ export default function AIChatPanel() {
               onSend={handleClaudeSend}
               loading={claudeLoading}
               endRef={claudeEndRef}
-              placeholder="Ask Claude anything..."
+              placeholder="Ask anything..."
             />
           </div>
 
@@ -545,7 +579,7 @@ export default function AIChatPanel() {
           <div className="flex-1 flex flex-col">
             <div className="flex-shrink-0 px-4 py-3 bg-slate-800/50 border-b border-slate-700">
               <h3 className="font-semibold text-white flex items-center gap-2">
-                <span>🤖</span> Aider Editor
+                <span>✏️</span> Aider Editor
               </h3>
               <p className="text-xs text-slate-500">AI code editing on VPS</p>
             </div>

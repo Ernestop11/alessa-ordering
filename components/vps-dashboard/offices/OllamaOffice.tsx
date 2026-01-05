@@ -1,6 +1,6 @@
 'use client';
 
-import { useState, useEffect, useRef } from 'react';
+import { useState, useEffect, useRef, useCallback } from 'react';
 
 interface OllamaModel {
   name: string;
@@ -20,6 +20,16 @@ interface Message {
   role: 'user' | 'assistant' | 'system';
   content: string;
   timestamp: Date;
+}
+
+interface ChatSession {
+  id: string;
+  panelType: string;
+  title: string | null;
+  model: string | null;
+  createdAt: string;
+  updatedAt: string;
+  _count?: { messages: number };
 }
 
 interface OllamaOfficeProps {
@@ -59,6 +69,12 @@ export default function OllamaOffice({ onClose }: OllamaOfficeProps) {
   const [pullStatus, setPullStatus] = useState<string | null>(null);
   const messagesEndRef = useRef<HTMLDivElement>(null);
 
+  // Session management for persistence
+  const [sessionId, setSessionId] = useState<string | null>(null);
+  const [sessions, setSessions] = useState<ChatSession[]>([]);
+  const [sessionsLoading, setSessionsLoading] = useState(false);
+  const [showHistory, setShowHistory] = useState(false);
+
   const scrollToBottom = () => {
     messagesEndRef.current?.scrollIntoView({ behavior: 'smooth' });
   };
@@ -69,6 +85,116 @@ export default function OllamaOffice({ onClose }: OllamaOfficeProps) {
 
   useEffect(() => {
     fetchStatus();
+    loadSessions();
+  }, []);
+
+  // Load chat sessions
+  const loadSessions = useCallback(async () => {
+    setSessionsLoading(true);
+    try {
+      const res = await fetch('/api/vps-dashboard/chat-history?panelType=ollama');
+      if (res.ok) {
+        const data = await res.json();
+        setSessions(data.sessions || []);
+      }
+    } catch (error) {
+      console.error('Failed to load sessions:', error);
+    }
+    setSessionsLoading(false);
+  }, []);
+
+  // Load specific session
+  const loadSession = useCallback(async (sid: string) => {
+    try {
+      const res = await fetch(`/api/vps-dashboard/chat-history?sessionId=${sid}`);
+      if (res.ok) {
+        const session = await res.json();
+        setSessionId(sid);
+        if (session.model) setSelectedModel(session.model);
+        setMessages(
+          session.messages.map((m: { role: string; content: string; createdAt: string }) => ({
+            role: m.role as 'user' | 'assistant' | 'system',
+            content: m.content,
+            timestamp: new Date(m.createdAt),
+          }))
+        );
+        setShowHistory(false);
+      }
+    } catch (error) {
+      console.error('Failed to load session:', error);
+    }
+  }, []);
+
+  // Create new session
+  const createSession = useCallback(async (firstMessage: string) => {
+    try {
+      const res = await fetch('/api/vps-dashboard/chat-history', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({
+          action: 'create-session',
+          panelType: 'ollama',
+          model: selectedModel,
+          content: firstMessage,
+        }),
+      });
+      if (res.ok) {
+        const data = await res.json();
+        setSessionId(data.session.id);
+        return data.session.id;
+      }
+    } catch (error) {
+      console.error('Failed to create session:', error);
+    }
+    return null;
+  }, [selectedModel]);
+
+  // Save message to session
+  const saveMessage = useCallback(async (sid: string, role: string, content: string) => {
+    try {
+      await fetch('/api/vps-dashboard/chat-history', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({
+          action: 'add-message',
+          sessionId: sid,
+          role,
+          content,
+        }),
+      });
+    } catch (error) {
+      console.error('Failed to save message:', error);
+    }
+  }, []);
+
+  // Delete session
+  const deleteSession = useCallback(async (sid: string) => {
+    try {
+      const res = await fetch(`/api/vps-dashboard/chat-history?sessionId=${sid}`, {
+        method: 'DELETE',
+      });
+      if (res.ok) {
+        setSessions(prev => prev.filter(s => s.id !== sid));
+        if (sessionId === sid) {
+          startNewChat();
+        }
+      }
+    } catch (error) {
+      console.error('Failed to delete session:', error);
+    }
+  }, [sessionId]);
+
+  // Start new chat
+  const startNewChat = useCallback(() => {
+    setSessionId(null);
+    setMessages([
+      {
+        role: 'system',
+        content: 'Welcome to Ollama! This is your local AI running on the VPS - no API costs, works offline.',
+        timestamp: new Date(),
+      },
+    ]);
+    setShowHistory(false);
   }, []);
 
   async function fetchStatus() {
@@ -99,8 +225,20 @@ export default function OllamaOffice({ onClose }: OllamaOfficeProps) {
     };
 
     setMessages((prev) => [...prev, userMessage]);
+    const inputText = input;
     setInput('');
     setIsGenerating(true);
+
+    // Create session if needed
+    let sid = sessionId;
+    if (!sid) {
+      sid = await createSession(inputText);
+    }
+
+    // Save user message
+    if (sid) {
+      await saveMessage(sid, 'user', inputText);
+    }
 
     try {
       const res = await fetch('/api/vps-dashboard/ollama', {
@@ -109,20 +247,29 @@ export default function OllamaOffice({ onClose }: OllamaOfficeProps) {
         body: JSON.stringify({
           action: 'chat',
           model: selectedModel,
-          message: input,
+          message: inputText,
         }),
       });
 
       const data = await res.json();
+      const assistantContent = data.response || data.error || 'No response';
 
       setMessages((prev) => [
         ...prev,
         {
           role: 'assistant',
-          content: data.response || data.error || 'No response',
+          content: assistantContent,
           timestamp: new Date(),
         },
       ]);
+
+      // Save assistant message
+      if (sid) {
+        await saveMessage(sid, 'assistant', assistantContent);
+      }
+
+      // Refresh sessions list
+      loadSessions();
     } catch (error) {
       setMessages((prev) => [
         ...prev,
@@ -252,102 +399,171 @@ export default function OllamaOffice({ onClose }: OllamaOfficeProps) {
       </div>
 
       {/* Content */}
-      <div className="flex-1 overflow-hidden">
+      <div className="flex-1 overflow-hidden flex">
         {activeTab === 'chat' && (
-          <div className="h-full flex flex-col">
-            {/* Model Selector */}
-            <div className="p-4 border-b border-slate-700 flex items-center gap-4">
-              <label className="text-sm text-slate-400">Model:</label>
-              <select
-                value={selectedModel}
-                onChange={(e) => setSelectedModel(e.target.value)}
-                className="bg-slate-800 border border-slate-600 rounded-lg px-3 py-1.5 text-white text-sm focus:outline-none focus:ring-2 focus:ring-green-500"
-              >
-                {status?.models?.map((model) => (
-                  <option key={model.name} value={model.name}>
-                    {model.name}
-                  </option>
-                ))}
-                {(!status?.models || status.models.length === 0) && (
-                  <option value="llama3.2">llama3.2 (default)</option>
+          <>
+            {/* History Sidebar */}
+            <div className={`${showHistory ? 'block' : 'hidden'} absolute inset-0 z-10 bg-slate-900 md:relative md:block md:w-56 border-r border-slate-700 flex flex-col`}>
+              <div className="flex-shrink-0 p-3 border-b border-slate-700 flex items-center justify-between">
+                <h3 className="font-semibold text-white text-sm">History</h3>
+                <div className="flex gap-2">
+                  <button
+                    onClick={startNewChat}
+                    className="text-xs px-2 py-1 bg-green-600 hover:bg-green-500 rounded text-white"
+                  >
+                    + New
+                  </button>
+                  <button
+                    onClick={() => setShowHistory(false)}
+                    className="md:hidden text-slate-400 hover:text-white"
+                  >
+                    ✕
+                  </button>
+                </div>
+              </div>
+              <div className="flex-1 overflow-auto">
+                {sessionsLoading ? (
+                  <div className="p-4 text-center text-slate-500 text-sm">Loading...</div>
+                ) : sessions.length === 0 ? (
+                  <div className="p-4 text-center text-slate-500 text-sm">No chat history</div>
+                ) : (
+                  <div className="divide-y divide-slate-800">
+                    {sessions.map(session => (
+                      <div
+                        key={session.id}
+                        className={`p-3 cursor-pointer hover:bg-slate-800 transition-colors ${
+                          sessionId === session.id ? 'bg-slate-800 border-l-2 border-green-500' : ''
+                        }`}
+                        onClick={() => loadSession(session.id)}
+                      >
+                        <div className="flex items-start justify-between gap-2">
+                          <div className="flex-1 min-w-0">
+                            <p className="text-sm text-white truncate">
+                              {session.title || 'Untitled'}
+                            </p>
+                            <p className="text-xs text-slate-500">
+                              {session.model} • {session._count?.messages || 0} msgs
+                            </p>
+                          </div>
+                          <button
+                            onClick={(e) => {
+                              e.stopPropagation();
+                              if (confirm('Delete?')) deleteSession(session.id);
+                            }}
+                            className="text-slate-500 hover:text-red-400 text-xs"
+                          >
+                            🗑️
+                          </button>
+                        </div>
+                      </div>
+                    ))}
+                  </div>
                 )}
-              </select>
-              {status?.models?.length === 0 && (
-                <span className="text-xs text-amber-400">
-                  No models installed. Go to Models tab to download one.
-                </span>
-              )}
+              </div>
             </div>
 
-            {/* Messages */}
-            <div className="flex-1 overflow-auto p-4 space-y-4">
-              {messages.map((msg, i) => (
-                <div
-                  key={i}
-                  className={`flex ${msg.role === 'user' ? 'justify-end' : 'justify-start'}`}
+            {/* Chat Area */}
+            <div className="flex-1 flex flex-col">
+              {/* Model Selector */}
+              <div className="p-4 border-b border-slate-700 flex items-center gap-4">
+                <button
+                  onClick={() => setShowHistory(!showHistory)}
+                  className="md:hidden text-slate-400 hover:text-white"
                 >
-                  <div
-                    className={`max-w-[80%] rounded-xl p-3 ${
-                      msg.role === 'user'
-                        ? 'bg-green-600 text-white'
-                        : msg.role === 'system'
-                        ? 'bg-slate-700 text-slate-300'
-                        : 'bg-emerald-600/20 text-slate-200 border border-emerald-500/30'
-                    }`}
-                  >
-                    <p className="text-sm whitespace-pre-wrap">{msg.content}</p>
-                    <p className="text-xs opacity-50 mt-1">
-                      {msg.timestamp.toLocaleTimeString()}
-                    </p>
-                  </div>
-                </div>
-              ))}
+                  📜
+                </button>
+                <label className="text-sm text-slate-400">Model:</label>
+                <select
+                  value={selectedModel}
+                  onChange={(e) => setSelectedModel(e.target.value)}
+                  className="bg-slate-800 border border-slate-600 rounded-lg px-3 py-1.5 text-white text-sm focus:outline-none focus:ring-2 focus:ring-green-500"
+                >
+                  {status?.models?.map((model) => (
+                    <option key={model.name} value={model.name}>
+                      {model.name}
+                    </option>
+                  ))}
+                  {(!status?.models || status.models.length === 0) && (
+                    <option value="llama3.2">llama3.2 (default)</option>
+                  )}
+                </select>
+                {status?.models?.length === 0 && (
+                  <span className="text-xs text-amber-400">
+                    No models installed. Go to Models tab to download one.
+                  </span>
+                )}
+              </div>
 
-              {isGenerating && (
-                <div className="flex justify-start">
-                  <div className="bg-emerald-600/20 rounded-xl p-3 border border-emerald-500/30">
-                    <div className="flex items-center gap-2">
-                      <div className="w-2 h-2 bg-green-400 rounded-full animate-bounce" />
-                      <div className="w-2 h-2 bg-green-400 rounded-full animate-bounce" style={{ animationDelay: '0.1s' }} />
-                      <div className="w-2 h-2 bg-green-400 rounded-full animate-bounce" style={{ animationDelay: '0.2s' }} />
-                      <span className="text-sm text-slate-400 ml-2">Generating...</span>
+              {/* Messages */}
+              <div className="flex-1 overflow-auto p-4 space-y-4">
+                {messages.map((msg, i) => (
+                  <div
+                    key={i}
+                    className={`flex ${msg.role === 'user' ? 'justify-end' : 'justify-start'}`}
+                  >
+                    <div
+                      className={`max-w-[80%] rounded-xl p-3 ${
+                        msg.role === 'user'
+                          ? 'bg-green-600 text-white'
+                          : msg.role === 'system'
+                          ? 'bg-slate-700 text-slate-300'
+                          : 'bg-emerald-600/20 text-slate-200 border border-emerald-500/30'
+                      }`}
+                    >
+                      <p className="text-sm whitespace-pre-wrap">{msg.content}</p>
+                      <p className="text-xs opacity-50 mt-1">
+                        {msg.timestamp.toLocaleTimeString()}
+                      </p>
                     </div>
                   </div>
-                </div>
-              )}
+                ))}
 
-              <div ref={messagesEndRef} />
-            </div>
+                {isGenerating && (
+                  <div className="flex justify-start">
+                    <div className="bg-emerald-600/20 rounded-xl p-3 border border-emerald-500/30">
+                      <div className="flex items-center gap-2">
+                        <div className="w-2 h-2 bg-green-400 rounded-full animate-bounce" />
+                        <div className="w-2 h-2 bg-green-400 rounded-full animate-bounce" style={{ animationDelay: '0.1s' }} />
+                        <div className="w-2 h-2 bg-green-400 rounded-full animate-bounce" style={{ animationDelay: '0.2s' }} />
+                        <span className="text-sm text-slate-400 ml-2">Generating...</span>
+                      </div>
+                    </div>
+                  </div>
+                )}
 
-            {/* Input */}
-            <div className="p-4 border-t border-slate-700">
-              <div className="flex gap-2">
-                <textarea
-                  value={input}
-                  onChange={(e) => setInput(e.target.value)}
-                  onKeyDown={handleKeyDown}
-                  placeholder="Ask Ollama anything..."
-                  className="flex-1 bg-slate-700 border border-slate-600 rounded-lg px-4 py-2 text-white placeholder-slate-400 resize-none focus:outline-none focus:ring-2 focus:ring-green-500"
-                  rows={2}
-                  disabled={status?.status !== 'running'}
-                />
-                <button
-                  onClick={handleSend}
-                  disabled={!input.trim() || isGenerating || status?.status !== 'running'}
-                  className="px-4 bg-green-600 hover:bg-green-500 disabled:bg-slate-600 disabled:cursor-not-allowed text-white rounded-lg font-medium transition-colors"
-                >
-                  Send
-                </button>
+                <div ref={messagesEndRef} />
               </div>
-              <p className="text-xs text-slate-500 mt-2">
-                Free local AI - no API costs. Press Enter to send.
-              </p>
+
+              {/* Input */}
+              <div className="p-4 border-t border-slate-700">
+                <div className="flex gap-2">
+                  <textarea
+                    value={input}
+                    onChange={(e) => setInput(e.target.value)}
+                    onKeyDown={handleKeyDown}
+                    placeholder="Ask Ollama anything..."
+                    className="flex-1 bg-slate-700 border border-slate-600 rounded-lg px-4 py-2 text-white placeholder-slate-400 resize-none focus:outline-none focus:ring-2 focus:ring-green-500"
+                    rows={2}
+                    disabled={status?.status !== 'running'}
+                  />
+                  <button
+                    onClick={handleSend}
+                    disabled={!input.trim() || isGenerating || status?.status !== 'running'}
+                    className="px-4 bg-green-600 hover:bg-green-500 disabled:bg-slate-600 disabled:cursor-not-allowed text-white rounded-lg font-medium transition-colors"
+                  >
+                    Send
+                  </button>
+                </div>
+                <p className="text-xs text-slate-500 mt-2">
+                  Free local AI - no API costs. Press Enter to send.
+                </p>
+              </div>
             </div>
-          </div>
+          </>
         )}
 
         {activeTab === 'models' && (
-          <div className="p-6 space-y-6 overflow-auto h-full">
+          <div className="p-6 space-y-6 overflow-auto flex-1">
             {/* Pull Status */}
             {pullStatus && (
               <div className="bg-blue-500/20 border border-blue-500/30 rounded-lg p-4 text-blue-300">
@@ -425,7 +641,7 @@ export default function OllamaOffice({ onClose }: OllamaOfficeProps) {
         )}
 
         {activeTab === 'info' && (
-          <div className="p-6 space-y-6 overflow-auto h-full">
+          <div className="p-6 space-y-6 overflow-auto flex-1">
             {/* What is Ollama */}
             <div className="bg-slate-800 rounded-xl p-6 border border-slate-700">
               <h3 className="text-lg font-semibold text-white mb-4 flex items-center gap-2">
