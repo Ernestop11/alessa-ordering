@@ -37,13 +37,13 @@ function PageNode({ data }: PageNodeProps) {
       {/* Handle for connections */}
       <Handle
         type="target"
-        position={Position.Top}
-        className="!bg-slate-600 !border-slate-500 !w-2 !h-2 !opacity-0"
+        position={Position.Left}
+        className="!bg-slate-600 !border-slate-500 !w-2 !h-2"
       />
       <Handle
         type="source"
-        position={Position.Bottom}
-        className="!bg-slate-600 !border-slate-500 !w-2 !h-2 !opacity-0"
+        position={Position.Right}
+        className="!bg-slate-600 !border-slate-500 !w-2 !h-2"
       />
 
       {/* Type indicator (client/server) */}
