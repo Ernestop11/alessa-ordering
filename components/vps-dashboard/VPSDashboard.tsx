@@ -19,6 +19,8 @@ import PostgresOffice from './offices/PostgresOffice';
 import RedisOffice from './offices/RedisOffice';
 import StatusLights from './StatusLights';
 import FixModal from './panels/FixModal';
+import ToolsOffice from './offices/ToolsOffice';
+import AIChatPanel from './panels/AIChatPanel';
 
 interface VPSDashboardProps {
   initialPages: VPSPageNode[];
@@ -33,7 +35,7 @@ interface VPSDashboardProps {
   };
 }
 
-type ViewMode = 'overview' | 'pages' | 'apis' | 'nginx' | 'pm2' | 'postgres' | 'redis' | 'status';
+type ViewMode = 'overview' | 'pages' | 'apis' | 'nginx' | 'pm2' | 'postgres' | 'redis' | 'status' | 'tools' | 'ai-chat';
 
 export default function VPSDashboard({
   initialPages,
@@ -170,7 +172,9 @@ export default function VPSDashboard({
             { id: 'redis', label: 'Redis', icon: '⚡', color: 'text-red-400' },
             { id: 'pages', label: `Pages (${currentPageStats.total})`, icon: '📄' },
             { id: 'apis', label: `APIs (${apiRoutes.length})`, icon: '🔌' },
+            { id: 'tools', label: 'Tools', icon: '🧰', color: 'text-orange-400' },
             { id: 'status', label: 'Status', icon: '🚨', color: 'text-yellow-400' },
+            { id: 'ai-chat', label: 'AI Chat', icon: '🤖', color: 'text-purple-400' },
           ].map((tab) => (
             <button
               key={tab.id}
@@ -280,6 +284,14 @@ export default function VPSDashboard({
 
           {viewMode === 'status' && (
             <StatusLights system={system} />
+          )}
+
+          {viewMode === 'tools' && (
+            <ToolsOffice onClose={handleCloseOffice} />
+          )}
+
+          {viewMode === 'ai-chat' && (
+            <AIChatPanel />
           )}
         </div>
 
