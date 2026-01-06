@@ -2873,11 +2873,11 @@ export default function OrderPageClientLaPoblanita({
       {/* Mobile Section Navigation - Fixed below header (matches Las Reinas pattern) */}
       {/* Seamless gradient: continues header's dark gradient for unified look */}
       <div
-        className="fixed left-0 right-0 sm:hidden border-b border-white/5 shadow-lg transition-all duration-300 ease-out"
+        className="fixed left-0 right-0 sm:hidden transition-all duration-300 ease-out"
         style={{
           top: isScrolled ? 'calc(env(safe-area-inset-top, 0px) + 56px)' : 'calc(env(safe-area-inset-top, 0px) + 72px)',
           zIndex: 35,
-          background: 'linear-gradient(to bottom, var(--tenant-gradient-from) 0%, var(--tenant-gradient-via) 100%)',
+          background: 'linear-gradient(180deg, rgba(15,23,42,0.98) 0%, rgba(12,18,32,0.98) 40%, rgba(13,13,13,0.95) 100%)',
         }}
       >
         {/* Closed status indicator - integrated into nav bar */}
@@ -2912,12 +2912,11 @@ export default function OrderPageClientLaPoblanita({
       {/* Main content wrapper */}
       <div className="relative z-10">
       {/* Warm Header - Sticky with safe area support for iPhone notch/Dynamic Island */}
-      {/* Added pb-14 on mobile (sm:pb-0) to extend gradient down and eliminate gap with nav bar */}
       <header
-        className={`fixed top-0 left-0 right-0 z-40 shadow-lg transition-all duration-300 pb-14 sm:pb-0`}
+        className={`fixed top-0 left-0 right-0 z-40 transition-all duration-300`}
         style={{
           paddingTop: 'env(safe-area-inset-top, 0px)',
-          background: `linear-gradient(to bottom, var(--tenant-gradient-from) 0%, var(--tenant-gradient-via) 40%, var(--tenant-gradient-to) 100%)`
+          background: `linear-gradient(180deg, var(--tenant-gradient-from) 0%, var(--tenant-gradient-via) 40%, var(--tenant-gradient-to) 85%, rgba(15,23,42,0.98) 100%)`
         }}
       >
         <div className="mx-auto max-w-7xl px-4">
