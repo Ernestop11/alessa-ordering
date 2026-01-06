@@ -106,10 +106,11 @@ function PagesCanvasInner({ pages, onPageSelect, selectedPageId, tenants = [] }:
   const [selectedTenant, setSelectedTenant] = useState<TenantInfo | null>(null);
   const savedPositions = useRef<Record<string, { x: number; y: number }>>(loadSavedPositions());
   const saveTimeoutRef = useRef<NodeJS.Timeout | null>(null);
+  const isInitialMount = useRef(true);
 
-  const getPosition = (id: string, defaultPos: { x: number; y: number }) => {
+  const getPosition = useCallback((id: string, defaultPos: { x: number; y: number }) => {
     return savedPositions.current[id] || defaultPos;
-  };
+  }, []);
 
   // Group pages by route prefix
   const pagesByRoute = useMemo(() => {
@@ -298,11 +299,16 @@ function PagesCanvasInner({ pages, onPageSelect, selectedPageId, tenants = [] }:
   const [nodes, setNodes, onNodesChange] = useNodesState(initialNodes);
   const [edges, setEdges, onEdgesChange] = useEdgesState(initialEdges);
 
-  // Update when view mode changes
+  // Update when view mode or tenant selection changes (skip initial mount)
   useEffect(() => {
+    if (isInitialMount.current) {
+      isInitialMount.current = false;
+      return;
+    }
     setNodes(initialNodes);
     setEdges(initialEdges);
-  }, [initialNodes, initialEdges, setNodes, setEdges]);
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [viewMode, selectedTenant?.id, tenants.length, pages.length, selectedPageId]);
 
   // Save positions on drag end
   const handleNodesChange = useCallback((changes: NodeChange[]) => {
