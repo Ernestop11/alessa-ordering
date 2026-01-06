@@ -62,6 +62,18 @@ const TENANT_THEME_MAP: Record<string, StaticTenantTheme> = {
       logo: '/tenant/elhornito/logo.png',
     },
   },
+  taqueriarosita: {
+    slug: 'taqueriarosita',
+    name: 'Taqueria Rosita',
+    primaryColor: '#dc2626', // red-600 - classic taqueria red
+    secondaryColor: '#fbbf24', // amber-400 - warm accent
+    themeColor: '#7f1d1d', // red-900 for status bar
+    assets: {
+      hero: '/tenant/taqueriarosita/hero.jpg',
+      membership: '/tenant/taqueriarosita/membership.jpg',
+      logo: '/tenant/taqueriarosita/logo.png',
+    },
+  },
 };
 
 export function getStaticTenantTheme(slug?: string): StaticTenantTheme {

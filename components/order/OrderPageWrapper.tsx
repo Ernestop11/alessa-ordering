@@ -40,13 +40,22 @@ const OrderPageClientLaPoblanita = dynamic(
   { ssr: false, loading: LoadingSpinner }
 );
 
+const OrderPageClientTaqueriaRosita = dynamic(
+  () => import('./OrderPageClientTaqueriaRosita').then(mod => mod.default),
+  { ssr: false, loading: LoadingSpinner }
+);
+
+const OrderPageClientVillaCorona = dynamic(
+  () => import('./OrderPageClientVillaCorona').then(mod => mod.default),
+  { ssr: false, loading: LoadingSpinner }
+);
+
 // Map of tenant slugs to their specific components
 // Tenants NOT listed here will use the default OrderPageClient
 const TENANT_SPECIFIC_COMPONENTS: Record<string, React.ComponentType<any>> = {
   'lapoblanita': OrderPageClientLaPoblanita,
-  // Add more tenants as needed:
-  // 'villacorona': OrderPageClientVillaCorona,
-  // 'taqueriarosita': OrderPageClientTaqueriaRosita,
+  'taqueriarosita': OrderPageClientTaqueriaRosita,
+  'villacorona': OrderPageClientVillaCorona,
 };
 
 const PolishedOrderPage = dynamic(
