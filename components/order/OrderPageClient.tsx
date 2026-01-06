@@ -2791,16 +2791,11 @@ export default function OrderPageClient({
 
       {/* Mobile Section Navigation - Fixed below header (OUTSIDE z-10 wrapper for proper stacking) */}
       <div
-        className={`fixed left-0 right-0 sm:hidden border-b transition-all duration-300 ease-out ${
-          restaurantIsOpen
-            ? 'border-white/5'
-            : 'border-red-700/30'
-        }`}
+        className="fixed left-0 right-0 sm:hidden transition-all duration-300 ease-out"
         style={{
           top: isScrolled ? 'calc(env(safe-area-inset-top, 0px) + 64px)' : 'calc(env(safe-area-inset-top, 0px) + 88px)',
           zIndex: 35,
-          background: `linear-gradient(to bottom, var(--tenant-gradient-to) 0%, rgba(13,13,13,0.98) 100%)`,
-          boxShadow: '0 4px 30px rgba(0,0,0,0.5), 0 1px 0 rgba(255,255,255,0.03) inset'
+          background: `linear-gradient(180deg, rgba(30,15,15,0.98) 0%, rgba(20,12,12,0.98) 40%, rgba(13,13,13,0.95) 100%)`
         }}
       >
         {/* Closed status indicator - integrated into nav bar */}
@@ -2839,8 +2834,7 @@ export default function OrderPageClient({
         className={`fixed top-0 left-0 right-0 z-40 transition-all duration-300`}
         style={{
           paddingTop: 'env(safe-area-inset-top, 0px)',
-          background: `linear-gradient(180deg, var(--tenant-gradient-from) 0%, var(--tenant-gradient-via) 50%, var(--tenant-gradient-to) 100%)`,
-          boxShadow: '0 4px 30px rgba(92,21,21,0.4), 0 8px 40px rgba(0,0,0,0.3)'
+          background: `linear-gradient(180deg, var(--tenant-gradient-from) 0%, var(--tenant-gradient-via) 40%, var(--tenant-gradient-to) 85%, rgba(30,15,15,0.98) 100%)`
         }}
       >
         <div className="mx-auto max-w-7xl px-4">
