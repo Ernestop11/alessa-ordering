@@ -3,6 +3,7 @@
 import Image from 'next/image';
 import { OrderMenuItem } from './OrderPageClient';
 import { getStockImageForCategory } from '../../lib/menu-imagery';
+import { getCardStyleClasses, getGlowClass, type TemplateSettings } from '@/lib/template-renderer';
 
 interface MenuItemCardProps {
   item: OrderMenuItem & { displayImage: string };
@@ -12,6 +13,7 @@ interface MenuItemCardProps {
   onAddToCart: () => void;
   onCustomize: () => void;
   isInCart?: boolean;
+  templateSettings?: TemplateSettings;
 }
 
 export default function MenuItemCard({
@@ -22,10 +24,16 @@ export default function MenuItemCard({
   onAddToCart,
   onCustomize,
   isInCart = false,
+  templateSettings,
 }: MenuItemCardProps) {
   const imageSrc = item.displayImage || getStockImageForCategory(item.category || sectionType, 0);
   const isExternalImage = imageSrc.startsWith('http');
   const isTenantImage = imageSrc.startsWith('/tenant/');
+
+  // Dynamic card styling from template settings
+  const cardStyle = templateSettings ? getCardStyleClasses(templateSettings.cardStyle) : '';
+  const glowStyle = templateSettings?.glowEffect ? getGlowClass(templateSettings.glowEffect, templateSettings.primaryColor) : '';
+  const hasTemplateStyle = !!cardStyle;
 
   // Unified gradient button style - more rounded, refined gradient
   const gradientButton = `
@@ -187,8 +195,12 @@ export default function MenuItemCard({
   }
 
   // Grid layout (default) - Compact mobile-first card
+  // Use template styles if available, otherwise fallback to default
+  const defaultCardClasses = 'bg-white/[0.03] backdrop-blur-sm border-white/[0.08] hover:border-white/20 hover:shadow-white/5';
+  const templateCardClasses = hasTemplateStyle ? `${cardStyle} ${glowStyle}` : defaultCardClasses;
+
   return (
-    <article className={`group relative overflow-hidden rounded-xl sm:rounded-2xl bg-white/[0.03] backdrop-blur-sm border transition-all duration-300 hover:shadow-xl ${isInCart ? 'border-amber-400/60 ring-1 ring-amber-400/30 hover:border-amber-400/80' : 'border-white/[0.08] hover:border-white/20 hover:shadow-white/5'}`}>
+    <article className={`group relative overflow-hidden rounded-xl sm:rounded-2xl transition-all duration-300 hover:shadow-xl ${isInCart ? 'border-amber-400/60 ring-1 ring-amber-400/30 hover:border-amber-400/80 border' : templateCardClasses}`}>
       {/* Image container - shorter on mobile */}
       <div className="relative aspect-square sm:aspect-[4/3] w-full overflow-hidden bg-[#1a1a1a]">
         {isExternalImage ? (

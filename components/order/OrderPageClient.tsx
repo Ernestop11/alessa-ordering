@@ -4294,6 +4294,7 @@ export default function OrderPageClient({
                 onAddToCart={handleAddToCart}
                 onCustomize={openCustomization}
                 cartItemIds={cartItemIds}
+                templateSettings={templateSettings}
               />
             </section>
           </div>

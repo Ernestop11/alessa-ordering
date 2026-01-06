@@ -2,6 +2,7 @@
 
 import { OrderMenuSection, OrderMenuItem } from './OrderPageClient';
 import MenuItemCard from './MenuItemCard';
+import { type TemplateSettings } from '@/lib/template-renderer';
 
 interface MenuSectionGridProps {
   section: OrderMenuSection;
@@ -9,6 +10,7 @@ interface MenuSectionGridProps {
   onAddToCart: (item: OrderMenuItem, image?: string) => void;
   onCustomize: (item: OrderMenuItem & { displayImage: string }, sectionType: string) => void;
   cartItemIds?: string[];
+  templateSettings?: TemplateSettings;
 }
 
 export default function MenuSectionGrid({
@@ -17,6 +19,7 @@ export default function MenuSectionGrid({
   onAddToCart,
   onCustomize,
   cartItemIds = [],
+  templateSettings,
 }: MenuSectionGridProps) {
   // Mobile: 2 columns, Desktop: 3 columns for grid layout
   const gridClass = layout === 'grid'
@@ -38,6 +41,7 @@ export default function MenuSectionGrid({
           onAddToCart={() => onAddToCart(item, item.displayImage || item.image || undefined)}
           onCustomize={() => onCustomize(item as OrderMenuItem & { displayImage: string }, section.type)}
           isInCart={cartItemIds.includes(item.id)}
+          templateSettings={templateSettings}
         />
       ))}
     </div>
