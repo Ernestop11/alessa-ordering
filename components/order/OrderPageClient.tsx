@@ -2858,18 +2858,18 @@ export default function OrderPageClient({
 
               {/* Logo - Desktop Only (left side) */}
               <div className="relative flex-shrink-0 group hidden md:block">
-                <div className={`relative rounded-full bg-white shadow-xl ring-2 ring-white/50 transition-all duration-300 ${isScrolled ? 'p-1' : 'p-1.5'}`}>
+                <div className={`relative rounded-full bg-white shadow-xl ring-2 ring-white/50 transition-all duration-300 ${isScrolled ? 'p-0.5' : 'p-1'}`}>
                   {tenant.logoUrl ? (
                     <Image
                       src={tenant.logoUrl}
                       alt={`${tenant.name} logo`}
-                      width={80}
-                      height={80}
-                      className={`rounded-full object-contain transition-all duration-300 ${isScrolled ? 'h-12 w-12' : 'h-16 w-16'}`}
+                      width={48}
+                      height={48}
+                      className={`rounded-full object-contain transition-all duration-300 ${isScrolled ? 'h-10 w-10' : 'h-12 w-12'}`}
                       unoptimized={tenant.logoUrl.startsWith('/tenant/')}
                     />
                   ) : (
-                    <div className={`flex items-center justify-center rounded-full bg-gradient-to-br from-red-600 to-amber-500 transition-all duration-300 ${isScrolled ? 'h-12 w-12 text-xl' : 'h-16 w-16 text-2xl'}`}>🍽️</div>
+                    <div className={`flex items-center justify-center rounded-full bg-gradient-to-br from-red-600 to-amber-500 transition-all duration-300 ${isScrolled ? 'h-10 w-10 text-lg' : 'h-12 w-12 text-xl'}`}>🍽️</div>
                   )}
                 </div>
               </div>
@@ -2918,13 +2918,13 @@ export default function OrderPageClient({
                     <Image
                       src={tenant.logoUrl}
                       alt={`${tenant.name} logo`}
-                      width={64}
-                      height={64}
-                      className={`rounded-full object-contain transition-all duration-300 ${isScrolled ? 'h-11 w-11' : 'h-14 w-14'}`}
+                      width={48}
+                      height={48}
+                      className={`rounded-full object-contain transition-all duration-300 ${isScrolled ? 'h-9 w-9' : 'h-11 w-11'}`}
                       unoptimized={tenant.logoUrl.startsWith('/tenant/')}
                     />
                   ) : (
-                    <div className={`flex items-center justify-center rounded-full bg-gradient-to-br from-red-600 to-amber-500 transition-all duration-300 ${isScrolled ? 'h-11 w-11 text-xl' : 'h-14 w-14 text-2xl'}`}>🍽️</div>
+                    <div className={`flex items-center justify-center rounded-full bg-gradient-to-br from-red-600 to-amber-500 transition-all duration-300 ${isScrolled ? 'h-9 w-9 text-lg' : 'h-11 w-11 text-xl'}`}>🍽️</div>
                   )}
                 </div>
               </button>
