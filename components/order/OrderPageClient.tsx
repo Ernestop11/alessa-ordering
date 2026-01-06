@@ -2791,14 +2791,16 @@ export default function OrderPageClient({
 
       {/* Mobile Section Navigation - Fixed below header (OUTSIDE z-10 wrapper for proper stacking) */}
       <div
-        className={`fixed left-0 right-0 sm:hidden backdrop-blur-sm border-b shadow-lg transition-all duration-300 ease-out ${
+        className={`fixed left-0 right-0 sm:hidden border-b transition-all duration-300 ease-out ${
           restaurantIsOpen
-            ? 'bg-[#0d0d0d]/95 border-white/10'
-            : 'bg-gradient-to-r from-red-900/95 to-[#0d0d0d]/95 border-red-700/30'
+            ? 'border-white/5'
+            : 'border-red-700/30'
         }`}
         style={{
           top: isScrolled ? 'calc(env(safe-area-inset-top, 0px) + 64px)' : 'calc(env(safe-area-inset-top, 0px) + 88px)',
-          zIndex: 35
+          zIndex: 35,
+          background: `linear-gradient(to bottom, var(--tenant-gradient-to) 0%, rgba(13,13,13,0.98) 100%)`,
+          boxShadow: '0 4px 30px rgba(0,0,0,0.5), 0 1px 0 rgba(255,255,255,0.03) inset'
         }}
       >
         {/* Closed status indicator - integrated into nav bar */}
@@ -2822,7 +2824,7 @@ export default function OrderPageClient({
                   window.scrollTo({ top: y, behavior: 'smooth' });
                 }
               }}
-              className="flex-shrink-0 px-4 py-2 rounded-full text-xs font-semibold bg-white/10 text-white/90 border border-white/20 active:bg-[#DC2626] active:border-[#DC2626] active:text-white active:scale-95 transition-all whitespace-nowrap touch-manipulation"
+              className="flex-shrink-0 px-4 py-2 rounded-full text-xs font-semibold bg-white/[0.08] text-white/90 border border-white/[0.15] shadow-sm active:bg-gradient-to-r active:from-red-700 active:to-red-600 active:border-red-500/50 active:text-white active:scale-95 active:shadow-lg active:shadow-red-900/30 transition-all whitespace-nowrap touch-manipulation"
             >
               {section.name}
             </button>
@@ -2834,10 +2836,11 @@ export default function OrderPageClient({
       <div className="relative z-10">
       {/* Warm Header - Sticky with safe area support for iPhone notch/Dynamic Island */}
       <header
-        className={`fixed top-0 left-0 right-0 z-40 shadow-lg transition-all duration-300`}
+        className={`fixed top-0 left-0 right-0 z-40 transition-all duration-300`}
         style={{
           paddingTop: 'env(safe-area-inset-top, 0px)',
-          background: `linear-gradient(to bottom, var(--tenant-gradient-from) 0%, var(--tenant-gradient-via) 40%, var(--tenant-gradient-to) 100%)`
+          background: `linear-gradient(180deg, var(--tenant-gradient-from) 0%, var(--tenant-gradient-via) 50%, var(--tenant-gradient-to) 100%)`,
+          boxShadow: '0 4px 30px rgba(92,21,21,0.4), 0 8px 40px rgba(0,0,0,0.3)'
         }}
       >
         <div className="mx-auto max-w-7xl px-4">
