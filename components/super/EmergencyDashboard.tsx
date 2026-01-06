@@ -17,6 +17,10 @@ import {
   Activity,
   Copy,
   ExternalLink,
+  Send,
+  Eye,
+  X,
+  Loader2,
 } from 'lucide-react';
 
 interface AffectedCustomer {
@@ -93,9 +97,24 @@ interface DashboardData {
 }
 
 export default function EmergencyDashboard({ data }: { data: DashboardData }) {
-  const [activeTab, setActiveTab] = useState<'overview' | 'customers' | 'failures' | 'logs'>('overview');
+  const [activeTab, setActiveTab] = useState<'overview' | 'customers' | 'failures' | 'logs' | 'email'>('overview');
   const [refreshing, setRefreshing] = useState(false);
   const [copiedEmail, setCopiedEmail] = useState<string | null>(null);
+
+  // Email modal state
+  const [showEmailModal, setShowEmailModal] = useState(false);
+  const [selectedTenant, setSelectedTenant] = useState<TenantMetric | null>(null);
+  const [emailPreview, setEmailPreview] = useState<string | null>(null);
+  const [loadingPreview, setLoadingPreview] = useState(false);
+  const [sendingEmail, setSendingEmail] = useState(false);
+  const [emailSent, setEmailSent] = useState(false);
+  const [emailForm, setEmailForm] = useState({
+    recipientEmail: '',
+    recipientName: '',
+    rootCause: 'A technical issue with our checkout system caused the shopping cart to appear empty when customers tried to complete their orders. This was due to a synchronization problem between our cart storage and checkout page.',
+    resolution: 'Our engineering team identified and fixed the issue. The checkout system is now working correctly, and all cart data is properly synchronized.',
+    incidentDate: 'December 30, 2025 - January 6, 2026',
+  });
 
   const handleRefresh = () => {
     setRefreshing(true);
@@ -106,6 +125,110 @@ export default function EmergencyDashboard({ data }: { data: DashboardData }) {
     navigator.clipboard.writeText(text);
     setCopiedEmail(text);
     setTimeout(() => setCopiedEmail(null), 2000);
+  };
+
+  // Open email modal for a tenant
+  const openEmailModal = async (tenant: TenantMetric) => {
+    setSelectedTenant(tenant);
+    setShowEmailModal(true);
+    setEmailPreview(null);
+    setEmailSent(false);
+    setLoadingPreview(true);
+
+    try {
+      // Find tenant ID from the metrics (we need to fetch it)
+      const res = await fetch(`/api/super-admin/incidents?tenantId=${encodeURIComponent(tenant.tenantSlug)}&action=preview`);
+      if (res.ok) {
+        const data = await res.json();
+        setEmailPreview(data.emailPreview?.html || null);
+        if (data.tenant?.contactEmail) {
+          setEmailForm(prev => ({
+            ...prev,
+            recipientEmail: data.tenant.contactEmail,
+            recipientName: data.tenant.name + ' Owner',
+          }));
+        }
+      }
+    } catch (err) {
+      console.error('Failed to load preview:', err);
+    } finally {
+      setLoadingPreview(false);
+    }
+  };
+
+  // Send email
+  const handleSendEmail = async () => {
+    if (!selectedTenant || !emailForm.recipientEmail) return;
+
+    setSendingEmail(true);
+    try {
+      const res = await fetch('/api/super-admin/incidents', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({
+          action: 'send_tenant_report',
+          tenantId: selectedTenant.tenantSlug,
+          recipientEmail: emailForm.recipientEmail,
+          recipientName: emailForm.recipientName,
+          rootCause: emailForm.rootCause,
+          resolution: emailForm.resolution,
+          incidentDate: emailForm.incidentDate,
+          preventionSteps: [
+            'Implemented real-time monitoring dashboard for checkout success rates',
+            'Added automated alerts when success rate drops below threshold',
+            'Created customer contact list for rapid incident response',
+            'Enhanced testing procedures for cart and checkout flows',
+          ],
+        }),
+      });
+
+      const result = await res.json();
+      if (result.success) {
+        setEmailSent(true);
+      } else {
+        alert('Failed to send email: ' + (result.error || 'Unknown error'));
+      }
+    } catch (err) {
+      alert('Failed to send email');
+    } finally {
+      setSendingEmail(false);
+    }
+  };
+
+  // Send admin alert
+  const handleSendAdminAlert = async () => {
+    setSendingEmail(true);
+    try {
+      const res = await fetch('/api/super-admin/incidents', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({
+          action: 'send_admin_alert',
+          tenantId: data.tenantMetrics[0]?.tenantSlug || 'all',
+          failureCount: data.overall.totalPending,
+          successRate: data.last24h.successRate,
+          timeframe: 'Last 24 hours',
+          affectedCustomers: data.affectedCustomers.map(c => ({
+            name: c.name,
+            email: c.email,
+            phone: c.phone,
+            attempts: c.attempts,
+            totalLost: c.totalLost,
+          })),
+        }),
+      });
+
+      const result = await res.json();
+      if (result.success) {
+        alert('Admin alert sent successfully!');
+      } else {
+        alert('Failed to send alert: ' + (result.error || 'Unknown error'));
+      }
+    } catch (err) {
+      alert('Failed to send alert');
+    } finally {
+      setSendingEmail(false);
+    }
   };
 
   const getAlertColor = (level: string) => {
@@ -206,6 +329,7 @@ export default function EmergencyDashboard({ data }: { data: DashboardData }) {
               { id: 'customers', label: `Affected Customers (${data.affectedCustomers.length})`, icon: Users },
               { id: 'failures', label: `Recent Failures (${data.recentFailures.length})`, icon: XCircle },
               { id: 'logs', label: 'Error Logs', icon: AlertTriangle },
+              { id: 'email', label: 'Send Reports', icon: Send },
             ].map(tab => (
               <button
                 key={tab.id}
@@ -552,7 +676,223 @@ export default function EmergencyDashboard({ data }: { data: DashboardData }) {
             )}
           </div>
         )}
+
+        {activeTab === 'email' && (
+          <div className="space-y-6">
+            {/* Send Admin Alert */}
+            <div className="rounded-xl border border-blue-500/30 bg-blue-500/10 p-6">
+              <div className="flex items-start justify-between">
+                <div>
+                  <h2 className="font-bold text-lg flex items-center gap-2">
+                    <Mail className="w-5 h-5 text-blue-400" />
+                    Send Admin Alert
+                  </h2>
+                  <p className="text-white/70 mt-1">
+                    Send yourself an alert email with current failure summary
+                  </p>
+                </div>
+                <button
+                  onClick={handleSendAdminAlert}
+                  disabled={sendingEmail}
+                  className="flex items-center gap-2 bg-blue-600 hover:bg-blue-700 disabled:opacity-50 px-4 py-2 rounded-lg transition"
+                >
+                  {sendingEmail ? <Loader2 className="w-4 h-4 animate-spin" /> : <Send className="w-4 h-4" />}
+                  Send Alert to Me
+                </button>
+              </div>
+            </div>
+
+            {/* Tenant Reports */}
+            <div className="rounded-xl border border-white/10 bg-white/5 p-4">
+              <h2 className="font-bold text-lg mb-4 flex items-center gap-2">
+                <Users className="w-5 h-5" />
+                Send Incident Report to Tenant Owner
+              </h2>
+              <p className="text-white/60 text-sm mb-4">
+                Select a tenant to preview and send an incident report email to the owner.
+              </p>
+
+              <div className="space-y-2">
+                {data.tenantMetrics.filter(t => t.pending > 0).map((tenant, i) => (
+                  <div
+                    key={i}
+                    className="flex items-center justify-between p-4 rounded-lg border border-white/10 bg-white/5 hover:bg-white/10 transition"
+                  >
+                    <div>
+                      <div className="font-medium">{tenant.tenantName}</div>
+                      <div className="text-sm text-white/60">
+                        {tenant.pending} failed payments • {formatCurrency(tenant.pendingAmount)} lost
+                      </div>
+                    </div>
+                    <div className="flex items-center gap-2">
+                      <span className={`px-2 py-1 rounded text-xs ${
+                        tenant.successRate < 50 ? 'bg-red-500/20 text-red-400' :
+                        tenant.successRate < 80 ? 'bg-amber-500/20 text-amber-400' :
+                        'bg-green-500/20 text-green-400'
+                      }`}>
+                        {tenant.successRate.toFixed(1)}% success
+                      </span>
+                      <button
+                        onClick={() => openEmailModal(tenant)}
+                        className="flex items-center gap-2 bg-white/10 hover:bg-white/20 px-3 py-2 rounded-lg transition"
+                      >
+                        <Eye className="w-4 h-4" />
+                        Preview & Send
+                      </button>
+                    </div>
+                  </div>
+                ))}
+
+                {data.tenantMetrics.filter(t => t.pending > 0).length === 0 && (
+                  <div className="text-center py-8 text-white/60">
+                    <CheckCircle className="w-12 h-12 mx-auto mb-3 text-green-400" />
+                    <p>No tenants with failures to report</p>
+                  </div>
+                )}
+              </div>
+            </div>
+          </div>
+        )}
       </main>
+
+      {/* Email Preview Modal */}
+      {showEmailModal && selectedTenant && (
+        <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/80 backdrop-blur-sm p-4">
+          <div className="w-full max-w-4xl max-h-[90vh] bg-[#0A1628] rounded-2xl border border-white/10 overflow-hidden flex flex-col">
+            {/* Modal Header */}
+            <div className="flex items-center justify-between px-6 py-4 border-b border-white/10">
+              <div>
+                <h3 className="text-lg font-bold">Incident Report Email</h3>
+                <p className="text-white/60 text-sm">{selectedTenant.tenantName}</p>
+              </div>
+              <button
+                onClick={() => setShowEmailModal(false)}
+                className="p-2 hover:bg-white/10 rounded-lg transition"
+              >
+                <X className="w-5 h-5" />
+              </button>
+            </div>
+
+            {emailSent ? (
+              <div className="flex-1 flex flex-col items-center justify-center p-8">
+                <CheckCircle className="w-16 h-16 text-green-400 mb-4" />
+                <h3 className="text-xl font-bold mb-2">Email Sent Successfully!</h3>
+                <p className="text-white/60 mb-6">
+                  The incident report has been sent to {emailForm.recipientEmail}
+                </p>
+                <button
+                  onClick={() => setShowEmailModal(false)}
+                  className="bg-white/10 hover:bg-white/20 px-6 py-2 rounded-lg transition"
+                >
+                  Close
+                </button>
+              </div>
+            ) : (
+              <>
+                {/* Email Form */}
+                <div className="p-6 border-b border-white/10 space-y-4">
+                  <div className="grid grid-cols-2 gap-4">
+                    <div>
+                      <label className="block text-sm text-white/60 mb-1">Recipient Email</label>
+                      <input
+                        type="email"
+                        value={emailForm.recipientEmail}
+                        onChange={(e) => setEmailForm(prev => ({ ...prev, recipientEmail: e.target.value }))}
+                        className="w-full bg-white/5 border border-white/10 rounded-lg px-3 py-2 text-white"
+                        placeholder="owner@restaurant.com"
+                      />
+                    </div>
+                    <div>
+                      <label className="block text-sm text-white/60 mb-1">Recipient Name</label>
+                      <input
+                        type="text"
+                        value={emailForm.recipientName}
+                        onChange={(e) => setEmailForm(prev => ({ ...prev, recipientName: e.target.value }))}
+                        className="w-full bg-white/5 border border-white/10 rounded-lg px-3 py-2 text-white"
+                        placeholder="Restaurant Owner"
+                      />
+                    </div>
+                  </div>
+                  <div>
+                    <label className="block text-sm text-white/60 mb-1">Incident Date</label>
+                    <input
+                      type="text"
+                      value={emailForm.incidentDate}
+                      onChange={(e) => setEmailForm(prev => ({ ...prev, incidentDate: e.target.value }))}
+                      className="w-full bg-white/5 border border-white/10 rounded-lg px-3 py-2 text-white"
+                    />
+                  </div>
+                  <div>
+                    <label className="block text-sm text-white/60 mb-1">Root Cause</label>
+                    <textarea
+                      value={emailForm.rootCause}
+                      onChange={(e) => setEmailForm(prev => ({ ...prev, rootCause: e.target.value }))}
+                      rows={2}
+                      className="w-full bg-white/5 border border-white/10 rounded-lg px-3 py-2 text-white text-sm"
+                    />
+                  </div>
+                  <div>
+                    <label className="block text-sm text-white/60 mb-1">Resolution</label>
+                    <textarea
+                      value={emailForm.resolution}
+                      onChange={(e) => setEmailForm(prev => ({ ...prev, resolution: e.target.value }))}
+                      rows={2}
+                      className="w-full bg-white/5 border border-white/10 rounded-lg px-3 py-2 text-white text-sm"
+                    />
+                  </div>
+                </div>
+
+                {/* Email Preview */}
+                <div className="flex-1 overflow-auto p-6">
+                  <h4 className="text-sm font-medium text-white/60 mb-3">Email Preview</h4>
+                  {loadingPreview ? (
+                    <div className="flex items-center justify-center py-12">
+                      <Loader2 className="w-8 h-8 animate-spin text-white/40" />
+                    </div>
+                  ) : emailPreview ? (
+                    <div
+                      className="bg-white rounded-lg overflow-hidden"
+                      dangerouslySetInnerHTML={{ __html: emailPreview }}
+                    />
+                  ) : (
+                    <div className="text-center py-12 text-white/40">
+                      <Mail className="w-12 h-12 mx-auto mb-3" />
+                      <p>Preview will load when available</p>
+                    </div>
+                  )}
+                </div>
+
+                {/* Modal Footer */}
+                <div className="flex items-center justify-between px-6 py-4 border-t border-white/10">
+                  <button
+                    onClick={() => setShowEmailModal(false)}
+                    className="px-4 py-2 text-white/60 hover:text-white transition"
+                  >
+                    Cancel
+                  </button>
+                  <button
+                    onClick={handleSendEmail}
+                    disabled={sendingEmail || !emailForm.recipientEmail}
+                    className="flex items-center gap-2 bg-blue-600 hover:bg-blue-700 disabled:opacity-50 px-6 py-2 rounded-lg transition font-medium"
+                  >
+                    {sendingEmail ? (
+                      <>
+                        <Loader2 className="w-4 h-4 animate-spin" />
+                        Sending...
+                      </>
+                    ) : (
+                      <>
+                        <Send className="w-4 h-4" />
+                        Send Email
+                      </>
+                    )}
+                  </button>
+                </div>
+              </>
+            )}
+          </div>
+        </div>
+      )}
     </div>
   );
 }
