@@ -2870,23 +2870,22 @@ export default function OrderPageClientLaPoblanita({
         <div className="absolute inset-0 bg-[url('data:image/svg+xml;base64,PHN2ZyB4bWxucz0iaHR0cDovL3d3dy53My5vcmcvMjAwMC9zdmciIHdpZHRoPSI0IiBoZWlnaHQ9IjQiPjxyZWN0IHdpZHRoPSI0IiBoZWlnaHQ9IjQiIGZpbGw9IiMwMDAiLz48cmVjdCB3aWR0aD0iMSIgaGVpZ2h0PSIxIiBmaWxsPSIjMTExIi8+PC9zdmc+')] opacity-30" />
       </div>
 
-      {/* Mobile Section Navigation - Fixed below header (matches Las Reinas pattern) */}
-      {/* Seamless gradient: continues header's dark gradient for unified look */}
+      {/* Mobile Section Navigation - Fixed below header (OUTSIDE z-10 wrapper for proper stacking) */}
       <div
         className="fixed left-0 right-0 sm:hidden transition-all duration-300 ease-out"
         style={{
-          top: isScrolled ? 'calc(env(safe-area-inset-top, 0px) + 56px)' : 'calc(env(safe-area-inset-top, 0px) + 72px)',
+          top: isScrolled ? 'calc(env(safe-area-inset-top, 0px) + 64px)' : 'calc(env(safe-area-inset-top, 0px) + 88px)',
           zIndex: 35,
-          background: 'linear-gradient(180deg, rgba(15,23,42,0.98) 0%, rgba(12,18,32,0.98) 40%, rgba(13,13,13,0.95) 100%)',
+          background: `linear-gradient(180deg, rgba(15,30,50,0.98) 0%, rgba(12,22,38,0.98) 40%, rgba(13,13,13,0.95) 100%)`
         }}
       >
         {/* Closed status indicator - integrated into nav bar */}
         {!restaurantIsOpen && (
-          <div className="px-4 pt-2 pb-0.5 flex items-center justify-center">
-            <span className="text-amber-300 font-semibold text-xs drop-shadow-sm">{restaurantClosedMessage || 'Currently closed'}</span>
+          <div className="px-4 pt-2 pb-1 flex items-center justify-center">
+            <span className="text-blue-300 font-semibold text-xs">{restaurantClosedMessage || 'Currently closed'}</span>
           </div>
         )}
-        <div className={`flex gap-2.5 overflow-x-auto px-4 scrollbar-hide ${restaurantIsOpen ? 'py-3' : 'pb-3 pt-1'}`}>
+        <div className={`flex gap-2 overflow-x-auto px-4 scrollbar-hide ${restaurantIsOpen ? 'py-2.5' : 'pb-2.5 pt-1'}`}>
           {navSections.map((section) => (
             <button
               key={`nav-${section.id}`}
@@ -2901,7 +2900,7 @@ export default function OrderPageClientLaPoblanita({
                   window.scrollTo({ top: y, behavior: 'smooth' });
                 }
               }}
-              className="flex-shrink-0 px-4 py-2 rounded-full text-xs font-semibold bg-white/10 text-white/90 border border-white/20 active:bg-blue-600 active:border-blue-600 active:text-white active:scale-95 transition-all whitespace-nowrap touch-manipulation"
+              className="flex-shrink-0 px-4 py-2 rounded-full text-xs font-semibold bg-white/[0.08] text-white/90 border border-white/[0.15] shadow-sm active:bg-gradient-to-r active:from-blue-700 active:to-blue-600 active:border-blue-500/50 active:text-white active:scale-95 active:shadow-lg active:shadow-blue-900/30 transition-all whitespace-nowrap touch-manipulation"
             >
               {section.name}
             </button>
@@ -2916,7 +2915,7 @@ export default function OrderPageClientLaPoblanita({
         className={`fixed top-0 left-0 right-0 z-40 transition-all duration-300`}
         style={{
           paddingTop: 'env(safe-area-inset-top, 0px)',
-          background: `linear-gradient(180deg, var(--tenant-gradient-from) 0%, var(--tenant-gradient-via) 40%, var(--tenant-gradient-to) 85%, rgba(15,23,42,0.98) 100%)`
+          background: `linear-gradient(180deg, var(--tenant-gradient-from) 0%, var(--tenant-gradient-via) 40%, var(--tenant-gradient-to) 85%, rgba(15,30,50,0.98) 100%)`
         }}
       >
         <div className="mx-auto max-w-7xl px-4">
