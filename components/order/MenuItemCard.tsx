@@ -3,7 +3,7 @@
 import Image from 'next/image';
 import { OrderMenuItem } from './OrderPageClient';
 import { getStockImageForCategory } from '../../lib/menu-imagery';
-import { getCardStyleClasses, getGlowClass, type TemplateSettings } from '@/lib/template-renderer';
+import { type TemplateSettings } from '@/lib/template-renderer';
 
 interface MenuItemCardProps {
   item: OrderMenuItem & { displayImage: string };
@@ -30,96 +30,38 @@ export default function MenuItemCard({
   const isExternalImage = imageSrc.startsWith('http');
   const isTenantImage = imageSrc.startsWith('/tenant/');
 
-  // Dynamic card styling from template settings
-  const cardStyle = templateSettings ? getCardStyleClasses(templateSettings.cardStyle) : '';
-  const glowStyle = templateSettings?.glowEffect ? getGlowClass(templateSettings.glowEffect, templateSettings.primaryColor) : '';
-  const hasTemplateStyle = !!cardStyle;
-
-  // Unified gradient button style - more rounded, refined gradient
-  const gradientButton = `
-    relative overflow-hidden
-    rounded-xl sm:rounded-2xl py-2.5 sm:py-3 text-xs sm:text-sm font-semibold
-    bg-gradient-to-r from-amber-400 via-amber-500 to-yellow-500
-    text-black/90
-    shadow-md shadow-amber-500/15
-    transition-all duration-200 ease-out
-    hover:shadow-lg hover:shadow-amber-500/25
-    hover:from-amber-300 hover:via-amber-400 hover:to-yellow-400
-    active:scale-[0.97]
-    disabled:opacity-50 disabled:cursor-not-allowed disabled:hover:scale-100 disabled:bg-gray-600 disabled:from-gray-600 disabled:via-gray-600 disabled:to-gray-600 disabled:text-white/70
-  `;
-
-  const quickAddButton = `
-    absolute top-3 left-3 z-10
-    w-10 h-10 rounded-full
-    bg-black/50 backdrop-blur-md
-    border border-white/30
-    shadow-lg
-    flex items-center justify-center
-    text-white text-xl font-medium
-    transition-all duration-200
-    hover:scale-110 hover:bg-black/70 hover:border-white/50 hover:shadow-xl
-    active:scale-95
-  `;
-
-  // List layout - compact horizontal card
+  // List layout - compact horizontal card with bold styling
   if (layout === 'list') {
     return (
-      <article className={`group flex gap-4 rounded-2xl bg-white/[0.03] backdrop-blur-sm border p-3 transition-all duration-300 hover:bg-white/[0.06] active:scale-[0.99] ${isInCart ? 'border-amber-400/60 ring-1 ring-amber-400/30' : 'border-white/[0.08] hover:border-white/10'}`}>
-        {/* Image */}
-        <div className="relative h-24 w-24 flex-shrink-0 overflow-hidden rounded-xl bg-[#1a1a1a]">
+      <article className={`group flex gap-4 rounded-2xl p-3 transition-all duration-300 active:scale-[0.99]
+        bg-gradient-to-r from-stone-900/95 via-stone-900/90 to-stone-800/80
+        border-2 backdrop-blur-xl
+        hover:shadow-2xl hover:shadow-red-900/30 hover:-translate-y-0.5
+        ${isInCart
+          ? 'border-amber-400 ring-2 ring-amber-400/50 shadow-lg shadow-amber-500/20'
+          : 'border-red-900/40 hover:border-red-700/60'
+        }`}>
+        {/* Image with red glow */}
+        <div className="relative h-24 w-24 flex-shrink-0 overflow-hidden rounded-xl ring-2 ring-red-900/30 shadow-lg shadow-red-900/20">
           {isExternalImage ? (
-            <img
-              src={imageSrc}
-              alt={item.name}
-              className="h-full w-full object-cover"
-              onError={(e) => {
-                const target = e.target as HTMLImageElement;
-                target.src = getStockImageForCategory(item.category || sectionType, 0);
-              }}
-            />
+            <img src={imageSrc} alt={item.name} className="h-full w-full object-cover" onError={(e) => { (e.target as HTMLImageElement).src = getStockImageForCategory(item.category || sectionType, 0); }} />
           ) : (
-            <Image
-              src={imageSrc}
-              alt={item.name}
-              fill
-              className="object-cover"
-              sizes="96px"
-              unoptimized={isExternalImage || isTenantImage}
-            />
+            <Image src={imageSrc} alt={item.name} fill className="object-cover" sizes="96px" unoptimized={isExternalImage || isTenantImage} />
           )}
-          {/* Quick Add */}
           {item.available && (
-            <button
-              onClick={(e) => { e.stopPropagation(); onAddToCart(); }}
-              className="absolute top-1 left-1 w-7 h-7 rounded-full bg-black/50 backdrop-blur-sm border border-white/30 flex items-center justify-center text-white text-sm shadow-lg hover:scale-110 hover:bg-black/70 transition-all"
-              title="Quick add to cart"
-            >
-              +
-            </button>
+            <button onClick={(e) => { e.stopPropagation(); onAddToCart(); }} className="absolute top-1 left-1 w-7 h-7 rounded-full bg-gradient-to-br from-red-600 to-red-700 border-2 border-red-400/50 flex items-center justify-center text-white text-sm font-bold shadow-lg shadow-red-900/50 hover:scale-110 hover:from-red-500 hover:to-red-600 transition-all" title="Quick add">+</button>
           )}
-          {!item.available && (
-            <div className="absolute inset-0 flex items-center justify-center bg-black/70">
-              <span className="text-xs font-bold text-white/80">SOLD OUT</span>
-            </div>
-          )}
+          {!item.available && <div className="absolute inset-0 flex items-center justify-center bg-black/80"><span className="text-xs font-bold text-red-400">SOLD OUT</span></div>}
         </div>
-
         {/* Content */}
         <div className="flex flex-1 flex-col justify-between min-w-0 py-1">
           <div>
-            <h3 className="font-semibold text-white text-base leading-tight truncate">{item.name}</h3>
-            <p className="mt-1 text-sm text-white/50 line-clamp-2 leading-snug">{item.description}</p>
+            <h3 className="font-bold text-white text-base leading-tight truncate">{item.name}</h3>
+            <p className="mt-1 text-sm text-stone-400 line-clamp-2 leading-snug">{item.description}</p>
           </div>
           <div className="flex items-center justify-between mt-2">
-            <span className="text-lg font-bold text-white">${item.price.toFixed(2)}</span>
-            <button
-              onClick={onCustomize}
-              disabled={!item.available}
-              className="flex items-center gap-1.5 rounded-xl bg-gradient-to-b from-white/15 to-white/5 backdrop-blur-sm border border-white/20 px-4 py-2 text-sm font-bold text-white shadow-lg hover:from-white/20 hover:to-white/10 hover:scale-105 active:scale-95 transition-all disabled:opacity-40"
-            >
-              <span>Customize</span>
-            </button>
+            <span className="text-xl font-black text-transparent bg-clip-text bg-gradient-to-r from-amber-400 to-yellow-300">${item.price.toFixed(2)}</span>
+            <button onClick={onCustomize} disabled={!item.available} className="px-4 py-2 rounded-xl bg-gradient-to-r from-red-600 to-red-700 text-white text-sm font-bold shadow-lg shadow-red-900/40 hover:from-red-500 hover:to-red-600 hover:shadow-xl hover:shadow-red-800/50 hover:scale-105 active:scale-95 transition-all disabled:opacity-40 disabled:hover:scale-100">Customize</button>
           </div>
         </div>
       </article>
@@ -129,149 +71,136 @@ export default function MenuItemCard({
   // Cards layout - larger horizontal card
   if (layout === 'cards') {
     return (
-      <article className={`group relative overflow-hidden rounded-2xl bg-white/[0.03] backdrop-blur-sm border transition-all duration-300 hover:bg-white/[0.06] ${isInCart ? 'border-amber-400/60 ring-1 ring-amber-400/30' : 'border-white/[0.08] hover:border-white/10'}`}>
-        {/* Image */}
-        <div className="relative h-44 w-full overflow-hidden bg-[#1a1a1a]">
+      <article className={`group relative overflow-hidden rounded-3xl transition-all duration-500
+        bg-gradient-to-br from-stone-900 via-stone-900 to-stone-800
+        border-2 backdrop-blur-xl
+        hover:shadow-[0_20px_60px_-10px_rgba(185,28,28,0.4)] hover:-translate-y-2
+        ${isInCart
+          ? 'border-amber-400 ring-2 ring-amber-400/50 shadow-xl shadow-amber-500/30'
+          : 'border-red-900/50 hover:border-red-600/70'
+        }`}>
+        {/* Image with dramatic overlay */}
+        <div className="relative h-52 w-full overflow-hidden">
           {isExternalImage ? (
-            <img
-              src={imageSrc}
-              alt={item.name}
-              className="h-full w-full object-cover transition-transform duration-500 group-hover:scale-105"
-              onError={(e) => {
-                const target = e.target as HTMLImageElement;
-                target.src = getStockImageForCategory(item.category || sectionType, 0);
-              }}
-            />
+            <img src={imageSrc} alt={item.name} className="h-full w-full object-cover transition-transform duration-700 group-hover:scale-110" onError={(e) => { (e.target as HTMLImageElement).src = getStockImageForCategory(item.category || sectionType, 0); }} />
           ) : (
-            <Image
-              src={imageSrc}
-              alt={item.name}
-              fill
-              className="object-cover transition-transform duration-500 group-hover:scale-105"
-              sizes="(min-width: 640px) 50vw, 100vw"
-              unoptimized={isExternalImage || isTenantImage}
-            />
+            <Image src={imageSrc} alt={item.name} fill className="object-cover transition-transform duration-700 group-hover:scale-110" sizes="(min-width: 640px) 50vw, 100vw" unoptimized={isExternalImage || isTenantImage} />
           )}
-          <div className="absolute inset-0 bg-gradient-to-t from-black/70 via-transparent to-transparent" />
+          {/* Dramatic gradient overlay */}
+          <div className="absolute inset-0 bg-gradient-to-t from-stone-900 via-stone-900/40 to-transparent" />
+          <div className="absolute inset-0 bg-gradient-to-r from-red-900/20 to-transparent opacity-0 group-hover:opacity-100 transition-opacity duration-500" />
 
-          {/* Quick Add Button */}
+          {/* Quick Add - Bold red button */}
           {item.available && (
-            <button
-              onClick={(e) => { e.stopPropagation(); onAddToCart(); }}
-              className={quickAddButton}
-              title="Quick add to cart"
-            >
-              +
-            </button>
+            <button onClick={(e) => { e.stopPropagation(); onAddToCart(); }} className="absolute top-4 left-4 z-10 w-12 h-12 rounded-full bg-gradient-to-br from-red-600 to-red-700 border-2 border-red-400/50 shadow-xl shadow-red-900/50 flex items-center justify-center text-white text-2xl font-bold transition-all duration-300 hover:scale-110 hover:from-red-500 hover:to-red-600 hover:shadow-2xl hover:shadow-red-700/60 active:scale-95" title="Quick add">+</button>
           )}
 
-          {/* Price badge */}
-          <div className="absolute top-3 right-3 rounded-full bg-black/50 backdrop-blur-sm px-3 py-1.5 border border-white/30 shadow-lg">
-            <span className="text-lg font-semibold text-white">${item.price.toFixed(2)}</span>
+          {/* Price badge - Gold accent */}
+          <div className="absolute top-4 right-4 px-4 py-2 rounded-full bg-gradient-to-r from-amber-500 to-yellow-400 shadow-xl shadow-amber-900/30">
+            <span className="text-lg font-black text-stone-900">${item.price.toFixed(2)}</span>
           </div>
 
-          {!item.available && (
-            <div className="absolute inset-0 flex items-center justify-center bg-black/70">
-              <span className="rounded-xl bg-[#333] px-4 py-2 text-sm font-bold text-white/80">SOLD OUT</span>
-            </div>
-          )}
+          {!item.available && <div className="absolute inset-0 flex items-center justify-center bg-black/80 backdrop-blur-sm"><span className="px-6 py-3 rounded-2xl bg-red-900/80 border border-red-600/50 text-lg font-bold text-white">SOLD OUT</span></div>}
         </div>
 
         {/* Content */}
-        <div className="p-4">
-          <h3 className="text-lg font-bold text-white leading-tight">{item.name}</h3>
-          <p className="mt-2 text-sm text-white/50 line-clamp-2 leading-relaxed">{item.description}</p>
+        <div className="p-5">
+          <h3 className="text-xl font-black text-white leading-tight">{item.name}</h3>
+          <p className="mt-2 text-sm text-stone-400 line-clamp-2 leading-relaxed">{item.description}</p>
 
-          <button
-            onClick={onCustomize}
-            disabled={!item.available}
-            className={`mt-4 w-full flex items-center justify-center gap-2 ${gradientButton}`}
-          >
-            <span className="relative z-10">{item.available ? '+ Add to Order' : 'Sold Out'}</span>
+          <button onClick={onCustomize} disabled={!item.available} className="mt-5 w-full py-3.5 rounded-2xl bg-gradient-to-r from-red-600 via-red-600 to-red-700 text-white text-base font-bold shadow-xl shadow-red-900/40 transition-all duration-300 hover:from-red-500 hover:via-red-500 hover:to-red-600 hover:shadow-2xl hover:shadow-red-800/50 hover:scale-[1.02] active:scale-[0.98] disabled:opacity-40 disabled:hover:scale-100">
+            <span className="flex items-center justify-center gap-2">
+              <svg className="w-5 h-5" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2.5}><path strokeLinecap="round" strokeLinejoin="round" d="M12 4v16m8-8H4" /></svg>
+              {item.available ? 'Add to Order' : 'Sold Out'}
+            </span>
           </button>
         </div>
       </article>
     );
   }
 
-  // Grid layout (default) - Compact mobile-first card
-  // Use template styles if available, otherwise fallback to default
-  const defaultCardClasses = 'bg-white/[0.03] backdrop-blur-sm border-white/[0.08] hover:border-white/20 hover:shadow-white/5';
-  const templateCardClasses = hasTemplateStyle ? `${cardStyle} ${glowStyle}` : defaultCardClasses;
-
+  // Grid layout (default) - STUNNING Mexican-inspired design
   return (
-    <article className={`group relative overflow-hidden rounded-xl sm:rounded-2xl transition-all duration-300 hover:shadow-xl ${isInCart ? 'border-amber-400/60 ring-1 ring-amber-400/30 hover:border-amber-400/80 border' : templateCardClasses}`}>
-      {/* Image container - shorter on mobile */}
-      <div className="relative aspect-square sm:aspect-[4/3] w-full overflow-hidden bg-[#1a1a1a]">
+    <article className={`group relative overflow-hidden rounded-2xl sm:rounded-3xl transition-all duration-500
+      bg-gradient-to-br from-stone-900 via-stone-900/95 to-stone-800/90
+      border-2 backdrop-blur-xl
+      hover:shadow-[0_25px_50px_-12px_rgba(185,28,28,0.5)] hover:-translate-y-2 hover:scale-[1.02]
+      ${isInCart
+        ? 'border-amber-400 ring-2 ring-amber-400/60 shadow-xl shadow-amber-500/40'
+        : 'border-red-900/40 hover:border-red-600/70 shadow-xl shadow-red-950/30'
+      }`}>
+
+      {/* Image container with dramatic effects */}
+      <div className="relative aspect-[4/3] w-full overflow-hidden">
         {isExternalImage ? (
-          <img
-            src={imageSrc}
-            alt={item.name}
-            className="h-full w-full object-cover transition-transform duration-500 group-hover:scale-105"
-            onError={(e) => {
-              const target = e.target as HTMLImageElement;
-              target.src = getStockImageForCategory(item.category || sectionType, 0);
-            }}
-          />
+          <img src={imageSrc} alt={item.name} className="h-full w-full object-cover transition-all duration-700 group-hover:scale-110" onError={(e) => { (e.target as HTMLImageElement).src = getStockImageForCategory(item.category || sectionType, 0); }} />
         ) : (
-          <Image
-            src={imageSrc}
-            alt={item.name}
-            fill
-            className="object-cover transition-transform duration-500 group-hover:scale-105"
-            sizes="(min-width: 1280px) 33vw, (min-width: 640px) 50vw, 50vw"
-            unoptimized={isExternalImage || isTenantImage}
-          />
+          <Image src={imageSrc} alt={item.name} fill className="object-cover transition-all duration-700 group-hover:scale-110" sizes="(min-width: 1280px) 33vw, (min-width: 640px) 50vw, 50vw" unoptimized={isExternalImage || isTenantImage} />
         )}
 
-        {/* Gradient overlay */}
-        <div className="absolute inset-0 bg-gradient-to-t from-black/70 via-black/20 to-transparent" />
+        {/* Multi-layer gradient overlay for depth */}
+        <div className="absolute inset-0 bg-gradient-to-t from-stone-900 via-stone-900/50 to-transparent" />
+        <div className="absolute inset-0 bg-gradient-to-br from-red-900/10 via-transparent to-amber-900/10 opacity-0 group-hover:opacity-100 transition-opacity duration-500" />
 
-        {/* Quick Add Button - subtle glass style */}
+        {/* Animated shine effect on hover */}
+        <div className="absolute inset-0 opacity-0 group-hover:opacity-100 transition-opacity duration-700">
+          <div className="absolute inset-0 bg-gradient-to-r from-transparent via-white/5 to-transparent -translate-x-full group-hover:translate-x-full transition-transform duration-1000" />
+        </div>
+
+        {/* Quick Add Button - Bold red circular button */}
         {item.available && (
           <button
             onClick={(e) => { e.stopPropagation(); onAddToCart(); }}
-            className="absolute top-2.5 left-2.5 sm:top-3 sm:left-3 z-10 w-7 h-7 sm:w-8 sm:h-8 rounded-full bg-black/40 backdrop-blur-sm border border-white/20 shadow-md flex items-center justify-center text-white text-base sm:text-lg font-medium transition-all duration-200 hover:scale-110 hover:bg-black/60 hover:border-white/40 active:scale-95"
+            className="absolute top-3 left-3 z-10 w-10 h-10 sm:w-11 sm:h-11 rounded-full
+              bg-gradient-to-br from-red-600 to-red-700
+              border-2 border-red-400/50
+              shadow-lg shadow-red-900/50
+              flex items-center justify-center text-white text-xl font-bold
+              transition-all duration-300
+              hover:scale-110 hover:from-red-500 hover:to-red-600 hover:shadow-xl hover:shadow-red-700/60
+              active:scale-95"
             title="Quick add to cart"
           >
             +
           </button>
         )}
 
-        {/* Price badge - subtle glass style */}
-        <div className="absolute top-2.5 right-2.5 sm:top-3 sm:right-3">
-          <div className="rounded-full bg-black/40 backdrop-blur-sm px-2.5 py-1 sm:px-3 sm:py-1.5 shadow-md border border-white/20">
-            <span className="text-sm sm:text-base font-semibold text-white">${item.price.toFixed(2)}</span>
+        {/* Price badge - Stunning gold gradient */}
+        <div className="absolute top-3 right-3">
+          <div className="px-3 py-1.5 sm:px-4 sm:py-2 rounded-full bg-gradient-to-r from-amber-500 via-yellow-400 to-amber-500 shadow-lg shadow-amber-900/40 border border-amber-300/30">
+            <span className="text-sm sm:text-base font-black text-stone-900">${item.price.toFixed(2)}</span>
           </div>
         </div>
 
         {/* Sold out overlay */}
         {!item.available && (
-          <div className="absolute inset-0 flex items-center justify-center bg-black/80">
-            <span className="rounded-lg sm:rounded-xl bg-[#333] px-4 py-2 text-xs sm:text-sm font-bold text-white/80">
+          <div className="absolute inset-0 flex items-center justify-center bg-black/80 backdrop-blur-sm">
+            <span className="px-5 py-2.5 rounded-2xl bg-gradient-to-r from-red-900/90 to-red-800/90 border border-red-600/50 text-sm sm:text-base font-bold text-white shadow-xl">
               SOLD OUT
             </span>
           </div>
         )}
       </div>
 
-      {/* Content - more compact on mobile */}
-      <div className="p-2.5 sm:p-4">
-        {/* Title - smaller on mobile */}
-        <h3 className="text-sm sm:text-lg font-bold text-white leading-tight line-clamp-2 sm:line-clamp-1">{item.name}</h3>
+      {/* Content section with refined typography */}
+      <div className="p-3 sm:p-5">
+        {/* Title with subtle text shadow */}
+        <h3 className="text-base sm:text-lg font-black text-white leading-tight line-clamp-2 drop-shadow-sm">
+          {item.name}
+        </h3>
 
-        {/* Description - hidden on mobile, shown on larger screens */}
-        <p className="hidden sm:block mt-2 text-sm text-white/50 line-clamp-2 leading-relaxed">
+        {/* Description - desktop only */}
+        <p className="hidden sm:block mt-2 text-sm text-stone-400 line-clamp-2 leading-relaxed">
           {item.description}
         </p>
 
-        {/* Tags - hidden on mobile */}
+        {/* Tags with red/gold theme */}
         {item.tags && item.tags.length > 0 && (
           <div className="hidden sm:flex mt-3 flex-wrap gap-1.5">
             {item.tags.slice(0, 3).map((tag) => (
               <span
                 key={tag}
-                className="rounded-full bg-amber-500/10 border border-amber-500/20 px-2 py-0.5 text-[10px] font-medium text-amber-400 uppercase tracking-wide"
+                className="rounded-full bg-gradient-to-r from-red-900/40 to-red-800/40 border border-red-700/40 px-2.5 py-0.5 text-[10px] font-bold text-red-300 uppercase tracking-wider"
               >
                 {tag}
               </span>
@@ -279,13 +208,32 @@ export default function MenuItemCard({
           </div>
         )}
 
-        {/* Add Button - compact on mobile */}
+        {/* CTA Button - Bold red gradient with shine effect */}
         <button
           onClick={onCustomize}
           disabled={!item.available}
-          className={`mt-2 sm:mt-4 w-full flex items-center justify-center gap-1 sm:gap-2 ${gradientButton}`}
+          className="mt-3 sm:mt-4 w-full py-2.5 sm:py-3.5 rounded-xl sm:rounded-2xl
+            bg-gradient-to-r from-red-600 via-red-600 to-red-700
+            text-white text-sm sm:text-base font-bold
+            shadow-lg shadow-red-900/40
+            transition-all duration-300
+            hover:from-red-500 hover:via-red-500 hover:to-red-600
+            hover:shadow-xl hover:shadow-red-800/50
+            hover:scale-[1.02]
+            active:scale-[0.98]
+            disabled:opacity-40 disabled:hover:scale-100
+            relative overflow-hidden"
         >
-          <span className="relative z-10">{item.available ? '+ Add to Order' : 'Sold Out'}</span>
+          <span className="relative z-10 flex items-center justify-center gap-1.5 sm:gap-2">
+            <svg className="w-4 h-4 sm:w-5 sm:h-5" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2.5}>
+              <path strokeLinecap="round" strokeLinejoin="round" d="M12 4v16m8-8H4" />
+            </svg>
+            {item.available ? 'Add to Order' : 'Sold Out'}
+          </span>
+          {/* Button shine effect */}
+          <div className="absolute inset-0 opacity-0 hover:opacity-100 transition-opacity">
+            <div className="absolute inset-0 bg-gradient-to-r from-transparent via-white/10 to-transparent -translate-x-full hover:translate-x-full transition-transform duration-500" />
+          </div>
         </button>
       </div>
     </article>
