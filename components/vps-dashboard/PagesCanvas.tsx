@@ -104,7 +104,7 @@ function PagesCanvasInner({ pages, onPageSelect, selectedPageId, tenants = [] }:
     const nodes: Node[] = [];
     const edges: Edge[] = [];
 
-    if (viewMode === 'tenants' || viewMode === 'all') {
+    if ((viewMode === 'tenants' || viewMode === 'all') && tenants.length > 0) {
       // Central hub node
       nodes.push({
         id: 'hub',
@@ -370,6 +370,25 @@ function PagesCanvasInner({ pages, onPageSelect, selectedPageId, tenants = [] }:
 
       {/* Canvas */}
       <div className="flex-1 relative">
+        {/* Empty State for Tenants */}
+        {viewMode === 'tenants' && tenants.length === 0 && (
+          <div className="absolute inset-0 flex items-center justify-center bg-slate-900">
+            <div className="text-center p-8">
+              <div className="text-6xl mb-4">🏪</div>
+              <h3 className="text-xl font-semibold text-white mb-2">No Tenants Found</h3>
+              <p className="text-slate-400 mb-4">
+                Tenants will appear here once they are created in the database.
+              </p>
+              <button
+                onClick={() => setViewMode('pages')}
+                className="px-4 py-2 bg-blue-600 hover:bg-blue-700 text-white rounded-lg transition-colors"
+              >
+                View Pages Instead
+              </button>
+            </div>
+          </div>
+        )}
+
         <ReactFlow
           nodes={nodes}
           edges={edges}

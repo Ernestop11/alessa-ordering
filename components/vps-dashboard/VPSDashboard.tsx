@@ -20,6 +20,7 @@ import RedisOffice from './offices/RedisOffice';
 import StatusLights from './StatusLights';
 import FixModal from './panels/FixModal';
 import ToolsOffice from './offices/ToolsOffice';
+import APIsOffice from './offices/APIsOffice';
 import AIChatPanel from './panels/AIChatPanel';
 import OllamaOffice from './offices/OllamaOffice';
 import AIWorkflowPanel from './panels/AIWorkflowPanel';
@@ -315,40 +316,12 @@ export default function VPSDashboard({
           )}
 
           {viewMode === 'apis' && (
-            <div className="h-full overflow-auto p-6">
-              <h2 className="text-xl font-bold mb-4">API Routes ({apiRoutes.length})</h2>
-              <div className="grid gap-2">
-                {apiRoutes.map((api) => (
-                  <div
-                    key={api.route}
-                    className="flex items-center gap-4 bg-slate-800 rounded-lg p-3 hover:bg-slate-700 transition-colors"
-                  >
-                    <div className="flex gap-1">
-                      {api.methods.map((method) => (
-                        <span
-                          key={method}
-                          className={`text-xs font-mono px-2 py-0.5 rounded ${
-                            method === 'GET'
-                              ? 'bg-green-500/20 text-green-400'
-                              : method === 'POST'
-                              ? 'bg-blue-500/20 text-blue-400'
-                              : method === 'PUT'
-                              ? 'bg-yellow-500/20 text-yellow-400'
-                              : method === 'DELETE'
-                              ? 'bg-red-500/20 text-red-400'
-                              : 'bg-purple-500/20 text-purple-400'
-                          }`}
-                        >
-                          {method}
-                        </span>
-                      ))}
-                    </div>
-                    <span className="font-mono text-sm text-slate-300">{api.route}</span>
-                    <span className="text-xs text-slate-500 ml-auto">{api.filePath}</span>
-                  </div>
-                ))}
-              </div>
-            </div>
+            <APIsOffice
+              apiRoutes={apiRoutes}
+              system={system}
+              onClose={handleCloseOffice}
+              onNavigate={handleNavigate}
+            />
           )}
 
           {viewMode === 'status' && (
