@@ -51,7 +51,7 @@ import GroupOrderBanner from './GroupOrderBanner';
 import MenuSectionGrid from './MenuSectionGrid';
 import MobileNavDrawer from './MobileNavDrawer';
 import { isTimeSpecificActive, getTimeSpecificPrice, getTimeSpecificLabel, shouldShowItem } from '../../lib/menu-time-specific';
-import { generateCSSVariables, generatePageStyles, generatePatternStyles, getAnimationClass, type TemplateSettings } from '@/lib/template-renderer';
+import { generateCSSVariables, generatePageStyles, generatePatternStyles, getAnimationClass, getGlowClass, getCardStyleClasses, type TemplateSettings } from '@/lib/template-renderer';
 
 interface CustomizationOption {
   id: string;
@@ -1674,11 +1674,15 @@ export default function OrderPageClient({
 
   const renderSectionItems = useCallback(
     (section: (typeof enrichedSections)[number]) => {
+      // Get dynamic card styling from template settings for all layouts
+      const listCardStyle = templateSettings ? getCardStyleClasses(templateSettings.cardStyle) : '';
+      const listGlowStyle = templateSettings?.glowEffect ? getGlowClass(templateSettings.glowEffect, templateSettings.primaryColor) : '';
+
       if (activeLayout === 'list') {
         return (
           <div className="space-y-4">
             {section.items.map((item) => (
-              <article key={item.id} className="group flex gap-4 rounded-2xl bg-white/8 p-4 shadow-xl shadow-black/10 backdrop-blur-md transition hover:bg-white/12 hover:shadow-xl hover:shadow-red-600/20">
+              <article key={item.id} className={`group flex gap-4 rounded-2xl p-4 shadow-xl backdrop-blur-md transition hover:shadow-xl ${listCardStyle || 'bg-white/8 shadow-black/10 hover:bg-white/12 hover:shadow-red-600/20'} ${listGlowStyle}`}>
                 <div className="relative h-28 w-28 flex-shrink-0 overflow-hidden rounded-2xl border border-white/10 bg-gradient-to-br from-gray-800 to-gray-900">
                   {item.displayImage && item.displayImage.startsWith('http') ? (
                     <img 
@@ -1782,7 +1786,7 @@ export default function OrderPageClient({
             {section.items.map((item) => (
               <article
                 key={item.id}
-                className="group relative overflow-hidden rounded-3xl border border-white/10 bg-white/8 shadow-2xl shadow-black/20 transition hover:-translate-y-1 hover:border-white/20"
+                className={`group relative overflow-hidden rounded-3xl shadow-2xl transition hover:-translate-y-1 ${listCardStyle || 'border border-white/10 bg-white/8 shadow-black/20 hover:border-white/20'} ${listGlowStyle}`}
               >
                 <div className="relative h-48 w-full overflow-hidden bg-gradient-to-br from-gray-800 to-gray-900">
                   {item.displayImage && item.displayImage.startsWith('http') ? (
@@ -1871,15 +1875,15 @@ export default function OrderPageClient({
       }
 
       const isBakery = section.type === 'BAKERY' || section.name.toLowerCase().includes('panad') || section.name.toLowerCase().includes('bakery');
-      
+
       return (
         <div className="grid gap-6 sm:gap-8 sm:grid-cols-2 xl:grid-cols-3">
           {section.items.map((item) => (
             <article key={item.id} className={`group relative overflow-hidden rounded-3xl border-2 backdrop-blur-xl transition-all hover:scale-105 hover:shadow-2xl ${
               isBakery
                 ? 'border-amber-400/30 bg-gradient-to-br from-amber-400/20 via-red-600/15 to-yellow-400/20 hover:border-amber-400/50 hover:shadow-amber-500/40'
-                : 'border-white/10 bg-white/10 hover:border-white/30 hover:shadow-red-600/30'
-            }`}>
+                : listCardStyle || 'border-white/10 bg-white/10 hover:border-white/30 hover:shadow-red-600/30'
+            } ${!isBakery && listGlowStyle ? listGlowStyle : ''}`}>
               <div className="relative h-56 w-full overflow-hidden sm:h-64 bg-gradient-to-br from-gray-800 to-gray-900">
                 {item.displayImage && item.displayImage.startsWith('http') ? (
                   <img 
@@ -2002,7 +2006,7 @@ export default function OrderPageClient({
         </div>
       );
     },
-    [activeLayout, handleAddToCart, openCustomization],
+    [activeLayout, handleAddToCart, openCustomization, templateSettings],
   );
 
   // Profile menu state
@@ -2750,6 +2754,8 @@ export default function OrderPageClient({
   const patternStyles = templateSettings ? generatePatternStyles(templateSettings) : null
   const cssVars = templateSettings ? generateCSSVariables(templateSettings) : ''
   const animationClass = templateSettings ? getAnimationClass(templateSettings.animation) : ''
+  const cardStyleClasses = templateSettings ? getCardStyleClasses(templateSettings.cardStyle) : ''
+  const glowClasses = templateSettings ? getGlowClass(templateSettings.glowEffect, templateSettings.primaryColor) : ''
 
   return (
     <div

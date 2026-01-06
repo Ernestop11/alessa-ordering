@@ -65,12 +65,12 @@ const TENANT_THEME_MAP: Record<string, StaticTenantTheme> = {
   taqueriarosita: {
     slug: 'taqueriarosita',
     name: 'Taqueria Rosita',
-    primaryColor: '#dc2626', // red-600 - classic taqueria red
-    secondaryColor: '#fbbf24', // amber-400 - warm accent
-    themeColor: '#7f1d1d', // red-900 for status bar
+    primaryColor: '#1a1a1a', // Rich black - matches their menu design
+    secondaryColor: '#c41e3a', // Cardinal red - bold Mexican accent
+    themeColor: '#0a0a0a', // Deep black for status bar
     assets: {
-      hero: '/tenant/taqueriarosita/hero.jpg',
-      membership: '/tenant/taqueriarosita/membership.jpg',
+      hero: '/tenant/taqueriarosita/images/hero/burrito-hero.jpg',
+      membership: '/tenant/taqueriarosita/images/hero/tacos-hero.jpg',
       logo: '/tenant/taqueriarosita/logo.png',
     },
   },

@@ -151,14 +151,39 @@ export function generatePatternStyles(settings: TemplateSettings): React.CSSProp
  */
 export function getAnimationClass(animation: string | null): string {
   if (!animation) return ''
-  
+
   const animationMap: Record<string, string> = {
     pulse: 'animate-pulse',
     shimmer: 'animate-shimmer',
     'gradient-shift': 'animate-gradient-shift',
     aurora: 'animate-aurora',
+    fadeInUp: 'animate-fadeInUp',
+    fadeIn: 'animate-fadeIn',
+    slideUp: 'animate-slideUp',
   }
 
   return animationMap[animation] || ''
+}
+
+/**
+ * Get glow effect class for buttons/cards
+ */
+export function getGlowClass(glowEffect: boolean, primaryColor: string): string {
+  if (!glowEffect) return ''
+  return 'shadow-glow hover:shadow-glow-lg transition-shadow duration-300'
+}
+
+/**
+ * Get card style classes
+ */
+export function getCardStyleClasses(cardStyle: string): string {
+  const cardStyles: Record<string, string> = {
+    'dark-red': 'bg-gradient-to-br from-stone-900 to-stone-950 border border-red-900/30 shadow-xl hover:shadow-red-900/20',
+    'dark-elevated': 'bg-stone-900/90 backdrop-blur-sm border border-stone-700/50 shadow-2xl hover:shadow-3xl',
+    'elevated': 'bg-white/10 backdrop-blur-md border border-white/20 shadow-xl',
+    'glass': 'bg-white/5 backdrop-blur-lg border border-white/10',
+    'solid': 'bg-stone-800 border border-stone-700',
+  }
+  return cardStyles[cardStyle] || cardStyles['dark-red']
 }
 
