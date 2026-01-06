@@ -2,7 +2,7 @@
 
 import { useState, useEffect, useMemo } from 'react';
 import { useRouter, useSearchParams } from 'next/navigation';
-import { useCart } from '@/lib/store/cart';
+import { useCart, useCartHydrated } from '@/lib/store/cart';
 import { useTenantTheme } from '@/components/TenantThemeProvider';
 import { ArrowLeft, CreditCard, Trash2, Check, Users, PartyPopper } from 'lucide-react';
 import { loadStripe } from '@stripe/stripe-js';
@@ -540,6 +540,7 @@ function PaymentForm({
 
 export default function CheckoutPage() {
   const { items, total, clearCart, groupSessionCode, participantName, clearGroupOrder, isSponsoredOrder, sponsorName } = useCart();
+  const isHydrated = useCartHydrated();
   const tenant = useTenantTheme();
   const router = useRouter();
   const searchParams = useSearchParams();
@@ -703,7 +704,17 @@ export default function CheckoutPage() {
     router.push(successUrl);
   };
 
-  // Empty cart state
+  // Wait for cart to hydrate from localStorage before checking if empty
+  if (!isHydrated) {
+    return (
+      <div className="min-h-screen bg-gradient-to-b from-[#0A1628] to-[#050A1C] text-white flex flex-col items-center justify-center px-4">
+        <div className="h-8 w-8 animate-spin rounded-full border-3 border-white/20 border-t-white"></div>
+        <p className="mt-4 text-white/60">Loading your cart...</p>
+      </div>
+    );
+  }
+
+  // Empty cart state - only show after hydration is complete
   if (items.length === 0) {
     return (
       <div className="min-h-screen bg-gradient-to-b from-[#0A1628] to-[#050A1C] text-white flex flex-col items-center justify-center px-4">
