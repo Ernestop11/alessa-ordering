@@ -2941,13 +2941,13 @@ export default function OrderPageClientLaPoblanita({
                     <Image
                       src={tenant.logoUrl}
                       alt={`${tenant.name} logo`}
-                      width={64}
-                      height={64}
-                      className={`rounded-full object-contain transition-all duration-300 ${isScrolled ? 'h-8 w-8' : 'h-10 w-10'}`}
+                      width={48}
+                      height={48}
+                      className={`rounded-full object-contain transition-all duration-300 ${isScrolled ? 'h-10 w-10' : 'h-12 w-12'}`}
                       unoptimized={tenant.logoUrl.startsWith('/tenant/')}
                     />
                   ) : (
-                    <div className={`flex items-center justify-center rounded-full bg-gradient-to-br from-red-600 to-amber-500 transition-all duration-300 ${isScrolled ? 'h-8 w-8 text-lg' : 'h-10 w-10 text-xl'}`}>🍽️</div>
+                    <div className={`flex items-center justify-center rounded-full bg-gradient-to-br from-blue-600 to-blue-500 transition-all duration-300 ${isScrolled ? 'h-10 w-10 text-lg' : 'h-12 w-12 text-xl'}`}>🍽️</div>
                   )}
                 </div>
               </div>
