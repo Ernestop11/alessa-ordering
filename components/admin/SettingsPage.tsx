@@ -192,7 +192,7 @@ export default function SettingsPage({ tenant }: SettingsPageProps) {
         method: 'PUT',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({
-          name: formData.restaurantName,
+          restaurantName: formData.restaurantName,
           logoUrl: formData.logoUrl,
           contactEmail: formData.contactEmail,
           contactPhone: formData.contactPhone,
@@ -291,13 +291,26 @@ export default function SettingsPage({ tenant }: SettingsPageProps) {
                           const formDataObj = new FormData();
                           formDataObj.append('file', file);
                           try {
+                            // Upload the file
                             const res = await fetch('/api/admin/assets/upload', {
                               method: 'POST',
                               body: formDataObj,
                             });
                             const data = await res.json();
                             if (data.url) {
+                              // Update local state
                               setFormData((prev) => ({ ...prev, logoUrl: data.url }));
+
+                              // Auto-save the logo URL to database immediately
+                              const saveRes = await fetch('/api/admin/tenant-settings', {
+                                method: 'PUT',
+                                headers: { 'Content-Type': 'application/json' },
+                                body: JSON.stringify({ logoUrl: data.url }),
+                              });
+                              if (saveRes.ok) {
+                                setSaved(true);
+                                setTimeout(() => setSaved(false), 2000);
+                              }
                             }
                           } catch (err) {
                             console.error('Failed to upload logo', err);

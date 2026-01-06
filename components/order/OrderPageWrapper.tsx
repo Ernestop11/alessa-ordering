@@ -35,27 +35,21 @@ const OrderPageClient = dynamic(
 );
 
 // TENANT-SPECIFIC components
+// Only add entries here for tenants that need CUSTOM code (not just different branding)
+// All branding (logo, colors, name) comes from the database - no need to clone for that!
 const OrderPageClientLaPoblanita = dynamic(
   () => import('./OrderPageClientLaPoblanita').then(mod => mod.default),
   { ssr: false, loading: LoadingSpinner }
 );
 
-const OrderPageClientTaqueriaRosita = dynamic(
-  () => import('./OrderPageClientTaqueriaRosita').then(mod => mod.default),
-  { ssr: false, loading: LoadingSpinner }
-);
-
-const OrderPageClientVillaCorona = dynamic(
-  () => import('./OrderPageClientVillaCorona').then(mod => mod.default),
-  { ssr: false, loading: LoadingSpinner }
-);
-
 // Map of tenant slugs to their specific components
-// Tenants NOT listed here will use the default OrderPageClient
+// Tenants NOT listed here will use the default OrderPageClient (which is database-driven)
+// Only add a tenant here if they need CUSTOM CODE FEATURES, not just different branding
 const TENANT_SPECIFIC_COMPONENTS: Record<string, React.ComponentType<any>> = {
+  // La Poblanita has custom panaderia (El Hornito bakery) integration
   'lapoblanita': OrderPageClientLaPoblanita,
-  'taqueriarosita': OrderPageClientTaqueriaRosita,
-  'villacorona': OrderPageClientVillaCorona,
+  // Taqueria Rosita, Villa Corona, and other new tenants use the default database-driven component
+  // No custom code needed - all branding comes from database!
 };
 
 const PolishedOrderPage = dynamic(
