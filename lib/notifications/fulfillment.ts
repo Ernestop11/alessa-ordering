@@ -38,6 +38,7 @@ function formatOrderSummary(order: SerializedOrder): string {
 
 export async function sendFulfillmentEmailNotification(params: {
   tenantName: string;
+  tenantSlug: string;
   recipient: string;
   order: SerializedOrder;
 }): Promise<SendResult> {
@@ -45,15 +46,41 @@ export async function sendFulfillmentEmailNotification(params: {
     return { ok: false, reason: 'Resend email provider is not configured' };
   }
 
-  const summary = formatOrderSummary(params.order);
-  const subject = `New ${params.tenantName} order received`;
+  const orderId = params.order.id.slice(-6).toUpperCase();
+  const total = Number(params.order.totalAmount ?? 0).toFixed(2);
+  const method = params.order.fulfillmentMethod?.toUpperCase() ?? 'PICKUP';
+  const trackingUrl = `https://${params.tenantSlug}.alessacloud.com/admin/orders`;
+
+  // Build items list
+  const items = params.order.items ?? [];
+  const itemsList = items.map(item =>
+    `• ${item.quantity}x ${item.menuItemName || 'Item'} - $${Number(item.price ?? 0).toFixed(2)}`
+  ).join('\n');
+
+  const subject = `🔔 New Order #${orderId} - ${params.tenantName}`;
   const text = [
-    `A new order just came in for ${params.tenantName}.`,
+    `NEW ORDER RECEIVED`,
     ``,
-    summary,
+    `Order #${orderId}`,
+    `Method: ${method}`,
+    `Total: $${total}`,
     ``,
-    `View the dashboard to acknowledge or print tickets.`,
-  ].join('\n');
+    `Customer: ${params.order.customerName || 'Guest'}`,
+    params.order.customerPhone ? `Phone: ${params.order.customerPhone}` : null,
+    params.order.customerEmail ? `Email: ${params.order.customerEmail}` : null,
+    ``,
+    `Items:`,
+    itemsList || '(No items)',
+    ``,
+    params.order.notes ? `Notes: ${params.order.notes}` : null,
+    params.order.deliveryAddress?.line1 ? `Delivery: ${params.order.deliveryAddress.line1}, ${params.order.deliveryAddress.city || ''} ${params.order.deliveryAddress.state || ''} ${params.order.deliveryAddress.postalCode || ''}` : null,
+    ``,
+    `Track & manage this order:`,
+    trackingUrl,
+    ``,
+    `—`,
+    `AlessaCloud Ordering System`,
+  ].filter(Boolean).join('\n');
 
   try {
     await resendClient.emails.send({
@@ -99,6 +126,7 @@ export async function sendFulfillmentSmsNotification(params: {
 
 export async function notifyFulfillmentTeam(params: {
   tenantName: string;
+  tenantSlug: string;
   targets: NotificationTargets;
   order: SerializedOrder;
 }): Promise<{ email?: SendResult; sms?: SendResult }> {
@@ -109,6 +137,7 @@ export async function notifyFulfillmentTeam(params: {
     tasks.push(
       sendFulfillmentEmailNotification({
         tenantName: params.tenantName,
+        tenantSlug: params.tenantSlug,
         recipient: params.targets.email,
         order: params.order,
       }).then((result) => {

@@ -475,6 +475,7 @@ export async function createOrderFromPayload({
 
       const results = await notifyFulfillmentTeam({
         tenantName: tenantContact.name ?? tenant.slug,
+        tenantSlug: tenant.slug,
         targets,
         order: serialized,
       });
