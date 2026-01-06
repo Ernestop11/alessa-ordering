@@ -120,7 +120,18 @@
       "Bash(git -C /Users/ernestoponce/alessa-ordering show:*)",
       "Bash(cp:*)",
       "Bash(npx tsx:*)",
-      "Bash(pgrep:*)"
+      "Bash(pgrep:*)",
+      "Bash(git -C /Users/ernestoponce/alessa-ordering tag:*)",
+      "Bash(git -C /Users/ernestoponce/alessa-ordering diff v1.4.0-lasreinas-final-mvp..HEAD -- app/api/orders/create-payment-intent/route.ts)",
+      "Bash(git -C /Users/ernestoponce/alessa-ordering diff v1.4.0-lasreinas-final-mvp..HEAD -- contexts/CartContext.tsx)",
+      "Bash(git -C /Users/ernestoponce/alessa-ordering diff v1.4.0-lasreinas-final-mvp..HEAD -- lib/store/cart.ts)",
+      "Bash(git -C /Users/ernestoponce/alessa-ordering log --oneline v1.4.0-lasreinas-final-mvp..HEAD -- lib/store/cart.ts)",
+      "Bash(git -C /Users/ernestoponce/alessa-ordering log --oneline --since=\"2025-12-20\" -- \"components/order/*\" \"app/\\(tenant\\)/*/order/*\")",
+      "Bash(git -C /Users/ernestoponce/alessa-ordering log --oneline --since=\"2025-12-20\" -- \"app/\\(tenant\\)/*/checkout/*\")",
+      "Bash(git -C /Users/ernestoponce/alessa-ordering diff v1.4.0-lasreinas-final-mvp..HEAD -- \"components/order/*.tsx\")",
+      "Bash(git -C /Users/ernestoponce/alessa-ordering diff v1.4.0-lasreinas-final-mvp..HEAD -- \"app/checkout/page.tsx\")",
+      "Bash(git -C /Users/ernestoponce/alessa-ordering log --oneline --all -- lib/store/cart.ts)",
+      "Bash(git -C /Users/ernestoponce/alessa-ordering log --oneline --all -- app/checkout/page.tsx)"
     ],
     "deny": [],
     "ask": []

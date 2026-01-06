@@ -1,6 +1,7 @@
 'use client';
 
-import { Users, Package, TrendingUp, FileText, Settings, Sparkles, Layers, Network } from 'lucide-react';
+import Link from 'next/link';
+import { Users, Package, TrendingUp, FileText, Settings, Sparkles, Layers, Network, AlertTriangle } from 'lucide-react';
 
 interface ShortcutCard {
   id: string;
@@ -122,6 +123,25 @@ export default function DashboardShortcuts({
 
   return (
     <div className="space-y-6">
+      {/* Emergency Dashboard Link */}
+      <Link
+        href="/super-admin/emergency"
+        className="block rounded-xl border-2 border-red-300 bg-red-50 p-4 shadow-sm transition-all hover:shadow-md hover:border-red-400"
+      >
+        <div className="flex items-center gap-4">
+          <div className="rounded-lg bg-red-100 p-3 text-red-600">
+            <AlertTriangle className="h-6 w-6" />
+          </div>
+          <div className="flex-1">
+            <h4 className="font-bold text-red-900">Emergency Monitoring Dashboard</h4>
+            <p className="text-sm text-red-700">Monitor checkout failures, affected customers, and system health</p>
+          </div>
+          <div className="text-red-600">
+            <TrendingUp className="h-5 w-5" />
+          </div>
+        </div>
+      </Link>
+
       {/* Stats Cards */}
       <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-4">
         {stats.map((stat) => (
