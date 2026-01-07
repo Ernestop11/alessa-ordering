@@ -219,46 +219,51 @@ export async function sendCustomerOrderConfirmation(params: {
     )
     .join('');
 
+  // Build gradient colors (dark red theme for Las Reinas style)
+  const gradientFrom = primaryColor || '#8B0000';
+  const gradientVia = '#B22222';
+  const gradientTo = '#6B0F0F';
+
   const html = `
 <!DOCTYPE html>
 <html>
 <head><meta charset="utf-8"><meta name="viewport" content="width=device-width"></head>
 <body style="margin:0;padding:0;font-family:-apple-system,BlinkMacSystemFont,'Segoe UI',Roboto,sans-serif;background:#f5f5f5;">
-<table width="100%" cellpadding="0" cellspacing="0" style="max-width:600px;margin:0 auto;background:#fff;">
+<table width="100%" cellpadding="0" cellspacing="0" style="max-width:600px;margin:0 auto;background:#fff;border-radius:16px;overflow:hidden;box-shadow:0 4px 20px rgba(0,0,0,0.1);">
   <tr>
-    <td style="padding:24px;background:${primaryColor};text-align:center;">
-      ${logoUrl ? `<img src="${logoUrl}" alt="${tenantName}" style="max-height:50px;max-width:200px;">` : `<h1 style="margin:0;color:#fff;font-size:24px;">${tenantName}</h1>`}
+    <td style="padding:32px 24px;background:linear-gradient(135deg, ${gradientFrom} 0%, ${gradientVia} 50%, ${gradientTo} 100%);text-align:center;">
+      ${logoUrl ? `<img src="${logoUrl}" alt="${tenantName}" style="max-height:80px;max-width:280px;margin-bottom:8px;">` : `<h1 style="margin:0;color:#fff;font-size:28px;font-weight:800;">${tenantName}</h1>`}
     </td>
   </tr>
   <tr>
     <td style="padding:24px;text-align:center;">
-      <div style="font-size:48px;margin-bottom:8px;">✅</div>
-      <h2 style="margin:0 0 8px;font-size:24px;color:#000;">Order Confirmed!</h2>
-      <p style="margin:0;color:#666;">Thank you for your order, ${order.customerName || 'valued customer'}!</p>
+      <div style="font-size:56px;margin-bottom:8px;">✅</div>
+      <h2 style="margin:0 0 8px;font-size:26px;color:#000;font-weight:800;">Order Confirmed!</h2>
+      <p style="margin:0;color:#666;font-size:15px;">Thank you for your order, ${order.customerName || 'valued customer'}!</p>
     </td>
   </tr>
   <tr>
     <td style="padding:0 24px 24px;">
-      <div style="background:#f9fafb;border-radius:12px;padding:20px;text-align:center;">
-        <p style="margin:0 0 4px;font-size:12px;color:#666;">Order Number</p>
-        <p style="margin:0 0 16px;font-size:32px;font-weight:bold;color:${primaryColor};">#${orderId}</p>
-        <p style="margin:0 0 4px;font-size:12px;color:#666;">${method}</p>
-        <p style="margin:0;font-weight:bold;font-size:20px;">$${total}</p>
+      <div style="background:linear-gradient(135deg, #f9fafb 0%, #f3f4f6 100%);border-radius:16px;padding:24px;text-align:center;border:1px solid #e5e7eb;">
+        <p style="margin:0 0 4px;font-size:11px;color:#666;text-transform:uppercase;letter-spacing:1px;">Order Number</p>
+        <p style="margin:0 0 16px;font-size:36px;font-weight:900;color:${primaryColor};">#${orderId}</p>
+        <p style="margin:0 0 4px;font-size:11px;color:#666;text-transform:uppercase;letter-spacing:1px;">${method}</p>
+        <p style="margin:0;font-weight:800;font-size:24px;color:#000;">$${total}</p>
       </div>
 
-      <a href="${trackingUrl}" style="display:block;margin-top:20px;padding:16px 24px;background:${primaryColor};color:#fff;text-decoration:none;border-radius:8px;text-align:center;font-weight:bold;font-size:16px;">
+      <a href="${trackingUrl}" style="display:block;margin-top:20px;padding:18px 24px;background:linear-gradient(135deg, ${gradientFrom} 0%, ${gradientVia} 100%);color:#fff;text-decoration:none;border-radius:12px;text-align:center;font-weight:700;font-size:16px;box-shadow:0 4px 12px rgba(139,0,0,0.3);">
         📍 Track Your Order
       </a>
       <p style="margin:8px 0 0;text-align:center;font-size:12px;color:#666;">
         Get real-time updates on your order status
       </p>
 
-      <h3 style="margin:24px 0 12px;font-size:14px;color:#666;border-bottom:1px solid #eee;padding-bottom:8px;">Order Summary</h3>
+      <h3 style="margin:28px 0 12px;font-size:13px;color:#666;border-bottom:2px solid #eee;padding-bottom:10px;text-transform:uppercase;letter-spacing:1px;">Order Summary</h3>
       <table width="100%" style="border-collapse:collapse;">
         ${itemsHtml}
         <tr>
-          <td style="padding:12px 0 4px;font-weight:bold;">Subtotal</td>
-          <td style="padding:12px 0 4px;text-align:right;">$${Number(order.subtotalAmount ?? 0).toFixed(2)}</td>
+          <td style="padding:14px 0 4px;font-weight:600;">Subtotal</td>
+          <td style="padding:14px 0 4px;text-align:right;font-weight:600;">$${Number(order.subtotalAmount ?? 0).toFixed(2)}</td>
         </tr>
         ${Number(order.deliveryFee ?? 0) > 0 ? `<tr><td style="padding:4px 0;color:#666;">Delivery</td><td style="padding:4px 0;text-align:right;color:#666;">$${Number(order.deliveryFee).toFixed(2)}</td></tr>` : ''}
         <tr>
@@ -267,23 +272,23 @@ export async function sendCustomerOrderConfirmation(params: {
         </tr>
         ${Number(order.tipAmount ?? 0) > 0 ? `<tr><td style="padding:4px 0;color:#666;">Tip</td><td style="padding:4px 0;text-align:right;color:#666;">$${Number(order.tipAmount).toFixed(2)}</td></tr>` : ''}
         <tr>
-          <td style="padding:12px 0;font-weight:bold;font-size:18px;border-top:2px solid #000;">Total</td>
-          <td style="padding:12px 0;text-align:right;font-weight:bold;font-size:18px;border-top:2px solid #000;color:${primaryColor};">$${total}</td>
+          <td style="padding:14px 0;font-weight:800;font-size:20px;border-top:2px solid #000;">Total</td>
+          <td style="padding:14px 0;text-align:right;font-weight:800;font-size:20px;border-top:2px solid #000;color:${primaryColor};">$${total}</td>
         </tr>
       </table>
 
       ${order.notes ? `
-      <div style="margin-top:16px;padding:12px;background:#fef3c7;border-radius:8px;">
-        <p style="margin:0;font-size:12px;color:#92400e;font-weight:bold;">Special Instructions</p>
-        <p style="margin:4px 0 0;color:#000;">${order.notes}</p>
+      <div style="margin-top:16px;padding:14px;background:linear-gradient(135deg, #fef3c7 0%, #fde68a 100%);border-radius:12px;border:1px solid #f59e0b;">
+        <p style="margin:0;font-size:11px;color:#92400e;font-weight:700;text-transform:uppercase;letter-spacing:1px;">Special Instructions</p>
+        <p style="margin:6px 0 0;color:#000;font-size:14px;">${order.notes}</p>
       </div>
       ` : ''}
     </td>
   </tr>
   <tr>
-    <td style="padding:16px 24px;background:#f9fafb;text-align:center;">
+    <td style="padding:20px 24px;background:linear-gradient(135deg, #f9fafb 0%, #f3f4f6 100%);text-align:center;border-top:1px solid #e5e7eb;">
       <p style="margin:0 0 8px;font-size:14px;color:#666;">Questions? Contact ${tenantName}</p>
-      <p style="margin:0;font-size:12px;color:#999;">Powered by AlessaCloud</p>
+      <p style="margin:0;font-size:11px;color:#999;">Powered by AlessaCloud</p>
     </td>
   </tr>
 </table>

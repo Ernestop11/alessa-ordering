@@ -82,65 +82,81 @@ function formatDate(timestamp: string) {
 function buildReceipt(order: SerializedOrder) {
   const lines: string[] = [];
   const tenantName = order.tenant?.name ?? 'Order';
-  lines.push(tenantName.toUpperCase());
-  lines.push(`Order ${order.id.slice(-6).toUpperCase()}`);
-  lines.push(formatDate(order.createdAt));
-  lines.push('------------------------------');
-
-  for (const item of order.items) {
-    const name = item.menuItemName ?? 'Menu Item';
-    const quantity = item.quantity;
-    const price = formatCurrency(item.price * quantity);
-    lines.push(`${quantity} × ${name}`);
-    lines.push(`   ${price}`);
-    // Print item modifiers/notes (e.g., "Asada, No onions | Extra guac")
-    if (item.notes) {
-      lines.push(`   → ${item.notes}`);
-    }
-  }
-
-  lines.push('------------------------------');
-  lines.push(`Subtotal: ${formatCurrency(order.subtotalAmount)}`);
-  if (order.deliveryFee && order.deliveryFee > 0) {
-    lines.push(`Delivery: ${formatCurrency(order.deliveryFee)}`);
-  }
-  // Combine tax and service fee as "Tax & Fees"
-  const taxAndFees = (order.taxAmount ?? 0) + (order.platformFee ?? 0);
-  if (taxAndFees > 0) {
-    lines.push(`Tax & Fees: ${formatCurrency(taxAndFees)}`);
-  }
-  if (order.tipAmount && order.tipAmount > 0) {
-    lines.push(`Tip: ${formatCurrency(order.tipAmount)}`);
-  }
-  lines.push(`Total: ${formatCurrency(order.totalAmount)}`);
-  lines.push('------------------------------');
-
+  const orderId = order.id.slice(-6).toUpperCase();
   const fulfillment = order.fulfillmentMethod ?? 'pickup';
-  lines.push(`Fulfillment: ${fulfillment.toUpperCase()}`);
 
+  // Header with tenant name
+  lines.push('================================');
+  lines.push(tenantName.toUpperCase().padStart(Math.floor((32 + tenantName.length) / 2)));
+  lines.push('================================');
+  lines.push('');
+
+  // Order info box
+  lines.push(`       ORDER #${orderId}`);
+  lines.push(`       ${fulfillment.toUpperCase()}`);
+  lines.push('');
+  lines.push(formatDate(order.createdAt));
+  lines.push('--------------------------------');
+
+  // Customer info first (like email)
   if (order.customerName || order.customer?.name) {
     lines.push(`Customer: ${order.customerName ?? order.customer?.name ?? 'Guest'}`);
   }
   if (order.customerPhone || order.customer?.phone) {
     lines.push(`Phone: ${order.customerPhone ?? order.customer?.phone ?? ''}`);
   }
-  if (order.customerEmail || order.customer?.email) {
-    lines.push(`Email: ${order.customerEmail ?? order.customer?.email ?? ''}`);
-  }
+  lines.push('--------------------------------');
 
+  // Items
+  lines.push('ITEMS');
+  lines.push('');
+  for (const item of order.items) {
+    const name = item.menuItemName ?? 'Menu Item';
+    const quantity = item.quantity;
+    const price = formatCurrency(item.price * quantity);
+    lines.push(`${quantity}× ${name}`);
+    lines.push(`     ${price}`);
+    if (item.notes) {
+      lines.push(`     → ${item.notes}`);
+    }
+  }
+  lines.push('--------------------------------');
+
+  // Totals section
+  lines.push(`Subtotal            ${formatCurrency(order.subtotalAmount).padStart(10)}`);
+  if (order.deliveryFee && order.deliveryFee > 0) {
+    lines.push(`Delivery            ${formatCurrency(order.deliveryFee).padStart(10)}`);
+  }
+  // Tax & Fees with rate disclosure
+  const taxAndFees = (order.taxAmount ?? 0) + (order.platformFee ?? 0);
+  if (taxAndFees > 0) {
+    lines.push(`Tax & Fees (8.75%+) ${formatCurrency(taxAndFees).padStart(10)}`);
+  }
+  if (order.tipAmount && order.tipAmount > 0) {
+    lines.push(`Tip                 ${formatCurrency(order.tipAmount).padStart(10)}`);
+  }
+  lines.push('--------------------------------');
+  lines.push(`TOTAL               ${formatCurrency(order.totalAmount).padStart(10)}`);
+  lines.push('================================');
+
+  // Notes section
   if (order.notes) {
-    lines.push('------------------------------');
-    lines.push('Notes:');
+    lines.push('');
+    lines.push('SPECIAL INSTRUCTIONS:');
     lines.push(order.notes);
+    lines.push('');
   }
 
-  lines.push('------------------------------');
-  lines.push('Thank you for your order!');
+  // Footer
+  lines.push('');
+  lines.push('    Thank you for your order!');
   lines.push('');
   // Brief compliance note (SB 1524)
   if (order.platformFee && order.platformFee > 0) {
-    lines.push('Fees include service charge.');
+    lines.push('Tax & Fees includes 8.75% sales');
+    lines.push('tax + processing fees.');
   }
+  lines.push('');
 
   return lines.join('\n');
 }
