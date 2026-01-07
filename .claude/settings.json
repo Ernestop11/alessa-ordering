@@ -1,0 +1,28 @@
+{
+  "permissions": {
+    "deny": [
+      "Bash(npm run build:*)",
+      "Bash(npm run dev:*)",
+      "Bash(npm run start:*)",
+      "Bash(npx prisma db push:*)",
+      "Bash(npx prisma migrate:*)",
+      "Bash(npx next:*)",
+      "Bash(yarn build:*)",
+      "Bash(yarn dev:*)",
+      "Bash(pnpm build:*)",
+      "Bash(pnpm dev:*)"
+    ],
+    "allow": [
+      "Bash(ssh root@77.243.85.8:*)",
+      "Bash(git:*)",
+      "Bash(cat:*)",
+      "Bash(ls:*)",
+      "Bash(npx tsc:*)",
+      "Bash(npx eslint:*)",
+      "Bash(npx tsx:*)",
+      "Bash(node:*)",
+      "Bash(curl:*)",
+      "Bash(scp:*)"
+    ]
+  }
+}
