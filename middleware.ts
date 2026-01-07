@@ -12,8 +12,10 @@ function resolveCustomDomain(host?: string | null) {
   try {
     const parsed = JSON.parse(mapJson) as Record<string, string>;
     const slug = parsed[host];
+    console.log(`[resolveCustomDomain] host="${host}", mapJson length=${mapJson.length}, parsed keys=${Object.keys(parsed).join(',')}, slug="${slug}"`);
     return slug || null;
-  } catch {
+  } catch (e) {
+    console.error(`[resolveCustomDomain] JSON parse error:`, e, `mapJson="${mapJson?.substring(0, 100)}..."`);
     return null;
   }
 }
