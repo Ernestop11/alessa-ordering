@@ -76,25 +76,25 @@ export default function WashAdminDashboard() {
             </div>
             <nav className="flex items-center gap-4">
               <Link
-                href="./wash/fleets"
+                href="./fleets"
                 className="px-4 py-2 bg-gray-800 hover:bg-gray-700 rounded-lg text-sm"
               >
                 Fleets
               </Link>
               <Link
-                href="./wash/trucks"
+                href="./trucks"
                 className="px-4 py-2 bg-gray-800 hover:bg-gray-700 rounded-lg text-sm"
               >
                 Trucks
               </Link>
               <Link
-                href="./wash/employees"
+                href="./employees"
                 className="px-4 py-2 bg-gray-800 hover:bg-gray-700 rounded-lg text-sm"
               >
                 Employees
               </Link>
               <Link
-                href="./wash/invoices"
+                href="./invoices"
                 className="px-4 py-2 bg-emerald-600 hover:bg-emerald-700 rounded-lg text-sm font-medium"
               >
                 Invoices
