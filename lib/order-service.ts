@@ -461,6 +461,8 @@ export async function createOrderFromPayload({
           name: true,
           contactEmail: true,
           contactPhone: true,
+          logo: true,
+          primaryColor: true,
         },
       });
 
@@ -471,27 +473,34 @@ export async function createOrderFromPayload({
         phone: tenantContact.contactPhone ?? null,
       };
 
-      if (!targets.email && !targets.phone) return;
+      // Always send customer email even if no fulfillment targets
+      const hasTargets = targets.email || targets.phone || serialized.customerEmail;
+      if (!hasTargets) return;
 
       const results = await notifyFulfillmentTeam({
         tenantName: tenantContact.name ?? tenant.slug,
         tenantSlug: tenant.slug,
         targets,
         order: serialized,
+        branding: {
+          logo: tenantContact.logo,
+          primaryColor: tenantContact.primaryColor,
+        },
       });
+
+      const allOk =
+        (results.email?.ok ?? true) &&
+        (results.sms?.ok ?? true) &&
+        (results.customerEmail?.ok ?? true);
 
       await prisma.integrationLog.create({
         data: {
           tenantId: tenant.id,
           source: 'fulfillment-notify',
-          level:
-            (results.email?.ok ?? true) && (results.sms?.ok ?? true)
-              ? 'info'
-              : 'error',
-          message:
-            (results.email?.ok ?? true) && (results.sms?.ok ?? true)
-              ? `Sent fulfillment notifications for order ${serialized.id.slice(-6)}.`
-              : `One or more fulfillment notifications failed for order ${serialized.id.slice(-6)}.`,
+          level: allOk ? 'info' : 'error',
+          message: allOk
+            ? `Sent notifications for order ${serialized.id.slice(-6)}.`
+            : `One or more notifications failed for order ${serialized.id.slice(-6)}.`,
           payload: {
             orderId: serialized.id,
             email: results.email
@@ -509,6 +518,15 @@ export async function createOrderFromPayload({
                   reason:
                     'reason' in results.sms && !results.sms.ok
                       ? results.sms.reason
+                      : undefined,
+                }
+              : null,
+            customerEmail: results.customerEmail
+              ? {
+                  ok: results.customerEmail.ok,
+                  reason:
+                    'reason' in results.customerEmail && !results.customerEmail.ok
+                      ? results.customerEmail.reason
                       : undefined,
                 }
               : null,
