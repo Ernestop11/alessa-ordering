@@ -18,16 +18,24 @@ interface NotificationTargets {
 interface TenantBranding {
   logo?: string | null;
   primaryColor?: string | null;
+  customDomain?: string | null;
 }
 
-function buildFullLogoUrl(logoUrl: string | null | undefined, tenantSlug: string): string | null {
+function buildFullLogoUrl(logoUrl: string | null | undefined, tenantSlug: string, customDomain?: string | null): string | null {
   if (!logoUrl) return null;
   // If already a full URL, return as-is
   if (logoUrl.startsWith('http://') || logoUrl.startsWith('https://')) {
     return logoUrl;
   }
-  // Convert relative URL to full URL
-  return `https://${tenantSlug}.alessacloud.com${logoUrl.startsWith('/') ? '' : '/'}${logoUrl}`;
+  // Use custom domain if available, otherwise fall back to alessacloud subdomain
+  const baseUrl = customDomain
+    ? `https://${customDomain}`
+    : `https://${tenantSlug}.alessacloud.com`;
+  return `${baseUrl}${logoUrl.startsWith('/') ? '' : '/'}${logoUrl}`;
+}
+
+function buildBaseUrl(tenantSlug: string, customDomain?: string | null): string {
+  return customDomain ? `https://${customDomain}` : `https://${tenantSlug}.alessacloud.com`;
 }
 
 function buildFulfillmentEmailHtml(params: {
@@ -41,8 +49,9 @@ function buildFulfillmentEmailHtml(params: {
   const total = Number(order.totalAmount ?? 0).toFixed(2);
   const method = order.fulfillmentMethod?.toUpperCase() ?? 'PICKUP';
   const primaryColor = branding?.primaryColor || '#dc2626';
-  const adminUrl = `https://${tenantSlug}.alessacloud.com/admin/orders`;
-  const logoUrl = buildFullLogoUrl(branding?.logo, tenantSlug);
+  const baseUrl = buildBaseUrl(tenantSlug, branding?.customDomain);
+  const adminUrl = `${baseUrl}/admin/orders`;
+  const logoUrl = buildFullLogoUrl(branding?.logo, tenantSlug, branding?.customDomain);
 
   const items = order.items ?? [];
   const itemsHtml = items
@@ -198,8 +207,9 @@ export async function sendCustomerOrderConfirmation(params: {
   const total = Number(order.totalAmount ?? 0).toFixed(2);
   const method = order.fulfillmentMethod?.toUpperCase() ?? 'PICKUP';
   const primaryColor = branding?.primaryColor || '#dc2626';
-  const trackingUrl = `https://${tenantSlug}.alessacloud.com/track/${order.id}`;
-  const logoUrl = buildFullLogoUrl(branding?.logo, tenantSlug);
+  const baseUrl = buildBaseUrl(tenantSlug, branding?.customDomain);
+  const trackingUrl = `${baseUrl}/track/${order.id}`;
+  const logoUrl = buildFullLogoUrl(branding?.logo, tenantSlug, branding?.customDomain);
 
   const items = order.items ?? [];
   const itemsHtml = items
@@ -252,7 +262,7 @@ export async function sendCustomerOrderConfirmation(params: {
         </tr>
         ${Number(order.deliveryFee ?? 0) > 0 ? `<tr><td style="padding:4px 0;color:#666;">Delivery</td><td style="padding:4px 0;text-align:right;color:#666;">$${Number(order.deliveryFee).toFixed(2)}</td></tr>` : ''}
         <tr>
-          <td style="padding:4px 0;color:#666;">Tax & Fees</td>
+          <td style="padding:4px 0;color:#666;">Tax & Fees <span style="font-size:10px;color:#999;">(8.75% + processing)</span></td>
           <td style="padding:4px 0;text-align:right;color:#666;">$${(Number(order.taxAmount ?? 0) + Number(order.platformFee ?? 0)).toFixed(2)}</td>
         </tr>
         ${Number(order.tipAmount ?? 0) > 0 ? `<tr><td style="padding:4px 0;color:#666;">Tip</td><td style="padding:4px 0;text-align:right;color:#666;">$${Number(order.tipAmount).toFixed(2)}</td></tr>` : ''}
