@@ -1309,42 +1309,32 @@ export default function Cart() {
           <section className="space-y-3 rounded-2xl border-2 border-gray-200 bg-gradient-to-br from-gray-50 to-white p-6">
             <h3 className="text-lg font-bold text-gray-900 mb-4">Order Summary</h3>
 
-            {/* California SB 1524 Fee Disclosure - must be clear and conspicuous */}
-            <div className="rounded-lg border border-blue-200 bg-blue-50 px-3 py-2 mb-3">
-              <p className="text-xs text-blue-800">
-                <strong>Service Fee Notice:</strong> A {((platformPercentFee * 100).toFixed(0))}% + ${platformFlatFee.toFixed(2)} service fee supports our online ordering platform and is charged on all orders.
-              </p>
-            </div>
-
             <div className="space-y-2 text-sm">
               <div className="flex justify-between text-gray-700">
                 <span>Subtotal</span>
                 <span className="font-semibold">{formatCurrency(subtotal)}</span>
               </div>
+              {resolvedDeliveryFee > 0 && (
+                <div className="flex justify-between text-gray-700">
+                  <span>Delivery</span>
+                  <span className="font-semibold">{formatCurrency(resolvedDeliveryFee)}</span>
+                </div>
+              )}
               <div className="flex justify-between text-gray-700">
-                <span className="flex items-center gap-1">
-                  Service fee
-                  <span className="text-xs text-gray-500" title="Supports online ordering platform">ⓘ</span>
-                </span>
-                <span className="font-semibold">{formatCurrency(platformFee)}</span>
-              </div>
-              <div className="flex justify-between text-gray-700">
-                <span>Delivery</span>
-                <span className="font-semibold">{formatCurrency(resolvedDeliveryFee)}</span>
-              </div>
-              <div className="flex justify-between text-gray-700">
-                <span>Tax{taxLabel ? ` (${taxLabel})` : ""}</span>
-                <span className="font-semibold">{formatCurrency(taxAmount)}</span>
+                <span>Tax & Fees</span>
+                <span className="font-semibold">{formatCurrency(taxAmount + platformFee)}</span>
               </div>
               {taxQuoteError && (
                 <p className="text-xs text-amber-600">
                   {taxQuoteError}
                 </p>
               )}
-              <div className="flex justify-between text-gray-700">
-                <span>Tip</span>
-                <span className="font-semibold">{formatCurrency(tipAmount)}</span>
-              </div>
+              {tipAmount > 0 && (
+                <div className="flex justify-between text-gray-700">
+                  <span>Tip</span>
+                  <span className="font-semibold">{formatCurrency(tipAmount)}</span>
+                </div>
+              )}
             </div>
             <div className="flex items-center justify-between border-t-2 border-gray-300 pt-4 text-xl font-black text-gray-900">
               <span>Total due</span>
@@ -1355,6 +1345,10 @@ export default function Cart() {
                 Earn {estimatedPoints} loyalty points with this order.
               </div>
             )}
+            {/* California SB 1524 compliant footer disclosure */}
+            <p className="text-[10px] text-gray-400 text-center pt-2">
+              Tax & Fees includes applicable sales tax and a service fee to support online ordering.
+            </p>
           </section>
 
           {error && (

@@ -101,14 +101,13 @@ function buildReceipt(order: SerializedOrder) {
 
   lines.push('------------------------------');
   lines.push(`Subtotal: ${formatCurrency(order.subtotalAmount)}`);
-  if (order.taxAmount && order.taxAmount > 0) {
-    lines.push(`Tax: ${formatCurrency(order.taxAmount)}`);
-  }
   if (order.deliveryFee && order.deliveryFee > 0) {
     lines.push(`Delivery: ${formatCurrency(order.deliveryFee)}`);
   }
-  if (order.platformFee && order.platformFee > 0) {
-    lines.push(`Service Fee: ${formatCurrency(order.platformFee)}`);
+  // Combine tax and service fee as "Tax & Fees"
+  const taxAndFees = (order.taxAmount ?? 0) + (order.platformFee ?? 0);
+  if (taxAndFees > 0) {
+    lines.push(`Tax & Fees: ${formatCurrency(taxAndFees)}`);
   }
   if (order.tipAmount && order.tipAmount > 0) {
     lines.push(`Tip: ${formatCurrency(order.tipAmount)}`);
@@ -138,10 +137,9 @@ function buildReceipt(order: SerializedOrder) {
   lines.push('------------------------------');
   lines.push('Thank you for your order!');
   lines.push('');
-  // California SB 1524 disclosure for service fee
+  // Brief compliance note (SB 1524)
   if (order.platformFee && order.platformFee > 0) {
-    lines.push('Service fee supports online');
-    lines.push('ordering platform operations.');
+    lines.push('Fees include service charge.');
   }
 
   return lines.join('\n');

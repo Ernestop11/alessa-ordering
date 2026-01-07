@@ -230,13 +230,6 @@ export function formatReceiptForPrinter(
   receipt += padLeft(`$${order.subtotal.toFixed(2)}`, 14);
   receipt += ESCPOS_COMMANDS.LF;
 
-  // Tax
-  if (order.taxAmount && order.taxAmount > 0) {
-    receipt += padLeft(`Tax:`, 28);
-    receipt += padLeft(`$${order.taxAmount.toFixed(2)}`, 14);
-    receipt += ESCPOS_COMMANDS.LF;
-  }
-
   // Delivery Fee
   if (order.deliveryFee && order.deliveryFee > 0) {
     receipt += padLeft(`Delivery:`, 28);
@@ -244,10 +237,11 @@ export function formatReceiptForPrinter(
     receipt += ESCPOS_COMMANDS.LF;
   }
 
-  // Service Fee (platform fee)
-  if (order.serviceFee && order.serviceFee > 0) {
-    receipt += padLeft(`Service Fee:`, 28);
-    receipt += padLeft(`$${order.serviceFee.toFixed(2)}`, 14);
+  // Combined Tax & Fees (tax + service fee)
+  const taxAndFees = (order.taxAmount ?? 0) + (order.serviceFee ?? 0);
+  if (taxAndFees > 0) {
+    receipt += padLeft(`Tax & Fees:`, 28);
+    receipt += padLeft(`$${taxAndFees.toFixed(2)}`, 14);
     receipt += ESCPOS_COMMANDS.LF;
   }
 
@@ -292,10 +286,10 @@ export function formatReceiptForPrinter(
   receipt += ESCPOS_COMMANDS.LF;
   receipt += ESCPOS_COMMANDS.LF;
 
-  // California SB 1524 disclosure for service fee
+  // Brief compliance note (SB 1524)
   if (order.serviceFee && order.serviceFee > 0) {
     receipt += ESCPOS_COMMANDS.ALIGN_CENTER;
-    receipt += wrapText('Service fee supports online ordering platform operations.', 42).join(ESCPOS_COMMANDS.LF);
+    receipt += 'Fees include service charge.';
     receipt += ESCPOS_COMMANDS.LF;
     receipt += ESCPOS_COMMANDS.LF;
   }

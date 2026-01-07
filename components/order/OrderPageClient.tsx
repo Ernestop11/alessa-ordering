@@ -3118,13 +3118,6 @@ export default function OrderPageClient({
       </div>
 
       <main id="menu" className="mx-auto max-w-7xl space-y-6 sm:space-y-10 px-4 py-4 sm:py-8">
-        {/* California SB 1524 Service Fee Disclosure - must be shown where prices are displayed */}
-        <div className="mx-auto max-w-3xl rounded-lg border border-blue-200 bg-blue-50 px-4 py-2 text-center">
-          <p className="text-xs text-blue-800">
-            <strong>Service Fee:</strong> A 3% + $0.30 service fee applies to all online orders to support this ordering platform.
-          </p>
-        </div>
-
         {notification && (
           <div
             className="fixed left-4 right-4 sm:left-auto sm:right-6 z-[100] rounded-2xl bg-green-500/95 px-6 py-3 text-sm font-semibold text-white shadow-xl shadow-green-500/40 text-center sm:text-left"
