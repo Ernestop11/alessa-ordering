@@ -71,6 +71,7 @@ interface OrderForPrint {
   taxAmount?: number;
   deliveryFee?: number;
   tipAmount?: number;
+  serviceFee?: number;
   totalAmount: number;
   notes?: string;
   createdAt: Date;
@@ -243,6 +244,13 @@ export function formatReceiptForPrinter(
     receipt += ESCPOS_COMMANDS.LF;
   }
 
+  // Service Fee (platform fee)
+  if (order.serviceFee && order.serviceFee > 0) {
+    receipt += padLeft(`Service Fee:`, 28);
+    receipt += padLeft(`$${order.serviceFee.toFixed(2)}`, 14);
+    receipt += ESCPOS_COMMANDS.LF;
+  }
+
   // Tip
   if (order.tipAmount && order.tipAmount > 0) {
     receipt += padLeft(`Tip:`, 28);
@@ -283,6 +291,14 @@ export function formatReceiptForPrinter(
   receipt += 'Thank you for your order!';
   receipt += ESCPOS_COMMANDS.LF;
   receipt += ESCPOS_COMMANDS.LF;
+
+  // California SB 1524 disclosure for service fee
+  if (order.serviceFee && order.serviceFee > 0) {
+    receipt += ESCPOS_COMMANDS.ALIGN_CENTER;
+    receipt += wrapText('Service fee supports online ordering platform operations.', 42).join(ESCPOS_COMMANDS.LF);
+    receipt += ESCPOS_COMMANDS.LF;
+    receipt += ESCPOS_COMMANDS.LF;
+  }
 
   // QR Code for order tracking (optional)
   // const trackingUrl = `https://yourapp.com/order/${order.id}`;

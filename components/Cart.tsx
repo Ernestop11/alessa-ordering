@@ -401,13 +401,33 @@ export default function Cart() {
   const orderPayload = useMemo<OrderPayload | null>(() => {
     if (items.length === 0) return null;
 
-    const normalizedItems = items.map((item) => ({
-      // Use menuItemId if available, otherwise extract UUID from cart id (which has timestamp suffix)
-      menuItemId: item.menuItemId || item.id.replace(/-\d{13}$/, ''),
-      quantity: item.quantity,
-      price: roundCurrency(item.price),
-      notes: item.note ?? undefined,
-    }));
+    const normalizedItems = items.map((item) => {
+      // Build combined notes from modifiers, addons, and special instructions
+      const noteParts: string[] = [];
+
+      // Add modifiers (e.g., "Asada", "No onions", "Extra cheese")
+      if (item.modifiers && item.modifiers.length > 0) {
+        noteParts.push(item.modifiers.join(', '));
+      }
+
+      // Add addons (e.g., "Guacamole", "Extra meat")
+      if (item.addons && item.addons.length > 0) {
+        noteParts.push('+ ' + item.addons.map(a => a.name).join(', '));
+      }
+
+      // Add special instructions last
+      if (item.note?.trim()) {
+        noteParts.push(item.note.trim());
+      }
+
+      return {
+        // Use menuItemId if available, otherwise extract UUID from cart id (which has timestamp suffix)
+        menuItemId: item.menuItemId || item.id.replace(/-\d{13}$/, ''),
+        quantity: item.quantity,
+        price: roundCurrency(item.price),
+        notes: noteParts.length > 0 ? noteParts.join(' | ') : undefined,
+      };
+    });
 
     const deliveryPostalCode =
       fulfillmentMethod === "delivery" ? extractPostalCode(deliveryAddress) : tenant.postalCode ?? undefined;

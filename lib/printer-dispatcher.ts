@@ -93,6 +93,10 @@ function buildReceipt(order: SerializedOrder) {
     const price = formatCurrency(item.price * quantity);
     lines.push(`${quantity} × ${name}`);
     lines.push(`   ${price}`);
+    // Print item modifiers/notes (e.g., "Asada, No onions | Extra guac")
+    if (item.notes) {
+      lines.push(`   → ${item.notes}`);
+    }
   }
 
   lines.push('------------------------------');
@@ -104,7 +108,7 @@ function buildReceipt(order: SerializedOrder) {
     lines.push(`Delivery: ${formatCurrency(order.deliveryFee)}`);
   }
   if (order.platformFee && order.platformFee > 0) {
-    lines.push(`Fees: ${formatCurrency(order.platformFee)}`);
+    lines.push(`Service Fee: ${formatCurrency(order.platformFee)}`);
   }
   if (order.tipAmount && order.tipAmount > 0) {
     lines.push(`Tip: ${formatCurrency(order.tipAmount)}`);
@@ -133,6 +137,12 @@ function buildReceipt(order: SerializedOrder) {
 
   lines.push('------------------------------');
   lines.push('Thank you for your order!');
+  lines.push('');
+  // California SB 1524 disclosure for service fee
+  if (order.platformFee && order.platformFee > 0) {
+    lines.push('Service fee supports online');
+    lines.push('ordering platform operations.');
+  }
 
   return lines.join('\n');
 }
@@ -217,6 +227,7 @@ async function sendOrderWithESCPOS(order: SerializedOrder, printerConfig: any): 
       taxAmount: Number(order.taxAmount || 0),
       deliveryFee: Number(order.deliveryFee || 0),
       tipAmount: Number(order.tipAmount || 0),
+      serviceFee: Number(order.platformFee || 0),
       totalAmount: Number(order.totalAmount || 0),
       notes: order.notes || undefined,
       createdAt: new Date(order.createdAt),
