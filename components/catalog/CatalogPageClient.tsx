@@ -147,12 +147,20 @@ export function CatalogPageClient({ sections, featuredItems = [], tenantSlug }: 
     setCartOpen(true);
   };
 
-  const heroImages = [
-    '/tenant/lasreinas/images/hero-banner-1.jpg',
-    '/tenant/lasreinas/images/hero-banner-2.jpg',
-    '/tenant/lasreinas/images/hero-banner-3.jpg',
-    '/tenant/lasreinas/images/hero-banner-4.jpg',
-  ];
+  // Use tenant-specific hero images - NEVER hard-code tenant slugs
+  const heroImages = useMemo(() => {
+    // If tenant has a hero image URL, use it; otherwise use tenant-specific paths
+    if (tenant.heroImageUrl) {
+      return [tenant.heroImageUrl];
+    }
+    // Generate tenant-specific hero image paths
+    return [
+      `/tenant/${tenantSlug}/images/hero-banner-1.jpg`,
+      `/tenant/${tenantSlug}/images/hero-banner-2.jpg`,
+      `/tenant/${tenantSlug}/images/hero-banner-3.jpg`,
+      `/tenant/${tenantSlug}/images/hero-banner-4.jpg`,
+    ];
+  }, [tenant.heroImageUrl, tenantSlug]);
 
   return (
     <div
@@ -167,7 +175,7 @@ export function CatalogPageClient({ sections, featuredItems = [], tenantSlug }: 
           subtitle={
             tenant.heroSubtitle ||
             tenant.tagline ||
-            'Order signature quesabirrias, butcher cuts, and pan dulce curated by Las Reinas Colusa.'
+            `Browse our menu and order online from ${tenant.name || 'our restaurant'}.`
           }
           onAddHighlight={highlightItem ? () => handleAddToCart(highlightItem) : undefined}
           onImageError={() => setHeroErrored(true)}

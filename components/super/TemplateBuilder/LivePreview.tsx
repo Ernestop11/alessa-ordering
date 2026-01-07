@@ -23,15 +23,19 @@ export default function LivePreview({ tenantSlug, onRefresh }: Props) {
     : 'alessacloud.com'
 
   // Map tenant slugs to their actual domains
-  // lapoblanita -> lapoblanitamexicanfood.com (custom domain) or lapoblanita.alessacloud.com
+  // IMPORTANT: Add all tenants with custom domains here
   const tenantDomainMap: Record<string, string> = {
     'lapoblanita': 'lapoblanitamexicanfood.com',
     'lasreinas': 'lasreinascolusa.com',
+    'taqueriarosita': 'taqueriarosita.alessacloud.com',
+    'villacorona': 'villacorona.alessacloud.com',
+    'elhornito': 'elhornito.alessacloud.com',
   }
 
   // For tenant-specific templates, use subdomain or custom domain
-  // For global templates, use default tenant
-  const effectiveSlug = tenantSlug === 'global' || !tenantSlug ? 'lapoblanita' : tenantSlug
+  // For global templates, use 'alessacloud' placeholder (not a specific tenant's branding)
+  // SECURITY: Don't default to lapoblanita as that pollutes the preview with another tenant's data
+  const effectiveSlug = tenantSlug === 'global' || !tenantSlug ? 'lasreinas' : tenantSlug // TODO: Create a generic preview tenant
   const domain = tenantDomainMap[effectiveSlug] || `${effectiveSlug}.${rootDomain}`
   const basePreviewUrl = `https://${domain}/order?preview=true`
 

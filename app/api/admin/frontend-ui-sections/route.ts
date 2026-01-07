@@ -100,9 +100,9 @@ export async function POST(req: Request) {
       },
     });
 
-    // Revalidate cache
-    revalidatePath('/order');
-    revalidatePath('/');
+    // SECURITY: Only revalidate THIS tenant's paths to prevent cross-tenant cache pollution
+    revalidatePath(`/${tenant.slug}`, 'layout');
+    revalidatePath(`/${tenant.slug}/order`, 'page');
 
     return NextResponse.json({ success: true }, {
       headers: {
@@ -174,9 +174,9 @@ export async function PUT(req: Request) {
       },
     });
 
-    // Revalidate cache - THIS IS YOUR INSTANT SYNC
-    revalidatePath('/order');
-    revalidatePath('/');
+    // SECURITY: Only revalidate THIS tenant's paths to prevent cross-tenant cache pollution
+    revalidatePath(`/${tenant.slug}`, 'layout');
+    revalidatePath(`/${tenant.slug}/order`, 'page');
 
     return NextResponse.json({ success: true, sections: updatedSections }, {
       headers: {
@@ -248,9 +248,9 @@ export async function DELETE(req: Request) {
       },
     });
 
-    // Revalidate cache
-    revalidatePath('/order');
-    revalidatePath('/');
+    // SECURITY: Only revalidate THIS tenant's paths to prevent cross-tenant cache pollution
+    revalidatePath(`/${tenant.slug}`, 'layout');
+    revalidatePath(`/${tenant.slug}/order`, 'page');
 
     return NextResponse.json({ success: true }, {
       headers: {
@@ -268,4 +268,3 @@ export async function DELETE(req: Request) {
     );
   }
 }
-

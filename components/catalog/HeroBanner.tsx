@@ -9,14 +9,19 @@ interface HeroBannerProps {
   subtitle: string;
   onAddHighlight?: () => void;
   onImageError?: () => void;
+  tenantName?: string; // Pass tenant name to avoid hard-coding
 }
 
-export function HeroBanner({ images, title, subtitle, onAddHighlight, onImageError }: HeroBannerProps) {
+export function HeroBanner({ images, title, subtitle, onAddHighlight, onImageError, tenantName }: HeroBannerProps) {
   const tenant = useTenantTheme();
+  // Use tenant name from prop or context - NEVER hard-code a specific tenant
+  const displayName = tenantName || tenant.name || 'Restaurant';
+
   const grid = useMemo(() => {
     if (images.length >= 4) return images.slice(0, 4);
     const fallback = [...images];
-    while (fallback.length < 4) fallback.push(images[0] ?? '/tenant/lasreinas/images/hero.jpg');
+    // Use a generic placeholder instead of hard-coded tenant path
+    while (fallback.length < 4) fallback.push(images[0] ?? '/images/default-hero.jpg');
     return fallback;
   }, [images]);
 
@@ -25,7 +30,7 @@ export function HeroBanner({ images, title, subtitle, onAddHighlight, onImageErr
       <div className="grid gap-4 sm:grid-cols-2">
         <div className="flex flex-col justify-between space-y-6">
           <div>
-            <p className="text-xs uppercase tracking-[0.5em] text-white/60">Las Reinas Catalog</p>
+            <p className="text-xs uppercase tracking-[0.5em] text-white/60">{displayName} Catalog</p>
             <h1 className="text-4xl font-black sm:text-5xl lg:text-6xl">{title}</h1>
             <p className="mt-3 text-white/80">{subtitle}</p>
           </div>
@@ -59,7 +64,7 @@ export function HeroBanner({ images, title, subtitle, onAddHighlight, onImageErr
               {/* eslint-disable-next-line @next/next/no-img-element */}
               <img
                 src={image}
-                alt={`Las Reinas hero ${index + 1}`}
+                alt={`${displayName} hero ${index + 1}`}
                 onError={onImageError}
                 className={`h-full w-full object-cover ${index === 1 ? 'min-h-[200px]' : 'min-h-[120px]'}`}
               />

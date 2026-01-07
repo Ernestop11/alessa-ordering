@@ -367,16 +367,16 @@ export async function PUT(req: Request) {
     }
   });
 
-  // Revalidate all paths that use tenant data
-  // The root layout is shared across all pages and contains tenant data
-  // Revalidating the root will invalidate all pages that use the layout
-  revalidatePath('/', 'layout');
-  revalidatePath('/order', 'page');
-  revalidatePath('/order/success', 'page');
-  // Revalidate tenant-specific routes if slug exists
+  // SECURITY: Only revalidate THIS tenant's paths to prevent cross-tenant cache pollution
+  // NEVER use global paths like revalidatePath('/') as it affects ALL tenants
+  // This was causing issues where editing Taqueria Rosita would affect Las Reinas
   if (tenant.slug) {
-    revalidatePath(`/${tenant.slug}`, 'page');
+    // Tenant-specific routes only
+    revalidatePath(`/${tenant.slug}`, 'layout');
     revalidatePath(`/${tenant.slug}/order`, 'page');
+    revalidatePath(`/${tenant.slug}/order/success`, 'page');
+    revalidatePath(`/${tenant.slug}/catalog`, 'page');
+    revalidatePath(`/${tenant.slug}/checkout`, 'page');
   }
 
   const updatedTenant = await requireTenant();

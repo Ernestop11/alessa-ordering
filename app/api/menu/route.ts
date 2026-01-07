@@ -71,11 +71,11 @@ export async function POST(req: Request) {
       console.error('[Menu API] Error emitting ecosystem event:', err)
     }
 
-    // Revalidate customer-facing pages so menu changes reflect immediately
-    revalidatePath('/')
-    revalidatePath('/order')
-    revalidatePath(`/${tenant.slug}`)
-    revalidatePath(`/${tenant.slug}/order`)
+    // SECURITY: Only revalidate THIS tenant's paths to prevent cross-tenant cache pollution
+    // NEVER use global paths like revalidatePath('/') as it affects ALL tenants
+    revalidatePath(`/${tenant.slug}`, 'layout')
+    revalidatePath(`/${tenant.slug}/order`, 'page')
+    revalidatePath(`/${tenant.slug}/catalog`, 'page')
 
     return NextResponse.json(created, { status: 201 })
   } catch (err) {

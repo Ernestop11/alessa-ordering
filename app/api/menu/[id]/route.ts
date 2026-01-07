@@ -90,11 +90,10 @@ export async function PATCH(req: Request, { params }: { params: Promise<{ id: st
       console.error('[Menu API] Error emitting ecosystem event:', err)
     }
 
-    // Revalidate customer-facing pages so menu changes reflect immediately
-    revalidatePath('/')
-    revalidatePath('/order')
-    revalidatePath(`/${tenant.slug}`)
-    revalidatePath(`/${tenant.slug}/order`)
+    // SECURITY: Only revalidate THIS tenant's paths to prevent cross-tenant cache pollution
+    revalidatePath(`/${tenant.slug}`, 'layout')
+    revalidatePath(`/${tenant.slug}/order`, 'page')
+    revalidatePath(`/${tenant.slug}/catalog`, 'page')
 
     return NextResponse.json(updated)
   } catch (err) {
@@ -136,11 +135,10 @@ export async function DELETE(req: Request, { params }: { params: Promise<{ id: s
       console.error('[Menu API] Error emitting ecosystem event:', err)
     }
 
-    // Revalidate customer-facing pages so menu changes reflect immediately
-    revalidatePath('/')
-    revalidatePath('/order')
-    revalidatePath(`/${tenant.slug}`)
-    revalidatePath(`/${tenant.slug}/order`)
+    // SECURITY: Only revalidate THIS tenant's paths to prevent cross-tenant cache pollution
+    revalidatePath(`/${tenant.slug}`, 'layout')
+    revalidatePath(`/${tenant.slug}/order`, 'page')
+    revalidatePath(`/${tenant.slug}/catalog`, 'page')
 
     return NextResponse.json({ ok: true })
   } catch (err) {
