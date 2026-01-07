@@ -410,6 +410,14 @@ model Tenant {
   drivers                Driver[]
   groupOrders            GroupOrder[]
   customerContacts       CustomerContact[]
+  // Wash Service relations
+  fleets                 Fleet[]
+  trucks                 Truck[]
+  washRecords            WashRecord[]
+  washEmployees          WashEmployee[]
+  employeeShifts         EmployeeShift[]
+  washInvoices           WashInvoice[]
+  supplyLogs             SupplyLog[]
 
   @@index([status])
 }
@@ -1339,6 +1347,7 @@ enum TemplateType {
   GROCERY
   GYM
   CAR_SHOP
+  WASH_SERVICE
   CUSTOM
 }
 
@@ -1492,4 +1501,149 @@ model VPSChatMessage {
 
   @@index([sessionId])
   @@index([createdAt])
+}
+
+// ============================================
+// WASH SERVICE MODELS (Rhino Power Washing)
+// ============================================
+
+// Fleet company (B2B customer for wash services)
+model Fleet {
+  id           String        @id @default(uuid())
+  tenantId     String
+  tenant       Tenant        @relation(fields: [tenantId], references: [id], onDelete: Cascade)
+  name         String
+  contactName  String?
+  email        String?
+  phone        String?
+  address      String?
+  pricePerWash Decimal       @db.Decimal(10, 2) @default(25.00)
+  notes        String?
+  trucks       Truck[]
+  invoices     WashInvoice[]
+  createdAt    DateTime      @default(now())
+  updatedAt    DateTime      @updatedAt
+
+  @@index([tenantId])
+}
+
+// Individual truck with QR code
+model Truck {
+  id           String       @id @default(uuid())
+  tenantId     String
+  tenant       Tenant       @relation(fields: [tenantId], references: [id], onDelete: Cascade)
+  fleetId      String
+  fleet        Fleet        @relation(fields: [fleetId], references: [id], onDelete: Cascade)
+  qrCode       String       @unique // UUID for QR scanning
+  truckNumber  String       // Fleet's internal number (e.g., "T-001")
+  description  String?      // "White Freightliner", etc.
+  licensePlate String?
+  washes       WashRecord[]
+  createdAt    DateTime     @default(now())
+  updatedAt    DateTime     @updatedAt
+
+  @@index([tenantId])
+  @@index([fleetId])
+  @@index([qrCode])
+}
+
+// Simple wash record - one per wash
+model WashRecord {
+  id         String       @id @default(uuid())
+  tenantId   String
+  tenant     Tenant       @relation(fields: [tenantId], references: [id], onDelete: Cascade)
+  truckId    String
+  truck      Truck        @relation(fields: [truckId], references: [id], onDelete: Cascade)
+  employeeId String
+  employee   WashEmployee @relation(fields: [employeeId], references: [id], onDelete: Cascade)
+  invoiceId  String?
+  invoice    WashInvoice? @relation(fields: [invoiceId], references: [id], onDelete: SetNull)
+  price      Decimal      @db.Decimal(10, 2)
+  notes      String?
+  washedAt   DateTime     @default(now())
+  createdAt  DateTime     @default(now())
+
+  @@index([tenantId])
+  @@index([truckId])
+  @@index([employeeId])
+  @@index([invoiceId])
+  @@index([washedAt])
+}
+
+// Employee (washer)
+model WashEmployee {
+  id         String          @id @default(uuid())
+  tenantId   String
+  tenant     Tenant          @relation(fields: [tenantId], references: [id], onDelete: Cascade)
+  name       String
+  phone      String?
+  pin        String?         // Simple 4-digit PIN for login
+  hourlyRate Decimal?        @db.Decimal(10, 2)
+  active     Boolean         @default(true)
+  washes     WashRecord[]
+  shifts     EmployeeShift[]
+  createdAt  DateTime        @default(now())
+  updatedAt  DateTime        @updatedAt
+
+  @@index([tenantId])
+}
+
+// Employee shift (clock in/out)
+model EmployeeShift {
+  id         String       @id @default(uuid())
+  tenantId   String
+  tenant     Tenant       @relation(fields: [tenantId], references: [id], onDelete: Cascade)
+  employeeId String
+  employee   WashEmployee @relation(fields: [employeeId], references: [id], onDelete: Cascade)
+  clockIn    DateTime
+  clockOut   DateTime?
+  createdAt  DateTime     @default(now())
+
+  @@index([tenantId])
+  @@index([employeeId])
+  @@index([clockIn])
+}
+
+// Invoice for fleet
+model WashInvoice {
+  id            String       @id @default(uuid())
+  tenantId      String
+  tenant        Tenant       @relation(fields: [tenantId], references: [id], onDelete: Cascade)
+  fleetId       String
+  fleet         Fleet        @relation(fields: [fleetId], references: [id], onDelete: Cascade)
+  invoiceNumber String       @unique
+  washes        WashRecord[]
+  washCount     Int
+  pricePerWash  Decimal      @db.Decimal(10, 2)
+  subtotal      Decimal      @db.Decimal(10, 2)
+  tax           Decimal      @db.Decimal(10, 2) @default(0)
+  total         Decimal      @db.Decimal(10, 2)
+  status        String       @default("draft") // draft, sent, paid
+  periodStart   DateTime
+  periodEnd     DateTime
+  dueDate       DateTime?
+  paidAt        DateTime?
+  notes         String?
+  createdAt     DateTime     @default(now())
+  updatedAt     DateTime     @updatedAt
+
+  @@index([tenantId])
+  @@index([fleetId])
+  @@index([status])
+}
+
+// Supply usage tracking (optional)
+model SupplyLog {
+  id         String   @id @default(uuid())
+  tenantId   String
+  tenant     Tenant   @relation(fields: [tenantId], references: [id], onDelete: Cascade)
+  employeeId String?
+  supplyName String   // "Soap", "Degreaser", etc.
+  quantity   Decimal  @db.Decimal(10, 2)
+  unit       String   // "gallons", "bottles", etc.
+  notes      String?
+  loggedAt   DateTime @default(now())
+
+  @@index([tenantId])
+  @@index([loggedAt])
 }

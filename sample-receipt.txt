@@ -1,0 +1,34 @@
+╔══════════════════════════════════╗
+║         LAS REINAS               ║
+║     Mexican Kitchen & Bar        ║
+╚══════════════════════════════════╝
+
+Order #TEST01
+Jan 7, 2026 12:30 AM
+
+------------------------------
+2 × Carne Asada Tacos
+   $12.00
+   → Extra cilantro, no onions
+1 × Horchata (Large)
+   $5.00
+1 × Chips & Guacamole
+   $6.00
+------------------------------
+Subtotal: $23.00
+Tax & Fees: $1.83
+Total: $24.83
+------------------------------
+
+PICKUP
+Customer: Ernesto
+Phone: (530) 555-1234
+
+------------------------------
+Notes:
+Please add extra salsa verde
+
+------------------------------
+Thank you for your order!
+
+Fees include service charge.
