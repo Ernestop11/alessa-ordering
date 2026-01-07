@@ -89,6 +89,18 @@ const TENANT_THEME_MAP: Record<string, StaticTenantTheme> = {
       logo: '/tenant/taqueriarosita/logo.png',
     },
   },
+  rhinopowerwashing: {
+    slug: 'rhinopowerwashing',
+    name: 'Rhino Power Washing',
+    primaryColor: '#1f2937', // Gray-800 - professional dark
+    secondaryColor: '#10b981', // Emerald-500 - clean/fresh accent
+    themeColor: '#111827', // Gray-900 for status bar
+    assets: {
+      hero: '/tenant/rhinopowerwashing/hero.jpg',
+      membership: '/tenant/rhinopowerwashing/membership.jpg',
+      logo: '/tenant/rhinopowerwashing/logo.png',
+    },
+  },
 };
 
 export function getStaticTenantTheme(slug?: string): StaticTenantTheme {
