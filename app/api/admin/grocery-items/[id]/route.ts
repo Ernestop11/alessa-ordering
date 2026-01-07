@@ -57,8 +57,10 @@ export async function PATCH(
     data: updatableFields,
   });
 
-  revalidatePath('/grocery'); // Invalidate cache
-  revalidatePath('/order');
+  // SECURITY: Only revalidate THIS tenant's paths to prevent cross-tenant cache pollution
+  revalidatePath(`/${tenant.slug}`, 'layout');
+  revalidatePath(`/${tenant.slug}/grocery`, 'page');
+  revalidatePath(`/${tenant.slug}/order`, 'page');
   return NextResponse.json(updated);
 }
 
@@ -82,7 +84,9 @@ export async function DELETE(
   }
 
   await prisma.groceryItem.delete({ where: { id } });
-  revalidatePath('/grocery');
-  revalidatePath('/order');
+  // SECURITY: Only revalidate THIS tenant's paths to prevent cross-tenant cache pollution
+  revalidatePath(`/${tenant.slug}`, 'layout');
+  revalidatePath(`/${tenant.slug}/grocery`, 'page');
+  revalidatePath(`/${tenant.slug}/order`, 'page');
   return NextResponse.json({ ok: true });
 }

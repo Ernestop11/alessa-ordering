@@ -59,13 +59,11 @@ export async function POST(req: NextRequest) {
 
     const url = `/tenant/${tenant.slug}/uploads/${filename}`;
 
-    // Revalidate paths that might display uploaded images
+    // SECURITY: Only revalidate THIS tenant's paths to prevent cross-tenant cache pollution
     // Note: The actual tenant update happens when settings are saved,
     // but we revalidate here to ensure fresh data is available
-    revalidatePath('/');
-    revalidatePath('/order');
-    revalidatePath(`/${tenant.slug}`);
-    revalidatePath(`/${tenant.slug}/order`);
+    revalidatePath(`/${tenant.slug}`, 'layout');
+    revalidatePath(`/${tenant.slug}/order`, 'page');
 
     return NextResponse.json({ url, size: file.size });
   } catch (error: any) {

@@ -59,7 +59,9 @@ export async function POST(req: Request) {
   };
 
   const created = await prisma.groceryBundle.create({ data });
-  revalidatePath('/grocery');
-  revalidatePath('/order');
+  // SECURITY: Only revalidate THIS tenant's paths to prevent cross-tenant cache pollution
+  revalidatePath(`/${tenant.slug}`, 'layout');
+  revalidatePath(`/${tenant.slug}/grocery`, 'page');
+  revalidatePath(`/${tenant.slug}/order`, 'page');
   return NextResponse.json(created, { status: 201 });
 }

@@ -82,9 +82,9 @@ export async function POST(req: Request) {
       },
     });
 
-    // INSTANT SYNC - same pattern as "Accepting Orders"
-    revalidatePath('/order');
-    revalidatePath('/');
+    // SECURITY: Only revalidate THIS tenant's paths to prevent cross-tenant cache pollution
+    revalidatePath(`/${tenant.slug}`, 'layout');
+    revalidatePath(`/${tenant.slug}/order`, 'page');
 
     return NextResponse.json({ 
       success: true, 

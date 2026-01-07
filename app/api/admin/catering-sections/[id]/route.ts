@@ -44,7 +44,9 @@ export async function PATCH(
     data: updatableFields,
   });
 
-  revalidatePath('/order');
+  // SECURITY: Only revalidate THIS tenant's paths to prevent cross-tenant cache pollution
+  revalidatePath(`/${tenant.slug}`, 'layout');
+  revalidatePath(`/${tenant.slug}/order`, 'page');
   return NextResponse.json(updated);
 }
 
@@ -68,6 +70,8 @@ export async function DELETE(
   }
 
   await prisma.cateringSection.delete({ where: { id } });
-  revalidatePath('/order');
+  // SECURITY: Only revalidate THIS tenant's paths to prevent cross-tenant cache pollution
+  revalidatePath(`/${tenant.slug}`, 'layout');
+  revalidatePath(`/${tenant.slug}/order`, 'page');
   return NextResponse.json({ ok: true });
 }

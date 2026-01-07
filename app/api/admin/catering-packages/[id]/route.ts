@@ -60,7 +60,9 @@ export async function PATCH(
     data: updatableFields,
   });
 
-  revalidatePath('/order'); // Invalidate cache so frontend shows updated packages
+  // SECURITY: Only revalidate THIS tenant's paths to prevent cross-tenant cache pollution
+  revalidatePath(`/${tenant.slug}`, 'layout');
+  revalidatePath(`/${tenant.slug}/order`, 'page');
   return NextResponse.json(updated);
 }
 
@@ -84,6 +86,8 @@ export async function DELETE(
   }
 
   await prisma.cateringPackage.delete({ where: { id } });
-  revalidatePath('/order'); // Invalidate cache so frontend shows updated packages
+  // SECURITY: Only revalidate THIS tenant's paths to prevent cross-tenant cache pollution
+  revalidatePath(`/${tenant.slug}`, 'layout');
+  revalidatePath(`/${tenant.slug}/order`, 'page');
   return NextResponse.json({ ok: true });
 }

@@ -68,7 +68,9 @@ export async function POST(req: Request) {
     },
   });
 
-  revalidatePath('/order');
+  // SECURITY: Only revalidate THIS tenant's paths to prevent cross-tenant cache pollution
+  revalidatePath(`/${tenant.slug}`, 'layout');
+  revalidatePath(`/${tenant.slug}/order`, 'page');
 
   return json(section, { status: 201 });
 }
@@ -102,7 +104,9 @@ export async function PUT(req: Request) {
       }),
     );
     await prisma.$transaction(updates);
-    revalidatePath('/order');
+    // SECURITY: Only revalidate THIS tenant's paths to prevent cross-tenant cache pollution
+    revalidatePath(`/${tenant.slug}`, 'layout');
+    revalidatePath(`/${tenant.slug}/order`, 'page');
     return json({ ok: true });
   }
 
@@ -118,7 +122,9 @@ export async function PUT(req: Request) {
     data: updateData,
   });
 
-  revalidatePath('/order');
+  // SECURITY: Only revalidate THIS tenant's paths to prevent cross-tenant cache pollution
+  revalidatePath(`/${tenant.slug}`, 'layout');
+  revalidatePath(`/${tenant.slug}/order`, 'page');
 
   return json(updated);
 }
@@ -156,7 +162,9 @@ export async function DELETE(req: Request) {
     });
   });
 
-  revalidatePath('/order');
+  // SECURITY: Only revalidate THIS tenant's paths to prevent cross-tenant cache pollution
+  revalidatePath(`/${tenant.slug}`, 'layout');
+  revalidatePath(`/${tenant.slug}/order`, 'page');
 
   return json({ ok: true });
 }

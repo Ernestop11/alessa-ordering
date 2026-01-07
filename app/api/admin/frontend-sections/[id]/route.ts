@@ -46,9 +46,9 @@ export async function PATCH(
       },
     });
 
-    // Revalidate cache to ensure frontend shows updated sections
-    revalidatePath('/order');
-    revalidatePath('/');
+    // SECURITY: Only revalidate THIS tenant's paths to prevent cross-tenant cache pollution
+    revalidatePath(`/${tenant.slug}`, 'layout');
+    revalidatePath(`/${tenant.slug}/order`, 'page');
 
     return NextResponse.json(updated);
   } catch (error) {
@@ -90,9 +90,9 @@ export async function DELETE(
 
     await prisma.frontendSection.delete({ where: { id } });
 
-    // Revalidate cache to ensure frontend shows updated sections
-    revalidatePath('/order');
-    revalidatePath('/');
+    // SECURITY: Only revalidate THIS tenant's paths to prevent cross-tenant cache pollution
+    revalidatePath(`/${tenant.slug}`, 'layout');
+    revalidatePath(`/${tenant.slug}/order`, 'page');
 
     return NextResponse.json({ ok: true });
   } catch (error) {

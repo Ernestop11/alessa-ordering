@@ -77,9 +77,9 @@ export async function POST(req: Request) {
       }),
     ]);
 
-    // Revalidate cache to ensure frontend shows updated section order
-    revalidatePath('/order');
-    revalidatePath('/');
+    // SECURITY: Only revalidate THIS tenant's paths to prevent cross-tenant cache pollution
+    revalidatePath(`/${tenant.slug}`, 'layout');
+    revalidatePath(`/${tenant.slug}/order`, 'page');
 
     return NextResponse.json({ ok: true });
   } catch (error) {

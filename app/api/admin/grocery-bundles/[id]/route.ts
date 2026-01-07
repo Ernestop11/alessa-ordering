@@ -46,7 +46,9 @@ export async function PATCH(req: Request, { params }: { params: { id: string } }
     data: updatableFields,
   });
 
-  revalidatePath('/grocery');
+  // SECURITY: Only revalidate THIS tenant's paths to prevent cross-tenant cache pollution
+  revalidatePath(`/${tenant.slug}`, 'layout');
+  revalidatePath(`/${tenant.slug}/grocery`, 'page');
   return NextResponse.json(updated);
 }
 
@@ -66,6 +68,8 @@ export async function DELETE(req: Request, { params }: { params: { id: string } 
   }
 
   await prisma.groceryBundle.delete({ where: { id } });
-  revalidatePath('/grocery');
+  // SECURITY: Only revalidate THIS tenant's paths to prevent cross-tenant cache pollution
+  revalidatePath(`/${tenant.slug}`, 'layout');
+  revalidatePath(`/${tenant.slug}/grocery`, 'page');
   return NextResponse.json({ success: true });
 }

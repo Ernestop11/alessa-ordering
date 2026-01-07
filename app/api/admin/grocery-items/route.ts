@@ -74,7 +74,9 @@ export async function POST(req: Request) {
   };
 
   const created = await prisma.groceryItem.create({ data });
-  revalidatePath('/grocery'); // Invalidate cache so frontend shows updated items
-  revalidatePath('/order'); // Also invalidate order page if grocery banner is shown
+  // SECURITY: Only revalidate THIS tenant's paths to prevent cross-tenant cache pollution
+  revalidatePath(`/${tenant.slug}`, 'layout');
+  revalidatePath(`/${tenant.slug}/grocery`, 'page');
+  revalidatePath(`/${tenant.slug}/order`, 'page');
   return NextResponse.json(created, { status: 201 });
 }
