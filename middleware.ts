@@ -48,8 +48,9 @@ export async function middleware(req: NextRequest) {
     }
 
     // 2. CUSTOM DOMAIN (lasreinascolusa.com, www.lasreinascolusa.com)
+    // Use hostname (without port) for lookup, not host (which may include :port)
     if (!tenant && !host?.endsWith(`.${ROOT_DOMAIN}`) && hostname !== ROOT_DOMAIN) {
-      tenant = resolveCustomDomain(host);
+      tenant = resolveCustomDomain(hostname);
     }
 
     // 3. QUERY PARAM (?tenant=lasreinas)
