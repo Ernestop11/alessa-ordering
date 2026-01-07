@@ -1,3 +1,6 @@
+// Load dotenv to get env vars properly (especially JSON values with quotes)
+require('dotenv').config();
+
 module.exports = {
   apps: [
     {
@@ -12,7 +15,9 @@ module.exports = {
       max_memory_restart: '1G',
       env: {
         NODE_ENV: 'production',
-        PORT: 3001  // DEDICATED PORT - No conflicts
+        PORT: 3001,  // DEDICATED PORT - No conflicts
+        // Pass through all env vars from .env file (loaded by dotenv above)
+        ...process.env
       },
       error_file: '/var/log/pm2/alessa-ordering-error.log',
       out_file: '/var/log/pm2/alessa-ordering-out.log',
