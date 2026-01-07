@@ -160,9 +160,10 @@ export default function Cart() {
     }
   }, [searchParams]);
 
-  // Load reward discounts from localStorage
+  // Load reward discounts from localStorage (tenant-scoped to prevent cross-tenant pollution)
   useEffect(() => {
-    const discountStr = localStorage.getItem('activeRewardDiscount');
+    const tenantSlug = tenant.slug || 'default';
+    const discountStr = localStorage.getItem(`activeRewardDiscount_${tenantSlug}`);
     if (discountStr) {
       try {
         const discount = JSON.parse(discountStr);
@@ -172,11 +173,11 @@ export default function Cart() {
       }
     }
 
-    const freeShipping = localStorage.getItem('activeRewardFreeShipping');
+    const freeShipping = localStorage.getItem(`activeRewardFreeShipping_${tenantSlug}`);
     if (freeShipping === 'true') {
       setRewardFreeShipping(true);
     }
-  }, []);
+  }, [tenant.slug]);
   
   // Get tenant theme colors
   const primaryColor = tenant.primaryColor || "#dc2626";

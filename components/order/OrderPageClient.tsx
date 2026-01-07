@@ -1503,7 +1503,7 @@ export default function OrderPageClient({
           showNotification('Menu item not found');
         }
       } else if (reward.type === 'discount') {
-        // Store discount in localStorage for checkout
+        // Store discount in localStorage for checkout (tenant-scoped)
         const discount = {
           rewardId: reward.id,
           type: reward.discountPercent ? 'percent' : 'amount',
@@ -1511,15 +1511,15 @@ export default function OrderPageClient({
           name: reward.name,
         };
         try {
-          localStorage.setItem('activeRewardDiscount', JSON.stringify(discount));
+          localStorage.setItem(`activeRewardDiscount_${tenant.slug}`, JSON.stringify(discount));
         } catch {
           // localStorage may be unavailable in private mode - ignore
         }
         showNotification(`🎉 ${reward.name} discount applied! Will be applied at checkout.`);
       } else if (reward.type === 'free_shipping') {
-        // Store free shipping flag
+        // Store free shipping flag (tenant-scoped)
         try {
-          localStorage.setItem('activeRewardFreeShipping', 'true');
+          localStorage.setItem(`activeRewardFreeShipping_${tenant.slug}`, 'true');
         } catch {
           // localStorage may be unavailable in private mode - ignore
         }

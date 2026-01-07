@@ -33,11 +33,10 @@ export async function GET() {
     const themeColor = tenant?.primaryColor || staticTheme.themeColor;
     const backgroundColor = tenant?.secondaryColor || staticTheme.secondaryColor;
 
-    // Determine icon paths - check for tenant-specific icons
+    // Determine icon paths - check for tenant-specific icons from theme config
     const iconSlug = tenant?.slug || 'default';
-    // Tenants with custom PWA icons in /public/tenant/{slug}/icons/
-    const tenantsWithCustomIcons = ['lasreinas', 'lapoblanita'];
-    const hasCustomIcons = tenant?.slug ? tenantsWithCustomIcons.includes(tenant.slug) : false;
+    // Use theme config instead of hard-coded list to determine if tenant has custom icons
+    const hasCustomIcons = staticTheme.hasCustomIcons === true;
     // Cache buster for icon updates (increment when icons change)
     const iconVersion = 'v5';
 

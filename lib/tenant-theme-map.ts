@@ -4,6 +4,7 @@ export interface StaticTenantTheme {
   primaryColor: string;
   secondaryColor: string;
   themeColor: string;
+  hasCustomIcons?: boolean; // Whether tenant has /tenant/[slug]/icons folder
   assets: {
     hero: string;
     membership: string;
@@ -11,7 +12,19 @@ export interface StaticTenantTheme {
   };
 }
 
-const DEFAULT_THEME_KEY = 'lapoblanita';
+// Generic fallback theme - NOT a specific tenant
+const GENERIC_FALLBACK_THEME: StaticTenantTheme = {
+  slug: 'alessacloud',
+  name: 'Alessa Cloud',
+  primaryColor: '#0f172a', // Slate-900 - neutral/professional
+  secondaryColor: '#3b82f6', // Blue-500 - accent
+  themeColor: '#0f172a',
+  assets: {
+    hero: '/images/default-hero.jpg',
+    membership: '/images/default-membership.jpg',
+    logo: '/icons/alessa-cloud-icon-512.png',
+  },
+};
 
 const TENANT_THEME_MAP: Record<string, StaticTenantTheme> = {
   lapoblanita: {
@@ -20,6 +33,7 @@ const TENANT_THEME_MAP: Record<string, StaticTenantTheme> = {
     primaryColor: '#1e3a5f', // Puebla/Talavera navy blue
     secondaryColor: '#3b82f6', // Bright blue accent
     themeColor: '#0f172a', // Dark navy for status bar
+    hasCustomIcons: true, // Has /tenant/lapoblanita/icons folder
     assets: {
       hero: '/tenant/lapoblanita/hero.jpg',
       membership: '/tenant/lapoblanita/membership.jpg',
@@ -32,6 +46,7 @@ const TENANT_THEME_MAP: Record<string, StaticTenantTheme> = {
     primaryColor: '#DC2626',
     secondaryColor: '#FBBF24',
     themeColor: '#5C1515', // Matches top of header gradient for seamless status bar
+    hasCustomIcons: true, // Has /tenant/lasreinas/icons folder
     assets: {
       hero: '/tenant/lasreinas/images/hero-quesabirria-action.jpg',
       membership: '/tenant/lasreinas/images/membership.jpg',
@@ -80,5 +95,10 @@ export function getStaticTenantTheme(slug?: string): StaticTenantTheme {
   if (slug && TENANT_THEME_MAP[slug]) {
     return TENANT_THEME_MAP[slug];
   }
-  return TENANT_THEME_MAP[DEFAULT_THEME_KEY];
+  // IMPORTANT: Return generic theme, NOT a specific tenant's theme
+  // This prevents cross-tenant branding pollution
+  return GENERIC_FALLBACK_THEME;
 }
+
+// Export for testing
+export { TENANT_THEME_MAP };
