@@ -1288,13 +1288,24 @@ export default function Cart() {
 
           <section className="space-y-3 rounded-2xl border-2 border-gray-200 bg-gradient-to-br from-gray-50 to-white p-6">
             <h3 className="text-lg font-bold text-gray-900 mb-4">Order Summary</h3>
+
+            {/* California SB 1524 Fee Disclosure - must be clear and conspicuous */}
+            <div className="rounded-lg border border-blue-200 bg-blue-50 px-3 py-2 mb-3">
+              <p className="text-xs text-blue-800">
+                <strong>Service Fee Notice:</strong> A {((platformPercentFee * 100).toFixed(0))}% + ${platformFlatFee.toFixed(2)} service fee supports our online ordering platform and is charged on all orders.
+              </p>
+            </div>
+
             <div className="space-y-2 text-sm">
               <div className="flex justify-between text-gray-700">
                 <span>Subtotal</span>
                 <span className="font-semibold">{formatCurrency(subtotal)}</span>
               </div>
               <div className="flex justify-between text-gray-700">
-                <span>Platform fee</span>
+                <span className="flex items-center gap-1">
+                  Service fee
+                  <span className="text-xs text-gray-500" title="Supports online ordering platform">ⓘ</span>
+                </span>
                 <span className="font-semibold">{formatCurrency(platformFee)}</span>
               </div>
               <div className="flex justify-between text-gray-700">
