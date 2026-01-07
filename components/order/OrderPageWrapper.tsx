@@ -42,14 +42,20 @@ const OrderPageClientLaPoblanita = dynamic(
   { ssr: false, loading: LoadingSpinner }
 );
 
+// Taqueria Rosita - Modern hip redesign (2026)
+const OrderPageClientTaqueriaRosita = dynamic(
+  () => import('./OrderPageClientTaqueriaRosita').then(mod => mod.default),
+  { ssr: false, loading: LoadingSpinner }
+);
+
 // Map of tenant slugs to their specific components
 // Tenants NOT listed here will use the default OrderPageClient (which is database-driven)
 // Only add a tenant here if they need CUSTOM CODE FEATURES, not just different branding
 const TENANT_SPECIFIC_COMPONENTS: Record<string, React.ComponentType<any>> = {
   // La Poblanita has custom panaderia (El Hornito bakery) integration
   'lapoblanita': OrderPageClientLaPoblanita,
-  // Taqueria Rosita, Villa Corona, and other new tenants use the default database-driven component
-  // No custom code needed - all branding comes from database!
+  // Taqueria Rosita - Modern hip redesign with custom dark theme
+  'taqueriarosita': OrderPageClientTaqueriaRosita,
 };
 
 const PolishedOrderPage = dynamic(
