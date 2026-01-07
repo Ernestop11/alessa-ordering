@@ -232,7 +232,7 @@ export async function sendCustomerOrderConfirmation(params: {
 <table width="100%" cellpadding="0" cellspacing="0" style="max-width:600px;margin:0 auto;background:#fff;border-radius:16px;overflow:hidden;box-shadow:0 4px 20px rgba(0,0,0,0.1);">
   <tr>
     <td style="padding:32px 24px;background:linear-gradient(135deg, ${gradientFrom} 0%, ${gradientVia} 50%, ${gradientTo} 100%);text-align:center;">
-      ${logoUrl ? `<img src="${logoUrl}" alt="${tenantName}" style="max-height:80px;max-width:280px;margin-bottom:8px;">` : `<h1 style="margin:0;color:#fff;font-size:28px;font-weight:800;">${tenantName}</h1>`}
+      ${logoUrl ? `<img src="${logoUrl}" alt="${tenantName}" width="280" height="120" style="display:block;margin:0 auto 8px;max-width:280px;height:auto;">` : `<h1 style="margin:0;color:#fff;font-size:28px;font-weight:800;">${tenantName}</h1>`}
     </td>
   </tr>
   <tr>
