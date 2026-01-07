@@ -30,6 +30,8 @@ export interface CartItem {
 interface CartStore {
   items: CartItem[];
   _hasHydrated: boolean;
+  // SECURITY: Track which tenant this cart belongs to - prevents cross-tenant pollution
+  _tenantSlug: string | null;
   // Group order context
   groupSessionCode: string | null;
   participantName: string | null;
@@ -37,6 +39,8 @@ interface CartStore {
   isSponsoredOrder: boolean;
   sponsorName: string | null;
   setHasHydrated: (state: boolean) => void;
+  // SECURITY: Set tenant and clear cart if tenant changed
+  setTenant: (tenantSlug: string) => void;
   addToCart: (item: CartItem) => void;
   removeFromCart: (itemId: string) => void;
   updateQuantity: (itemId: string, quantity: number) => void;
@@ -54,6 +58,8 @@ export const useCart = create<CartStore>()(
     (set, get) => ({
       items: [],
       _hasHydrated: false,
+      // SECURITY: Track which tenant this cart belongs to
+      _tenantSlug: null,
       groupSessionCode: null,
       participantName: null,
       // "I'm Buying" feature
@@ -62,6 +68,26 @@ export const useCart = create<CartStore>()(
 
       setHasHydrated: (state) => {
         set({ _hasHydrated: state });
+      },
+
+      // SECURITY: Set tenant and clear cart if switching tenants to prevent cross-tenant pollution
+      setTenant: (tenantSlug: string) => {
+        const currentTenant = get()._tenantSlug;
+        if (currentTenant && currentTenant !== tenantSlug) {
+          // User switched tenants - clear cart to prevent cross-tenant items
+          console.log(`[Cart] Tenant changed from ${currentTenant} to ${tenantSlug} - clearing cart`);
+          set({
+            items: [],
+            _tenantSlug: tenantSlug,
+            groupSessionCode: null,
+            participantName: null,
+            isSponsoredOrder: false,
+            sponsorName: null,
+          });
+        } else if (!currentTenant) {
+          // First time setting tenant
+          set({ _tenantSlug: tenantSlug });
+        }
       },
 
       setGroupOrder: (sessionCode, participantName, isSponsoredOrder = false, sponsorName = null) => {
@@ -153,9 +179,11 @@ export const useCart = create<CartStore>()(
           removeItem: () => {},
         };
       }),
-      // Persist items and group order context
+      // Persist items, group order context, and tenant slug for isolation
       partialize: (state) => ({
         items: state.items,
+        // SECURITY: Persist tenant slug to detect cross-tenant navigation
+        _tenantSlug: state._tenantSlug,
         groupSessionCode: state.groupSessionCode,
         participantName: state.participantName,
         // "I'm Buying" feature

@@ -10,13 +10,21 @@ import { useTenantTheme } from "./TenantThemeProvider";
 export default function CartLauncher() {
   const [open, setOpen] = useState(false);
   const [mounted, setMounted] = useState(false);
-  const { items } = useCart();
+  const { items, setTenant } = useCart();
   const tenant = useTenantTheme();
 
   // Set mounted on client-side for portal hydration
   useEffect(() => {
     setMounted(true);
   }, []);
+
+  // SECURITY: Set tenant context in cart to prevent cross-tenant pollution
+  // If user navigates from one tenant to another, cart will be cleared
+  useEffect(() => {
+    if (tenant.slug && tenant.slug !== 'root') {
+      setTenant(tenant.slug);
+    }
+  }, [tenant.slug, setTenant]);
 
   const itemCount = items.reduce((sum, item) => sum + item.quantity, 0);
   const badge = itemCount > 99 ? "99+" : itemCount.toString();

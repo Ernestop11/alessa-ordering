@@ -22,11 +22,13 @@ function extractMenuItemId(cartId: string): string {
   return match ? match[1] : cartId;
 }
 
-// Cache for stripe instances
+// SECURITY: Cache Stripe instances per tenant+account to prevent cross-tenant pollution
+// Key format: {tenantSlug}-{stripeAccount|platform}
 const stripePromiseCache: Record<string, Promise<Stripe | null>> = {};
 
-function getStripePromise(stripeAccount?: string): Promise<Stripe | null> {
-  const cacheKey = stripeAccount || 'platform';
+function getStripePromise(tenantSlug: string, stripeAccount?: string): Promise<Stripe | null> {
+  // Include tenant slug in cache key to prevent cross-tenant Stripe instance sharing
+  const cacheKey = `${tenantSlug}-${stripeAccount || 'platform'}`;
   if (!stripePromiseCache[cacheKey]) {
     const options = stripeAccount ? { stripeAccount } : undefined;
     stripePromiseCache[cacheKey] = loadStripe(
@@ -561,12 +563,13 @@ export default function CheckoutPage() {
   const [sponsoredOrderLoading, setSponsoredOrderLoading] = useState(false);
 
   const stripePromise = useMemo(() => {
+    // SECURITY: Include tenant slug in Stripe cache key to prevent cross-tenant pollution
     if (stripeAccount) {
-      return getStripePromise(stripeAccount);
+      return getStripePromise(tenantSlug, stripeAccount);
     }
     // Use platform account if no connected account
-    return getStripePromise();
-  }, [stripeAccount]);
+    return getStripePromise(tenantSlug);
+  }, [tenantSlug, stripeAccount]);
 
   // Fetch Stripe config, saved cards, and logged-in customer info
   useEffect(() => {
@@ -924,7 +927,7 @@ export default function CheckoutPage() {
               <Elements stripe={stripePromise}>
                 <PaymentForm
                   totalAmount={total()}
-                  tenantName={tenant.name || 'Las Reinas'}
+                  tenantName={tenant.name || 'Restaurant'}
                   customerInfo={customerInfo}
                   orderType={orderType}
                   items={items.map((i) => ({ id: i.id, quantity: i.quantity, price: i.price }))}
