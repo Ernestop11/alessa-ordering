@@ -50,7 +50,9 @@ export async function middleware(req: NextRequest) {
     // 2. CUSTOM DOMAIN (lasreinascolusa.com, www.lasreinascolusa.com)
     // Use hostname (without port) for lookup, not host (which may include :port)
     if (!tenant && !host?.endsWith(`.${ROOT_DOMAIN}`) && hostname !== ROOT_DOMAIN) {
-      tenant = resolveCustomDomain(hostname);
+      const resolved = resolveCustomDomain(hostname);
+      console.log(`[middleware] Custom domain lookup: hostname="${hostname}", resolved="${resolved}", CUSTOM_DOMAIN_MAP exists=${!!process.env.CUSTOM_DOMAIN_MAP}`);
+      tenant = resolved;
     }
 
     // 3. QUERY PARAM (?tenant=lasreinas)
