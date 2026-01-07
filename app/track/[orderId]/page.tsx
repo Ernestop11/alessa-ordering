@@ -1,78 +1,36 @@
-import { notFound } from 'next/navigation';
+import { redirect, notFound } from 'next/navigation';
 import prisma from '@/lib/prisma';
-import OrderTrackingClient from '@/components/order/OrderTrackingClient';
+
+// DEPRECATED: This page is deprecated for security reasons.
+// Redirects to the tenant-scoped tracking page at /[tenantSlug]/track/[orderId]
+// This prevents cross-tenant data access where users could track orders from other tenants.
 
 interface Props {
   params: Promise<{ orderId: string }>;
 }
 
-export default async function OrderTrackingPage({ params }: Props) {
+export default async function OrderTrackingRedirect({ params }: Props) {
   const { orderId } = await params;
 
-  // Support both full UUID and short 6-char order IDs
+  // Look up the order to find its tenant (we still need this to redirect properly)
   const isShortId = orderId.length === 6;
 
   const order = await prisma.order.findFirst({
     where: isShortId
       ? { id: { endsWith: orderId.toLowerCase() } }
       : { id: orderId },
-    include: {
-      items: true,
+    select: {
+      id: true,
       tenant: {
-        select: {
-          id: true,
-          name: true,
-          slug: true,
-          logoUrl: true,
-          primaryColor: true,
-          secondaryColor: true,
-          contactPhone: true,
-        },
+        select: { slug: true },
       },
     },
   });
 
-  if (!order) {
+  if (!order || !order.tenant?.slug) {
     notFound();
   }
 
-  // Serialize dates for client component
-  const serializedOrder = {
-    id: order.id,
-    status: order.status,
-    fulfillmentMethod: order.fulfillmentMethod,
-    customerName: order.customerName,
-    customerPhone: order.customerPhone,
-    customerEmail: order.customerEmail,
-    subtotalAmount: Number(order.subtotalAmount ?? 0),
-    taxAmount: Number(order.taxAmount ?? 0),
-    tipAmount: Number(order.tipAmount ?? 0),
-    deliveryFee: Number(order.deliveryFee ?? 0),
-    platformFee: Number(order.platformFee ?? 0),
-    totalAmount: Number(order.totalAmount ?? 0),
-    notes: order.notes,
-    createdAt: order.createdAt.toISOString(),
-    updatedAt: order.updatedAt.toISOString(),
-    acknowledgedAt: order.acknowledgedAt?.toISOString() ?? null,
-    items: order.items.map((item) => ({
-      id: item.id,
-      menuItemName: item.menuItemName,
-      quantity: item.quantity,
-      price: Number(item.price ?? 0),
-      notes: item.notes,
-    })),
-    tenant: order.tenant
-      ? {
-          id: order.tenant.id,
-          name: order.tenant.name,
-          slug: order.tenant.slug,
-          logo: order.tenant.logoUrl,
-          primaryColor: order.tenant.primaryColor,
-          secondaryColor: order.tenant.secondaryColor,
-          contactPhone: order.tenant.contactPhone,
-        }
-      : null,
-  };
-
-  return <OrderTrackingClient order={serializedOrder} />;
+  // Redirect to the tenant-scoped tracking page
+  redirect(`/${order.tenant.slug}/track/${order.id}`);
 }

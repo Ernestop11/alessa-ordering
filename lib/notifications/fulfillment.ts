@@ -208,7 +208,8 @@ export async function sendCustomerOrderConfirmation(params: {
   const method = order.fulfillmentMethod?.toUpperCase() ?? 'PICKUP';
   const primaryColor = branding?.primaryColor || '#dc2626';
   const baseUrl = buildBaseUrl(tenantSlug, branding?.customDomain);
-  const trackingUrl = `${baseUrl}/track/${order.id}`;
+  // Use tenant-scoped tracking URL to prevent cross-tenant data access
+  const trackingUrl = `${baseUrl}/${tenantSlug}/track/${order.id}`;
   const logoUrl = buildFullLogoUrl(branding?.logo, tenantSlug, branding?.customDomain);
 
   const items = order.items ?? [];

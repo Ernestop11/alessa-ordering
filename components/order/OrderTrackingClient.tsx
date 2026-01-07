@@ -110,7 +110,9 @@ export default function OrderTrackingClient({ order: initialOrder }: Props) {
   useEffect(() => {
     const fetchStatus = async () => {
       try {
-        const res = await fetch(`/api/track/${order.id}`);
+        // Use tenant-scoped API to prevent cross-tenant data access
+        const tenantSlug = order.tenant?.slug || 'unknown';
+        const res = await fetch(`/api/track/${tenantSlug}/${order.id}`);
         if (res.ok) {
           const data = await res.json();
           setOrder((prev) => ({
