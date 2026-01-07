@@ -25,6 +25,13 @@ export const resendFromEmail =
   process.env.RESEND_LOGIN_FROM_EMAIL ??
   null;
 
+// Debug log for notification provider configuration
+console.log('[notifications] Provider init:', {
+  hasResendKey: !!resendApiKey,
+  hasResendFrom: !!resendFromEmail,
+  keyPrefix: resendApiKey?.slice(0, 10),
+});
+
 export const resendClient: ResendClient | null = resendApiKey
   ? new Resend(resendApiKey)
   : null;
