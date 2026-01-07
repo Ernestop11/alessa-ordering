@@ -461,7 +461,7 @@ export async function createOrderFromPayload({
           name: true,
           contactEmail: true,
           contactPhone: true,
-          logo: true,
+          logoUrl: true,
           primaryColor: true,
         },
       });
@@ -483,7 +483,7 @@ export async function createOrderFromPayload({
         targets,
         order: serialized,
         branding: {
-          logo: tenantContact.logo,
+          logo: tenantContact.logoUrl,
           primaryColor: tenantContact.primaryColor,
         },
       });

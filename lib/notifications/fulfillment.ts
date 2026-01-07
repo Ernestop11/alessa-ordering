@@ -20,6 +20,16 @@ interface TenantBranding {
   primaryColor?: string | null;
 }
 
+function buildFullLogoUrl(logoUrl: string | null | undefined, tenantSlug: string): string | null {
+  if (!logoUrl) return null;
+  // If already a full URL, return as-is
+  if (logoUrl.startsWith('http://') || logoUrl.startsWith('https://')) {
+    return logoUrl;
+  }
+  // Convert relative URL to full URL
+  return `https://${tenantSlug}.alessacloud.com${logoUrl.startsWith('/') ? '' : '/'}${logoUrl}`;
+}
+
 function buildFulfillmentEmailHtml(params: {
   tenantName: string;
   tenantSlug: string;
@@ -32,6 +42,7 @@ function buildFulfillmentEmailHtml(params: {
   const method = order.fulfillmentMethod?.toUpperCase() ?? 'PICKUP';
   const primaryColor = branding?.primaryColor || '#dc2626';
   const adminUrl = `https://${tenantSlug}.alessacloud.com/admin/orders`;
+  const logoUrl = buildFullLogoUrl(branding?.logo, tenantSlug);
 
   const items = order.items ?? [];
   const itemsHtml = items
@@ -49,7 +60,7 @@ function buildFulfillmentEmailHtml(params: {
 <table width="100%" cellpadding="0" cellspacing="0" style="max-width:600px;margin:0 auto;background:#fff;">
   <tr>
     <td style="padding:24px;background:${primaryColor};text-align:center;">
-      ${branding?.logo ? `<img src="${branding.logo}" alt="${tenantName}" style="max-height:50px;max-width:200px;">` : `<h1 style="margin:0;color:#fff;font-size:24px;">${tenantName}</h1>`}
+      ${logoUrl ? `<img src="${logoUrl}" alt="${tenantName}" style="max-height:50px;max-width:200px;">` : `<h1 style="margin:0;color:#fff;font-size:24px;">${tenantName}</h1>`}
     </td>
   </tr>
   <tr>
@@ -188,6 +199,7 @@ export async function sendCustomerOrderConfirmation(params: {
   const method = order.fulfillmentMethod?.toUpperCase() ?? 'PICKUP';
   const primaryColor = branding?.primaryColor || '#dc2626';
   const trackingUrl = `https://${tenantSlug}.alessacloud.com/track/${order.id}`;
+  const logoUrl = buildFullLogoUrl(branding?.logo, tenantSlug);
 
   const items = order.items ?? [];
   const itemsHtml = items
@@ -205,7 +217,7 @@ export async function sendCustomerOrderConfirmation(params: {
 <table width="100%" cellpadding="0" cellspacing="0" style="max-width:600px;margin:0 auto;background:#fff;">
   <tr>
     <td style="padding:24px;background:${primaryColor};text-align:center;">
-      ${branding?.logo ? `<img src="${branding.logo}" alt="${tenantName}" style="max-height:50px;max-width:200px;">` : `<h1 style="margin:0;color:#fff;font-size:24px;">${tenantName}</h1>`}
+      ${logoUrl ? `<img src="${logoUrl}" alt="${tenantName}" style="max-height:50px;max-width:200px;">` : `<h1 style="margin:0;color:#fff;font-size:24px;">${tenantName}</h1>`}
     </td>
   </tr>
   <tr>
