@@ -118,6 +118,7 @@ export const config = {
      * - favicon.ico / assets
      * - tenant/ (static tenant assets like uploads, images, icons)
      */
-    '/((?!api/auth|_next/static|_next/image|favicon.ico|robots.txt|tenant/).*)',
+    // Note: api/track has its own tenant validation via URL params
+    '/((?!api/auth|api/track|_next/static|_next/image|favicon.ico|robots.txt|tenant/).*)',
   ],
 };
