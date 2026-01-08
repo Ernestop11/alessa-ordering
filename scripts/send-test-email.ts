@@ -43,13 +43,19 @@ async function main() {
   <tr>
     <td style="padding:32px 24px;background:${primaryColor};text-align:center;">
       ${logoUrl ? `
-        <table cellpadding="0" cellspacing="0" border="0" align="center" style="margin:0 auto;">
-          <tr>
-            <td align="center" valign="middle" width="90" height="90" bgcolor="#ffffff" style="background-color:#ffffff;border-radius:50%;width:90px;height:90px;text-align:center;vertical-align:middle;">
-              <img src="${logoUrl}" alt="${tenantName}" width="70" height="70" style="display:block;margin:0 auto;max-height:70px;max-width:70px;background-color:#ffffff;">
-            </td>
-          </tr>
-        </table>
+        <!--[if mso]>
+        <v:roundrect xmlns:v="urn:schemas-microsoft-com:vml" xmlns:w="urn:schemas-microsoft-com:office:word" style="height:90px;v-text-anchor:middle;width:90px;" arcsize="50%" fillcolor="#ffffff">
+        <v:fill type="solid" color="#ffffff"/>
+        <w:anchorlock/>
+        <center>
+        <![endif]-->
+        <div style="display:inline-block;width:90px;height:90px;line-height:90px;border-radius:50%;background:#ffffff !important;background-color:#ffffff !important;text-align:center;vertical-align:middle;mso-hide:all;">
+          <img src="${logoUrl}" alt="${tenantName}" width="70" height="70" style="vertical-align:middle;max-height:70px;max-width:70px;">
+        </div>
+        <!--[if mso]>
+        </center>
+        </v:roundrect>
+        <![endif]-->
       ` : `<h1 style="margin:0;color:#fff;font-size:24px;font-weight:800;">${tenantName}</h1>`}
     </td>
   </tr>
