@@ -118,6 +118,9 @@ export function normalizeOrderPayload(value: unknown): OrderPayload | null {
     customerEmail: typeof draft.customerEmail === 'string' ? draft.customerEmail : undefined,
     customerPhone: typeof draft.customerPhone === 'string' ? draft.customerPhone : undefined,
     notes: typeof draft.notes === 'string' ? draft.notes : undefined,
+    // Scheduled pickup time - pass through as string (ISO format) or null
+    scheduledPickupTime: typeof draft.scheduledPickupTime === 'string' ? draft.scheduledPickupTime :
+                         draft.scheduledPickupTime === null ? null : undefined,
     destination,
     deliveryAddress,
   };
