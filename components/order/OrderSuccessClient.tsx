@@ -1,6 +1,6 @@
 "use client";
 
-import { useEffect, useState } from "react";
+import { useEffect, useState, useRef } from "react";
 import Link from "next/link";
 import { useSearchParams } from "next/navigation";
 import { useCart } from "@/lib/store/cart";
@@ -9,15 +9,51 @@ export default function OrderSuccessClient() {
   const clearCart = useCart((state) => state.clearCart);
   const searchParams = useSearchParams();
   const [enrolled, setEnrolled] = useState(false);
+  const [orderStatus, setOrderStatus] = useState<'checking' | 'confirmed' | 'retrying'>('checking');
+  const confirmAttempted = useRef(false);
 
   useEffect(() => {
     clearCart();
-    
+
     // Check if we need to enroll in rewards (from checkout metadata)
     const shouldEnroll = searchParams?.get('enrollRewards') === 'true';
     if (shouldEnroll) {
-      // Enrollment is handled server-side in order creation, but we can show a message
       setEnrolled(true);
+    }
+
+    // FAILSAFE: Verify order was created, retry if needed
+    // This handles the case where sendBeacon/fetch didn't complete before navigation
+    const paymentIntentId = searchParams?.get('payment_intent');
+    if (paymentIntentId && !confirmAttempted.current) {
+      confirmAttempted.current = true;
+
+      // Give backend a moment to process any in-flight requests
+      setTimeout(async () => {
+        try {
+          // Call confirm endpoint - it will return existing order if already created
+          const response = await fetch('/api/payments/confirm', {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify({ paymentIntentId }),
+          });
+
+          const result = await response.json();
+
+          if (response.ok) {
+            console.log('[OrderSuccess] Order confirmed:', result.orderId, result.alreadyExists ? '(already existed)' : '(newly created)');
+            setOrderStatus('confirmed');
+          } else {
+            console.error('[OrderSuccess] Confirm failed:', result);
+            // Still show success - the payment went through, order may be created later by webhook
+            setOrderStatus('confirmed');
+          }
+        } catch (err) {
+          console.error('[OrderSuccess] Confirm error:', err);
+          setOrderStatus('confirmed');
+        }
+      }, 500);
+    } else {
+      setOrderStatus('confirmed');
     }
   }, [clearCart, searchParams]);
 
