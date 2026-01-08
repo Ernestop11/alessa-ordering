@@ -467,6 +467,7 @@ export async function createOrderFromPayload({
           logoUrl: true,
           primaryColor: true,
           customDomain: true,
+          emailDomainVerified: true,
         },
       });
 
@@ -490,6 +491,7 @@ export async function createOrderFromPayload({
           logo: tenantContact.logoUrl,
           primaryColor: tenantContact.primaryColor,
           customDomain: tenantContact.customDomain,
+          emailDomainVerified: tenantContact.emailDomainVerified,
         },
       });
 

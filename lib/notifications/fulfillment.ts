@@ -3,6 +3,7 @@ import {
   resendFromEmail,
   twilioClient,
   twilioFromNumber,
+  getTenantFromEmail,
 } from './providers';
 import type { SerializedOrder } from '../order-serializer';
 
@@ -19,6 +20,7 @@ interface TenantBranding {
   logo?: string | null;
   primaryColor?: string | null;
   customDomain?: string | null;
+  emailDomainVerified?: boolean;
 }
 
 function buildFullLogoUrl(logoUrl: string | null | undefined, tenantSlug: string, customDomain?: string | null): string | null {
@@ -78,7 +80,12 @@ function buildFulfillmentEmailHtml(params: {
 <table width="100%" cellpadding="0" cellspacing="0" style="max-width:600px;margin:0 auto;background:#fff;">
   <tr>
     <td style="padding:24px;background:${primaryColor};text-align:center;">
-      ${logoUrl ? `<img src="${logoUrl}" alt="${tenantName}" style="max-height:50px;max-width:200px;">` : `<h1 style="margin:0;color:#fff;font-size:24px;">${tenantName}</h1>`}
+      ${logoUrl ? `
+        <div style="background:#fff;border-radius:50%;width:70px;height:70px;margin:0 auto;padding:8px;box-shadow:0 2px 10px rgba(0,0,0,0.2);">
+          <img src="${logoUrl}" alt="${tenantName}" style="max-height:54px;max-width:54px;border-radius:50%;object-fit:cover;">
+        </div>
+        <p style="margin:8px 0 0;color:#fff;font-size:16px;font-weight:600;">${tenantName}</p>
+      ` : `<h1 style="margin:0;color:#fff;font-size:24px;">${tenantName}</h1>`}
     </td>
   </tr>
   <tr>
@@ -156,6 +163,13 @@ export async function sendFulfillmentEmailNotification(params: {
     return { ok: false, reason: 'Resend email provider is not configured' };
   }
 
+  // Get the appropriate from email (tenant's verified domain or fallback)
+  const fromEmail = getTenantFromEmail({
+    tenantName: params.tenantName,
+    customDomain: params.branding?.customDomain,
+    emailDomainVerified: params.branding?.emailDomainVerified,
+  });
+
   const orderId = params.order.id.slice(-6).toUpperCase();
   const subject = `🔔 New Order #${orderId} - ${params.tenantName}`;
 
@@ -204,7 +218,7 @@ export async function sendFulfillmentEmailNotification(params: {
 
   try {
     await resendClient.emails.send({
-      from: resendFromEmail,
+      from: fromEmail,
       to: params.recipient,
       subject,
       html,
@@ -229,6 +243,13 @@ export async function sendCustomerOrderConfirmation(params: {
     return { ok: false, reason: 'Resend email provider is not configured' };
   }
 
+  // Get the appropriate from email (tenant's verified domain or fallback)
+  const fromEmail = getTenantFromEmail({
+    tenantName: params.tenantName,
+    customDomain: params.branding?.customDomain,
+    emailDomainVerified: params.branding?.emailDomainVerified,
+  });
+
   const { tenantName, tenantSlug, order, branding } = params;
   const orderId = order.id.slice(-6).toUpperCase();
   const total = Number(order.totalAmount ?? 0).toFixed(2);
@@ -247,7 +268,7 @@ export async function sendCustomerOrderConfirmation(params: {
     )
     .join('');
 
-  // Build gradient colors (dark red theme for Las Reinas style)
+  // Build gradient colors based on primary color
   const gradientFrom = primaryColor || '#8B0000';
   const gradientVia = '#B22222';
   const gradientTo = '#6B0F0F';
@@ -260,7 +281,12 @@ export async function sendCustomerOrderConfirmation(params: {
 <table width="100%" cellpadding="0" cellspacing="0" style="max-width:600px;margin:0 auto;background:#fff;border-radius:16px;overflow:hidden;box-shadow:0 4px 20px rgba(0,0,0,0.1);">
   <tr>
     <td style="padding:32px 24px;background:linear-gradient(135deg, ${gradientFrom} 0%, ${gradientVia} 50%, ${gradientTo} 100%);text-align:center;">
-      ${logoUrl ? `<img src="${logoUrl}" alt="${tenantName}" width="280" height="120" style="display:block;margin:0 auto 8px;max-width:280px;height:auto;">` : `<h1 style="margin:0;color:#fff;font-size:28px;font-weight:800;">${tenantName}</h1>`}
+      ${logoUrl ? `
+        <div style="background:#fff;border-radius:50%;width:100px;height:100px;margin:0 auto;padding:10px;box-shadow:0 4px 15px rgba(0,0,0,0.3);">
+          <img src="${logoUrl}" alt="${tenantName}" style="max-height:80px;max-width:80px;border-radius:50%;object-fit:cover;">
+        </div>
+        <p style="margin:12px 0 0;color:#fff;font-size:20px;font-weight:700;">${tenantName}</p>
+      ` : `<h1 style="margin:0;color:#fff;font-size:28px;font-weight:800;">${tenantName}</h1>`}
     </td>
   </tr>
   <tr>
@@ -327,7 +353,7 @@ export async function sendCustomerOrderConfirmation(params: {
 
   try {
     await resendClient.emails.send({
-      from: resendFromEmail,
+      from: fromEmail,
       to: params.customerEmail,
       subject,
       html,

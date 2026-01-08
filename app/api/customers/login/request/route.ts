@@ -64,6 +64,14 @@ export async function POST(req: Request) {
     deliveries.push({ channel: 'sms', destination: customer.phone });
   }
 
+  // Build branding info for emails
+  const branding = {
+    logo: tenant.logoUrl,
+    primaryColor: tenant.primaryColor,
+    customDomain: tenant.customDomain,
+    emailDomainVerified: tenant.emailDomainVerified,
+  };
+
   const sendAttempts = await Promise.all(
     deliveries.map(async (delivery) => {
       if (delivery.channel === 'email') {
@@ -71,6 +79,8 @@ export async function POST(req: Request) {
           to: delivery.destination,
           code: token,
           tenantName: tenant.name,
+          tenantSlug: tenant.slug,
+          branding,
         });
         if (!result.ok && debugExpose) {
           console.warn('[customer-login] Failed to send email OTP', result.reason);

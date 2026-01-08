@@ -36,6 +36,25 @@ export const resendClient: ResendClient | null = resendApiKey
   ? new Resend(resendApiKey)
   : null;
 
+// Get the appropriate "from" email for a tenant
+// Uses tenant's verified domain if available, otherwise falls back to alessacloud.com
+export function getTenantFromEmail(params: {
+  tenantName: string;
+  customDomain?: string | null;
+  emailDomainVerified?: boolean;
+}): string {
+  const { tenantName, customDomain, emailDomainVerified } = params;
+
+  // If tenant has a verified custom domain, use it
+  if (emailDomainVerified && customDomain) {
+    // Use noreply@domain.com format
+    return `${tenantName} <noreply@${customDomain}>`;
+  }
+
+  // Fall back to default alessacloud.com domain
+  return resendFromEmail || 'noreply@alessacloud.com';
+}
+
 const twilioAccountSid = process.env.TWILIO_ACCOUNT_SID;
 const twilioAuthToken = process.env.TWILIO_AUTH_TOKEN;
 
