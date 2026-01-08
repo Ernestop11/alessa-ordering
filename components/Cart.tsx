@@ -2,7 +2,7 @@
 
 import React, { useEffect, useMemo, useState } from "react";
 import { useSearchParams } from "next/navigation";
-import { Trash2, Pencil, X } from "lucide-react";
+import { Trash2, Pencil, X, Clock, Zap, ChevronDown } from "lucide-react";
 import type { OrderPayload } from "../lib/order-service";
 import { useCart, CartItem } from "../lib/store/cart";
 import { StripeCheckoutWrapper } from "./StripeCheckout";
@@ -44,6 +44,8 @@ export default function Cart() {
   const [customerPhone, setCustomerPhone] = useState("");
   const [orderNotes, setOrderNotes] = useState("");
   const [fulfillmentMethod, setFulfillmentMethod] = useState<"pickup" | "delivery">("pickup");
+  const [scheduledPickupTime, setScheduledPickupTime] = useState<Date | null>(null); // null = ASAP
+  const [showAllTimes, setShowAllTimes] = useState(false);
   const [deliveryAddress, setDeliveryAddress] = useState("");
   const [deliveryQuote, setDeliveryQuote] = useState<number | null>(null);
   const [deliveryQuoteId, setDeliveryQuoteId] = useState<string | null>(null);
@@ -465,6 +467,7 @@ export default function Cart() {
       notes: orderNotes.trim() || undefined,
       paymentMethod: "card",
       destination,
+      scheduledPickupTime: scheduledPickupTime?.toISOString() || undefined,
     };
   }, [
     deliveryAddress,
@@ -475,6 +478,7 @@ export default function Cart() {
     customerPhone,
     fulfillmentMethod,
     items,
+    scheduledPickupTime,
     orderNotes,
     platformFee,
     resolvedDeliveryFee,
@@ -1124,6 +1128,167 @@ export default function Cart() {
                       <p className="text-xs text-green-700">
                         ✓ {deliveryPartner === 'uber' ? 'Uber Direct' : 'DoorDash'} delivery quote ready. Estimated 30-45 minutes.
                       </p>
+                    </div>
+                  )}
+                </div>
+              )}
+
+              {/* Scheduled Pickup Time - Only show for pickup orders */}
+              {fulfillmentMethod === "pickup" && (
+                <div className="mt-3 rounded-xl border-2 border-gray-200 bg-gradient-to-br from-gray-50 to-white p-4">
+                  <div className="flex items-center gap-2 mb-3">
+                    <Clock className="w-4 h-4 text-gray-600" />
+                    <span className="text-sm font-semibold text-gray-800">When do you want it?</span>
+                  </div>
+
+                  {/* Quick Pick Buttons */}
+                  <div className="flex gap-2 flex-wrap">
+                    <button
+                      type="button"
+                      onClick={() => {
+                        setScheduledPickupTime(null);
+                        setShowAllTimes(false);
+                      }}
+                      className={`flex items-center gap-1.5 px-3 py-2 rounded-lg font-medium text-sm transition-all ${
+                        scheduledPickupTime === null && !showAllTimes
+                          ? 'text-white shadow-md'
+                          : 'bg-gray-100 text-gray-700 border border-gray-200 hover:border-gray-300'
+                      }`}
+                      style={scheduledPickupTime === null && !showAllTimes ? { backgroundColor: primaryColor } : {}}
+                    >
+                      <Zap className="w-3.5 h-3.5" />
+                      ASAP
+                    </button>
+
+                    {/* In 30 min button */}
+                    {(() => {
+                      const thirtyMin = new Date();
+                      thirtyMin.setMinutes(thirtyMin.getMinutes() + 30);
+                      thirtyMin.setMinutes(Math.ceil(thirtyMin.getMinutes() / 15) * 15, 0, 0);
+                      const isSelected = scheduledPickupTime?.getTime() === thirtyMin.getTime();
+                      return (
+                        <button
+                          type="button"
+                          onClick={() => {
+                            setScheduledPickupTime(thirtyMin);
+                            setShowAllTimes(false);
+                          }}
+                          className={`px-3 py-2 rounded-lg font-medium text-sm transition-all ${
+                            isSelected
+                              ? 'text-white shadow-md'
+                              : 'bg-gray-100 text-gray-700 border border-gray-200 hover:border-gray-300'
+                          }`}
+                          style={isSelected ? { backgroundColor: primaryColor } : {}}
+                        >
+                          In 30 min
+                        </button>
+                      );
+                    })()}
+
+                    {/* In 1 hour button */}
+                    {(() => {
+                      const oneHour = new Date();
+                      oneHour.setMinutes(oneHour.getMinutes() + 60);
+                      oneHour.setMinutes(Math.ceil(oneHour.getMinutes() / 15) * 15, 0, 0);
+                      const isSelected = scheduledPickupTime?.getTime() === oneHour.getTime();
+                      return (
+                        <button
+                          type="button"
+                          onClick={() => {
+                            setScheduledPickupTime(oneHour);
+                            setShowAllTimes(false);
+                          }}
+                          className={`px-3 py-2 rounded-lg font-medium text-sm transition-all ${
+                            isSelected
+                              ? 'text-white shadow-md'
+                              : 'bg-gray-100 text-gray-700 border border-gray-200 hover:border-gray-300'
+                          }`}
+                          style={isSelected ? { backgroundColor: primaryColor } : {}}
+                        >
+                          In 1 hour
+                        </button>
+                      );
+                    })()}
+
+                    {/* Pick a time button */}
+                    <button
+                      type="button"
+                      onClick={() => setShowAllTimes(!showAllTimes)}
+                      className={`flex items-center gap-1.5 px-3 py-2 rounded-lg font-medium text-sm transition-all ${
+                        showAllTimes || (scheduledPickupTime && ![30, 60].some(m => {
+                          const t = new Date();
+                          t.setMinutes(t.getMinutes() + m);
+                          t.setMinutes(Math.ceil(t.getMinutes() / 15) * 15, 0, 0);
+                          return scheduledPickupTime.getTime() === t.getTime();
+                        }))
+                          ? 'text-white shadow-md'
+                          : 'bg-gray-100 text-gray-700 border border-gray-200 hover:border-gray-300'
+                      }`}
+                      style={showAllTimes || (scheduledPickupTime && ![30, 60].some(m => {
+                        const t = new Date();
+                        t.setMinutes(t.getMinutes() + m);
+                        t.setMinutes(Math.ceil(t.getMinutes() / 15) * 15, 0, 0);
+                        return scheduledPickupTime.getTime() === t.getTime();
+                      })) ? { backgroundColor: primaryColor } : {}}
+                    >
+                      {scheduledPickupTime && !showAllTimes ? scheduledPickupTime.toLocaleTimeString('en-US', { hour: 'numeric', minute: '2-digit', hour12: true }) : 'Pick a time'}
+                      <ChevronDown className={`w-3.5 h-3.5 transition-transform ${showAllTimes ? 'rotate-180' : ''}`} />
+                    </button>
+                  </div>
+
+                  {/* Expanded time slots */}
+                  {showAllTimes && (
+                    <div className="mt-3 rounded-lg border border-gray-200 bg-white p-3 max-h-40 overflow-y-auto">
+                      <div className="grid grid-cols-4 gap-2">
+                        {(() => {
+                          const slots: Date[] = [];
+                          const now = new Date();
+                          const start = new Date(now);
+                          start.setMinutes(start.getMinutes() + 15);
+                          start.setMinutes(Math.ceil(start.getMinutes() / 15) * 15, 0, 0);
+
+                          const end = new Date(now);
+                          end.setHours(end.getHours() + 4);
+
+                          const current = new Date(start);
+                          while (current <= end) {
+                            slots.push(new Date(current));
+                            current.setMinutes(current.getMinutes() + 15);
+                          }
+
+                          return slots.map((slot, idx) => {
+                            const isSlotSelected = scheduledPickupTime?.getTime() === slot.getTime();
+                            return (
+                              <button
+                                key={idx}
+                                type="button"
+                                onClick={() => {
+                                  setScheduledPickupTime(slot);
+                                  setShowAllTimes(false);
+                                }}
+                                className={`px-2 py-1.5 rounded text-xs font-medium transition-all ${
+                                  isSlotSelected
+                                    ? 'text-white'
+                                    : 'bg-gray-50 text-gray-600 hover:bg-gray-100'
+                                }`}
+                                style={isSlotSelected ? { backgroundColor: primaryColor } : {}}
+                              >
+                                {slot.toLocaleTimeString('en-US', { hour: 'numeric', minute: '2-digit', hour12: true })}
+                              </button>
+                            );
+                          });
+                        })()}
+                      </div>
+                    </div>
+                  )}
+
+                  {/* Selected time display */}
+                  {scheduledPickupTime && (
+                    <div className="mt-2 flex items-center gap-2 text-xs text-gray-600">
+                      <div className="w-1.5 h-1.5 rounded-full animate-pulse" style={{ backgroundColor: primaryColor }} />
+                      <span>
+                        Pickup at <span className="font-semibold text-gray-800">{scheduledPickupTime.toLocaleTimeString('en-US', { hour: 'numeric', minute: '2-digit', hour12: true })}</span>
+                      </span>
                     </div>
                   )}
                 </div>
