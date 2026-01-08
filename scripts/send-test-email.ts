@@ -43,19 +43,22 @@ async function main() {
   <tr>
     <td style="padding:32px 24px;background:${primaryColor};text-align:center;">
       ${logoUrl ? `
-        <!--[if mso]>
-        <v:roundrect xmlns:v="urn:schemas-microsoft-com:vml" xmlns:w="urn:schemas-microsoft-com:office:word" style="height:90px;v-text-anchor:middle;width:90px;" arcsize="50%" fillcolor="#ffffff">
-        <v:fill type="solid" color="#ffffff"/>
-        <w:anchorlock/>
-        <center>
-        <![endif]-->
-        <div style="display:inline-block;width:90px;height:90px;line-height:90px;border-radius:50%;background:#ffffff !important;background-color:#ffffff !important;text-align:center;vertical-align:middle;mso-hide:all;">
-          <img src="${logoUrl}" alt="${tenantName}" width="70" height="70" style="vertical-align:middle;max-height:70px;max-width:70px;">
-        </div>
-        <!--[if mso]>
-        </center>
-        </v:roundrect>
-        <![endif]-->
+        <table cellpadding="0" cellspacing="0" border="0" align="center" style="margin:0 auto;border-collapse:separate;">
+          <tr>
+            <td align="center" valign="middle" width="90" height="90" bgcolor="#ffffff" style="width:90px;height:90px;background:#ffffff;background-color:#ffffff;-webkit-border-radius:45px;-moz-border-radius:45px;border-radius:45px;text-align:center;vertical-align:middle;">
+              <!--[if mso]>
+              <v:oval xmlns:v="urn:schemas-microsoft-com:vml" style="width:90px;height:90px;" fillcolor="#ffffff" stroked="false">
+              <v:fill type="solid" color="#ffffff"/>
+              <v:textbox inset="10px,10px,10px,10px" style="mso-fit-shape-to-text:true">
+              <![endif]-->
+              <img src="${logoUrl}" alt="${tenantName}" width="70" height="70" style="display:block;margin:0 auto;max-height:70px;max-width:70px;border:0;">
+              <!--[if mso]>
+              </v:textbox>
+              </v:oval>
+              <![endif]-->
+            </td>
+          </tr>
+        </table>
       ` : `<h1 style="margin:0;color:#fff;font-size:24px;font-weight:800;">${tenantName}</h1>`}
     </td>
   </tr>
