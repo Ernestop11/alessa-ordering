@@ -1325,6 +1325,9 @@ export default function Cart() {
                 <span>Tax & Fees</span>
                 <span className="font-semibold">{formatCurrency(taxAmount + platformFee)}</span>
               </div>
+              <p className="text-[10px] text-gray-400 -mt-1">
+                8.75% sales tax + processing fees
+              </p>
               {taxQuoteError && (
                 <p className="text-xs text-amber-600">
                   {taxQuoteError}

@@ -168,6 +168,7 @@ model Order {
   customerEmail        String?
   customerPhone        String?
   notes                String?
+  scheduledPickupTime  DateTime?   // When customer wants to pick up (null = ASAP)
   acknowledgedAt       DateTime?
   createdAt            DateTime    @default(now())
   updatedAt            DateTime    @updatedAt

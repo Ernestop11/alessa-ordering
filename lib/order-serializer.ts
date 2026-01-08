@@ -47,6 +47,7 @@ export interface SerializedOrder {
   customerEmail?: string | null;
   customerPhone?: string | null;
   notes?: string | null;
+  scheduledPickupTime?: string | null; // When customer wants to pick up (null = ASAP)
   acknowledgedAt?: string | null;
   deliveryAddress?: {
     line1?: string | null;
@@ -117,6 +118,7 @@ export function serializeOrder(
     customerEmail: order.customerEmail,
     customerPhone: order.customerPhone,
     notes: order.notes,
+    scheduledPickupTime: (order as any).scheduledPickupTime?.toISOString?.() ?? null,
     acknowledgedAt: order.acknowledgedAt?.toISOString() ?? null,
     deliveryAddress: deliveryAddress ?? null,
     createdAt: order.createdAt.toISOString(),

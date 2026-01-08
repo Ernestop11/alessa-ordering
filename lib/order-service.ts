@@ -54,6 +54,8 @@ export interface OrderPayload {
   // Group order context
   groupSessionCode?: string;
   participantName?: string;
+  // Scheduled pickup time (null = ASAP)
+  scheduledPickupTime?: string | null;
 }
 
 interface TenantWithRelations {
@@ -237,6 +239,7 @@ export async function createOrderFromPayload({
       customerEmail: payload.customerEmail || null,
       customerPhone: payload.customerPhone || null,
       notes: payload.notes || null,
+      scheduledPickupTime: payload.scheduledPickupTime ? new Date(payload.scheduledPickupTime) : null,
       status: 'pending',
       tenantId: tenant.id,
       customerId,

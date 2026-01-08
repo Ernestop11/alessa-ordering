@@ -4,7 +4,8 @@ import { useState, useEffect, useMemo } from 'react';
 import { useRouter, useSearchParams } from 'next/navigation';
 import { useCart, useCartHydrated } from '@/lib/store/cart';
 import { useTenantTheme } from '@/components/TenantThemeProvider';
-import { ArrowLeft, CreditCard, Trash2, Check, Users, PartyPopper } from 'lucide-react';
+import { ArrowLeft, CreditCard, Trash2, Check, Users, PartyPopper, Clock } from 'lucide-react';
+import ScheduledPickupSelector from '@/components/checkout/ScheduledPickupSelector';
 import { loadStripe } from '@stripe/stripe-js';
 import {
   Elements,
@@ -73,6 +74,7 @@ interface PaymentFormProps {
   isLoggedIn: boolean;
   groupSessionCode?: string | null;
   participantName?: string | null;
+  scheduledPickupTime?: Date | null;
 }
 
 function PaymentForm({
@@ -89,6 +91,7 @@ function PaymentForm({
   isLoggedIn,
   groupSessionCode,
   participantName,
+  scheduledPickupTime,
 }: PaymentFormProps) {
   const stripe = useStripe();
   const elements = useElements();
@@ -120,6 +123,8 @@ function PaymentForm({
       customerPhone: customerInfo.phone,
       fulfillmentMethod: orderType,
       deliveryAddress: orderType === 'delivery' ? customerInfo.address : undefined,
+      // Scheduled pickup time (ISO string or null for ASAP)
+      scheduledPickupTime: scheduledPickupTime?.toISOString() || null,
       // Group order context
       groupSessionCode: groupSessionCode || undefined,
       participantName: participantName || undefined,
@@ -555,6 +560,7 @@ export default function CheckoutPage() {
     address: '',
   });
   const [orderType, setOrderType] = useState<'delivery' | 'pickup'>('pickup');
+  const [scheduledPickupTime, setScheduledPickupTime] = useState<Date | null>(null); // null = ASAP
   const [stripeAccount, setStripeAccount] = useState<string | null>(null);
   const [stripeReady, setStripeReady] = useState(false);
   const [error, setError] = useState<string | null>(null);
@@ -655,6 +661,7 @@ export default function CheckoutPage() {
           customerPhone: customerInfo.phone,
           fulfillmentMethod: orderType,
           deliveryAddress: orderType === 'delivery' ? customerInfo.address : undefined,
+          scheduledPickupTime: scheduledPickupTime?.toISOString() || null,
           items: items.map((item) => ({
             menuItemId: extractMenuItemId(item.id),
             quantity: item.quantity,
@@ -842,6 +849,17 @@ export default function CheckoutPage() {
           </div>
         </section>
 
+        {/* Scheduled Pickup Time - Only show for pickup orders */}
+        {orderType === 'pickup' && (
+          <section className="mb-4 rounded-2xl border border-white/10 bg-white/5 p-4">
+            <ScheduledPickupSelector
+              value={scheduledPickupTime}
+              onChange={setScheduledPickupTime}
+              primaryColor={tenant.primaryColor || '#DC2626'}
+            />
+          </section>
+        )}
+
         {/* Customer Info */}
         <section className="mb-4 space-y-3">
           <h2 className="font-semibold">Your Info</h2>
@@ -939,6 +957,7 @@ export default function CheckoutPage() {
                   isLoggedIn={isLoggedIn}
                   groupSessionCode={groupSessionCode}
                   participantName={participantName}
+                  scheduledPickupTime={scheduledPickupTime}
                 />
               </Elements>
             ) : (

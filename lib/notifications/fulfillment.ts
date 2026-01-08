@@ -49,6 +49,15 @@ function buildFulfillmentEmailHtml(params: {
   const total = Number(order.totalAmount ?? 0).toFixed(2);
   const method = order.fulfillmentMethod?.toUpperCase() ?? 'PICKUP';
   const primaryColor = branding?.primaryColor || '#dc2626';
+
+  // Format scheduled pickup time
+  const scheduledTime = order.scheduledPickupTime
+    ? new Date(order.scheduledPickupTime).toLocaleTimeString('en-US', {
+        hour: 'numeric',
+        minute: '2-digit',
+        hour12: true,
+      })
+    : null;
   const baseUrl = buildBaseUrl(tenantSlug, branding?.customDomain);
   const adminUrl = `${baseUrl}/admin/orders`;
   const logoUrl = buildFullLogoUrl(branding?.logo, tenantSlug, branding?.customDomain);
@@ -79,11 +88,18 @@ function buildFulfillmentEmailHtml(params: {
         <p style="margin:8px 0 0;font-size:28px;font-weight:bold;color:#000;">#${orderId}</p>
       </div>
 
+      ${scheduledTime ? `
+      <div style="background:#fef3c7;border-radius:8px;padding:12px;text-align:center;margin-bottom:16px;border:2px solid #f59e0b;">
+        <p style="margin:0;font-size:12px;color:#92400e;font-weight:bold;">SCHEDULED PICKUP</p>
+        <p style="margin:4px 0 0;font-size:20px;font-weight:bold;color:#000;">${scheduledTime}</p>
+      </div>
+      ` : ''}
+
       <table width="100%" style="margin-bottom:24px;">
         <tr>
           <td style="background:#f9fafb;padding:12px;border-radius:8px;">
             <p style="margin:0 0 4px;font-size:12px;color:#666;">Method</p>
-            <p style="margin:0;font-weight:bold;color:#000;">${method}</p>
+            <p style="margin:0;font-weight:bold;color:#000;">${method}${scheduledTime ? '' : ' (ASAP)'}</p>
           </td>
           <td style="background:#f9fafb;padding:12px;border-radius:8px;">
             <p style="margin:0 0 4px;font-size:12px;color:#666;">Total</p>
@@ -156,10 +172,21 @@ export async function sendFulfillmentEmailNotification(params: {
     .map((item) => `• ${item.quantity}x ${item.menuItemName || 'Item'} - $${Number(item.price ?? 0).toFixed(2)}`)
     .join('\n');
 
+  // Format scheduled pickup time for text email
+  const scheduledTimeText = params.order.scheduledPickupTime
+    ? new Date(params.order.scheduledPickupTime).toLocaleTimeString('en-US', {
+        hour: 'numeric',
+        minute: '2-digit',
+        hour12: true,
+      })
+    : null;
+
   const text = [
     `NEW ORDER #${orderId}`,
     ``,
-    `Method: ${params.order.fulfillmentMethod?.toUpperCase() ?? 'PICKUP'}`,
+    scheduledTimeText ? `⏰ SCHEDULED PICKUP: ${scheduledTimeText}` : null,
+    scheduledTimeText ? `` : null,
+    `Method: ${params.order.fulfillmentMethod?.toUpperCase() ?? 'PICKUP'}${scheduledTimeText ? '' : ' (ASAP)'}`,
     `Total: $${Number(params.order.totalAmount ?? 0).toFixed(2)}`,
     ``,
     `Customer: ${params.order.customerName || 'Guest'}`,
