@@ -81,10 +81,10 @@ function buildFulfillmentEmailHtml(params: {
   <tr>
     <td style="padding:24px;background:${primaryColor};text-align:center;">
       ${logoUrl ? `
-        <table cellpadding="0" cellspacing="0" border="0" style="margin:0 auto;">
+        <table cellpadding="0" cellspacing="0" border="0" align="center" style="margin:0 auto;">
           <tr>
-            <td style="background:#ffffff;border-radius:50%;width:80px;height:80px;text-align:center;vertical-align:middle;box-shadow:0 2px 10px rgba(0,0,0,0.2);">
-              <img src="${logoUrl}" alt="${tenantName}" width="60" height="60" style="display:block;margin:0 auto;max-height:60px;max-width:60px;">
+            <td align="center" valign="middle" width="80" height="80" bgcolor="#ffffff" style="background-color:#ffffff;border-radius:50%;width:80px;height:80px;text-align:center;vertical-align:middle;">
+              <img src="${logoUrl}" alt="${tenantName}" width="60" height="60" style="display:block;margin:0 auto;max-height:60px;max-width:60px;background-color:#ffffff;">
             </td>
           </tr>
         </table>
@@ -286,10 +286,10 @@ export async function sendCustomerOrderConfirmation(params: {
   <tr>
     <td style="padding:32px 24px;background:linear-gradient(135deg, ${gradientFrom} 0%, ${gradientVia} 50%, ${gradientTo} 100%);text-align:center;">
       ${logoUrl ? `
-        <table cellpadding="0" cellspacing="0" border="0" style="margin:0 auto;">
+        <table cellpadding="0" cellspacing="0" border="0" align="center" style="margin:0 auto;">
           <tr>
-            <td style="background:#ffffff;border-radius:50%;width:100px;height:100px;text-align:center;vertical-align:middle;box-shadow:0 4px 15px rgba(0,0,0,0.3);">
-              <img src="${logoUrl}" alt="${tenantName}" width="80" height="80" style="display:block;margin:0 auto;max-height:80px;max-width:80px;">
+            <td align="center" valign="middle" width="100" height="100" bgcolor="#ffffff" style="background-color:#ffffff;border-radius:50%;width:100px;height:100px;text-align:center;vertical-align:middle;">
+              <img src="${logoUrl}" alt="${tenantName}" width="80" height="80" style="display:block;margin:0 auto;max-height:80px;max-width:80px;background-color:#ffffff;">
             </td>
           </tr>
         </table>

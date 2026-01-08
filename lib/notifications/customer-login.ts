@@ -61,10 +61,10 @@ function buildLoginCodeEmailHtml(params: {
   <tr>
     <td style="padding:32px 24px;background:${primaryColor};text-align:center;">
       ${logoUrl ? `
-        <table cellpadding="0" cellspacing="0" border="0" style="margin:0 auto;">
+        <table cellpadding="0" cellspacing="0" border="0" align="center" style="margin:0 auto;">
           <tr>
-            <td style="background:#ffffff;border-radius:50%;width:90px;height:90px;text-align:center;vertical-align:middle;box-shadow:0 2px 10px rgba(0,0,0,0.2);">
-              <img src="${logoUrl}" alt="${tenantName}" width="70" height="70" style="display:block;margin:0 auto;max-height:70px;max-width:70px;">
+            <td align="center" valign="middle" width="90" height="90" bgcolor="#ffffff" style="background-color:#ffffff;border-radius:50%;width:90px;height:90px;text-align:center;vertical-align:middle;">
+              <img src="${logoUrl}" alt="${tenantName}" width="70" height="70" style="display:block;margin:0 auto;max-height:70px;max-width:70px;background-color:#ffffff;">
             </td>
           </tr>
         </table>
