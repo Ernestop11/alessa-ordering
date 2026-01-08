@@ -81,9 +81,13 @@ function buildFulfillmentEmailHtml(params: {
   <tr>
     <td style="padding:24px;background:${primaryColor};text-align:center;">
       ${logoUrl ? `
-        <div style="background:#fff;border-radius:50%;width:70px;height:70px;margin:0 auto;padding:8px;box-shadow:0 2px 10px rgba(0,0,0,0.2);">
-          <img src="${logoUrl}" alt="${tenantName}" style="max-height:54px;max-width:54px;border-radius:50%;object-fit:cover;">
-        </div>
+        <table cellpadding="0" cellspacing="0" border="0" style="margin:0 auto;">
+          <tr>
+            <td style="background:#ffffff;border-radius:50%;width:80px;height:80px;text-align:center;vertical-align:middle;box-shadow:0 2px 10px rgba(0,0,0,0.2);">
+              <img src="${logoUrl}" alt="${tenantName}" width="60" height="60" style="display:block;margin:0 auto;max-height:60px;max-width:60px;">
+            </td>
+          </tr>
+        </table>
         <p style="margin:8px 0 0;color:#fff;font-size:16px;font-weight:600;">${tenantName}</p>
       ` : `<h1 style="margin:0;color:#fff;font-size:24px;">${tenantName}</h1>`}
     </td>
@@ -282,9 +286,13 @@ export async function sendCustomerOrderConfirmation(params: {
   <tr>
     <td style="padding:32px 24px;background:linear-gradient(135deg, ${gradientFrom} 0%, ${gradientVia} 50%, ${gradientTo} 100%);text-align:center;">
       ${logoUrl ? `
-        <div style="background:#fff;border-radius:50%;width:100px;height:100px;margin:0 auto;padding:10px;box-shadow:0 4px 15px rgba(0,0,0,0.3);">
-          <img src="${logoUrl}" alt="${tenantName}" style="max-height:80px;max-width:80px;border-radius:50%;object-fit:cover;">
-        </div>
+        <table cellpadding="0" cellspacing="0" border="0" style="margin:0 auto;">
+          <tr>
+            <td style="background:#ffffff;border-radius:50%;width:100px;height:100px;text-align:center;vertical-align:middle;box-shadow:0 4px 15px rgba(0,0,0,0.3);">
+              <img src="${logoUrl}" alt="${tenantName}" width="80" height="80" style="display:block;margin:0 auto;max-height:80px;max-width:80px;">
+            </td>
+          </tr>
+        </table>
         <p style="margin:12px 0 0;color:#fff;font-size:20px;font-weight:700;">${tenantName}</p>
       ` : `<h1 style="margin:0;color:#fff;font-size:28px;font-weight:800;">${tenantName}</h1>`}
     </td>

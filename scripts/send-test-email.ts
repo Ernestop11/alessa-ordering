@@ -43,9 +43,13 @@ async function main() {
   <tr>
     <td style="padding:32px 24px;background:${primaryColor};text-align:center;">
       ${logoUrl ? `
-        <div style="background:#fff;border-radius:50%;width:80px;height:80px;margin:0 auto;padding:8px;box-shadow:0 2px 10px rgba(0,0,0,0.2);">
-          <img src="${logoUrl}" alt="${tenantName}" style="max-height:60px;max-width:60px;border-radius:50%;object-fit:cover;">
-        </div>
+        <table cellpadding="0" cellspacing="0" border="0" style="margin:0 auto;">
+          <tr>
+            <td style="background:#ffffff;border-radius:50%;width:90px;height:90px;text-align:center;vertical-align:middle;box-shadow:0 2px 10px rgba(0,0,0,0.2);">
+              <img src="${logoUrl}" alt="${tenantName}" width="70" height="70" style="display:block;margin:0 auto;max-height:70px;max-width:70px;">
+            </td>
+          </tr>
+        </table>
       ` : `<h1 style="margin:0;color:#fff;font-size:24px;font-weight:800;">${tenantName}</h1>`}
     </td>
   </tr>
