@@ -95,6 +95,22 @@ function buildReceipt(order: SerializedOrder) {
   lines.push(`       ORDER #${orderId}`);
   lines.push(`       ${fulfillment.toUpperCase()}`);
   lines.push('');
+
+  // SCHEDULED PICKUP TIME - show prominently if set
+  if (order.scheduledPickupTime) {
+    const pickupTime = new Date(order.scheduledPickupTime);
+    const timeStr = pickupTime.toLocaleTimeString('en-US', {
+      hour: 'numeric',
+      minute: '2-digit',
+      hour12: true,
+    });
+    lines.push('********************************');
+    lines.push('*      SCHEDULED PICKUP        *');
+    lines.push(`*         ${timeStr.padStart(8).padEnd(18)}*`);
+    lines.push('********************************');
+    lines.push('');
+  }
+
   lines.push(formatDate(order.createdAt));
   lines.push('--------------------------------');
 

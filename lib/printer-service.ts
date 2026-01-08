@@ -75,6 +75,7 @@ interface OrderForPrint {
   totalAmount: number;
   notes?: string;
   createdAt: Date;
+  scheduledPickupTime?: Date | string | null; // When customer wants pickup (null = ASAP)
   deliveryAddress?: {
     street: string;
     apartment?: string;
@@ -139,6 +140,29 @@ export function formatReceiptForPrinter(
   receipt += `[${order.fulfillmentMethod.toUpperCase()}]`;
   receipt += ESCPOS_COMMANDS.NORMAL;
   receipt += ESCPOS_COMMANDS.LF;
+
+  // SCHEDULED PICKUP TIME - show prominently if order is for later
+  if (order.scheduledPickupTime) {
+    const pickupDate = typeof order.scheduledPickupTime === 'string'
+      ? new Date(order.scheduledPickupTime)
+      : order.scheduledPickupTime;
+    const timeStr = pickupDate.toLocaleTimeString('en-US', {
+      hour: 'numeric',
+      minute: '2-digit',
+      hour12: true,
+    });
+    receipt += ESCPOS_COMMANDS.LF;
+    receipt += ESCPOS_COMMANDS.ALIGN_CENTER;
+    receipt += '*'.repeat(42) + ESCPOS_COMMANDS.LF;
+    receipt += ESCPOS_COMMANDS.DOUBLE_ON;
+    receipt += ESCPOS_COMMANDS.BOLD_ON;
+    receipt += `PICKUP AT: ${timeStr}`;
+    receipt += ESCPOS_COMMANDS.NORMAL;
+    receipt += ESCPOS_COMMANDS.LF;
+    receipt += '*'.repeat(42) + ESCPOS_COMMANDS.LF;
+    receipt += ESCPOS_COMMANDS.ALIGN_LEFT;
+  }
+
   receipt += ESCPOS_COMMANDS.LF;
 
   // Order Info
