@@ -1577,8 +1577,9 @@ model WashEmployee {
   tenantId   String
   tenant     Tenant          @relation(fields: [tenantId], references: [id], onDelete: Cascade)
   name       String
-  phone      String?
-  pin        String?         // Simple 4-digit PIN for login
+  phone      String
+  pin        String          // Last 4 digits of phone for login
+  role       String          @default("employee") // owner, staff, employee
   hourlyRate Decimal?        @db.Decimal(10, 2)
   active     Boolean         @default(true)
   washes     WashRecord[]
@@ -1586,6 +1587,8 @@ model WashEmployee {
   createdAt  DateTime        @default(now())
   updatedAt  DateTime        @updatedAt
 
+  @@unique([tenantId, phone])
+  @@unique([tenantId, pin])
   @@index([tenantId])
 }
 
