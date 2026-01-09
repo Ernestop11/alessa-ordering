@@ -1,83 +1,191 @@
 import { NextRequest, NextResponse } from 'next/server';
 import prisma from '@/lib/prisma';
-import { requireTenant } from '@/lib/tenant';
 
-export const dynamic = 'force-dynamic';
-
-// GET /api/wash/employees - List all employees
+// GET /api/wash/employees - List all employees for a tenant
 export async function GET(req: NextRequest) {
   try {
-    const tenant = await requireTenant();
-    const activeOnly = req.nextUrl.searchParams.get('active') !== 'false';
+    const tenantSlug = req.nextUrl.searchParams.get('tenantSlug');
 
-    const employees = await prisma.washEmployee.findMany({
-      where: {
-        tenantId: tenant.id,
-        ...(activeOnly ? { active: true } : {}),
-      },
-      include: {
-        _count: { select: { washes: true, shifts: true } },
-        shifts: {
-          where: { clockOut: null },
-          take: 1,
-        },
-      },
-      orderBy: { name: 'asc' },
+    if (!tenantSlug) {
+      return NextResponse.json(
+        { error: 'Tenant slug is required' },
+        { status: 400 }
+      );
+    }
+
+    const tenant = await prisma.tenant.findUnique({
+      where: { slug: tenantSlug },
     });
 
-    return NextResponse.json(
-      employees.map((e) => ({
-        id: e.id,
-        name: e.name,
-        phone: e.phone,
-        hourlyRate: e.hourlyRate ? Number(e.hourlyRate) : null,
-        active: e.active,
-        totalWashes: e._count.washes,
-        totalShifts: e._count.shifts,
-        isClockedIn: e.shifts.length > 0,
-        currentShiftStart: e.shifts[0]?.clockIn || null,
-        createdAt: e.createdAt,
-      }))
-    );
+    if (!tenant) {
+      return NextResponse.json({ error: 'Tenant not found' }, { status: 404 });
+    }
+
+    const employees = await prisma.washEmployee.findMany({
+      where: { tenantId: tenant.id },
+      orderBy: { createdAt: 'desc' },
+      select: {
+        id: true,
+        name: true,
+        phone: true,
+        pin: true,
+        role: true,
+        hourlyRate: true,
+        active: true,
+        createdAt: true,
+        _count: {
+          select: {
+            washes: true,
+            shifts: true,
+          },
+        },
+      },
+    });
+
+    return NextResponse.json({ employees });
   } catch (error) {
     console.error('[wash/employees] GET Error:', error);
-    return NextResponse.json({ error: 'Failed to fetch employees' }, { status: 500 });
+    return NextResponse.json(
+      { error: 'Failed to fetch employees' },
+      { status: 500 }
+    );
   }
 }
 
 // POST /api/wash/employees - Create a new employee
 export async function POST(req: NextRequest) {
   try {
-    const tenant = await requireTenant();
-    const body = await req.json();
+    const { tenantSlug, name, phone, role, hourlyRate, requesterId } = await req.json();
 
-    const { name, phone, pin, hourlyRate } = body;
+    if (!tenantSlug || !name || !phone) {
+      return NextResponse.json(
+        { error: 'Tenant slug, name, and phone are required' },
+        { status: 400 }
+      );
+    }
 
-    if (!name) {
-      return NextResponse.json({ error: 'Employee name is required' }, { status: 400 });
+    const tenant = await prisma.tenant.findUnique({
+      where: { slug: tenantSlug },
+    });
+
+    if (!tenant) {
+      return NextResponse.json({ error: 'Tenant not found' }, { status: 404 });
+    }
+
+    // Verify requester is owner or staff
+    if (requesterId) {
+      const requester = await prisma.washEmployee.findUnique({
+        where: { id: requesterId },
+      });
+
+      if (!requester || !['owner', 'staff'].includes(requester.role)) {
+        return NextResponse.json(
+          { error: 'Only owners and staff can add employees' },
+          { status: 403 }
+        );
+      }
+    }
+
+    // Clean phone number and get last 4 digits for PIN
+    const cleanPhone = phone.replace(/\D/g, '');
+    const pin = cleanPhone.slice(-4);
+
+    if (pin.length !== 4) {
+      return NextResponse.json(
+        { error: 'Phone number must have at least 4 digits' },
+        { status: 400 }
+      );
+    }
+
+    // Check if PIN already exists for this tenant
+    const existingPin = await prisma.washEmployee.findFirst({
+      where: {
+        tenantId: tenant.id,
+        pin: pin,
+      },
+    });
+
+    if (existingPin) {
+      return NextResponse.json(
+        { error: 'An employee with the same last 4 digits already exists' },
+        { status: 409 }
+      );
     }
 
     const employee = await prisma.washEmployee.create({
       data: {
         tenantId: tenant.id,
         name,
-        phone: phone || null,
-        pin: pin || null,
-        hourlyRate: hourlyRate || null,
-        active: true,
+        phone: cleanPhone,
+        pin,
+        role: role || 'employee',
+        hourlyRate: hourlyRate ? parseFloat(hourlyRate) : null,
       },
     });
 
     return NextResponse.json({
-      id: employee.id,
-      name: employee.name,
-      phone: employee.phone,
-      hourlyRate: employee.hourlyRate ? Number(employee.hourlyRate) : null,
-      active: employee.active,
-      createdAt: employee.createdAt,
+      ok: true,
+      employee: {
+        id: employee.id,
+        name: employee.name,
+        phone: employee.phone,
+        pin: employee.pin,
+        role: employee.role,
+      },
     });
   } catch (error) {
     console.error('[wash/employees] POST Error:', error);
-    return NextResponse.json({ error: 'Failed to create employee' }, { status: 500 });
+    return NextResponse.json(
+      { error: 'Failed to create employee' },
+      { status: 500 }
+    );
+  }
+}
+
+// DELETE /api/wash/employees - Delete an employee
+export async function DELETE(req: NextRequest) {
+  try {
+    const { employeeId, requesterId } = await req.json();
+
+    if (!employeeId) {
+      return NextResponse.json(
+        { error: 'Employee ID is required' },
+        { status: 400 }
+      );
+    }
+
+    // Verify requester is owner
+    if (requesterId) {
+      const requester = await prisma.washEmployee.findUnique({
+        where: { id: requesterId },
+      });
+
+      if (!requester || requester.role !== 'owner') {
+        return NextResponse.json(
+          { error: 'Only owners can delete employees' },
+          { status: 403 }
+        );
+      }
+    }
+
+    // Don't allow deleting yourself
+    if (employeeId === requesterId) {
+      return NextResponse.json(
+        { error: 'Cannot delete yourself' },
+        { status: 400 }
+      );
+    }
+
+    await prisma.washEmployee.delete({
+      where: { id: employeeId },
+    });
+
+    return NextResponse.json({ ok: true });
+  } catch (error) {
+    console.error('[wash/employees] DELETE Error:', error);
+    return NextResponse.json(
+      { error: 'Failed to delete employee' },
+      { status: 500 }
+    );
   }
 }
