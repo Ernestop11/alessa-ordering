@@ -32,7 +32,7 @@ export default function ClockPage() {
     // Check if logged in
     const stored = localStorage.getItem("washEmployee");
     if (!stored) {
-      router.push(`/login?tenant=${tenantSlug}`);
+      router.push(`/wash-login?tenant=${tenantSlug}`);
       return;
     }
 
@@ -98,7 +98,7 @@ export default function ClockPage() {
 
   const handleLogout = () => {
     localStorage.removeItem("washEmployee");
-    router.push(`/login?tenant=${tenantSlug}`);
+    router.push(`/wash-login?tenant=${tenantSlug}`);
   };
 
   const formatTime = (date: Date) => {
@@ -226,7 +226,7 @@ export default function ClockPage() {
       {/* Dashboard Link (for owners/staff) */}
       {(employee?.role === "owner" || employee?.role === "staff") && (
         <button
-          onClick={() => router.push(`/dashboard?tenant=${tenantSlug}`)}
+          onClick={() => router.push(`/wash-dashboard?tenant=${tenantSlug}`)}
           className="mt-6 text-slate-400 hover:text-white text-sm underline transition-colors"
         >
           Go to Dashboard

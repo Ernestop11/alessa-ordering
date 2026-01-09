@@ -43,7 +43,7 @@ export default function DashboardPage() {
     // Check if logged in
     const stored = localStorage.getItem("washEmployee");
     if (!stored) {
-      router.push(`/login?tenant=${tenantSlug}`);
+      router.push(`/wash-login?tenant=${tenantSlug}`);
       return;
     }
 
@@ -51,7 +51,7 @@ export default function DashboardPage() {
 
     // Only owners and staff can access dashboard
     if (!["owner", "staff"].includes(emp.role)) {
-      router.push(`/clock?tenant=${tenantSlug}`);
+      router.push(`/wash-clock?tenant=${tenantSlug}`);
       return;
     }
 
@@ -133,7 +133,7 @@ export default function DashboardPage() {
 
   const handleLogout = () => {
     localStorage.removeItem("washEmployee");
-    router.push(`/login?tenant=${tenantSlug}`);
+    router.push(`/wash-login?tenant=${tenantSlug}`);
   };
 
   const formatPhone = (phone: string) => {
@@ -163,7 +163,7 @@ export default function DashboardPage() {
           </div>
           <div className="flex gap-2">
             <button
-              onClick={() => router.push(`/clock?tenant=${tenantSlug}`)}
+              onClick={() => router.push(`/wash-clock?tenant=${tenantSlug}`)}
               className="px-4 py-2 bg-blue-600 hover:bg-blue-500 rounded-lg text-white text-sm transition-all"
             >
               Time Clock

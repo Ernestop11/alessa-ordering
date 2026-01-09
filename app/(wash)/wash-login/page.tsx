@@ -58,9 +58,9 @@ export default function WashLoginPage() {
 
       // Redirect based on role
       if (data.employee.role === "owner" || data.employee.role === "staff") {
-        router.push(`/dashboard?tenant=${tenantSlug}`);
+        router.push(`/wash-dashboard?tenant=${tenantSlug}`);
       } else {
-        router.push(`/clock?tenant=${tenantSlug}`);
+        router.push(`/wash-clock?tenant=${tenantSlug}`);
       }
     } catch (err) {
       setError("Connection error. Please try again.");
