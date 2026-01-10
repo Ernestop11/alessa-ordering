@@ -1,6 +1,7 @@
 'use client';
 
 import { useState, useEffect, useCallback } from 'react';
+import { useParams } from 'next/navigation';
 import dynamic from 'next/dynamic';
 
 // Dynamic import QRScanner to avoid SSR issues with html5-qrcode
@@ -34,6 +35,8 @@ interface TruckInfo {
 type AppState = 'select-employee' | 'scanning' | 'confirm-wash' | 'success';
 
 export default function WashScannerPage() {
+  const params = useParams();
+  const tenantSlug = params?.tenantSlug as string;
   const [state, setState] = useState<AppState>('select-employee');
   const [employees, setEmployees] = useState<Employee[]>([]);
   const [selectedEmployee, setSelectedEmployee] = useState<Employee | null>(null);
@@ -46,12 +49,14 @@ export default function WashScannerPage() {
 
   // Fetch employees
   useEffect(() => {
+    if (!tenantSlug) return;
+
     const fetchEmployees = async () => {
       try {
-        const res = await fetch('/api/wash/employees');
+        const res = await fetch(`/api/wash/employees?tenantSlug=${tenantSlug}`);
         if (res.ok) {
           const data = await res.json();
-          setEmployees(data);
+          setEmployees(data.employees || []);
         }
       } catch (err) {
         console.error('Failed to fetch employees:', err);
@@ -61,7 +66,7 @@ export default function WashScannerPage() {
     };
 
     fetchEmployees();
-  }, []);
+  }, [tenantSlug]);
 
   // Fetch today's stats
   useEffect(() => {
@@ -171,9 +176,10 @@ export default function WashScannerPage() {
           isClockedIn: !selectedEmployee.isClockedIn,
         });
         // Refresh employee list
-        const empRes = await fetch('/api/wash/employees');
+        const empRes = await fetch(`/api/wash/employees?tenantSlug=${tenantSlug}`);
         if (empRes.ok) {
-          setEmployees(await empRes.json());
+          const data = await empRes.json();
+          setEmployees(data.employees || []);
         }
       }
     } catch (err) {
