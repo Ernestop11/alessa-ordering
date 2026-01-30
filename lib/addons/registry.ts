@@ -149,6 +149,24 @@ export const AVAILABLE_ADDONS: Record<string, AddOn> = {
       'posReports',
     ],
   },
+  tax: {
+    id: 'tax',
+    name: 'Auto Sales Tax',
+    icon: '🏛️',
+    description: 'Automated sales tax set-aside, filing preparation, and ACH payment to state authorities',
+    gradient: {
+      from: '#065f46', // Dark emerald
+      via: '#059669',  // Emerald
+      to: '#10b981',   // Light emerald
+    },
+    status: 'active',
+    sections: [
+      'taxDashboard',
+      'taxFilings',
+      'taxEscrow',
+      'taxConfig',
+    ],
+  },
 };
 
 /**

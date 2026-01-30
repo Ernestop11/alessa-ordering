@@ -428,6 +428,10 @@ model Tenant {
   posSessions            POSSession[]
   posTransactions        POSTransaction[]
   posCashMovements       POSCashMovement[]
+  // Tax Automation relations
+  taxDailySetAsides      TaxDailySetAside[]
+  taxFilingPeriods       TaxFilingPeriod[]
+  taxEscrowLedger        TaxEscrowLedger[]
 
   @@index([status])
 }
@@ -522,6 +526,14 @@ model TenantIntegration {
   // Smart Dispatch - Multi-provider delivery aggregation
   smartDispatchEnabled                 Boolean?  @default(false)
   smartDispatchStrategy                String?   @default("cheapest") // "cheapest" or "fastest"
+  // Tax Automation fields
+  taxAutoSetAsideEnabled               Boolean?  @default(false)
+  taxFilingState                       String?   @default("CA")
+  taxFilingFrequency                   String?   @default("quarterly") // quarterly, monthly
+  taxCdtfaAccountNumber                String?
+  taxEin                               String?
+  taxStateId                           String?
+  taxAutoPayEnabled                    Boolean?  @default(false)
   createdAt                            DateTime  @default(now())
   updatedAt                            DateTime  @updatedAt
   tenant                               Tenant    @relation(fields: [tenantId], references: [id], onDelete: Cascade)
@@ -1895,4 +1907,102 @@ model POSCashMovement {
   @@index([tenantId])
   @@index([sessionId])
   @@index([type])
+}
+
+// =============================================
+// Tax Automation Models
+// =============================================
+
+model TaxDailySetAside {
+  id                    String    @id @default(uuid())
+  tenantId              String
+  tenant                Tenant    @relation(fields: [tenantId], references: [id], onDelete: Cascade)
+  date                  DateTime  @db.Date
+
+  posTransactionCount   Int       @default(0)
+  posTaxCollected       Float     @default(0)
+  onlineOrderCount      Int       @default(0)
+  onlineTaxCollected    Float     @default(0)
+  totalTaxCollected     Float     @default(0)
+
+  escrowTransferStatus  String    @default("pending") // pending, transferred, failed, skipped
+  escrowTransferId      String?
+  escrowTransferError   String?
+  transferredAt         DateTime?
+
+  calculationDetails    Json?
+  createdAt             DateTime  @default(now())
+  updatedAt             DateTime  @updatedAt
+
+  @@unique([tenantId, date])
+  @@index([tenantId])
+  @@index([date])
+  @@index([escrowTransferStatus])
+}
+
+model TaxFilingPeriod {
+  id                  String    @id @default(uuid())
+  tenantId            String
+  tenant              Tenant    @relation(fields: [tenantId], references: [id], onDelete: Cascade)
+
+  state               String    @default("CA")
+  year                Int
+  quarter             Int?      // 1-4 for quarterly; null for monthly
+  month               Int?      // 1-12 for monthly; null for quarterly
+  periodStart         DateTime
+  periodEnd           DateTime
+  filingDeadline      DateTime
+
+  totalGrossSales     Float     @default(0)
+  totalTaxableSales   Float     @default(0)
+  totalTaxCollected   Float     @default(0)
+  totalEscrowBalance  Float     @default(0)
+
+  filingStatus        String    @default("accumulating")
+  // accumulating -> ready_to_file -> filing_prepared -> filed -> confirmed
+  filingData          Json?
+  filingPdfUrl        String?
+  filedAt             DateTime?
+  filingReference     String?
+
+  paymentStatus       String    @default("pending")
+  // pending -> payment_initiated -> payment_confirmed -> completed
+  paymentAmount       Float?
+  paymentMethod       String?   // ach_remitian, ach_stripe, check, manual
+  paymentReference    String?
+  paidAt              DateTime?
+
+  remittanceId        String?
+  notes               String?
+  createdAt           DateTime  @default(now())
+  updatedAt           DateTime  @updatedAt
+
+  @@unique([tenantId, state, year, quarter])
+  @@index([tenantId])
+  @@index([filingStatus])
+  @@index([paymentStatus])
+  @@index([filingDeadline])
+}
+
+model TaxEscrowLedger {
+  id                String    @id @default(uuid())
+  tenantId          String
+  tenant            Tenant    @relation(fields: [tenantId], references: [id], onDelete: Cascade)
+
+  entryType         String    // daily_deposit, tax_payment, adjustment, refund
+  amount            Float     // positive = into escrow, negative = out
+  runningBalance    Float
+
+  dailySetAsideId   String?
+  filingPeriodId    String?
+  achPaymentId      String?
+  stripeTransferId  String?
+
+  description       String
+  metadata          Json?
+  createdAt         DateTime  @default(now())
+
+  @@index([tenantId])
+  @@index([entryType])
+  @@index([createdAt])
 }
