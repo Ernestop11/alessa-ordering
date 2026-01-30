@@ -216,6 +216,12 @@ function getSectionName(sectionType: string, addOnName: string): string {
     boxBuilder: 'Box Builder',
     categories: 'Categories',
     buildYourOwn: 'Build Your Own',
+    // Inventory
+    inventoryDashboard: 'Inventory Dashboard',
+    departmentOverview: 'Department Overview',
+    // POS
+    posCheckout: 'POS Checkout',
+    posReports: 'POS Reports',
   };
 
   return nameMap[sectionType] || `${addOnName} Section`;
@@ -292,6 +298,32 @@ function getDefaultSectionContent(sectionType: string, addOn: any): any {
       title: 'Build Your Own',
       subtitle: 'Customize your drink',
       buttonText: 'Create Drink',
+    },
+    // Inventory
+    inventoryDashboard: {
+      ...baseContent,
+      title: 'Inventory Manager',
+      subtitle: 'Track stock, transfers, and costs across departments',
+      buttonText: 'Open Inventory',
+      buttonLink: '/inventory',
+    },
+    departmentOverview: {
+      ...baseContent,
+      title: 'Departments',
+      subtitle: 'View inventory by department',
+    },
+    // POS
+    posCheckout: {
+      ...baseContent,
+      title: 'Point of Sale',
+      subtitle: 'Process in-store sales',
+      buttonText: 'Open POS',
+      buttonLink: '/pos',
+    },
+    posReports: {
+      ...baseContent,
+      title: 'Sales Reports',
+      subtitle: 'Daily and shift reports',
     },
   };
 

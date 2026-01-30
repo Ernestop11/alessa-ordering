@@ -117,6 +117,38 @@ export const AVAILABLE_ADDONS: Record<string, AddOn> = {
       'menuSync',
     ],
   },
+  inventory: {
+    id: 'inventory',
+    name: 'Inventory Manager',
+    icon: '📦',
+    description: 'Track inventory, inter-department transfers, spoilage, and weekly P&L',
+    gradient: {
+      from: '#7c3aed', // Violet
+      via: '#8b5cf6',  // Purple
+      to: '#a78bfa',   // Light purple
+    },
+    status: 'active',
+    sections: [
+      'inventoryDashboard',
+      'departmentOverview',
+    ],
+  },
+  pos: {
+    id: 'pos',
+    name: 'Store Checkout POS',
+    icon: '💳',
+    description: 'Simple point-of-sale checkout with cash drawer and shift management',
+    gradient: {
+      from: '#0284c7', // Sky blue
+      via: '#0ea5e9',
+      to: '#38bdf8',
+    },
+    status: 'active',
+    sections: [
+      'posCheckout',
+      'posReports',
+    ],
+  },
 };
 
 /**
