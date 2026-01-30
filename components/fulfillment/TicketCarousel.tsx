@@ -396,10 +396,10 @@ export default function TicketCarousel({
                     <span>{formatCurrency(selectedOrder.subtotalAmount)}</span>
                   </div>
                 )}
-                {selectedOrder.taxAmount && Number(selectedOrder.taxAmount) > 0 && (
+                {(Number(selectedOrder.taxAmount ?? 0) + Number(selectedOrder.platformFee ?? 0)) > 0 && (
                   <div className="flex justify-between text-gray-600">
-                    <span>Tax</span>
-                    <span>{formatCurrency(selectedOrder.taxAmount)}</span>
+                    <span>Tax & Fees</span>
+                    <span>{formatCurrency(Number(selectedOrder.taxAmount ?? 0) + Number(selectedOrder.platformFee ?? 0))}</span>
                   </div>
                 )}
                 {selectedOrder.tipAmount && Number(selectedOrder.tipAmount) > 0 && (

@@ -110,6 +110,7 @@ function formatOrderForPrint(order: SerializedOrder, tenant: TenantInfo) {
     taxAmount: Number(order.taxAmount || 0),
     deliveryFee: Number(order.deliveryFee || 0),
     tipAmount: Number(order.tipAmount || 0),
+    serviceFee: Number(order.platformFee || 0),
     totalAmount: Number(order.totalAmount || 0),
     notes: order.notes || undefined,
     createdAt: new Date(order.createdAt),

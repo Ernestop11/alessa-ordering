@@ -599,7 +599,12 @@ export default function FulfillmentDashboard({ initialOrders, feedUrl, scope }: 
                 )
                 .join('')}
             </ul>
-            <p><strong>Total:</strong> $${Number(order.totalAmount ?? 0).toFixed(2)}</p>
+            <hr/>
+            ${order.subtotalAmount ? `<p>Subtotal: $${Number(order.subtotalAmount).toFixed(2)}</p>` : ''}
+            ${(() => { const tf = Number(order.taxAmount ?? 0) + Number(order.platformFee ?? 0); return tf > 0 ? `<p>Tax &amp; Fees: $${tf.toFixed(2)}</p>` : ''; })()}
+            ${order.deliveryFee && Number(order.deliveryFee) > 0 ? `<p>Delivery: $${Number(order.deliveryFee).toFixed(2)}</p>` : ''}
+            ${order.tipAmount && Number(order.tipAmount) > 0 ? `<p>Tip: $${Number(order.tipAmount).toFixed(2)}</p>` : ''}
+            <p><strong>Total: $${Number(order.totalAmount ?? 0).toFixed(2)}</strong></p>
             ${order.notes ? `<p><strong>Notes:</strong> ${order.notes}</p>` : ''}
             <script>window.print();window.onafterprint = () => window.close();</script>
           </body>
