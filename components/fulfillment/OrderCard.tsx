@@ -52,8 +52,8 @@ function parseModifiers(notes: string | null | undefined): { removes: string[]; 
   const adds: string[] = [];
   const others: string[] = [];
 
-  // Split by comma, semicolon, or " - "
-  const parts = notes.split(/[,;]|(?:\s+-\s+)/).map(p => p.trim()).filter(Boolean);
+  // Split by comma, semicolon, pipe, or " - "
+  const parts = notes.split(/[,;|]|(?:\s+-\s+)/).map(p => p.trim()).filter(Boolean);
 
   for (const part of parts) {
     const lower = part.toLowerCase();
@@ -61,8 +61,8 @@ function parseModifiers(notes: string | null | undefined): { removes: string[]; 
     if (lower.startsWith('no ') || lower.startsWith('without ') || lower.startsWith('hold ') || lower.includes(' no ')) {
       removes.push(part);
     }
-    // Check for "extra X", "add X", "+$X", "(+$X)"
-    else if (lower.startsWith('extra ') || lower.startsWith('add ') || lower.includes('+$') || lower.includes('(+') || lower.includes('double')) {
+    // Check for "extra X", "add X", "+ X" (addon prefix), "+$X", "(+$X)"
+    else if (lower.startsWith('extra ') || lower.startsWith('add ') || lower.startsWith('+ ') || lower.includes('+$') || lower.includes('(+') || lower.includes('double')) {
       adds.push(part);
     }
     // Everything else

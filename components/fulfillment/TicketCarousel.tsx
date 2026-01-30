@@ -221,13 +221,20 @@ export default function TicketCarousel({
                     </p>
                     <ul className="space-y-1 max-h-[120px] overflow-y-auto">
                       {order.items.slice(0, 4).map((item, idx) => (
-                        <li key={idx} className="text-sm text-gray-700 flex justify-between">
-                          <span className="truncate flex-1">
-                            {item.quantity}x {item.menuItemName || 'Item'}
-                          </span>
-                          <span className="text-gray-500 ml-2">
-                            {formatCurrency(Number(item.price) * item.quantity)}
-                          </span>
+                        <li key={idx} className="text-sm text-gray-700">
+                          <div className="flex justify-between">
+                            <span className="truncate flex-1">
+                              {item.quantity}x {item.menuItemName || 'Item'}
+                            </span>
+                            <span className="text-gray-500 ml-2">
+                              {formatCurrency(Number(item.price) * item.quantity)}
+                            </span>
+                          </div>
+                          {item.notes && (
+                            <p className="text-xs text-amber-700 mt-0.5 truncate">
+                              &rarr; {item.notes}
+                            </p>
+                          )}
                         </li>
                       ))}
                       {order.items.length > 4 && (

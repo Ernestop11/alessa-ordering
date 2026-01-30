@@ -104,7 +104,7 @@ function formatOrderForPrint(order: SerializedOrder, tenant: TenantInfo) {
       quantity: item.quantity || 1,
       unitPrice: Number(item.price || 0),
       totalPrice: Number(item.price || 0) * (item.quantity || 1),
-      notes: undefined,
+      notes: item.notes || undefined,
     })),
     subtotal: Number(order.subtotalAmount || 0),
     taxAmount: Number(order.taxAmount || 0),

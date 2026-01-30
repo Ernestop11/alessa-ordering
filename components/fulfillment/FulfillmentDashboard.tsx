@@ -589,12 +589,13 @@ export default function FulfillmentDashboard({ initialOrders, feedUrl, scope }: 
             <p><strong>Status:</strong> ${order.status}</p>
             <p><strong>Placed:</strong> ${new Date(order.createdAt).toLocaleString()}</p>
             <p><strong>Customer:</strong> ${order.customerName ?? order.customer?.name ?? 'Guest'}</p>
+            ${(order.customerPhone || order.customer?.phone) ? `<p><strong>Phone:</strong> ${order.customerPhone ?? order.customer?.phone}</p>` : ''}
             <h2>Items</h2>
             <ul>
               ${order.items
                 .map(
                   (item) =>
-                    `<li>${item.quantity} × ${item.menuItemName ?? 'Menu Item'} — $${Number(item.price).toFixed(2)}</li>`,
+                    `<li>${item.quantity} × ${item.menuItemName ?? 'Menu Item'} — $${Number(item.price).toFixed(2)}${item.notes ? `<br><small style="color:#666;">&rarr; ${item.notes}</small>` : ''}</li>`,
                 )
                 .join('')}
             </ul>
