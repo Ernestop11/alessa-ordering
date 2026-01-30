@@ -1,7 +1,5 @@
 import { NextRequest, NextResponse } from 'next/server';
-import { getServerSession } from 'next-auth';
-import { authOptions } from '@/lib/auth/options';
-import { requireTenant } from '@/lib/tenant';
+import { resolveInventoryAuth } from '@/lib/inventory-auth';
 import prisma from '@/lib/prisma';
 
 /**
@@ -10,13 +8,11 @@ import prisma from '@/lib/prisma';
  */
 export async function GET(request: NextRequest) {
   try {
-    const session = await getServerSession(authOptions);
-    const role = (session?.user as { role?: string } | undefined)?.role;
-    if (!session || (role !== 'admin' && role !== 'super_admin')) {
+    const auth = await resolveInventoryAuth(request);
+    if (!auth) {
       return NextResponse.json({ error: 'Unauthorized' }, { status: 401 });
     }
 
-    const tenant = await requireTenant();
     const { searchParams } = request.nextUrl;
     const weekStartParam = searchParams.get('weekStart');
     const departmentId = searchParams.get('departmentId') || null;
@@ -36,7 +32,7 @@ export async function GET(request: NextRequest) {
     const cached = await prisma.weeklyCostReport.findUnique({
       where: {
         tenantId_weekStart_menuSectionId: {
-          tenantId: tenant.id,
+          tenantId: auth.tenantId,
           weekStart,
           menuSectionId: departmentId || '',
         },
@@ -48,7 +44,7 @@ export async function GET(request: NextRequest) {
     }
 
     // Generate fresh report
-    const report = await generateWeeklyReport(tenant.id, weekStart, weekEnd, departmentId);
+    const report = await generateWeeklyReport(auth.tenantId, weekStart, weekEnd, departmentId);
 
     return NextResponse.json({ report, source: 'generated' });
   } catch (error: any) {
@@ -62,13 +58,11 @@ export async function GET(request: NextRequest) {
  */
 export async function POST(request: NextRequest) {
   try {
-    const session = await getServerSession(authOptions);
-    const role = (session?.user as { role?: string } | undefined)?.role;
-    if (!session || (role !== 'admin' && role !== 'super_admin')) {
+    const auth = await resolveInventoryAuth(request);
+    if (!auth) {
       return NextResponse.json({ error: 'Unauthorized' }, { status: 401 });
     }
 
-    const tenant = await requireTenant();
     const body = await request.json();
     const { weekStart: weekStartStr, departmentId } = body;
 
@@ -80,13 +74,13 @@ export async function POST(request: NextRequest) {
     const weekEnd = new Date(weekStart);
     weekEnd.setDate(weekStart.getDate() + 7);
 
-    const report = await generateWeeklyReport(tenant.id, weekStart, weekEnd, departmentId || null);
+    const report = await generateWeeklyReport(auth.tenantId, weekStart, weekEnd, departmentId || null);
 
     // Cache the report
     const saved = await prisma.weeklyCostReport.upsert({
       where: {
         tenantId_weekStart_menuSectionId: {
-          tenantId: tenant.id,
+          tenantId: auth.tenantId,
           weekStart,
           menuSectionId: departmentId || '',
         },
@@ -99,7 +93,7 @@ export async function POST(request: NextRequest) {
         details: report.details,
       },
       create: {
-        tenantId: tenant.id,
+        tenantId: auth.tenantId,
         weekStart,
         weekEnd,
         menuSectionId: departmentId || null,

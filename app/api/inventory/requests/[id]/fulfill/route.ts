@@ -1,7 +1,5 @@
 import { NextRequest, NextResponse } from 'next/server';
-import { getServerSession } from 'next-auth';
-import { authOptions } from '@/lib/auth/options';
-import { requireTenant } from '@/lib/tenant';
+import { resolveInventoryAuth } from '@/lib/inventory-auth';
 import prisma from '@/lib/prisma';
 
 /**
@@ -14,18 +12,16 @@ export async function POST(
   { params }: { params: { id: string } }
 ) {
   try {
-    const session = await getServerSession(authOptions);
-    const role = (session?.user as { role?: string } | undefined)?.role;
-    if (!session || (role !== 'admin' && role !== 'super_admin')) {
+    const auth = await resolveInventoryAuth(request);
+    if (!auth) {
       return NextResponse.json({ error: 'Unauthorized' }, { status: 401 });
     }
 
-    const tenant = await requireTenant();
     const body = await request.json();
     const { fulfilledItems } = body; // Optional: [{itemId, quantityFulfilled}] for partial fulfillment
 
     const inventoryRequest = await prisma.inventoryRequest.findFirst({
-      where: { id: params.id, tenantId: tenant.id },
+      where: { id: params.id, tenantId: auth.tenantId },
       include: {
         items: {
           include: {
@@ -45,8 +41,6 @@ export async function POST(
         { status: 400 }
       );
     }
-
-    const fulfiller = session.user?.name || session.user?.email || 'admin';
 
     // Build fulfillment map (default to full requested quantity)
     const fulfillmentMap = new Map<string, number>();
@@ -79,7 +73,7 @@ export async function POST(
         // TRANSFER_OUT from supplier department (toSectionId is the supplier)
         await tx.inventoryMovement.create({
           data: {
-            tenantId: tenant.id,
+            tenantId: auth.tenantId,
             itemId: reqItem.itemId,
             type: 'TRANSFER_OUT',
             quantity: -Math.abs(qty),
@@ -88,14 +82,14 @@ export async function POST(
             toSectionId: inventoryRequest.fromSectionId,
             requestId: inventoryRequest.id,
             notes: `Transfer to ${inventoryRequest.fromSectionId} (request ${inventoryRequest.id.slice(-6)})`,
-            createdBy: fulfiller,
+            createdBy: auth.userName,
           },
         });
 
         // TRANSFER_IN to requesting department
         await tx.inventoryMovement.create({
           data: {
-            tenantId: tenant.id,
+            tenantId: auth.tenantId,
             itemId: reqItem.itemId,
             type: 'TRANSFER_IN',
             quantity: Math.abs(qty),
@@ -104,7 +98,7 @@ export async function POST(
             toSectionId: inventoryRequest.fromSectionId,
             requestId: inventoryRequest.id,
             notes: `Received from ${inventoryRequest.toSectionId} (request ${inventoryRequest.id.slice(-6)})`,
-            createdBy: fulfiller,
+            createdBy: auth.userName,
           },
         });
 

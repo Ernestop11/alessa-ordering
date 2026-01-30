@@ -1,22 +1,17 @@
-import { NextResponse } from 'next/server';
-import { getServerSession } from 'next-auth';
-import { authOptions } from '@/lib/auth/options';
-import { requireTenant } from '@/lib/tenant';
+import { NextRequest, NextResponse } from 'next/server';
+import { resolveInventoryAuth } from '@/lib/inventory-auth';
 import prisma from '@/lib/prisma';
 
-export async function GET() {
+export async function GET(request: NextRequest) {
   try {
-    const session = await getServerSession(authOptions);
-    const role = (session?.user as { role?: string } | undefined)?.role;
-    if (!session || (role !== 'admin' && role !== 'super_admin')) {
+    const auth = await resolveInventoryAuth(request);
+    if (!auth) {
       return NextResponse.json({ error: 'Unauthorized' }, { status: 401 });
     }
 
-    const tenant = await requireTenant();
-
     // Get all menu sections as departments with inventory summaries
     const sections = await prisma.menuSection.findMany({
-      where: { tenantId: tenant.id },
+      where: { tenantId: auth.tenantId },
       select: {
         id: true,
         name: true,
@@ -33,7 +28,7 @@ export async function GET() {
     const departments = await Promise.all(
       sections.map(async (section) => {
         const items = await prisma.inventoryItem.findMany({
-          where: { tenantId: tenant.id, menuSectionId: section.id, active: true },
+          where: { tenantId: auth.tenantId, menuSectionId: section.id, active: true },
           select: {
             currentStock: true,
             costPerUnit: true,
@@ -74,7 +69,7 @@ export async function GET() {
 
     // Also get unassigned items (no department)
     const unassignedCount = await prisma.inventoryItem.count({
-      where: { tenantId: tenant.id, menuSectionId: null, active: true },
+      where: { tenantId: auth.tenantId, menuSectionId: null, active: true },
     });
 
     return NextResponse.json({

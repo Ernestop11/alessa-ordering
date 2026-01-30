@@ -1,7 +1,5 @@
 import { NextRequest, NextResponse } from 'next/server';
-import { getServerSession } from 'next-auth';
-import { authOptions } from '@/lib/auth/options';
-import { requireTenant } from '@/lib/tenant';
+import { resolveInventoryAuth } from '@/lib/inventory-auth';
 import prisma from '@/lib/prisma';
 
 export async function GET(
@@ -9,16 +7,13 @@ export async function GET(
   { params }: { params: { id: string } }
 ) {
   try {
-    const session = await getServerSession(authOptions);
-    const role = (session?.user as { role?: string } | undefined)?.role;
-    if (!session || (role !== 'admin' && role !== 'super_admin')) {
+    const auth = await resolveInventoryAuth(request);
+    if (!auth) {
       return NextResponse.json({ error: 'Unauthorized' }, { status: 401 });
     }
 
-    const tenant = await requireTenant();
-
     const inventoryRequest = await prisma.inventoryRequest.findFirst({
-      where: { id: params.id, tenantId: tenant.id },
+      where: { id: params.id, tenantId: auth.tenantId },
       include: {
         items: {
           include: {
@@ -60,13 +55,11 @@ export async function PUT(
   { params }: { params: { id: string } }
 ) {
   try {
-    const session = await getServerSession(authOptions);
-    const role = (session?.user as { role?: string } | undefined)?.role;
-    if (!session || (role !== 'admin' && role !== 'super_admin')) {
+    const auth = await resolveInventoryAuth(request);
+    if (!auth) {
       return NextResponse.json({ error: 'Unauthorized' }, { status: 401 });
     }
 
-    const tenant = await requireTenant();
     const body = await request.json();
     const { action, rejectionReason } = body;
 
@@ -75,7 +68,7 @@ export async function PUT(
     }
 
     const existing = await prisma.inventoryRequest.findFirst({
-      where: { id: params.id, tenantId: tenant.id },
+      where: { id: params.id, tenantId: auth.tenantId },
     });
 
     if (!existing) {
@@ -89,12 +82,10 @@ export async function PUT(
       );
     }
 
-    const approver = session.user?.name || session.user?.email || 'admin';
-
     if (action === 'approve') {
       const updated = await prisma.inventoryRequest.update({
         where: { id: params.id },
-        data: { status: 'APPROVED', approvedBy: approver },
+        data: { status: 'APPROVED', approvedBy: auth.userName },
         include: { items: { include: { item: { select: { id: true, name: true, unit: true } } } } },
       });
       return NextResponse.json({ request: updated });

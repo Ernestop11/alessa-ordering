@@ -1,24 +1,20 @@
 import { NextRequest, NextResponse } from 'next/server';
-import { getServerSession } from 'next-auth';
-import { authOptions } from '@/lib/auth/options';
-import { requireTenant } from '@/lib/tenant';
+import { resolveInventoryAuth } from '@/lib/inventory-auth';
 import prisma from '@/lib/prisma';
 
 export async function GET(request: NextRequest) {
   try {
-    const session = await getServerSession(authOptions);
-    const role = (session?.user as { role?: string } | undefined)?.role;
-    if (!session || (role !== 'admin' && role !== 'super_admin')) {
+    const auth = await resolveInventoryAuth(request);
+    if (!auth) {
       return NextResponse.json({ error: 'Unauthorized' }, { status: 401 });
     }
 
-    const tenant = await requireTenant();
     const { searchParams } = request.nextUrl;
     const departmentId = searchParams.get('departmentId');
     const category = searchParams.get('category');
     const active = searchParams.get('active');
 
-    const where: any = { tenantId: tenant.id };
+    const where: any = { tenantId: auth.tenantId };
     if (departmentId) where.menuSectionId = departmentId;
     if (category) where.category = category;
     if (active !== null) where.active = active !== 'false';
@@ -40,13 +36,11 @@ export async function GET(request: NextRequest) {
 
 export async function POST(request: NextRequest) {
   try {
-    const session = await getServerSession(authOptions);
-    const role = (session?.user as { role?: string } | undefined)?.role;
-    if (!session || (role !== 'admin' && role !== 'super_admin')) {
+    const auth = await resolveInventoryAuth(request);
+    if (!auth) {
       return NextResponse.json({ error: 'Unauthorized' }, { status: 401 });
     }
 
-    const tenant = await requireTenant();
     const body = await request.json();
 
     const {
@@ -61,7 +55,7 @@ export async function POST(request: NextRequest) {
 
     const item = await prisma.inventoryItem.create({
       data: {
-        tenantId: tenant.id,
+        tenantId: auth.tenantId,
         name,
         sku: sku || null,
         category: category || 'general',
@@ -85,13 +79,13 @@ export async function POST(request: NextRequest) {
     if (currentStock && currentStock > 0) {
       await prisma.inventoryMovement.create({
         data: {
-          tenantId: tenant.id,
+          tenantId: auth.tenantId,
           itemId: item.id,
           type: 'PURCHASE',
           quantity: currentStock,
           costPerUnit: costPerUnit || 0,
           notes: 'Initial stock entry',
-          createdBy: session.user?.name || session.user?.email || 'admin',
+          createdBy: auth.userName,
         },
       });
     }

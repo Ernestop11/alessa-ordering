@@ -1,29 +1,29 @@
 import { NextRequest, NextResponse } from 'next/server';
-import { getServerSession } from 'next-auth';
-import { authOptions } from '@/lib/auth/options';
-import { requireTenant } from '@/lib/tenant';
+import { resolveInventoryAuth } from '@/lib/inventory-auth';
 import prisma from '@/lib/prisma';
 
 const VALID_TYPES = ['PURCHASE', 'SALE', 'TRANSFER_OUT', 'TRANSFER_IN', 'SPOILAGE', 'RETURN', 'ADJUSTMENT'] as const;
 
 export async function GET(request: NextRequest) {
   try {
-    const session = await getServerSession(authOptions);
-    const role = (session?.user as { role?: string } | undefined)?.role;
-    if (!session || (role !== 'admin' && role !== 'super_admin')) {
+    const auth = await resolveInventoryAuth(request);
+    if (!auth) {
       return NextResponse.json({ error: 'Unauthorized' }, { status: 401 });
     }
 
-    const tenant = await requireTenant();
     const { searchParams } = request.nextUrl;
     const itemId = searchParams.get('itemId');
     const type = searchParams.get('type');
+    const departmentId = searchParams.get('departmentId');
     const limit = parseInt(searchParams.get('limit') || '100');
     const offset = parseInt(searchParams.get('offset') || '0');
 
-    const where: any = { tenantId: tenant.id };
+    const where: any = { tenantId: auth.tenantId };
     if (itemId) where.itemId = itemId;
     if (type && VALID_TYPES.includes(type as any)) where.type = type;
+    if (departmentId) {
+      where.item = { menuSectionId: departmentId };
+    }
 
     const [movements, total] = await Promise.all([
       prisma.inventoryMovement.findMany({
@@ -47,13 +47,11 @@ export async function GET(request: NextRequest) {
 
 export async function POST(request: NextRequest) {
   try {
-    const session = await getServerSession(authOptions);
-    const role = (session?.user as { role?: string } | undefined)?.role;
-    if (!session || (role !== 'admin' && role !== 'super_admin')) {
+    const auth = await resolveInventoryAuth(request);
+    if (!auth) {
       return NextResponse.json({ error: 'Unauthorized' }, { status: 401 });
     }
 
-    const tenant = await requireTenant();
     const body = await request.json();
 
     const { itemId, type, quantity, costPerUnit, notes } = body;
@@ -74,7 +72,7 @@ export async function POST(request: NextRequest) {
 
     // Verify item belongs to tenant
     const item = await prisma.inventoryItem.findFirst({
-      where: { id: itemId, tenantId: tenant.id },
+      where: { id: itemId, tenantId: auth.tenantId },
     });
 
     if (!item) {
@@ -111,13 +109,13 @@ export async function POST(request: NextRequest) {
     const [movement] = await prisma.$transaction([
       prisma.inventoryMovement.create({
         data: {
-          tenantId: tenant.id,
+          tenantId: auth.tenantId,
           itemId,
           type,
           quantity: stockDelta,
           costPerUnit: costPerUnit ?? item.costPerUnit,
           notes: notes || null,
-          createdBy: session.user?.name || session.user?.email || 'admin',
+          createdBy: auth.userName,
         },
         include: {
           item: { select: { id: true, name: true, unit: true } },

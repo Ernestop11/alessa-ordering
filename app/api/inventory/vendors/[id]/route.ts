@@ -1,7 +1,5 @@
 import { NextRequest, NextResponse } from 'next/server';
-import { getServerSession } from 'next-auth';
-import { authOptions } from '@/lib/auth/options';
-import { requireTenant } from '@/lib/tenant';
+import { resolveInventoryAuth } from '@/lib/inventory-auth';
 import prisma from '@/lib/prisma';
 
 /**
@@ -12,16 +10,13 @@ export async function PUT(
   { params }: { params: { id: string } }
 ) {
   try {
-    const session = await getServerSession(authOptions);
-    const role = (session?.user as { role?: string } | undefined)?.role;
-    if (!session || (role !== 'admin' && role !== 'super_admin')) {
+    const auth = await resolveInventoryAuth(request);
+    if (!auth) {
       return NextResponse.json({ error: 'Unauthorized' }, { status: 401 });
     }
 
-    const tenant = await requireTenant();
-
     const credit = await prisma.vendorCredit.findFirst({
-      where: { id: params.id, tenantId: tenant.id },
+      where: { id: params.id, tenantId: auth.tenantId },
     });
 
     if (!credit) {
@@ -37,12 +32,12 @@ export async function PUT(
       await prisma.$transaction([
         prisma.inventoryMovement.create({
           data: {
-            tenantId: tenant.id,
+            tenantId: auth.tenantId,
             itemId: credit.itemId,
             type: 'RETURN',
             quantity: -Math.abs(credit.quantity),
             notes: `Vendor return to ${credit.vendorName}: ${credit.reason || 'N/A'}`,
-            createdBy: session.user?.name || session.user?.email || 'admin',
+            createdBy: auth.userName,
           },
         }),
         prisma.inventoryItem.update({
