@@ -1,6 +1,6 @@
 "use client";
 
-import React, { useEffect, useMemo, useState } from "react";
+import React, { useEffect, useMemo, useRef, useState } from "react";
 import { useSearchParams } from "next/navigation";
 import { Trash2, Pencil, X, Clock, Zap, ChevronDown } from "lucide-react";
 import type { OrderPayload } from "../lib/order-service";
@@ -586,11 +586,26 @@ export default function Cart() {
     setPaymentReady(false);
   };
 
+  // Track the total amount used when the payment intent was created
+  const intentTotalRef = useRef<number | null>(null);
+
   useEffect(() => {
     if (items.length === 0) {
       resetPaymentState();
+      intentTotalRef.current = null;
     }
   }, [items.length]);
+
+  // Reset payment intent when the order total changes (e.g. tip change, item edit)
+  // so a new intent is created with the correct amount
+  useEffect(() => {
+    if (!clientSecret || intentTotalRef.current === null) return;
+    if (Math.abs(totalAmount - intentTotalRef.current) >= 0.01) {
+      console.log('[Cart] Order total changed from', intentTotalRef.current, 'to', totalAmount, '— recreating payment intent');
+      resetPaymentState();
+      intentTotalRef.current = null;
+    }
+  }, [totalAmount, clientSecret]);
 
   // Auto-create payment intent when contact info is valid AND restaurant is open
   useEffect(() => {
@@ -624,8 +639,10 @@ export default function Cart() {
         console.log('[Cart] Payment intent created successfully:', {
           hasClientSecret: !!data.clientSecret,
           paymentIntentId: data.paymentIntentId,
+          totalAmount,
         });
 
+        intentTotalRef.current = totalAmount;
         setClientSecret(data.clientSecret);
         setPaymentIntentId(data.paymentIntentId ?? null);
         setPaymentSessionId(data.paymentSessionId ?? null);
@@ -639,7 +656,7 @@ export default function Cart() {
     }, 800);
 
     return () => clearTimeout(timeoutId);
-  }, [items.length, isContactValid, customerEmail, customerPhone, clientSecret, loading, orderPayload, restaurantIsOpen]);
+  }, [items.length, isContactValid, customerEmail, customerPhone, clientSecret, loading, orderPayload, restaurantIsOpen, totalAmount]);
 
   return (
     <div className="flex w-full max-w-lg flex-col gap-3 sm:gap-6 rounded-2xl sm:rounded-3xl border border-gray-100 bg-white p-3 sm:p-6 shadow-xl md:p-8">
