@@ -1,7 +1,7 @@
 'use client';
 
 import Link from 'next/link';
-import { CheckCircle2, XCircle, CreditCard, Truck, Package, Settings, Menu, BarChart3, ChefHat, Star } from 'lucide-react';
+import { CheckCircle2, XCircle, CreditCard, Truck, Package, Settings, Menu, BarChart3, ChefHat, Star, DollarSign } from 'lucide-react';
 import DashboardLayout from './DashboardLayout';
 
 interface AdminDashboardHomeProps {
@@ -291,6 +291,28 @@ export default function AdminDashboardHome({
                 <div>
                   <p className="font-medium text-gray-900">Rewards Program</p>
                   <p className="text-sm text-gray-500">Manage membership tiers & rewards</p>
+                </div>
+              </Link>
+
+              <Link
+                href="/admin/inventory"
+                className="flex items-center p-4 border-2 border-gray-200 rounded-lg hover:border-purple-500 hover:bg-purple-50 transition-colors"
+              >
+                <Package className="h-6 w-6 text-gray-600 mr-3" />
+                <div>
+                  <p className="font-medium text-gray-900">Inventory Manager</p>
+                  <p className="text-sm text-gray-500">Track stock, transfers & P&L</p>
+                </div>
+              </Link>
+
+              <Link
+                href="/admin/tax"
+                className="flex items-center p-4 border-2 border-gray-200 rounded-lg hover:border-emerald-500 hover:bg-emerald-50 transition-colors"
+              >
+                <DollarSign className="h-6 w-6 text-gray-600 mr-3" />
+                <div>
+                  <p className="font-medium text-gray-900">Auto Sales Tax</p>
+                  <p className="text-sm text-gray-500">Tax tracking, filing & ACH payment</p>
                 </div>
               </Link>
             </div>
