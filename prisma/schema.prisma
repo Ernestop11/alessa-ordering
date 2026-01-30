@@ -419,6 +419,15 @@ model Tenant {
   employeeShifts         EmployeeShift[]
   washInvoices           WashInvoice[]
   supplyLogs             SupplyLog[]
+  // Inventory & POS relations
+  inventoryItems         InventoryItem[]
+  inventoryMovements     InventoryMovement[]
+  inventoryRequests      InventoryRequest[]
+  vendorCredits          VendorCredit[]
+  weeklyCostReports      WeeklyCostReport[]
+  posSessions            POSSession[]
+  posTransactions        POSTransaction[]
+  posCashMovements       POSCashMovement[]
 
   @@index([status])
 }
@@ -638,8 +647,9 @@ model MenuSection {
   imageUrl    String?
   createdAt   DateTime        @default(now())
   updatedAt   DateTime        @updatedAt
-  tenant      Tenant          @relation(fields: [tenantId], references: [id], onDelete: Cascade)
-  menuItems   MenuItem[]
+  tenant          Tenant          @relation(fields: [tenantId], references: [id], onDelete: Cascade)
+  menuItems       MenuItem[]
+  inventoryItems  InventoryItem[]
 }
 
 enum MenuSectionType {
@@ -1650,4 +1660,239 @@ model SupplyLog {
 
   @@index([tenantId])
   @@index([loggedAt])
+}
+
+// ============================================
+// INVENTORY MODULE
+// ============================================
+
+model InventoryItem {
+  id              String    @id @default(uuid())
+  tenantId        String
+  tenant          Tenant    @relation(fields: [tenantId], references: [id], onDelete: Cascade)
+  menuSectionId   String?
+  menuSection     MenuSection? @relation(fields: [menuSectionId], references: [id], onDelete: SetNull)
+  name            String
+  sku             String?
+  category        String    @default("general")
+  unit            String    @default("each")
+  costPerUnit     Float     @default(0)
+  salePrice       Float?
+  currentStock    Float     @default(0)
+  reorderPoint    Float?
+  expirationDate  DateTime?
+  vendorName      String?
+  barcode         String?
+  image           String?
+  active          Boolean   @default(true)
+  createdAt       DateTime  @default(now())
+  updatedAt       DateTime  @updatedAt
+
+  movements       InventoryMovement[]
+  requestItems    InventoryRequestItem[]
+  vendorCredits   VendorCredit[]
+
+  @@unique([tenantId, sku])
+  @@index([tenantId])
+  @@index([tenantId, menuSectionId])
+  @@index([category])
+  @@index([expirationDate])
+  @@index([barcode])
+}
+
+enum InventoryMovementType {
+  PURCHASE
+  SALE
+  TRANSFER_OUT
+  TRANSFER_IN
+  SPOILAGE
+  RETURN
+  ADJUSTMENT
+}
+
+model InventoryMovement {
+  id              String                @id @default(uuid())
+  tenantId        String
+  tenant          Tenant                @relation(fields: [tenantId], references: [id], onDelete: Cascade)
+  itemId          String
+  item            InventoryItem         @relation(fields: [itemId], references: [id], onDelete: Cascade)
+  type            InventoryMovementType
+  quantity        Float
+  costPerUnit     Float?
+  fromSectionId   String?
+  toSectionId     String?
+  requestId       String?
+  notes           String?
+  createdBy       String?
+  createdAt       DateTime              @default(now())
+
+  @@index([tenantId])
+  @@index([itemId])
+  @@index([type])
+  @@index([createdAt])
+  @@index([requestId])
+}
+
+enum InventoryRequestStatus {
+  PENDING
+  APPROVED
+  FULFILLED
+  REJECTED
+}
+
+model InventoryRequest {
+  id              String                  @id @default(uuid())
+  tenantId        String
+  tenant          Tenant                  @relation(fields: [tenantId], references: [id], onDelete: Cascade)
+  fromSectionId   String
+  toSectionId     String
+  status          InventoryRequestStatus  @default(PENDING)
+  requestedBy     String
+  approvedBy      String?
+  fulfilledAt     DateTime?
+  rejectedAt      DateTime?
+  rejectionReason String?
+  notes           String?
+  createdAt       DateTime                @default(now())
+  updatedAt       DateTime                @updatedAt
+
+  items           InventoryRequestItem[]
+
+  @@index([tenantId])
+  @@index([status])
+  @@index([fromSectionId])
+  @@index([toSectionId])
+  @@index([createdAt])
+}
+
+model InventoryRequestItem {
+  id                String            @id @default(uuid())
+  requestId         String
+  request           InventoryRequest  @relation(fields: [requestId], references: [id], onDelete: Cascade)
+  itemId            String
+  item              InventoryItem     @relation(fields: [itemId], references: [id], onDelete: Cascade)
+  quantityRequested Float
+  quantityFulfilled Float?
+
+  @@index([requestId])
+  @@index([itemId])
+}
+
+model VendorCredit {
+  id              String         @id @default(uuid())
+  tenantId        String
+  tenant          Tenant         @relation(fields: [tenantId], references: [id], onDelete: Cascade)
+  vendorName      String
+  amount          Float
+  reason          String?
+  itemId          String?
+  item            InventoryItem? @relation(fields: [itemId], references: [id], onDelete: SetNull)
+  quantity        Float?
+  status          String         @default("pending")
+  appliedAt       DateTime?
+  createdAt       DateTime       @default(now())
+  updatedAt       DateTime       @updatedAt
+
+  @@index([tenantId])
+  @@index([status])
+  @@index([createdAt])
+}
+
+model WeeklyCostReport {
+  id              String    @id @default(uuid())
+  tenantId        String
+  tenant          Tenant    @relation(fields: [tenantId], references: [id], onDelete: Cascade)
+  weekStart       DateTime
+  weekEnd         DateTime
+  menuSectionId   String?
+  totalRevenue    Float     @default(0)
+  totalCOGS       Float     @default(0)
+  grossMargin     Float     @default(0)
+  details         Json?
+  createdAt       DateTime  @default(now())
+
+  @@unique([tenantId, weekStart, menuSectionId])
+  @@index([tenantId])
+  @@index([weekStart])
+}
+
+// ============================================
+// POS (POINT OF SALE) MODULE
+// ============================================
+
+model POSSession {
+  id              String    @id @default(uuid())
+  tenantId        String
+  tenant          Tenant    @relation(fields: [tenantId], references: [id], onDelete: Cascade)
+  employeeName    String
+  employeePin     String?
+  openedAt        DateTime  @default(now())
+  closedAt        DateTime?
+  openingCash     Float     @default(0)
+  closingCash     Float?
+  expectedCash    Float?
+  cashDifference  Float?
+  status          String    @default("open")
+  createdAt       DateTime  @default(now())
+  updatedAt       DateTime  @updatedAt
+
+  transactions    POSTransaction[]
+  cashMovements   POSCashMovement[]
+
+  @@index([tenantId])
+  @@index([status])
+  @@index([openedAt])
+}
+
+model POSTransaction {
+  id                String     @id @default(uuid())
+  tenantId          String
+  tenant            Tenant     @relation(fields: [tenantId], references: [id], onDelete: Cascade)
+  sessionId         String
+  session           POSSession @relation(fields: [sessionId], references: [id], onDelete: Cascade)
+  items             Json
+  subtotal          Float
+  taxRate           Float      @default(0)
+  taxAmount         Float      @default(0)
+  discountAmount    Float      @default(0)
+  total             Float
+  paymentMethod     String     @default("cash")
+  cashReceived      Float?
+  changeGiven       Float?
+  cardLast4         String?
+  refunded          Boolean    @default(false)
+  refundedAt        DateTime?
+  refundReason      String?
+  notes             String?
+  createdAt         DateTime   @default(now())
+
+  @@index([tenantId])
+  @@index([sessionId])
+  @@index([createdAt])
+  @@index([paymentMethod])
+}
+
+enum POSCashMovementType {
+  OPEN
+  SALE
+  REFUND
+  CASH_DROP
+  PAYOUT
+  ADJUSTMENT
+}
+
+model POSCashMovement {
+  id              String              @id @default(uuid())
+  tenantId        String
+  tenant          Tenant              @relation(fields: [tenantId], references: [id], onDelete: Cascade)
+  sessionId       String
+  session         POSSession          @relation(fields: [sessionId], references: [id], onDelete: Cascade)
+  type            POSCashMovementType
+  amount          Float
+  notes           String?
+  createdAt       DateTime            @default(now())
+
+  @@index([tenantId])
+  @@index([sessionId])
+  @@index([type])
 }
