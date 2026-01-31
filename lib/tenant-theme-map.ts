@@ -91,6 +91,19 @@ const TENANT_THEME_MAP: Record<string, StaticTenantTheme> = {
       logo: '/tenant/taqueriarosita/logo-white.png', // White logo for dark theme
     },
   },
+  tacosjalisco: {
+    slug: 'tacosjalisco',
+    name: 'Tacos Jalisco Vallejo',
+    primaryColor: '#166534', // Green-800 - Mexican green
+    secondaryColor: '#f59e0b', // Amber-500 - warm gold
+    themeColor: '#14532d', // Green-900 for seamless status bar
+    hasCustomIcons: false,
+    assets: {
+      hero: '/tenant/tacosjalisco/hero.jpg',
+      membership: '/tenant/tacosjalisco/membership.jpg',
+      logo: '/tenant/tacosjalisco/logo.png',
+    },
+  },
   rhinopowerwashing: {
     slug: 'rhinopowerwashing',
     name: 'Rhino Power Washing',
