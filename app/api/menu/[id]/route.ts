@@ -5,6 +5,7 @@ import { authOptions } from '@/lib/auth/options'
 import prisma from '@/lib/prisma'
 import { requireTenant } from '@/lib/tenant'
 import { emitMenuUpdate, triggerSMPSync } from '@/lib/ecosystem/communication'
+import { notifyDisplaysMenuChanged } from '@/lib/signage-broadcast'
 
 export async function GET(req: Request, { params }: { params: Promise<{ id: string }> | { id: string } }) {
   try {
@@ -94,6 +95,7 @@ export async function PATCH(req: Request, { params }: { params: Promise<{ id: st
     revalidatePath(`/${tenant.slug}`, 'layout')
     revalidatePath(`/${tenant.slug}/order`, 'page')
     revalidatePath(`/${tenant.slug}/catalog`, 'page')
+    notifyDisplaysMenuChanged(tenant.id)
 
     return NextResponse.json(updated)
   } catch (err) {
@@ -139,6 +141,7 @@ export async function DELETE(req: Request, { params }: { params: Promise<{ id: s
     revalidatePath(`/${tenant.slug}`, 'layout')
     revalidatePath(`/${tenant.slug}/order`, 'page')
     revalidatePath(`/${tenant.slug}/catalog`, 'page')
+    notifyDisplaysMenuChanged(tenant.id)
 
     return NextResponse.json({ ok: true })
   } catch (err) {

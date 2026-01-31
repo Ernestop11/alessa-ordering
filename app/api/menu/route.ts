@@ -5,6 +5,7 @@ import { authOptions } from '@/lib/auth/options'
 import prisma from '@/lib/prisma'
 import { requireTenant } from '@/lib/tenant'
 import { emitMenuUpdate, triggerSMPSync } from '@/lib/ecosystem/communication'
+import { notifyDisplaysMenuChanged } from '@/lib/signage-broadcast'
 
 export async function GET() {
   try {
@@ -76,6 +77,7 @@ export async function POST(req: Request) {
     revalidatePath(`/${tenant.slug}`, 'layout')
     revalidatePath(`/${tenant.slug}/order`, 'page')
     revalidatePath(`/${tenant.slug}/catalog`, 'page')
+    notifyDisplaysMenuChanged(tenant.id)
 
     return NextResponse.json(created, { status: 201 })
   } catch (err) {

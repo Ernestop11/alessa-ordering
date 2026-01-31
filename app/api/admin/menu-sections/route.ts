@@ -4,6 +4,7 @@ import { authOptions } from '@/lib/auth/options';
 import prisma from '@/lib/prisma';
 import { requireTenant } from '@/lib/tenant';
 import { revalidatePath } from 'next/cache';
+import { notifyDisplaysMenuChanged } from '@/lib/signage-broadcast';
 
 function unauthorized() {
   return new NextResponse(JSON.stringify({ error: 'Unauthorized' }), {
@@ -71,6 +72,7 @@ export async function POST(req: Request) {
   // SECURITY: Only revalidate THIS tenant's paths to prevent cross-tenant cache pollution
   revalidatePath(`/${tenant.slug}`, 'layout');
   revalidatePath(`/${tenant.slug}/order`, 'page');
+  notifyDisplaysMenuChanged(tenant.id);
 
   return json(section, { status: 201 });
 }
@@ -107,6 +109,7 @@ export async function PUT(req: Request) {
     // SECURITY: Only revalidate THIS tenant's paths to prevent cross-tenant cache pollution
     revalidatePath(`/${tenant.slug}`, 'layout');
     revalidatePath(`/${tenant.slug}/order`, 'page');
+    notifyDisplaysMenuChanged(tenant.id);
     return json({ ok: true });
   }
 
@@ -125,6 +128,7 @@ export async function PUT(req: Request) {
   // SECURITY: Only revalidate THIS tenant's paths to prevent cross-tenant cache pollution
   revalidatePath(`/${tenant.slug}`, 'layout');
   revalidatePath(`/${tenant.slug}/order`, 'page');
+  notifyDisplaysMenuChanged(tenant.id);
 
   return json(updated);
 }
@@ -165,6 +169,7 @@ export async function DELETE(req: Request) {
   // SECURITY: Only revalidate THIS tenant's paths to prevent cross-tenant cache pollution
   revalidatePath(`/${tenant.slug}`, 'layout');
   revalidatePath(`/${tenant.slug}/order`, 'page');
+  notifyDisplaysMenuChanged(tenant.id);
 
   return json({ ok: true });
 }

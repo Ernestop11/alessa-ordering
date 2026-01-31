@@ -1,23 +1,6 @@
 import { NextRequest } from 'next/server';
-import prisma from '@/lib/prisma';
 import { getTenantBySlug } from '@/lib/tenant';
-
-// In-memory set of connected SSE clients per tenant
-type SSEClient = {
-  send: (data: unknown) => void;
-  close: () => void;
-};
-
-const clients = new Map<string, Set<SSEClient>>();
-
-// Broadcast a message to all connected displays for a tenant
-export function broadcastToDisplays(tenantId: string, data: unknown) {
-  const tenantClients = clients.get(tenantId);
-  if (!tenantClients) return;
-  tenantClients.forEach((client) => {
-    client.send(data);
-  });
-}
+import { registerDisplayClient, unregisterDisplayClient } from '@/lib/signage-broadcast';
 
 export async function GET(request: NextRequest) {
   const tenantSlug = request.nextUrl.searchParams.get('tenant');
@@ -45,24 +28,9 @@ export async function GET(request: NextRequest) {
         }
       };
 
-      const client: SSEClient = {
-        send,
-        close: () => {
-          if (closed) return;
-          closed = true;
-          const tenantClients = clients.get(tenant.id);
-          if (tenantClients) {
-            tenantClients.delete(client);
-            if (tenantClients.size === 0) clients.delete(tenant.id);
-          }
-        },
-      };
+      const client = { send };
 
-      // Register client
-      if (!clients.has(tenant.id)) {
-        clients.set(tenant.id, new Set());
-      }
-      clients.get(tenant.id)!.add(client);
+      registerDisplayClient(tenant.id, client);
 
       // Send initial ping
       send({ type: 'connected', tenantSlug: tenant.slug, timestamp: Date.now() });
@@ -78,8 +46,9 @@ export async function GET(request: NextRequest) {
 
       // Cleanup on disconnect
       request.signal.addEventListener('abort', () => {
+        closed = true;
         clearInterval(heartbeat);
-        client.close();
+        unregisterDisplayClient(tenant.id, client);
         try { controller.close(); } catch { /* already closed */ }
       });
     },

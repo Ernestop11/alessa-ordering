@@ -1,4 +1,5 @@
 import { NextRequest, NextResponse } from 'next/server';
+import { popCommand } from '../command/route';
 
 // In-memory store for Pi health data (keyed by hostname)
 const healthStore = new Map<string, {
@@ -14,7 +15,6 @@ const healthStore = new Map<string, {
 }>();
 
 export async function POST(request: NextRequest) {
-  // Validate request comes from WireGuard subnet (10.66.0.x)
   const forwarded = request.headers.get('x-forwarded-for');
   const ip = forwarded?.split(',')[0]?.trim() || 'unknown';
 
@@ -38,11 +38,12 @@ export async function POST(request: NextRequest) {
       lastSeen: new Date().toISOString(),
     });
 
-    // Respond with optional command for the Pi to execute
-    // Future: pull pending commands from a queue
+    // Check for pending command from admin dashboard
+    const command = popCommand(hostname);
+
     return NextResponse.json({
       status: 'ok',
-      command: null, // Could be: 'refresh', 'reboot', 'tv-on', 'tv-off'
+      command, // null if no pending command, or 'refresh'/'reboot'/'tv-on'/'tv-off'
     });
   } catch {
     return NextResponse.json({ error: 'Invalid JSON' }, { status: 400 });
@@ -51,7 +52,6 @@ export async function POST(request: NextRequest) {
 
 // GET: admin can view all connected Pi devices
 export async function GET(request: NextRequest) {
-  // Simple auth check via query param (admin use only over WireGuard)
   const key = request.nextUrl.searchParams.get('key');
   if (key !== process.env.SIGNAGE_ADMIN_KEY && key !== 'alessa-internal') {
     return NextResponse.json({ error: 'Unauthorized' }, { status: 401 });
