@@ -268,11 +268,15 @@ export function formatReceiptForPrinter(
     receipt += ESCPOS_COMMANDS.LF;
   }
 
-  // Combined Tax & Fees (tax + service fee)
+  // Combined Tax & Fees (tax + platform fee) - matches cart modal
   const taxAndFees = (order.taxAmount ?? 0) + (order.serviceFee ?? 0);
   if (taxAndFees > 0) {
     receipt += padRight('Tax & Fees:', 22);
     receipt += padLeft(`$${taxAndFees.toFixed(2)}`, 10);
+    receipt += ESCPOS_COMMANDS.LF;
+    receipt += '8.75% sales tax + processing';
+    receipt += ESCPOS_COMMANDS.LF;
+    receipt += 'fees';
     receipt += ESCPOS_COMMANDS.LF;
   }
 
@@ -318,10 +322,14 @@ export function formatReceiptForPrinter(
   receipt += ESCPOS_COMMANDS.LF;
   receipt += ESCPOS_COMMANDS.LF;
 
-  // Brief compliance note (SB 1524)
+  // SB 1524 compliance note - matches cart modal
   if (order.serviceFee && order.serviceFee > 0) {
     receipt += ESCPOS_COMMANDS.ALIGN_CENTER;
-    receipt += 'Fees include service charge.';
+    receipt += 'Tax & Fees includes sales tax';
+    receipt += ESCPOS_COMMANDS.LF;
+    receipt += 'and a service fee to support';
+    receipt += ESCPOS_COMMANDS.LF;
+    receipt += 'online ordering.';
     receipt += ESCPOS_COMMANDS.LF;
     receipt += ESCPOS_COMMANDS.LF;
   }

@@ -150,10 +150,11 @@ function buildReceipt(order: SerializedOrder) {
   if (order.deliveryFee && order.deliveryFee > 0) {
     lines.push(`Delivery            ${formatCurrency(order.deliveryFee).padStart(10)}`);
   }
-  // Tax & Fees with rate disclosure
+  // Tax & Fees - matches cart modal display
   const taxAndFees = (order.taxAmount ?? 0) + (order.platformFee ?? 0);
   if (taxAndFees > 0) {
-    lines.push(`Tax & Fees (8.75%+) ${formatCurrency(taxAndFees).padStart(10)}`);
+    lines.push(`Tax & Fees          ${formatCurrency(taxAndFees).padStart(10)}`);
+    lines.push('8.75% sales tax + processing fees');
   }
   if (order.tipAmount && order.tipAmount > 0) {
     lines.push(`Tip                 ${formatCurrency(order.tipAmount).padStart(10)}`);
@@ -174,10 +175,11 @@ function buildReceipt(order: SerializedOrder) {
   lines.push('');
   lines.push('    Thank you for your order!');
   lines.push('');
-  // Brief compliance note (SB 1524)
+  // SB 1524 compliance note - matches cart modal
   if (order.platformFee && order.platformFee > 0) {
-    lines.push('Tax & Fees includes 8.75% sales');
-    lines.push('tax + processing fees.');
+    lines.push('Tax & Fees includes sales tax');
+    lines.push('and a service fee to support');
+    lines.push('online ordering.');
   }
   lines.push('');
 
