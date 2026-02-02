@@ -78,11 +78,14 @@ newtenant: {
 
 | Slug | Name | Domain |
 |------|------|--------|
-| lasreinas | Las Reinas Taqueria | lasreinascolusa.com |
-| lapoblanita | La Poblanita Mexican Food | lapoblanita.alessacloud.com |
+| lasreinas | Las Reinas Taqueria y Carniceria | lasreinascolusa.com |
+| lapoblanita | La Poblanita Mexican Food | lapoblanitamexicanfood.com |
 | villacorona | Villa Corona | villacorona.alessacloud.com |
 | elhornito | El Hornito Bakery | (sub-tenant of lapoblanita) |
 | taqueriarosita | Taqueria Rosita | taqueriarosita.alessacloud.com |
+| ranchofino | Rancho Fino Cocina Mexicana | ranchofino.alessacloud.com |
+| rhinopowerwashing | Rhino Power Washing | rhinopowerwashing.alessacloud.com |
+| tacosjalisco | Tacos Jalisco Vallejo | tacosjalisco.alessacloud.com |
 
 ## VPS Details
 

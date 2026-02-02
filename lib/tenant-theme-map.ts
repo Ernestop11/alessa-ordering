@@ -104,16 +104,30 @@ const TENANT_THEME_MAP: Record<string, StaticTenantTheme> = {
       logo: '/tenant/tacosjalisco/logo.png',
     },
   },
+  ranchofino: {
+    slug: 'ranchofino',
+    name: 'Rancho Fino Cocina Mexicana',
+    primaryColor: '#1a1a1a', // Near-black for western/rustic feel
+    secondaryColor: '#b91c1c', // Red-700 - matches red swirl accents in logo
+    themeColor: '#1a1a1a', // Dark status bar
+    hasCustomIcons: true,
+    assets: {
+      hero: '/tenant/ranchofino/hero.jpg',
+      membership: '/tenant/ranchofino/membership.jpg',
+      logo: '/tenant/ranchofino/logo.png',
+    },
+  },
   rhinopowerwashing: {
     slug: 'rhinopowerwashing',
     name: 'Rhino Power Washing',
     primaryColor: '#1f2937', // Gray-800 - professional dark
     secondaryColor: '#10b981', // Emerald-500 - clean/fresh accent
     themeColor: '#111827', // Gray-900 for status bar
+    hasCustomIcons: false,
     assets: {
       hero: '/tenant/rhinopowerwashing/hero.jpg',
       membership: '/tenant/rhinopowerwashing/membership.jpg',
-      logo: '/tenant/rhinopowerwashing/logo.png',
+      logo: '/tenant/rhinopowerwashing/logo.svg',
     },
   },
 };
