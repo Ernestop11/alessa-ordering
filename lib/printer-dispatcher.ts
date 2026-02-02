@@ -124,16 +124,23 @@ function buildReceipt(order: SerializedOrder) {
   lines.push('--------------------------------');
 
   // Items
-  lines.push('ITEMS');
+  lines.push('ORDER ITEMS');
   lines.push('');
   for (const item of order.items) {
     const name = item.menuItemName ?? 'Menu Item';
     const quantity = item.quantity;
     const price = formatCurrency(item.price * quantity);
-    lines.push(`${quantity}× ${name}`);
-    lines.push(`     ${price}`);
+    lines.push(`${quantity}x ${name}`);
+    lines.push(`   ${price}`);
+    // Show each modifier/addon/note on its own line
     if (item.notes) {
-      lines.push(`     → ${item.notes}`);
+      const noteParts = item.notes.split(/\s*\|\s*/);
+      for (const part of noteParts) {
+        const trimmed = part.trim();
+        if (trimmed) {
+          lines.push(`   -> ${trimmed}`);
+        }
+      }
     }
   }
   lines.push('--------------------------------');

@@ -130,7 +130,7 @@ export function formatReceiptForPrinter(
 
   // Separator
   receipt += ESCPOS_COMMANDS.LF;
-  receipt += '='.repeat(42) + ESCPOS_COMMANDS.LF;
+  receipt += '='.repeat(32) + ESCPOS_COMMANDS.LF;
   receipt += ESCPOS_COMMANDS.LF;
 
   // Order Type
@@ -153,13 +153,13 @@ export function formatReceiptForPrinter(
     });
     receipt += ESCPOS_COMMANDS.LF;
     receipt += ESCPOS_COMMANDS.ALIGN_CENTER;
-    receipt += '*'.repeat(42) + ESCPOS_COMMANDS.LF;
+    receipt += '*'.repeat(32) + ESCPOS_COMMANDS.LF;
     receipt += ESCPOS_COMMANDS.DOUBLE_ON;
     receipt += ESCPOS_COMMANDS.BOLD_ON;
     receipt += `PICKUP AT: ${timeStr}`;
     receipt += ESCPOS_COMMANDS.NORMAL;
     receipt += ESCPOS_COMMANDS.LF;
-    receipt += '*'.repeat(42) + ESCPOS_COMMANDS.LF;
+    receipt += '*'.repeat(32) + ESCPOS_COMMANDS.LF;
     receipt += ESCPOS_COMMANDS.ALIGN_LEFT;
   }
 
@@ -167,7 +167,7 @@ export function formatReceiptForPrinter(
 
   // Order Info
   receipt += ESCPOS_COMMANDS.BOLD_ON;
-  receipt += `Order: ${order.id}`;
+  receipt += `Order #${order.id.slice(-6).toUpperCase()}`;
   receipt += ESCPOS_COMMANDS.BOLD_OFF;
   receipt += ESCPOS_COMMANDS.LF;
 
@@ -210,77 +210,85 @@ export function formatReceiptForPrinter(
 
   // Separator
   receipt += ESCPOS_COMMANDS.LF;
-  receipt += '-'.repeat(42) + ESCPOS_COMMANDS.LF;
+  receipt += '-'.repeat(32) + ESCPOS_COMMANDS.LF;
   receipt += ESCPOS_COMMANDS.LF;
 
   // Items Header
   receipt += ESCPOS_COMMANDS.BOLD_ON;
-  receipt += padRight('ITEM', 22);
-  receipt += padRight('QTY', 6);
-  receipt += padLeft('PRICE', 14);
+  receipt += 'ORDER ITEMS';
   receipt += ESCPOS_COMMANDS.BOLD_OFF;
   receipt += ESCPOS_COMMANDS.LF;
+  receipt += ESCPOS_COMMANDS.LF;
 
-  receipt += '-'.repeat(42) + ESCPOS_COMMANDS.LF;
-
-  // Order Items
+  // Order Items - one item per block for clarity
   order.items.forEach((item) => {
-    // Item name
-    const name = truncate(item.name, 22);
-    receipt += padRight(name, 22);
-
-    // Quantity
-    receipt += padRight(`x${item.quantity}`, 6);
-
-    // Price
-    receipt += padLeft(`$${item.totalPrice.toFixed(2)}`, 14);
+    // Quantity x Name
+    const qtyName = `${item.quantity}x ${item.name}`;
+    receipt += ESCPOS_COMMANDS.BOLD_ON;
+    receipt += truncate(qtyName, 32);
+    receipt += ESCPOS_COMMANDS.BOLD_OFF;
     receipt += ESCPOS_COMMANDS.LF;
 
-    // Item notes (if any)
+    // Price on next line, indented
+    receipt += `   $${item.totalPrice.toFixed(2)}`;
+    receipt += ESCPOS_COMMANDS.LF;
+
+    // Item notes - split by pipe and show each on its own line
     if (item.notes) {
-      receipt += `  * ${item.notes}`;
-      receipt += ESCPOS_COMMANDS.LF;
+      const noteParts = item.notes.split(/\s*\|\s*/);
+      noteParts.forEach((part) => {
+        const trimmed = part.trim();
+        if (trimmed) {
+          // Wrap long notes to 29 chars (32 - 3 char indent)
+          const wrapped = wrapText(`-> ${trimmed}`, 32);
+          wrapped.forEach((line) => {
+            receipt += line;
+            receipt += ESCPOS_COMMANDS.LF;
+          });
+        }
+      });
     }
   });
 
   // Separator
-  receipt += '-'.repeat(42) + ESCPOS_COMMANDS.LF;
+  receipt += '-'.repeat(32) + ESCPOS_COMMANDS.LF;
 
   // Totals
-  receipt += ESCPOS_COMMANDS.ALIGN_RIGHT;
+  receipt += ESCPOS_COMMANDS.ALIGN_LEFT;
 
   // Subtotal
-  receipt += padLeft(`Subtotal:`, 28);
-  receipt += padLeft(`$${order.subtotal.toFixed(2)}`, 14);
+  receipt += padRight('Subtotal:', 22);
+  receipt += padLeft(`$${order.subtotal.toFixed(2)}`, 10);
   receipt += ESCPOS_COMMANDS.LF;
 
   // Delivery Fee
   if (order.deliveryFee && order.deliveryFee > 0) {
-    receipt += padLeft(`Delivery:`, 28);
-    receipt += padLeft(`$${order.deliveryFee.toFixed(2)}`, 14);
+    receipt += padRight('Delivery:', 22);
+    receipt += padLeft(`$${order.deliveryFee.toFixed(2)}`, 10);
     receipt += ESCPOS_COMMANDS.LF;
   }
 
   // Combined Tax & Fees (tax + service fee)
   const taxAndFees = (order.taxAmount ?? 0) + (order.serviceFee ?? 0);
   if (taxAndFees > 0) {
-    receipt += padLeft(`Tax & Fees:`, 28);
-    receipt += padLeft(`$${taxAndFees.toFixed(2)}`, 14);
+    receipt += padRight('Tax & Fees:', 22);
+    receipt += padLeft(`$${taxAndFees.toFixed(2)}`, 10);
     receipt += ESCPOS_COMMANDS.LF;
   }
 
   // Tip
   if (order.tipAmount && order.tipAmount > 0) {
-    receipt += padLeft(`Tip:`, 28);
-    receipt += padLeft(`$${order.tipAmount.toFixed(2)}`, 14);
+    receipt += padRight('Tip:', 22);
+    receipt += padLeft(`$${order.tipAmount.toFixed(2)}`, 10);
     receipt += ESCPOS_COMMANDS.LF;
   }
 
   // Total
+  receipt += '-'.repeat(32) + ESCPOS_COMMANDS.LF;
   receipt += ESCPOS_COMMANDS.BOLD_ON;
   receipt += ESCPOS_COMMANDS.DOUBLE_HEIGHT_ON;
-  receipt += padLeft(`TOTAL:`, 28);
-  receipt += padLeft(`$${order.totalAmount.toFixed(2)}`, 14);
+  receipt += padRight('TOTAL:', 22);
+  receipt += padLeft(`$${order.totalAmount.toFixed(2)}`, 10);
   receipt += ESCPOS_COMMANDS.NORMAL;
   receipt += ESCPOS_COMMANDS.LF;
   receipt += ESCPOS_COMMANDS.LF;
@@ -293,8 +301,8 @@ export function formatReceiptForPrinter(
     receipt += ESCPOS_COMMANDS.BOLD_OFF;
     receipt += ESCPOS_COMMANDS.LF;
 
-    // Wrap notes to 42 characters
-    const wrappedNotes = wrapText(order.notes, 42);
+    // Wrap notes to 32 characters
+    const wrappedNotes = wrapText(order.notes, 32);
     wrappedNotes.forEach((line) => {
       receipt += line + ESCPOS_COMMANDS.LF;
     });
@@ -303,7 +311,7 @@ export function formatReceiptForPrinter(
 
   // Footer
   receipt += ESCPOS_COMMANDS.ALIGN_CENTER;
-  receipt += '='.repeat(42) + ESCPOS_COMMANDS.LF;
+  receipt += '='.repeat(32) + ESCPOS_COMMANDS.LF;
   receipt += ESCPOS_COMMANDS.LF;
 
   receipt += 'Thank you for your order!';
