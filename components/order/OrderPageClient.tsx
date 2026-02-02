@@ -57,6 +57,8 @@ interface CustomizationOption {
   id: string;
   label: string;
   price: number;
+  group?: string;    // Group name for required selections (e.g. "salsa_choice")
+  required?: boolean; // If true, customer must pick one from this group
 }
 
 export interface OrderMenuItem {
@@ -792,10 +794,25 @@ export default function OrderPageClient({
   }, []);
 
   const toggleAddon = useCallback((addonId: string) => {
-    setCustomAddons((prev) =>
-      prev.includes(addonId) ? prev.filter((id) => id !== addonId) : [...prev, addonId],
-    );
-  }, []);
+    if (!customModal) return;
+    // Find the addon to check if it's part of a required group
+    const addon = customModal.config.addons.find((a) => a.id === addonId);
+    if (addon?.group && addon?.required) {
+      // Radio behavior: deselect others in the same group, select this one
+      const groupIds = customModal.config.addons
+        .filter((a) => a.group === addon.group)
+        .map((a) => a.id);
+      setCustomAddons((prev) => {
+        const withoutGroup = prev.filter((id) => !groupIds.includes(id));
+        return [...withoutGroup, addonId];
+      });
+    } else {
+      // Toggle behavior for optional addons
+      setCustomAddons((prev) =>
+        prev.includes(addonId) ? prev.filter((id) => id !== addonId) : [...prev, addonId],
+      );
+    }
+  }, [customModal]);
 
   const selectedAddonObjects = useMemo(() => {
     if (!customModal) return [] as CustomizationOption[];
@@ -806,11 +823,28 @@ export default function OrderPageClient({
     return selectedAddonObjects.reduce((sum, addon) => sum + addon.price, 0);
   }, [selectedAddonObjects]);
 
+  // Check if all required groups have a selection
+  const requiredGroupsMet = useMemo(() => {
+    if (!customModal) return true;
+    const requiredGroups = new Set(
+      customModal.config.addons
+        .filter((a) => a.required && a.group)
+        .map((a) => a.group!)
+    );
+    for (const group of requiredGroups) {
+      const groupIds = customModal.config.addons
+        .filter((a) => a.group === group)
+        .map((a) => a.id);
+      if (!groupIds.some((id) => customAddons.includes(id))) return false;
+    }
+    return true;
+  }, [customModal, customAddons]);
+
   const perItemCustomizedPrice = customModal ? customModal.item.price + addonUpcharge : 0;
   const totalCustomizedPrice = perItemCustomizedPrice * customQuantity;
 
   const handleConfirmCustomization = useCallback(() => {
-    if (!customModal) return;
+    if (!customModal || !requiredGroupsMet) return;
     const addonPayload = selectedAddonObjects.map((addon) => ({
       id: addon.id,
       name: addon.label.replace(/\s*\(.*\)$/, ''),
@@ -844,7 +878,7 @@ export default function OrderPageClient({
     setNotification(`Customized ${customModal.item.name} added to cart`);
     setTimeout(() => setNotification(''), 2200);
     closeCustomization();
-  }, [addToCart, closeCustomization, customModal, customNote, customQuantity, customRemovals, perItemCustomizedPrice, selectedAddonObjects]);
+  }, [addToCart, closeCustomization, customModal, customNote, customQuantity, customRemovals, perItemCustomizedPrice, selectedAddonObjects, requiredGroupsMet]);
 
   const sectionRefs = useRef<Record<string, HTMLElement | null>>({});
 
@@ -5409,32 +5443,84 @@ export default function OrderPageClient({
               </div>
             )}
 
-            {customModal.config.addons.length > 0 && (
-              <div className="mt-6">
-                <h4 className="text-sm font-semibold text-white">Popular add-ons</h4>
-                <div className="mt-2 grid gap-3 sm:grid-cols-2">
-                  {customModal.config.addons.map((addon) => {
-                    const active = customAddons.includes(addon.id);
-                    // Format the label with price
-                    const displayLabel = addon.price > 0
-                      ? `${addon.label} (+$${addon.price.toFixed(2)})`
-                      : addon.label;
-                    return (
-                      <button
-                        key={addon.id}
-                        onClick={() => toggleAddon(addon.id)}
-                        className={`flex items-center justify-between rounded-2xl border px-3 py-2 text-xs font-semibold transition ${
-                          active ? 'border-amber-400 bg-amber-500/20 text-white' : 'border-white/20 text-white/70 hover:border-white/40 hover:text-white'
-                        }`}
-                      >
-                        <span className="text-left">{displayLabel}</span>
-                        {active && <span className="text-amber-200">✓</span>}
-                      </button>
-                    );
-                  })}
-                </div>
-              </div>
-            )}
+            {/* Required choice groups (e.g., Red or Green salsa) */}
+            {(() => {
+              const requiredGroups = new Map<string, CustomizationOption[]>();
+              const optionalAddons: CustomizationOption[] = [];
+              customModal.config.addons.forEach((addon) => {
+                if (addon.required && addon.group) {
+                  if (!requiredGroups.has(addon.group)) requiredGroups.set(addon.group, []);
+                  requiredGroups.get(addon.group)!.push(addon);
+                } else {
+                  optionalAddons.push(addon);
+                }
+              });
+              return (
+                <>
+                  {Array.from(requiredGroups.entries()).map(([groupName, options]) => (
+                    <div key={groupName} className="mt-6">
+                      <div className="flex items-center gap-2">
+                        <h4 className="text-sm font-semibold text-white">
+                          {groupName.replace(/_/g, ' ').replace(/\b\w/g, (c) => c.toUpperCase())}
+                        </h4>
+                        <span className="rounded-full bg-red-500/80 px-2 py-0.5 text-[10px] font-bold uppercase text-white">
+                          Required
+                        </span>
+                      </div>
+                      <div className="mt-2 grid gap-3 sm:grid-cols-2">
+                        {options.map((addon) => {
+                          const active = customAddons.includes(addon.id);
+                          return (
+                            <button
+                              key={addon.id}
+                              onClick={() => toggleAddon(addon.id)}
+                              className={`flex items-center justify-between rounded-2xl border-2 px-3 py-2.5 text-sm font-semibold transition ${
+                                active
+                                  ? 'border-amber-400 bg-amber-500/20 text-white'
+                                  : 'border-white/20 text-white/70 hover:border-white/40 hover:text-white'
+                              }`}
+                            >
+                              <span className="text-left">{addon.label}</span>
+                              {active ? (
+                                <span className="flex h-5 w-5 items-center justify-center rounded-full bg-amber-500 text-xs text-black">✓</span>
+                              ) : (
+                                <span className="flex h-5 w-5 items-center justify-center rounded-full border border-white/30" />
+                              )}
+                            </button>
+                          );
+                        })}
+                      </div>
+                    </div>
+                  ))}
+
+                  {optionalAddons.length > 0 && (
+                    <div className="mt-6">
+                      <h4 className="text-sm font-semibold text-white">Popular add-ons</h4>
+                      <div className="mt-2 grid gap-3 sm:grid-cols-2">
+                        {optionalAddons.map((addon) => {
+                          const active = customAddons.includes(addon.id);
+                          const displayLabel = addon.price > 0
+                            ? `${addon.label} (+$${addon.price.toFixed(2)})`
+                            : addon.label;
+                          return (
+                            <button
+                              key={addon.id}
+                              onClick={() => toggleAddon(addon.id)}
+                              className={`flex items-center justify-between rounded-2xl border px-3 py-2 text-xs font-semibold transition ${
+                                active ? 'border-amber-400 bg-amber-500/20 text-white' : 'border-white/20 text-white/70 hover:border-white/40 hover:text-white'
+                              }`}
+                            >
+                              <span className="text-left">{displayLabel}</span>
+                              {active && <span className="text-amber-200">✓</span>}
+                            </button>
+                          );
+                        })}
+                      </div>
+                    </div>
+                  )}
+                </>
+              );
+            })()}
 
             <div className="mt-6 grid gap-3 sm:grid-cols-2">
               <label className="flex flex-col text-xs text-white/70">
@@ -5492,9 +5578,14 @@ export default function OrderPageClient({
             <div className="mt-6 flex flex-col gap-3 sm:flex-row-reverse">
               <button
                 onClick={handleConfirmCustomization}
-                className="flex-1 rounded-2xl bg-gradient-to-r from-amber-400 via-amber-500 to-yellow-500 px-6 py-4 text-base font-bold text-black/90 shadow-xl shadow-amber-500/30 transition-all hover:from-amber-300 hover:via-amber-400 hover:to-yellow-400 hover:scale-[1.02] active:scale-[0.98]"
+                disabled={!requiredGroupsMet}
+                className={`flex-1 rounded-2xl px-6 py-4 text-base font-bold shadow-xl transition-all ${
+                  requiredGroupsMet
+                    ? 'bg-gradient-to-r from-amber-400 via-amber-500 to-yellow-500 text-black/90 shadow-amber-500/30 hover:from-amber-300 hover:via-amber-400 hover:to-yellow-400 hover:scale-[1.02] active:scale-[0.98]'
+                    : 'bg-neutral-700 text-neutral-400 cursor-not-allowed shadow-none'
+                }`}
               >
-                Add to Cart · ${totalCustomizedPrice.toFixed(2)}
+                {requiredGroupsMet ? `Add to Cart · $${totalCustomizedPrice.toFixed(2)}` : 'Please make required selections'}
               </button>
               <button
                 onClick={closeCustomization}
